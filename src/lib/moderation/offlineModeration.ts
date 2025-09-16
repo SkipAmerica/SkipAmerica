@@ -33,8 +33,8 @@ export function offlineModerateText(content: string): ModerationResult {
   if (criticalHit) {
     return {
       flagged: true,
-      action: "block",
-      reason: `Blocked due to critical content: ${criticalHit}`,
+      action: "pause",
+      reason: `Call paused due to sensitive language violation: ${criticalHit}`,
       categories: { violence: true, hate: true },
     };
   }

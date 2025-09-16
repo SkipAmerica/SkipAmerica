@@ -5,7 +5,7 @@ import { offlineModerateText } from '@/lib/moderation/offlineModeration';
 
 export interface ModerationResult {
   flagged: boolean;
-  action: 'allow' | 'block' | 'warn';
+  action: 'allow' | 'block' | 'warn' | 'pause';
   reason?: string;
   categories?: Record<string, boolean>;
 }
@@ -162,7 +162,9 @@ export const useAIModerator = (callId: string, userId: string) => {
             });
             if (error) throw error;
             setVoiceRecording(prev => ({ ...prev, transcript: data.transcript, lastModeration: data.moderation }));
-            if (data.moderation.action === 'block') {
+            if (data.moderation.action === 'pause') {
+              toast({ title: 'Call Paused', description: data.moderation.reason || 'Voice content violated community guidelines - call paused', variant: 'destructive' });
+            } else if (data.moderation.action === 'block') {
               toast({ title: 'Content Blocked', description: data.moderation.reason || 'Voice content violated community guidelines', variant: 'destructive' });
             } else if (data.moderation.action === 'warn') {
               toast({ title: 'Content Warning', description: data.moderation.reason || 'Please keep content appropriate' });

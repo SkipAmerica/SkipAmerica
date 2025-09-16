@@ -22,7 +22,9 @@ import {
   Shield,
   Settings,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  Play,
+  X
 } from "lucide-react";
 
 interface VideoCallInterfaceProps {
@@ -38,6 +40,8 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   const [callDuration, setCallDuration] = useState(0);
   const [currentCost, setCurrentCost] = useState(0);
   const [chatPaused, setChatPaused] = useState(false);
+  const [callPaused, setCallPaused] = useState(false);
+  const [pauseReason, setPauseReason] = useState('');
   const [showModerationPanel, setShowModerationPanel] = useState(false);
   const [recentModerations, setRecentModerations] = useState<any[]>([]);
   
@@ -70,7 +74,15 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
     { id: 5, sender: "Emma Wilson", message: "Absolutely! Let's start with nutrition basics...", timestamp: "2:03 PM" }
   ];
 
-  // Simulate timer with max duration check
+  // Check for voice moderation pause in VideoCallInterface
+  useEffect(() => {
+    if (voiceRecording.lastModeration?.action === 'pause' && !callPaused) {
+      setCallPaused(true);
+      setPauseReason(voiceRecording.lastModeration.reason || 'Voice content violated community guidelines');
+      setIsVideoOn(false);
+      setIsMicOn(false);
+    }
+  }, [voiceRecording.lastModeration, callPaused]);
   useEffect(() => {
     const timer = setInterval(() => {
       setCallDuration(prev => {
@@ -110,7 +122,13 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
       // Add to recent moderations for display
       setRecentModerations(prev => [moderation, ...prev.slice(0, 9)]);
       
-      if (moderation.action === 'block') {
+      if (moderation.action === 'pause') {
+        setCallPaused(true);
+        setPauseReason(moderation.reason || 'Sensitive language detected');
+        setIsVideoOn(false);
+        setIsMicOn(false);
+        return;
+      } else if (moderation.action === 'block') {
         toast({
           title: "Message Blocked",
           description: moderation.reason || "Message violates community guidelines",
@@ -129,6 +147,78 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
     // In real app, would send message after moderation check
     setMessage("");
   };
+
+  const handleContinueCall = () => {
+    setCallPaused(false);
+    setPauseReason('');
+    setIsVideoOn(true);
+    setIsMicOn(true);
+    toast({
+      title: "Call Resumed",
+      description: "The call has been resumed",
+    });
+  };
+
+  const handleEndCallFromViolation = async () => {
+    // Add system comment and rating to user profile
+    const systemComment = `System: User violated sensitive language filter on call at ${new Date().toLocaleString()}`;
+    console.log('Adding system comment:', systemComment);
+    console.log('Adding 0 rating for policy violation');
+    
+    toast({
+      title: "Call Ended",
+      description: "Call ended due to policy violation",
+      variant: "destructive"
+    });
+    onBack();
+  };
+
+  if (callPaused) {
+    return (
+      <div className="fixed inset-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
+        <div className="container flex h-screen w-screen flex-col items-center justify-center">
+          <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[500px]">
+            <div className="flex flex-col space-y-2 text-center">
+              <AlertTriangle className="mx-auto h-16 w-16 text-destructive animate-pulse" />
+              <h1 className="text-3xl font-semibold tracking-tight text-destructive">
+                Call Paused
+              </h1>
+              <p className="text-lg text-muted-foreground">
+                {pauseReason}
+              </p>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-4">
+                <p className="text-sm text-destructive font-medium">
+                  A participant used language that violates our community guidelines. 
+                  As the creator, you can choose to continue or end the call.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Button 
+                variant="outline" 
+                onClick={handleContinueCall}
+                className="h-12"
+              >
+                <Play className="w-4 h-4 mr-2" />
+                Continue Call
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={handleEndCallFromViolation}
+                className="h-12"
+              >
+                <X className="w-4 h-4 mr-2" />
+                End Call
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              If you end the call, the participant will receive a system comment and 0 rating for the policy violation.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen bg-background flex flex-col privacy-protected">

@@ -20,7 +20,7 @@ interface ModerationResponse {
   flagged: boolean;
   categories: Record<string, boolean>;
   categoryScores: Record<string, number>;
-  action: 'allow' | 'block' | 'warn';
+  action: 'allow' | 'block' | 'warn' | 'pause';
   reason?: string;
 }
 
@@ -64,7 +64,7 @@ serve(async (req) => {
     const result = moderationData.results[0];
 
     // Determine action based on moderation results
-    let action: 'allow' | 'block' | 'warn' = 'allow';
+    let action: 'allow' | 'block' | 'warn' | 'pause' = 'allow';
     let reason = '';
 
     if (result.flagged) {
@@ -75,8 +75,8 @@ serve(async (req) => {
       );
 
       if (hasSevereViolation) {
-        action = 'block';
-        reason = 'Severe policy violation detected';
+        action = 'pause';
+        reason = 'Call paused due to severe policy violation';
       } else {
         // Less severe violations get a warning
         action = 'warn';
