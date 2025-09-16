@@ -154,9 +154,14 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
                       type="number"
                       placeholder="Minutes"
                       value={tier.duration_minutes}
-                      onChange={(e) => updatePricingTier(index, 'duration_minutes', parseInt(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value) || 5;
+                        const rounded = Math.max(5, Math.round(value / 5) * 5);
+                        updatePricingTier(index, 'duration_minutes', rounded);
+                      }}
                       className="w-20"
-                      min="1"
+                      min="5"
+                      step="5"
                     />
                     <span className="text-sm text-muted-foreground">min</span>
                   </div>
