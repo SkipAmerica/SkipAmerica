@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { CreatorProfileEnhanced } from '@/components/creator/CreatorProfileEnhanced';
 import { AgencyDashboard } from '@/components/agency/AgencyDashboard';
+import { GroupCallPricing } from '@/components/calls/GroupCallPricing';
 import { toast } from 'sonner';
 
 interface Profile {
@@ -73,10 +74,20 @@ export default function Profile() {
       {profile.account_type === 'agency' && isOwnProfile ? (
         <AgencyDashboard />
       ) : (
-        <CreatorProfileEnhanced 
-          creator={profile} 
-          isOwnProfile={isOwnProfile} 
-        />
+        <div className="space-y-6">
+          <CreatorProfileEnhanced 
+            creator={profile} 
+            isOwnProfile={isOwnProfile} 
+          />
+          
+          {profile.account_type === 'creator' && (
+            <GroupCallPricing
+              creatorId={profile.id}
+              basePrice={85} // This would come from creator pricing settings
+              isCreator={isOwnProfile}
+            />
+          )}
+        </div>
       )}
     </div>
   );
