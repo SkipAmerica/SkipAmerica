@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -22,6 +23,7 @@ const Index = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const { user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
 
   // Handle different views
@@ -71,9 +73,11 @@ const Index = () => {
                 </Button>
               </>
             )}
-            <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
-              Creator Hub
-            </Button>
+            {user && profile?.account_type === 'creator' && (
+              <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
+                Creator Hub
+              </Button>
+            )}
             {user ? (
               <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
             ) : (
@@ -136,14 +140,16 @@ const Index = () => {
                     <Zap className="mr-2 h-4 w-4" />
                     Explore Live Creators
                   </Button>
-                  <Button 
-                    size="lg" 
-                    variant="outline" 
-                    className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                    onClick={() => setActiveTab("creator-dashboard")}
-                  >
-                    Become a Creator
-                  </Button>
+                  {!user && (
+                    <Button 
+                      size="lg" 
+                      variant="outline" 
+                      className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                      onClick={() => navigate("/auth")}
+                    >
+                      Join as Creator
+                    </Button>
+                  )}
                 </div>
               </div>
             </section>
