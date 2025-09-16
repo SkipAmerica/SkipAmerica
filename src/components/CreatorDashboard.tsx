@@ -59,62 +59,9 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
           </TabsList>
 
           <TabsContent value="dashboard" className="mt-0">
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Settings Panel */}
-              <div className="lg:col-span-1 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <DollarSign className="mr-2 h-5 w-5" />
-                      Pricing Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Set your per-minute rate and availability
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <Label htmlFor="price">Price per 5 minutes (USD)</Label>
-                      <Input
-                        id="price"
-                        value={pricePer5Min}
-                        onChange={(e) => setPricePer5Min(e.target.value)}
-                        placeholder="25.00"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="live">Available for calls</Label>
-                      <Switch
-                        id="live"
-                        checked={isLive}
-                        onCheckedChange={setIsLive}
-                      />
-                    </div>
-
-                    <div className="bg-accent p-4 rounded-lg">
-                      <h4 className="font-semibold mb-2">Group Pricing (5-min blocks)</h4>
-                      <div className="space-y-1 text-sm">
-                        <div className="flex justify-between">
-                          <span>1 person:</span>
-                          <span>${pricePer5Min}/5min</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>2 people:</span>
-                          <span>${(parseFloat(pricePer5Min) * 0.8).toFixed(2)}/5min each</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>5 people:</span>
-                          <span>${(parseFloat(pricePer5Min) * 0.5).toFixed(2)}/5min each</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
+            <div className="grid gap-8">
               {/* Main Dashboard */}
-              <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6">
                 {/* Stats Cards */}
                 <div className="grid md:grid-cols-3 gap-4">
                   <Card>
