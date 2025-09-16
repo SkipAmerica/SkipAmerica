@@ -15,7 +15,7 @@ interface CreatorDashboardProps {
 }
 
 const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
-  const [pricePerMinute, setPricePerMinute] = useState("5.00");
+  const [pricePer5Min, setPricePer5Min] = useState("25.00");
   const [isLive, setIsLive] = useState(false);
   const [blockedWords, setBlockedWords] = useState("spam, inappropriate, rude");
 
@@ -67,12 +67,12 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <Label htmlFor="price">Price per minute (USD)</Label>
+                      <Label htmlFor="price">Price per 5 minutes (USD)</Label>
                       <Input
                         id="price"
-                        value={pricePerMinute}
-                        onChange={(e) => setPricePerMinute(e.target.value)}
-                        placeholder="5.00"
+                        value={pricePer5Min}
+                        onChange={(e) => setPricePer5Min(e.target.value)}
+                        placeholder="25.00"
                       />
                     </div>
                     
@@ -86,19 +86,19 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                     </div>
 
                     <div className="bg-accent p-4 rounded-lg">
-                      <h4 className="font-semibold mb-2">Group Pricing</h4>
+                      <h4 className="font-semibold mb-2">Group Pricing (5-min blocks)</h4>
                       <div className="space-y-1 text-sm">
                         <div className="flex justify-between">
                           <span>1 person:</span>
-                          <span>${pricePerMinute}/min</span>
+                          <span>${pricePer5Min}/5min</span>
                         </div>
                         <div className="flex justify-between">
                           <span>2 people:</span>
-                          <span>${(parseFloat(pricePerMinute) / 2).toFixed(2)}/min each</span>
+                          <span>${(parseFloat(pricePer5Min) * 0.8).toFixed(2)}/5min each</span>
                         </div>
                         <div className="flex justify-between">
                           <span>5 people:</span>
-                          <span>${(parseFloat(pricePerMinute) / 5).toFixed(2)}/min each</span>
+                          <span>${(parseFloat(pricePer5Min) * 0.5).toFixed(2)}/5min each</span>
                         </div>
                       </div>
                     </div>
@@ -187,7 +187,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                         </div>
                         <h3 className="text-xl font-semibold mb-2">You're Live!</h3>
                         <p className="text-muted-foreground mb-4">
-                          Fans can now request video calls with you at ${pricePerMinute}/minute
+                          Fans can now request video calls with you at ${pricePer5Min}/5min
                         </p>
                         <Button 
                           variant="outline" 

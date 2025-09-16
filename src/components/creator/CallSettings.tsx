@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, DollarSign, Settings, Plus, Trash2, Sparkles, AlertCircle, Save } from "lucide-react";
+import { Clock, DollarSign, Settings, Plus, Trash2, Sparkles, AlertCircle, Save, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MarketRatePricing } from './MarketRatePricing';
 
@@ -23,9 +23,20 @@ interface CallPricingTier {
   pricing_mode?: 'manual' | 'market_rate';
 }
 
+interface SpeedGreetSettings {
+  enabled: boolean;
+  price_multiplier: number;
+  duration_minutes: number;
+}
+
 export function CallSettings({ creatorId }: CallSettingsProps) {
   const [pricingTiers, setPricingTiers] = useState<CallPricingTier[]>([]);
   const [autoAcceptCalls, setAutoAcceptCalls] = useState(false);
+  const [speedGreetSettings, setSpeedGreetSettings] = useState<SpeedGreetSettings>({
+    enabled: true,
+    price_multiplier: 3,
+    duration_minutes: 2
+  });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
@@ -50,11 +61,11 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
           pricing_mode: tier.pricing_mode as 'manual' | 'market_rate' || 'manual'
         })));
       } else {
-        // Set default pricing tiers if none exist
+        // Set default pricing tiers if none exist (5-minute blocks)
         setPricingTiers([
           { duration_minutes: 5, price_per_block: 25.00, is_active: true, pricing_mode: 'manual' },
           { duration_minutes: 10, price_per_block: 45.00, is_active: true, pricing_mode: 'manual' },
-          { duration_minutes: 15, price_per_block: 65.00, is_active: true, pricing_mode: 'manual' }
+          { duration_minutes: 15, price_per_block: 60.00, is_active: true, pricing_mode: 'manual' }
         ]);
       }
     } catch (error) {
@@ -71,8 +82,8 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
 
   const addPricingTier = () => {
     setPricingTiers([...pricingTiers, { 
-      duration_minutes: 30, 
-      price_per_block: 60.00, 
+      duration_minutes: 20, 
+      price_per_block: 80.00, 
       is_active: true,
       pricing_mode: 'manual'
     }]);
@@ -248,7 +259,7 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-muted-foreground">
-                        Rate: ${(tier.price_per_block / tier.duration_minutes).toFixed(2)}/minute
+                        Rate: ${(tier.price_per_block / (tier.duration_minutes / 5)).toFixed(2)} per 5-min block
                       </div>
                     </div>
                   ))}
@@ -266,31 +277,80 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
 
               {/* Speed Greet Settings */}
               <div className="border-t pt-6">
-                <h3 className="text-lg font-semibold mb-4">Speed Greet Settings</h3>
-                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/10 dark:to-orange-950/10 rounded-lg p-4">
-                  <div className="flex items-center space-x-2 mb-3">
-                    <AlertCircle className="h-5 w-5 text-orange-600" />
-                    <span className="font-medium">Speed Greet Premium Feature</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Speed Greets are priority 2-minute calls that allow fans to skip the queue at a premium rate.
-                    The price is automatically calculated at 3x your standard per-minute rate.
-                  </p>
-                  
-                  {pricingTiers.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded p-3">
-                      <div className="text-sm space-y-1">
-                        <div>Standard Rate: ${(pricingTiers[0].price_per_block / pricingTiers[0].duration_minutes).toFixed(2)}/min</div>
-                        <div className="font-semibold text-orange-600">
-                          Speed Greet Rate: ${((pricingTiers[0].price_per_block / pricingTiers[0].duration_minutes) * 3).toFixed(2)}/min
-                        </div>
-                        <div className="font-bold">
-                          Speed Greet Price: ${((pricingTiers[0].price_per_block / pricingTiers[0].duration_minutes) * 3 * 2).toFixed(2)} (2 minutes)
-                        </div>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-yellow-500" />
+                    Speed Greet Settings
+                  </h3>
+                  <Switch
+                    checked={speedGreetSettings.enabled}
+                    onCheckedChange={(enabled) => setSpeedGreetSettings({...speedGreetSettings, enabled})}
+                  />
+                </div>
+                
+                {speedGreetSettings.enabled && (
+                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/10 dark:to-orange-950/10 rounded-lg p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <Label htmlFor="speed-duration">Duration (minutes)</Label>
+                        <Input
+                          id="speed-duration"
+                          type="number"
+                          value={speedGreetSettings.duration_minutes}
+                          onChange={(e) => setSpeedGreetSettings({
+                            ...speedGreetSettings, 
+                            duration_minutes: parseInt(e.target.value)
+                          })}
+                          min="1"
+                          max="5"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="speed-multiplier">Price Multiplier</Label>
+                        <Input
+                          id="speed-multiplier"
+                          type="number"
+                          step="0.5"
+                          value={speedGreetSettings.price_multiplier}
+                          onChange={(e) => setSpeedGreetSettings({
+                            ...speedGreetSettings, 
+                            price_multiplier: parseFloat(e.target.value)
+                          })}
+                          min="1.5"
+                          max="10"
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 rounded p-3">
+                      <div className="text-sm space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Zap className="h-4 w-4 text-yellow-500" />
+                          <span className="font-medium">Speed Greet Pricing Preview</span>
+                        </div>
+                        {pricingTiers.length > 0 && (
+                          <>
+                            <div>Standard Rate (5-min): ${pricingTiers[0].price_per_block.toFixed(2)}</div>
+                            <div className="font-semibold text-orange-600">
+                              Speed Greet Rate: ${(pricingTiers[0].price_per_block * speedGreetSettings.price_multiplier * (speedGreetSettings.duration_minutes / 5)).toFixed(2)} ({speedGreetSettings.duration_minutes} min)
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              Priority queue access • Instant connection • Premium experience
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {!speedGreetSettings.enabled && (
+                  <div className="bg-muted/30 rounded-lg p-4 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Speed Greets are disabled. Enable to offer priority calls to your fans.
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Auto Accept Settings */}
