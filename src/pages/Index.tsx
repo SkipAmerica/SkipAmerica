@@ -61,9 +61,15 @@ const Index = () => {
           
           <div className="flex items-center space-x-4">
             {user && (
-              <Button variant="ghost" size="sm">
-                <Bell className="h-4 w-4" />
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/feed")}>
+                  <Bell className="h-4 w-4 mr-1" />
+                  Feed
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
+                  Profile
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
               Creator Hub
