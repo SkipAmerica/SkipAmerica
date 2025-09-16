@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileRepository } from "@/components/creator/FileRepository";
 import { CallSettings } from "@/components/creator/CallSettings";
+import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders } from "lucide-react";
 
 interface CreatorDashboardProps {
@@ -19,6 +20,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
   const [pricePer5Min, setPricePer5Min] = useState("25.00");
   const [isLive, setIsLive] = useState(false);
   const [blockedWords, setBlockedWords] = useState("spam, inappropriate, rude");
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-background">
@@ -222,7 +224,13 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
           </TabsContent>
 
           <TabsContent value="pricing" className="mt-0">
-            <CallSettings creatorId="current-user-id" />
+            {user?.id ? (
+              <CallSettings creatorId={user.id} />
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Please sign in to access pricing settings.</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="files" className="mt-0">
