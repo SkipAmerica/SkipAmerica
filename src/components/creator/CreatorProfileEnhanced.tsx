@@ -14,12 +14,14 @@ import {
   Youtube,
   Twitter,
   Instagram,
-  ExternalLink
+  ExternalLink,
+  Settings
 } from 'lucide-react';
 import { ReliabilityScore } from '@/components/appointments/ReliabilityScore';
 import { SocialVerification } from '@/components/social/SocialVerification';
 import { CreatorContent } from '@/components/social/CreatorContent';
 import { AppointmentBooking } from '@/components/appointments/AppointmentBooking';
+import { CallSettings } from '@/components/creator/CallSettings';
 
 interface CreatorProfileProps {
   creator: {
@@ -112,10 +114,11 @@ export function CreatorProfileEnhanced({ creator, isOwnProfile = false }: Creato
 
       {/* Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-4 w-full max-w-md">
+        <TabsList className="grid grid-cols-5 w-full max-w-lg">
           <TabsTrigger value="about">About</TabsTrigger>
           <TabsTrigger value="content">Latest Content</TabsTrigger>
           <TabsTrigger value="booking">Book Session</TabsTrigger>
+          {isOwnProfile && <TabsTrigger value="settings">Call Settings</TabsTrigger>}
           {isOwnProfile && <TabsTrigger value="verification">Verification</TabsTrigger>}
         </TabsList>
 
@@ -199,6 +202,12 @@ export function CreatorProfileEnhanced({ creator, isOwnProfile = false }: Creato
             </Card>
           </div>
         </TabsContent>
+
+        {isOwnProfile && (
+          <TabsContent value="settings" className="mt-6">
+            <CallSettings creatorId={creator.id} />
+          </TabsContent>
+        )}
 
         {isOwnProfile && (
           <TabsContent value="verification" className="mt-6">

@@ -27,9 +27,11 @@ import {
 
 interface VideoCallInterfaceProps {
   onBack: () => void;
+  maxDuration?: number; // in minutes
+  callRate?: number; // per minute
 }
 
-const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
+const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: VideoCallInterfaceProps) => {
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isMicOn, setIsMicOn] = useState(true);
   const [message, setMessage] = useState("");
@@ -68,16 +70,29 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
     { id: 5, sender: "Emma Wilson", message: "Absolutely! Let's start with nutrition basics...", timestamp: "2:03 PM" }
   ];
 
-  // Simulate timer
+  // Simulate timer with max duration check
   useEffect(() => {
     const timer = setInterval(() => {
-      setCallDuration(prev => prev + 1);
-      // $5/min split 4 ways = $1.25 per person per minute
-      setCurrentCost(prev => prev + (5 / 4 / 60)); // Per second cost
+      setCallDuration(prev => {
+        const newDuration = prev + 1;
+        // Check if max duration reached (convert minutes to seconds)
+        if (maxDuration !== undefined && newDuration >= maxDuration * 60) {
+          toast({
+            title: "Call Time Limit Reached",
+            description: `Maximum call duration of ${maxDuration} minutes has been reached.`,
+            variant: "destructive"
+          });
+          // In a real app, this would end the call
+          return newDuration;
+        }
+        return newDuration;
+      });
+      // Use dynamic call rate split by participant count
+      setCurrentCost(prev => prev + (callRate / 4 / 60)); // Per second cost
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [maxDuration, callRate, toast]);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -331,11 +346,11 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
           <div className="flex items-center space-x-6 text-sm">
             <div>
               <span className="text-muted-foreground">Base Rate:</span>
-              <span className="font-semibold ml-2">$5.00/min</span>
+              <span className="font-semibold ml-2">${callRate.toFixed(2)}/min</span>
             </div>
             <div>
               <span className="text-muted-foreground">Split 4 ways:</span>
-              <span className="font-semibold ml-2">$1.25/min each</span>
+              <span className="font-semibold ml-2">${(callRate / 4).toFixed(2)}/min each</span>
             </div>
             <div>
               <span className="text-muted-foreground">Duration:</span>

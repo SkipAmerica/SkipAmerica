@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { CallFlow } from "@/components/call/CallFlow";
 import { 
   ArrowLeft, 
   Video, 
@@ -22,11 +23,12 @@ import {
 
 interface CreatorProfileProps {
   onBack: () => void;
-  onStartCall: () => void;
+  onStartCall?: () => void;
 }
 
 const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showCallFlow, setShowCallFlow] = useState(false);
   
   // Mock creator data
   const creator = {
@@ -40,6 +42,9 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
     bio: "Certified personal trainer helping you reach your fitness goals. 5+ years experience in strength training, nutrition, and mindset coaching.",
     location: "Los Angeles, CA",
     joinedDate: "March 2023",
+    maxCallDuration: 60, // minutes
+    callRate: 5.00, // per minute
+    lobbyMessage: "Welcome! Let me make sure we have a great session together 💪",
     stats: {
       followers: 12500,
       totalCalls: 1847,
@@ -93,6 +98,39 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
       verified: true
     }
   ];
+
+  const handleStartCall = () => {
+    setShowCallFlow(true);
+  };
+
+  const handleEndCall = () => {
+    setShowCallFlow(false);
+  };
+
+  // Mock current user as fan
+  const currentUser = {
+    id: "fan-123",
+    name: "Sarah M.",
+    avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150"
+  };
+
+  if (showCallFlow) {
+    return (
+      <CallFlow
+        creator={{
+          id: "creator-123",
+          name: creator.name,
+          avatar: creator.avatar,
+          maxCallDuration: creator.maxCallDuration,
+          callRate: creator.callRate,
+          lobbyMessage: creator.lobbyMessage
+        }}
+        fan={currentUser}
+        onEndCall={handleEndCall}
+        isCreatorView={false}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -163,7 +201,7 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
                   <Heart className={`h-4 w-4 mr-2 ${isFollowing ? 'fill-current' : ''}`} />
                   {isFollowing ? 'Following' : 'Follow'}
                 </Button>
-                <Button variant="gradient" onClick={onStartCall}>
+                <Button variant="gradient" onClick={handleStartCall}>
                   <Video className="h-4 w-4 mr-2" />
                   Start Call
                 </Button>
@@ -345,7 +383,7 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
                       <div className="font-semibold text-green-800">Available Now</div>
                       <div className="text-sm text-green-600">Ready to take calls</div>
                     </div>
-                    <Button variant="gradient" onClick={onStartCall}>
+                    <Button variant="gradient" onClick={handleStartCall}>
                       Start Call Now
                     </Button>
                   </div>
