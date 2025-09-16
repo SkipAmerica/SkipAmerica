@@ -9,8 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileRepository } from "@/components/creator/FileRepository";
 import { CallSettings } from "@/components/creator/CallSettings";
+import ProfileSettings from "@/components/creator/ProfileSettings";
+import SocialConnections from "@/components/creator/SocialConnections";
+import AvailabilityManager from "@/components/creator/AvailabilityManager";
+import UserStatusHeader from "@/components/creator/UserStatusHeader";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar } from "lucide-react";
 
 interface CreatorDashboardProps {
   onBack: () => void;
@@ -26,20 +30,20 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center space-x-4">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-2xl font-bold">Creator Dashboard</h1>
-          <Badge variant="secondary" className="ml-auto">
-            {isLive ? "LIVE" : "OFFLINE"}
-          </Badge>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center space-x-4 mb-4">
+            <Button variant="ghost" onClick={onBack}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">Creator Dashboard</h1>
+          </div>
+          <UserStatusHeader onStatusToggle={setIsLive} isLive={isLive} />
         </div>
       </header>
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-7 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Dashboard
@@ -47,6 +51,18 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
             <TabsTrigger value="pricing" className="flex items-center gap-2">
               <Sliders className="h-4 w-4" />
               Pricing
+            </TabsTrigger>
+            <TabsTrigger value="profile" className="flex items-center gap-2">
+              <User className="h-4 w-4" />
+              Profile
+            </TabsTrigger>
+            <TabsTrigger value="social" className="flex items-center gap-2">
+              <Link2 className="h-4 w-4" />
+              Social
+            </TabsTrigger>
+            <TabsTrigger value="availability" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Schedule
             </TabsTrigger>
             <TabsTrigger value="files" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
@@ -178,6 +194,18 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                 <p className="text-muted-foreground">Please sign in to access pricing settings.</p>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="profile" className="mt-0">
+            <ProfileSettings />
+          </TabsContent>
+
+          <TabsContent value="social" className="mt-0">
+            <SocialConnections />
+          </TabsContent>
+
+          <TabsContent value="availability" className="mt-0">
+            <AvailabilityManager />
           </TabsContent>
 
           <TabsContent value="files" className="mt-0">
