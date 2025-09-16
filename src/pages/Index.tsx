@@ -92,7 +92,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${user ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <TabsTrigger value="discover" className="flex items-center space-x-2">
               <Zap className="h-4 w-4" />
               <span>Discover</span>
@@ -105,10 +105,12 @@ const Index = () => {
               <TrendingUp className="h-4 w-4" />
               <span>Trending</span>
             </TabsTrigger>
-            <TabsTrigger value="following" className="flex items-center space-x-2">
-              <Users className="h-4 w-4" />
-              <span>Following</span>
-            </TabsTrigger>
+            {user && (
+              <TabsTrigger value="following" className="flex items-center space-x-2">
+                <Users className="h-4 w-4" />
+                <span>Following</span>
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="discover" className="space-y-8">
@@ -300,18 +302,20 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="following">
-            <div className="space-y-6">
-              <div className="text-center py-8">
-                <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mb-2">Following Feed</h3>
-                <p className="text-muted-foreground">
-                  Stay updated with creators you follow
-                </p>
+          {user && (
+            <TabsContent value="following">
+              <div className="space-y-6">
+                <div className="text-center py-8">
+                  <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-xl font-semibold mb-2">Following Feed</h3>
+                  <p className="text-muted-foreground">
+                    Stay updated with creators you follow
+                  </p>
+                </div>
+                <ActivityFeed showOnlyFollowing={true} />
               </div>
-              <ActivityFeed showOnlyFollowing={true} />
-            </div>
-          </TabsContent>
+            </TabsContent>
+          )}
         </Tabs>
       </div>
 
