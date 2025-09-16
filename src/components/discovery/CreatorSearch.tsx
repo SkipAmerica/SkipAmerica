@@ -39,15 +39,16 @@ interface CreatorSearchProps {
 
 const categories = [
   'All Categories',
-  'Beauty & Skincare',
-  'Fashion & Style',
-  'Fitness & Wellness',
-  'Lifestyle & Travel',
-  'Food & Cooking',
-  'Tech & Gaming',
-  'Business & Finance',
-  'Art & Creativity',
-  'Entertainment'
+  'Entertainment & Celebrity',
+  'Business Leaders',
+  'Creative & Art',
+  'Sports & Athletics',
+  'Technology',
+  'Beauty & Fashion',
+  'Health & Wellness',
+  'Finance & Investment',
+  'Education & Experts',
+  'Social Media Influencers'
 ];
 
 const sortOptions = [
@@ -196,7 +197,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search creators by name, expertise, or specialty..."
+              placeholder="Search influential people by name, expertise, or specialty..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -270,7 +271,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
       {/* Results Summary */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Found {filteredCreators.length} creators
+          Found {filteredCreators.length} people
         </p>
         <div className="flex items-center gap-2">
           <Badge variant="secondary">{filteredCreators.filter(c => c.stats?.isOnline).length} online</Badge>
@@ -418,7 +419,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
           <div className="space-y-4">
             <Search className="h-12 w-12 text-muted-foreground mx-auto" />
             <div>
-              <h3 className="text-lg font-semibold">No creators found</h3>
+              <h3 className="text-lg font-semibold">No people found</h3>
               <p className="text-muted-foreground">Try adjusting your search filters</p>
             </div>
             <Button variant="outline" onClick={() => {

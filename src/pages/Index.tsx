@@ -134,10 +134,10 @@ const Index = () => {
                   Live Social Network
                 </Badge>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Connect with Creators in Real-Time
+                  Break Through to Influential People
                 </h1>
                 <p className="text-lg md:text-xl mb-8 opacity-90">
-                  Join live video calls with your favorite creators. Share costs in groups, get instant advice, and build authentic connections.
+                  Connect directly with celebrities, experts, entrepreneurs, and influencers. Skip the barriers and get real access.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   {user ? (
@@ -147,7 +147,7 @@ const Index = () => {
                       onClick={() => setActiveTab("live")}
                     >
                       <Zap className="mr-2 h-4 w-4" />
-                      Explore Live Creators
+                      Explore Live Now
                     </Button>
                   ) : (
                     <>
@@ -165,15 +165,15 @@ const Index = () => {
                         variant="hero-outline"
                         onClick={() => setActiveTab("live")}
                       >
-                        <Zap className="mr-2 h-4 w-4" />
-                        Browse Creators
+                      <Zap className="mr-2 h-4 w-4" />
+                      Browse Talent
                       </Button>
                     </>
                   )}
                 </div>
                 {!user && (
                   <p className="text-sm opacity-75 mt-4">
-                    Join as a fan to connect with creators, or sign up as a creator to start earning.
+                    Connect with the people you've always wanted to meet.
                   </p>
                 )}
               </div>
@@ -182,7 +182,7 @@ const Index = () => {
             {/* Live Creators Preview */}
             <section>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Creators Live Now</h2>
+                <h2 className="text-2xl font-bold">Available Now</h2>
                 <Button variant="outline" onClick={() => setActiveTab("live")}>
                   View All Live
                 </Button>
@@ -195,9 +195,9 @@ const Index = () => {
 
             {/* Features */}
             <section>
-              <h2 className="text-2xl font-bold text-center mb-8">
-                How Skip Works
-              </h2>
+                <h2 className="text-2xl font-bold text-center mb-8">
+                  Break Through Traditional Barriers
+                </h2>
               <div className="grid md:grid-cols-3 gap-6">
                 <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
                   <CardHeader>
@@ -313,9 +313,9 @@ const Index = () => {
             <div className="space-y-6">
               <div className="text-center py-8">
                 <TrendingUp className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mb-2">Trending Creators</h3>
+                <h3 className="text-xl font-semibold mb-2">Trending People</h3>
                 <p className="text-muted-foreground">
-                  Discover the most popular creators and trending conversations
+                  Discover the most influential people and trending conversations
                 </p>
               </div>
               <OnlineCreators 
@@ -332,7 +332,7 @@ const Index = () => {
                   <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-xl font-semibold mb-2">Following Feed</h3>
                   <p className="text-muted-foreground">
-                    Stay updated with creators you follow
+                    Stay updated with people you follow
                   </p>
                 </div>
                 <ActivityFeed showOnlyFollowing={true} />

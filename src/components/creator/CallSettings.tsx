@@ -70,11 +70,9 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
           pricing_mode: tier.pricing_mode as 'manual' | 'market_rate' || 'manual'
         })));
       } else {
-        // Set default pricing tiers if none exist (5-minute blocks)
+        // Set default single pricing tier (simplified approach)
         setPricingTiers([
-          { duration_minutes: 5, price_per_block: 25.00, is_active: true, pricing_mode: 'manual' },
-          { duration_minutes: 10, price_per_block: 45.00, is_active: true, pricing_mode: 'manual' },
-          { duration_minutes: 15, price_per_block: 60.00, is_active: true, pricing_mode: 'manual' }
+          { duration_minutes: 5, price_per_block: 25.00, is_active: true, pricing_mode: 'manual' }
         ]);
       }
     } catch (error) {
@@ -111,9 +109,10 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
   };
 
   const addPricingTier = () => {
+    const nextDuration = Math.max(...pricingTiers.map(t => t.duration_minutes)) + 5;
     setPricingTiers([...pricingTiers, { 
-      duration_minutes: 20, 
-      price_per_block: 80.00, 
+      duration_minutes: nextDuration, 
+      price_per_block: 25.00, 
       is_active: true,
       pricing_mode: 'manual'
     }]);
