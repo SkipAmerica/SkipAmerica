@@ -195,6 +195,51 @@ export type Database = {
           },
         ]
       }
+      call_file_shares: {
+        Row: {
+          call_id: string
+          created_at: string
+          downloaded_at: string | null
+          file_id: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          recipient_id: string
+          sender_id: string
+          shared_at: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          downloaded_at?: string | null
+          file_id?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          recipient_id: string
+          sender_id: string
+          shared_at?: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          downloaded_at?: string | null
+          file_id?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          recipient_id?: string
+          sender_id?: string
+          shared_at?: string
+        }
+        Relationships: []
+      }
       creator_availability: {
         Row: {
           created_at: string
@@ -286,6 +331,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      creator_files: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          is_favorite: boolean | null
+          last_shared: string | null
+          share_count: number | null
+          updated_at: string
+          upload_date: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          is_favorite?: boolean | null
+          last_shared?: string | null
+          share_count?: number | null
+          updated_at?: string
+          upload_date?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          is_favorite?: boolean | null
+          last_shared?: string | null
+          share_count?: number | null
+          updated_at?: string
+          upload_date?: string
+        }
+        Relationships: []
       }
       creator_reliability: {
         Row: {

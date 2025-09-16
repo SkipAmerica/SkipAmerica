@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { useAIModerator } from "@/hooks/useAIModerator";
 import ModerationPanel from "@/components/moderation/ModerationPanel";
+import { FileSharePanel } from "@/components/call/FileSharePanel";
 import { 
   ArrowLeft, 
   Video, 
@@ -24,7 +25,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   Play,
-  X
+  X,
+  Paperclip
 } from "lucide-react";
 
 interface VideoCallInterfaceProps {
@@ -44,6 +46,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   const [pauseReason, setPauseReason] = useState('');
   const [lastPausedTranscript, setLastPausedTranscript] = useState<string | null>(null);
   const [showModerationPanel, setShowModerationPanel] = useState(false);
+  const [showFilePanel, setShowFilePanel] = useState(false);
   const [recentModerations, setRecentModerations] = useState<any[]>([]);
   
   const { toast } = useToast();
@@ -345,12 +348,30 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 <Shield className="h-4 w-4" />
               </Button>
               
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => setShowFilePanel(!showFilePanel)}
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              
               <Button variant="secondary" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
+
+        {/* File Sharing Panel */}
+        {showFilePanel && (
+          <FileSharePanel
+            callId={callId}
+            currentUserId={userId}
+            recipientId="recipient-123" // In real app, this would be dynamic
+            isCreator={true} // In real app, this would be determined by user role
+          />
+        )}
 
         {/* Moderation Panel */}
         {showModerationPanel && (
@@ -369,88 +390,90 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
         )}
 
         {/* Chat Sidebar */}
-        <div className="w-80 border-l bg-card flex flex-col">
-          <div className="p-4 border-b">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-semibold">Live Chat</h3>
-              <div className="flex items-center space-x-2">
-                <Badge variant={chatPaused ? "destructive" : "secondary"}>
-                  {chatPaused ? <Shield className="h-3 w-3 mr-1" /> : null}
-                  {chatPaused ? "Paused" : "Active"}
-                </Badge>
-              </div>
-            </div>
-            {chatPaused && (
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
-                <p className="text-xs text-destructive">
-                  Chat paused due to inappropriate content detection
-                </p>
-              </div>
-            )}
-          </div>
-
-          <ScrollArea className="flex-1 p-4">
-            <div className="space-y-3">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`${msg.isSystem ? 'text-center' : ''}`}>
-                  {msg.isSystem ? (
-                    <div className="text-xs text-muted-foreground bg-muted p-2 rounded-lg">
-                      {msg.message}
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex items-center space-x-2 mb-1">
-                        <span className="text-sm font-semibold">{msg.sender}</span>
-                        <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
-                      </div>
-                      <p className="text-sm bg-muted p-2 rounded-lg">{msg.message}</p>
-                    </div>
-                  )}
+        {!showFilePanel && !showModerationPanel && (
+          <div className="w-80 border-l bg-card flex flex-col">
+            <div className="p-4 border-b">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold">Live Chat</h3>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={chatPaused ? "destructive" : "secondary"}>
+                    {chatPaused ? <Shield className="h-3 w-3 mr-1" /> : null}
+                    {chatPaused ? "Paused" : "Active"}
+                  </Badge>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
-
-          <div className="p-4 border-t">
-            <div className="flex space-x-2">
-              <Input
-                placeholder={chatPaused ? "Chat is paused..." : "Type a message..."}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                disabled={chatPaused}
-              />
-              <Button 
-                size="sm" 
-                onClick={handleSendMessage}
-                disabled={chatPaused || !message.trim()}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-between mt-2 text-xs">
-              <span className="text-muted-foreground">
-                {isModerationEnabled ? (
-                  <>
-                    <ShieldCheck className="h-3 w-3 inline mr-1" />
-                    AI moderation active
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className="h-3 w-3 inline mr-1" />
-                    Moderation disabled
-                  </>
-                )}
-              </span>
-              {voiceRecording.isRecording && (
-                <span className="text-blue-600">
-                  <Mic className="h-3 w-3 inline mr-1" />
-                  Voice monitoring
-                </span>
+              </div>
+              {chatPaused && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                  <p className="text-xs text-destructive">
+                    Chat paused due to inappropriate content detection
+                  </p>
+                </div>
               )}
             </div>
+
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`${msg.isSystem ? 'text-center' : ''}`}>
+                    {msg.isSystem ? (
+                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded-lg">
+                        {msg.message}
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm font-semibold">{msg.sender}</span>
+                          <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                        </div>
+                        <p className="text-sm bg-muted p-2 rounded-lg">{msg.message}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            <div className="p-4 border-t">
+              <div className="flex space-x-2">
+                <Input
+                  placeholder={chatPaused ? "Chat is paused..." : "Type a message..."}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  disabled={chatPaused}
+                />
+                <Button 
+                  size="sm" 
+                  onClick={handleSendMessage}
+                  disabled={chatPaused || !message.trim()}
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex items-center justify-between mt-2 text-xs">
+                <span className="text-muted-foreground">
+                  {isModerationEnabled ? (
+                    <>
+                      <ShieldCheck className="h-3 w-3 inline mr-1" />
+                      AI moderation active
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-3 w-3 inline mr-1" />
+                      Moderation disabled
+                    </>
+                  )}
+                </span>
+                {voiceRecording.isRecording && (
+                  <span className="text-blue-600">
+                    <Mic className="h-3 w-3 inline mr-1" />
+                    Voice monitoring
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Cost Breakdown Footer */}
