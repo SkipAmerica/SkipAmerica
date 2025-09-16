@@ -17,6 +17,7 @@ import RatingSystem from "@/components/RatingSystem";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Index = () => {
+  console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("home");
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
