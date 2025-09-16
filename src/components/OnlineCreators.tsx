@@ -4,11 +4,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Video, Star, Users, Search, Filter, Zap } from "lucide-react";
+import { Video, Star, Users, Search, Filter, Zap, Sparkles } from "lucide-react";
 
 interface OnlineCreatorsProps {
   onCreatorSelect: (creatorId: string) => void;
-  onStartCall: (creatorId: string) => void;
+  onStartCall: (creatorId: string, callType?: 'standard' | 'speed_greet') => void;
 }
 
 const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) => {
@@ -24,6 +24,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
       rating: 4.9,
       totalRatings: 523,
       pricePerMinute: 5.00,
+      speedGreetPrice: 15.00,
       currentViewers: 12,
       responseTime: "< 30s",
       specialties: ["Personal Training", "Nutrition"],
@@ -41,6 +42,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
       rating: 4.8,
       totalRatings: 391,
       pricePerMinute: 8.00,
+      speedGreetPrice: 24.00,
       currentViewers: 8,
       responseTime: "< 1m",
       specialties: ["App Development", "Tech Career"],
@@ -58,6 +60,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
       rating: 4.9,
       totalRatings: 721,
       pricePerMinute: 12.00,
+      speedGreetPrice: 36.00,
       currentViewers: 15,
       responseTime: "< 45s", 
       specialties: ["Career Growth", "Mindfulness"],
@@ -75,6 +78,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
       rating: 4.7,
       totalRatings: 289,
       pricePerMinute: 6.00,
+      speedGreetPrice: 18.00,
       currentViewers: 5,
       responseTime: "< 2m",
       specialties: ["Guitar Lessons", "Music Production"],
@@ -238,10 +242,28 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
               {/* Actions */}
               <div className="space-y-2">
                 <Button 
+                  variant="hero"
+                  className="w-full relative overflow-hidden group/greet"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onStartCall(creator.id, 'speed_greet');
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/20 via-orange-400/20 to-red-400/20 animate-pulse"></div>
+                  <div className="relative flex items-center justify-center w-full">
+                    <Sparkles className="h-4 w-4 mr-2 text-yellow-300 animate-pulse" />
+                    <span className="font-bold">Speed Greet - ${creator.speedGreetPrice}</span>
+                    <div className="ml-2 text-xs bg-white/20 px-2 py-1 rounded-full">
+                      2 min
+                    </div>
+                  </div>
+                </Button>
+                
+                <Button 
                   className="w-full bg-gradient-primary hover:bg-gradient-secondary group-hover:scale-105 transition-transform"
                   onClick={(e) => {
                     e.stopPropagation();
-                    onStartCall(creator.id);
+                    onStartCall(creator.id, 'standard');
                   }}
                 >
                   <Video className="h-4 w-4 mr-2" />
