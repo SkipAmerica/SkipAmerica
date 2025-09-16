@@ -81,9 +81,15 @@ const Index = () => {
             {user ? (
               <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
             ) : (
-              <Button variant="gradient" onClick={() => navigate("/auth")}>
-                Sign In
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+                <Button variant="gradient" onClick={() => navigate("/auth")}>
+                  <Users className="h-4 w-4 mr-1" />
+                  Join
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -130,7 +136,7 @@ const Index = () => {
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
                   Connect with Creators in Real-Time
                 </h1>
-                <p className="text-lg md:text-xl mb-6 opacity-90">
+                <p className="text-lg md:text-xl mb-8 opacity-90">
                   Join live video calls with your favorite creators. Share costs in groups, get instant advice, and build authentic connections.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
@@ -148,10 +154,11 @@ const Index = () => {
                       <Button 
                         size="lg" 
                         variant="hero"
+                        className="text-lg px-8 py-4"
                         onClick={() => navigate("/auth")}
                       >
-                        <Users className="mr-2 h-4 w-4" />
-                        Join Skip Now
+                        <Users className="mr-2 h-5 w-5" />
+                        Join Skip - It's Free!
                       </Button>
                       <Button 
                         size="lg" 
@@ -165,6 +172,11 @@ const Index = () => {
                     </>
                   )}
                 </div>
+                {!user && (
+                  <p className="text-sm opacity-75 mt-4">
+                    Join as a fan to connect with creators, or sign up as a creator to start earning.
+                  </p>
+                )}
               </div>
             </section>
 
