@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { offlineModerateText } from '@/lib/moderation/offlineModeration';
 
 export interface ModerationResult {
   flagged: boolean;
@@ -18,6 +19,7 @@ export interface VoiceRecording {
 
 export const useAIModerator = (callId: string, userId: string) => {
   const [isEnabled, setIsEnabled] = useState(true);
+  const [isOfflineDemo, setIsOfflineDemo] = useState(false);
   const [voiceRecording, setVoiceRecording] = useState<VoiceRecording>({
     isRecording: false,
     audioLevel: 0,
@@ -29,11 +31,17 @@ export const useAIModerator = (callId: string, userId: string) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const speechRecognitionRef = useRef<any>(null);
   
   // Moderate text content
   const moderateText = useCallback(async (content: string): Promise<ModerationResult> => {
     if (!isEnabled || !content.trim()) {
       return { flagged: false, action: 'allow' };
+    }
+
+    // Offline demo mode: use local filter
+    if (isOfflineDemo) {
+      return offlineModerateText(content);
     }
 
     try {
@@ -46,22 +54,67 @@ export const useAIModerator = (callId: string, userId: string) => {
       });
 
       if (error) throw error;
-      
       return data;
     } catch (error) {
       console.error('Text moderation failed:', error);
+      setIsOfflineDemo(true);
       toast({
-        title: "Moderation Error", 
-        description: "Content filtering temporarily unavailable",
-        variant: "destructive"
+        title: 'Switched to Demo Moderation',
+        description: 'Using offline keyword filtering while AI is unavailable.',
       });
-      return { flagged: false, action: 'allow' };
+      return offlineModerateText(content);
     }
-  }, [isEnabled, userId, callId, toast]);
+  }, [isEnabled, isOfflineDemo, userId, callId, toast]);
 
   // Start voice monitoring
   const startVoiceMonitoring = useCallback(async () => {
     if (!isEnabled) return;
+
+    const SpeechRecognition: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    const startSpeech = () => {
+      if (!SpeechRecognition) return false;
+      const rec = new SpeechRecognition();
+      speechRecognitionRef.current = rec;
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+
+      rec.onresult = (e: any) => {
+        let combined = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const chunk = e.results[i][0].transcript as string;
+          combined += chunk;
+          if (e.results[i].isFinal) {
+            const moderation = offlineModerateText(combined);
+            setVoiceRecording(prev => ({ ...prev, transcript: combined, lastModeration: moderation }));
+            if (moderation.action === 'block') {
+              toast({ title: 'Content Blocked', description: moderation.reason, variant: 'destructive' });
+            } else if (moderation.action === 'warn') {
+              toast({ title: 'Content Warning', description: moderation.reason });
+            }
+            combined = '';
+          } else {
+            setVoiceRecording(prev => ({ ...prev, transcript: combined }));
+          }
+        }
+      };
+      rec.onerror = (err: any) => {
+        console.error('Speech recognition error:', err);
+      };
+      rec.onstart = () => setVoiceRecording(prev => ({ ...prev, isRecording: true }));
+      rec.onend = () => setVoiceRecording(prev => ({ ...prev, isRecording: false }));
+      rec.start();
+      setIsOfflineDemo(true);
+      toast({ title: 'Demo Moderation', description: 'Using offline speech recognition.' });
+      return true;
+    };
+
+    // Use offline speech recognition if demo mode is active and available
+    if (isOfflineDemo && SpeechRecognition) {
+      startSpeech();
+      return;
+    }
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -85,94 +138,57 @@ export const useAIModerator = (callId: string, userId: string) => {
       // Monitor audio levels
       const updateAudioLevel = () => {
         if (!analyserRef.current) return;
-        
         const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
         analyserRef.current.getByteFrequencyData(dataArray);
         const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        
         setVoiceRecording(prev => ({ ...prev, audioLevel: average / 255 }));
-        
-        if (voiceRecording.isRecording) {
-          requestAnimationFrame(updateAudioLevel);
-        }
+        if (voiceRecording.isRecording) requestAnimationFrame(updateAudioLevel);
       };
 
       // Set up recording for transcription
-      mediaRecorderRef.current = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
       let audioChunks: BlobPart[] = [];
-
-      mediaRecorderRef.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunks.push(event.data);
-        }
-      };
-
+      mediaRecorderRef.current.ondataavailable = (event) => { if (event.data.size > 0) audioChunks.push(event.data); };
       mediaRecorderRef.current.onstop = async () => {
         if (audioChunks.length === 0) return;
-        
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         audioChunks = [];
-        
-        // Convert to base64 for API
         const reader = new FileReader();
         reader.onload = async () => {
           const base64Audio = (reader.result as string).split(',')[1];
-          
           try {
             const { data, error } = await supabase.functions.invoke('voice-transcription', {
-              body: {
-                audioData: base64Audio,
-                format: 'webm',
-                userId,
-                callId
-              }
+              body: { audioData: base64Audio, format: 'webm', userId, callId }
             });
-
             if (error) throw error;
-
-            setVoiceRecording(prev => ({
-              ...prev,
-              transcript: data.transcript,
-              lastModeration: data.moderation
-            }));
-
-            // Handle moderation action
+            setVoiceRecording(prev => ({ ...prev, transcript: data.transcript, lastModeration: data.moderation }));
             if (data.moderation.action === 'block') {
-              toast({
-                title: "Content Blocked",
-                description: data.moderation.reason || "Voice content violated community guidelines",
-                variant: "destructive"
-              });
+              toast({ title: 'Content Blocked', description: data.moderation.reason || 'Voice content violated community guidelines', variant: 'destructive' });
             } else if (data.moderation.action === 'warn') {
-              toast({
-                title: "Content Warning",
-                description: data.moderation.reason || "Please keep content appropriate",
-              });
+              toast({ title: 'Content Warning', description: data.moderation.reason || 'Please keep content appropriate' });
             }
-
           } catch (error) {
             console.error('Voice transcription failed:', error);
+            // Fallback to offline speech recognition if available
+            if (SpeechRecognition) {
+              startSpeech();
+            } else {
+              setIsOfflineDemo(true);
+              toast({ title: 'Demo Moderation', description: 'Voice transcription unavailable; offline text filter active.' });
+            }
           }
         };
-        
         reader.readAsDataURL(audioBlob);
       };
 
       setVoiceRecording(prev => ({ ...prev, isRecording: true }));
       updateAudioLevel();
 
-      // Record in 5-second chunks for real-time processing
       const recordInChunks = () => {
-        if (mediaRecorderRef.current?.state === 'recording') {
-          mediaRecorderRef.current.stop();
-        }
-        
+        if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop();
         if (mediaRecorderRef.current?.state === 'inactive' && voiceRecording.isRecording) {
           mediaRecorderRef.current.start();
-          setTimeout(recordInChunks, 5000); // 5-second chunks
+          setTimeout(recordInChunks, 5000);
         }
       };
 
@@ -181,16 +197,21 @@ export const useAIModerator = (callId: string, userId: string) => {
 
     } catch (error) {
       console.error('Failed to start voice monitoring:', error);
-      toast({
-        title: "Microphone Error",
-        description: "Could not access microphone for voice monitoring",
-        variant: "destructive"
-      });
+      if (SpeechRecognition) {
+        startSpeech();
+        return;
+      }
+      toast({ title: 'Microphone Error', description: 'Could not access microphone for voice monitoring', variant: 'destructive' });
     }
-  }, [isEnabled, userId, callId, toast, voiceRecording.isRecording]);
+  }, [isEnabled, isOfflineDemo, userId, callId, toast, voiceRecording.isRecording]);
 
   // Stop voice monitoring
   const stopVoiceMonitoring = useCallback(() => {
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch {}
+      speechRecognitionRef.current = null;
+    }
+
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
     }
