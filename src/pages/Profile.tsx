@@ -6,6 +6,8 @@ import { CreatorProfileEnhanced } from '@/components/creator/CreatorProfileEnhan
 import { AgencyDashboard } from '@/components/agency/AgencyDashboard';
 import { GroupCallPricing } from '@/components/calls/GroupCallPricing';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Video } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -55,40 +57,125 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading profile...</div>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => window.location.href = '/'}
+                className="flex items-center space-x-2"
+              >
+                <Video className="h-6 w-6 text-primary" />
+                <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
+              </Button>
+              <div className="text-lg font-semibold">Profile</div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" onClick={() => window.location.href = '/'}>
+                Home
+              </Button>
+              <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
+                Feed
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-lg">Loading profile...</div>
+        </div>
       </div>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg text-muted-foreground">Profile not found</div>
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Button 
+                variant="ghost" 
+                onClick={() => window.location.href = '/'}
+                className="flex items-center space-x-2"
+              >
+                <Video className="h-6 w-6 text-primary" />
+                <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
+              </Button>
+              <div className="text-lg font-semibold">Profile</div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" onClick={() => window.location.href = '/'}>
+                Home
+              </Button>
+              <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
+                Feed
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-lg text-muted-foreground">Profile not found</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
-      {profile.account_type === 'agency' && isOwnProfile ? (
-        <AgencyDashboard />
-      ) : (
-        <div className="space-y-6">
-          <CreatorProfileEnhanced 
-            creator={profile} 
-            isOwnProfile={isOwnProfile} 
-          />
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-4">
+            <Button 
+              variant="ghost" 
+              onClick={() => window.location.href = '/'}
+              className="flex items-center space-x-2"
+            >
+              <Video className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
+            </Button>
+            <div className="text-lg font-semibold">Profile</div>
+          </div>
           
-          {profile.account_type === 'creator' && (
-            <GroupCallPricing
-              creatorId={profile.id}
-              basePrice={85} // This would come from creator pricing settings
-              isCreator={isOwnProfile}
-            />
-          )}
+          <div className="flex items-center space-x-4">
+            <Button variant="outline" onClick={() => window.location.href = '/'}>
+              Home
+            </Button>
+            <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
+              Feed
+            </Button>
+          </div>
         </div>
-      )}
+      </header>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-6">
+        {profile.account_type === 'agency' && isOwnProfile ? (
+          <AgencyDashboard />
+        ) : (
+          <div className="space-y-6">
+            <CreatorProfileEnhanced 
+              creator={profile} 
+              isOwnProfile={isOwnProfile} 
+            />
+            
+            {profile.account_type === 'creator' && (
+              <GroupCallPricing
+                creatorId={profile.id}
+                basePrice={85} // This would come from creator pricing settings
+                isCreator={isOwnProfile}
+              />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
