@@ -131,7 +131,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   };
 
   return (
-    <div className="h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col privacy-protected">
       {/* Header */}
       <header className="border-b bg-card p-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -174,6 +174,10 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
         <div className="flex-1 bg-muted/20 relative">
           {/* Main Video */}
           <div className="absolute inset-4 bg-gradient-primary rounded-lg flex items-center justify-center">
+            {/* Watermark */}
+            <div className="absolute top-2 left-2 bg-black/20 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+              @Sarah M. • Live Call
+            </div>
             <div className="text-center text-primary-foreground">
               <Avatar className="h-24 w-24 mx-auto mb-4">
                 <AvatarFallback className="bg-primary-foreground text-primary text-2xl">
@@ -220,7 +224,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 {isVideoOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
               </Button>
               
-              <Button variant="destructive" size="sm">
+              <Button variant="destructive" size="sm" onClick={onBack}>
                 <Phone className="h-4 w-4" />
               </Button>
               

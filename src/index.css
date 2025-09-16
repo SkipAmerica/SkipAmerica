@@ -116,3 +116,29 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Privacy Protection for Video Calls */
+.privacy-protected {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent screenshots on mobile browsers */
+@media screen and (max-width: 768px) {
+  .privacy-protected {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+  }
+  
+  /* Additional mobile protection */
+  .privacy-protected * {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
