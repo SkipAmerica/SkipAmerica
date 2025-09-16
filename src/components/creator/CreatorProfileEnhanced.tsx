@@ -15,7 +15,8 @@ import {
   Twitter,
   Instagram,
   ExternalLink,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import { ReliabilityScore } from '@/components/appointments/ReliabilityScore';
 import { SocialVerification } from '@/components/social/SocialVerification';
@@ -75,6 +76,10 @@ export function CreatorProfileEnhanced({ creator, isOwnProfile = false }: Creato
                     Creator
                   </Badge>
                 )}
+                <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  AI Market Rate
+                </Badge>
               </div>
               
               {creator.bio && (
