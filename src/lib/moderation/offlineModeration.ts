@@ -9,6 +9,8 @@ const CRITICAL_KEYWORDS = [
   "kill",
   "bomb",
   "nazi",
+  "nigger",
+  "gay",
   "slur1",
   "slur2",
 ];
