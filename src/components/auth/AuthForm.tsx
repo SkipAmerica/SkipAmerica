@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuth'
-import { Loader2, Mail, Lock, User, Video } from 'lucide-react'
+import { Loader2, Mail, Lock, User, Video, Users, Crown } from 'lucide-react'
 
 interface AuthFormProps {
   onSuccess?: () => void
@@ -29,6 +30,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     password: '',
     confirmPassword: '',
     fullName: '',
+    accountType: 'fan' as 'fan' | 'creator'
   })
 
   const [resetEmail, setResetEmail] = useState('')
@@ -64,7 +66,8 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     const { error } = await signUp(
       signUpData.email,
       signUpData.password,
-      signUpData.fullName
+      signUpData.fullName,
+      signUpData.accountType
     )
     
     if (!error) {
@@ -288,6 +291,38 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                     minLength={6}
                   />
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label>I want to join as:</Label>
+                <RadioGroup 
+                  value={signUpData.accountType} 
+                  onValueChange={(value: 'fan' | 'creator') => 
+                    setSignUpData(prev => ({ ...prev, accountType: value }))
+                  }
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="fan" id="fan" />
+                    <Label htmlFor="fan" className="flex items-center space-x-2 cursor-pointer flex-1">
+                      <Users className="h-4 w-4 text-primary" />
+                      <div>
+                        <div className="font-medium">Fan</div>
+                        <div className="text-xs text-muted-foreground">Connect with creators</div>
+                      </div>
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-accent/50 transition-colors">
+                    <RadioGroupItem value="creator" id="creator" />
+                    <Label htmlFor="creator" className="flex items-center space-x-2 cursor-pointer flex-1">
+                      <Crown className="h-4 w-4 text-primary" />
+                      <div>
+                        <div className="font-medium">Creator</div>
+                        <div className="text-xs text-muted-foreground">Share your expertise</div>
+                      </div>
+                    </Label>
+                  </div>
+                </RadioGroup>
               </div>
               
               {signUpData.password !== signUpData.confirmPassword && signUpData.confirmPassword && (
