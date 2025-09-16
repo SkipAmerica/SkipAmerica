@@ -13,101 +13,60 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Create Supabase client using the anon key for user authentication.
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+  );
+
   try {
-    const { creator_id, duration_minutes } = await req.json();
-
-    if (!creator_id || !duration_minutes) {
-      throw new Error("Creator ID and duration are required");
-    }
-
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
-
-    // Get authenticated user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      throw new Error("No authorization header provided");
-    }
-
+    // Retrieve authenticated user
+    const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !userData.user?.email) {
-      throw new Error("User not authenticated");
-    }
+    const { data } = await supabaseClient.auth.getUser(token);
+    const user = data.user;
+    if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    // Get creator pricing for the specified duration
-    const { data: pricingData, error: pricingError } = await supabaseClient
-      .from('creator_call_pricing')
-      .select('*')
-      .eq('creator_id', creator_id)
-      .eq('duration_minutes', duration_minutes)
-      .eq('is_active', true)
-      .single();
-
-    if (pricingError || !pricingData) {
-      throw new Error("Pricing not found for this creator and duration");
-    }
-
-    // Get creator profile for product name
-    const { data: creatorProfile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('full_name')
-      .eq('id', creator_id)
-      .single();
-
-    if (profileError || !creatorProfile) {
-      throw new Error("Creator profile not found");
-    }
+    const { creatorId, duration, scheduledTime, amount } = await req.json();
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Check if customer exists
-    const customers = await stripe.customers.list({ 
-      email: userData.user.email, 
-      limit: 1 
-    });
-    
+    // Check if a Stripe customer record exists for this user
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
 
-    // Create checkout session with dynamic pricing
+    // For now, we'll create a simple payment session
+    // In a real app, you'd create a price in Stripe for each creator's rates
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : userData.user.email,
+      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: `${duration_minutes}-Minute Call with ${creatorProfile.full_name}`,
-              description: `Video call session with ${creatorProfile.full_name}`,
-              metadata: {
-                creator_id: creator_id,
-                duration_minutes: duration_minutes.toString(),
-                fan_id: userData.user.id
-              }
+              name: `Video Call Session`,
+              description: `${duration} minute session`,
             },
-            unit_amount: Math.round(pricingData.price_per_block * 100), // Convert to cents
+            unit_amount: Math.round(amount * 100), // Convert to cents
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/call-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.get("origin")}/`,
       metadata: {
-        creator_id: creator_id,
-        duration_minutes: duration_minutes.toString(),
-        fan_id: userData.user.id,
-        call_type: 'time_block_purchase'
+        creator_id: creatorId,
+        duration: duration.toString(),
+        scheduled_time: scheduledTime,
+        user_id: user.id
       }
     });
 
@@ -115,12 +74,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
-    console.error("Error creating checkout session:", error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? error.message : "Unknown error occurred" 
-    }), {
+    console.error('Error creating checkout session:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

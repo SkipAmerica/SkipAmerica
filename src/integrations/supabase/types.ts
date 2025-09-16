@@ -135,6 +135,48 @@ export type Database = {
           },
         ]
       }
+      appointment_waitlist: {
+        Row: {
+          created_at: string
+          creator_id: string
+          duration_minutes: number
+          fan_id: string
+          id: string
+          notes: string | null
+          notified_at: string | null
+          position: number
+          requested_date: string
+          requested_time: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          duration_minutes?: number
+          fan_id: string
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          position?: number
+          requested_date: string
+          requested_time: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          duration_minutes?: number
+          fan_id?: string
+          id?: string
+          notes?: string | null
+          notified_at?: string | null
+          position?: number
+          requested_date?: string
+          requested_time?: string
+          status?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           amount: number
@@ -655,6 +697,36 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          message_type: string
+          read_at: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          read_at?: string | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          read_at?: string | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null
@@ -784,6 +856,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      virtual_gifts: {
+        Row: {
+          amount: number
+          created_at: string
+          gift_type: string
+          id: string
+          message: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          gift_type: string
+          id?: string
+          message?: string | null
+          recipient_id: string
+          sender_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          gift_type?: string
+          id?: string
+          message?: string | null
+          recipient_id?: string
+          sender_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {
