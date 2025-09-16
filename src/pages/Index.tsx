@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
 import VideoCallInterface from "@/components/VideoCallInterface";
@@ -17,6 +20,8 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Handle different views
   if (activeTab === "creator-dashboard") {
@@ -54,15 +59,21 @@ const Index = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <Bell className="h-4 w-4" />
-            </Button>
+            {user && (
+              <Button variant="ghost" size="sm">
+                <Bell className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
               Creator Hub
             </Button>
-            <Button variant="gradient">
-              Sign In
-            </Button>
+            {user ? (
+              <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
+            ) : (
+              <Button variant="gradient" onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </header>
