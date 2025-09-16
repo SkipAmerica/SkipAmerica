@@ -240,6 +240,62 @@ export type Database = {
         }
         Relationships: []
       }
+      call_performance_metrics: {
+        Row: {
+          avg_call_duration: number | null
+          avg_wait_time: number | null
+          caller_velocity: number | null
+          conversion_rate: number | null
+          created_at: string | null
+          creator_id: string
+          id: string
+          period_end: string
+          period_start: string
+          price_sensitivity_score: number | null
+          repeat_caller_rate: number | null
+          total_calls: number | null
+          total_revenue: number | null
+        }
+        Insert: {
+          avg_call_duration?: number | null
+          avg_wait_time?: number | null
+          caller_velocity?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          period_end: string
+          period_start: string
+          price_sensitivity_score?: number | null
+          repeat_caller_rate?: number | null
+          total_calls?: number | null
+          total_revenue?: number | null
+        }
+        Update: {
+          avg_call_duration?: number | null
+          avg_wait_time?: number | null
+          caller_velocity?: number | null
+          conversion_rate?: number | null
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          period_end?: string
+          period_start?: string
+          price_sensitivity_score?: number | null
+          repeat_caller_rate?: number | null
+          total_calls?: number | null
+          total_revenue?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_performance_metrics_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_availability: {
         Row: {
           created_at: string
@@ -281,6 +337,7 @@ export type Database = {
           id: string
           is_active: boolean
           price_per_block: number
+          pricing_mode: string | null
           updated_at: string
         }
         Insert: {
@@ -290,6 +347,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           price_per_block: number
+          pricing_mode?: string | null
           updated_at?: string
         }
         Update: {
@@ -299,6 +357,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           price_per_block?: number
+          pricing_mode?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -410,6 +469,103 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_market_analysis: {
+        Row: {
+          competitor_analysis: Json | null
+          confidence_score: number | null
+          created_at: string | null
+          creator_id: string
+          id: string
+          last_updated: string | null
+          market_position: string | null
+          pricing_factors: Json | null
+          suggested_price_per_minute: number
+        }
+        Insert: {
+          competitor_analysis?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          last_updated?: string | null
+          market_position?: string | null
+          pricing_factors?: Json | null
+          suggested_price_per_minute: number
+        }
+        Update: {
+          competitor_analysis?: Json | null
+          confidence_score?: number | null
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          last_updated?: string | null
+          market_position?: string | null
+          pricing_factors?: Json | null
+          suggested_price_per_minute?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_market_analysis_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_press_coverage: {
+        Row: {
+          article_content: string | null
+          article_url: string
+          created_at: string | null
+          creator_id: string
+          id: string
+          impact_score: number | null
+          mentions_count: number | null
+          publication: string | null
+          published_date: string | null
+          relevance_score: number | null
+          sentiment_score: number | null
+          title: string | null
+        }
+        Insert: {
+          article_content?: string | null
+          article_url: string
+          created_at?: string | null
+          creator_id: string
+          id?: string
+          impact_score?: number | null
+          mentions_count?: number | null
+          publication?: string | null
+          published_date?: string | null
+          relevance_score?: number | null
+          sentiment_score?: number | null
+          title?: string | null
+        }
+        Update: {
+          article_content?: string | null
+          article_url?: string
+          created_at?: string | null
+          creator_id?: string
+          id?: string
+          impact_score?: number | null
+          mentions_count?: number | null
+          publication?: string | null
+          published_date?: string | null
+          relevance_score?: number | null
+          sentiment_score?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_press_coverage_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_reliability: {
         Row: {
           cancelled_appointments: number
@@ -439,6 +595,65 @@ export type Database = {
           total_appointments?: number
         }
         Relationships: []
+      }
+      creator_social_analysis: {
+        Row: {
+          account_age_months: number | null
+          audience_quality_score: number | null
+          avg_comments_per_post: number | null
+          avg_likes_per_post: number | null
+          created_at: string | null
+          creator_id: string
+          engagement_rate: number | null
+          follower_count: number | null
+          id: string
+          influence_score: number | null
+          last_analyzed: string | null
+          platform: string
+          posting_frequency: number | null
+          verified_status: boolean | null
+        }
+        Insert: {
+          account_age_months?: number | null
+          audience_quality_score?: number | null
+          avg_comments_per_post?: number | null
+          avg_likes_per_post?: number | null
+          created_at?: string | null
+          creator_id: string
+          engagement_rate?: number | null
+          follower_count?: number | null
+          id?: string
+          influence_score?: number | null
+          last_analyzed?: string | null
+          platform: string
+          posting_frequency?: number | null
+          verified_status?: boolean | null
+        }
+        Update: {
+          account_age_months?: number | null
+          audience_quality_score?: number | null
+          avg_comments_per_post?: number | null
+          avg_likes_per_post?: number | null
+          created_at?: string | null
+          creator_id?: string
+          engagement_rate?: number | null
+          follower_count?: number | null
+          id?: string
+          influence_score?: number | null
+          last_analyzed?: string | null
+          platform?: string
+          posting_frequency?: number | null
+          verified_status?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_social_analysis_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
