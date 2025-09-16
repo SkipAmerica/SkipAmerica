@@ -14,6 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      agencies: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string
+          subscription_end_date: string | null
+          subscription_status: string | null
+          updated_at: string
+          yearly_fee: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id: string
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+          yearly_fee?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string
+          subscription_end_date?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+          yearly_fee?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agencies_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_creators: {
+        Row: {
+          agency_id: string
+          created_at: string
+          creator_id: string
+          id: string
+          permissions: Json | null
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string
+          creator_id: string
+          id?: string
+          permissions?: Json | null
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string
+          creator_id?: string
+          id?: string
+          permissions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_creators_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_creators_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_messages: {
         Row: {
           appointment_id: string
@@ -145,6 +228,65 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_content: {
+        Row: {
+          comment_count: number | null
+          content_type: string
+          created_at: string
+          description: string | null
+          id: string
+          like_count: number | null
+          media_url: string | null
+          metadata: Json | null
+          platform_post_id: string
+          published_at: string | null
+          social_account_id: string
+          thumbnail_url: string | null
+          title: string | null
+          view_count: number | null
+        }
+        Insert: {
+          comment_count?: number | null
+          content_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          like_count?: number | null
+          media_url?: string | null
+          metadata?: Json | null
+          platform_post_id: string
+          published_at?: string | null
+          social_account_id: string
+          thumbnail_url?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Update: {
+          comment_count?: number | null
+          content_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          like_count?: number | null
+          media_url?: string | null
+          metadata?: Json | null
+          platform_post_id?: string
+          published_at?: string | null
+          social_account_id?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_content_social_account_id_fkey"
+            columns: ["social_account_id"]
+            isOneToOne: false
+            referencedRelation: "social_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_reliability: {
         Row: {
           cancelled_appointments: number
@@ -177,24 +319,133 @@ export type Database = {
       }
       profiles: {
         Row: {
+          account_type: Database["public"]["Enums"]["account_type"] | null
+          avatar_url: string | null
+          bio: string | null
           created_at: string
           full_name: string | null
           id: string
+          is_verified: boolean | null
           updated_at: string
         }
         Insert: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id: string
+          is_verified?: boolean | null
           updated_at?: string
         }
         Update: {
+          account_type?: Database["public"]["Enums"]["account_type"] | null
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
+          is_verified?: boolean | null
           updated_at?: string
         }
         Relationships: []
+      }
+      social_accounts: {
+        Row: {
+          access_token: string | null
+          account_created_at: string | null
+          created_at: string
+          follower_count: number | null
+          id: string
+          metadata: Json | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          platform_user_id: string
+          platform_username: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Insert: {
+          access_token?: string | null
+          account_created_at?: string | null
+          created_at?: string
+          follower_count?: number | null
+          id?: string
+          metadata?: Json | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          platform_user_id: string
+          platform_username: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Update: {
+          access_token?: string | null
+          account_created_at?: string | null
+          created_at?: string
+          follower_count?: number | null
+          id?: string
+          metadata?: Json | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          platform_user_id?: string
+          platform_username?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_accounts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_feed_preferences: {
+        Row: {
+          created_at: string
+          followed_creators: string[] | null
+          id: string
+          show_creator_posts: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          followed_creators?: string[] | null
+          id?: string
+          show_creator_posts?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          followed_creators?: string[] | null
+          id?: string
+          show_creator_posts?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_feed_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -204,7 +455,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      account_type: "fan" | "creator" | "agency"
+      social_platform:
+        | "twitter"
+        | "instagram"
+        | "youtube"
+        | "tiktok"
+        | "linkedin"
+      verification_status: "pending" | "verified" | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -331,6 +589,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      account_type: ["fan", "creator", "agency"],
+      social_platform: [
+        "twitter",
+        "instagram",
+        "youtube",
+        "tiktok",
+        "linkedin",
+      ],
+      verification_status: ["pending", "verified", "failed"],
+    },
   },
 } as const
