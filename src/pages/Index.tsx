@@ -134,23 +134,35 @@ const Index = () => {
                   Join live video calls with your favorite creators. Share costs in groups, get instant advice, and build authentic connections.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button 
-                    size="lg" 
-                    variant="hero"
-                    onClick={() => setActiveTab("live")}
-                  >
-                    <Zap className="mr-2 h-4 w-4" />
-                    Explore Live Creators
-                  </Button>
-                  {!user && (
+                  {user ? (
                     <Button 
                       size="lg" 
-                      variant="outline" 
-                      className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
-                      onClick={() => navigate("/auth")}
+                      variant="hero"
+                      onClick={() => setActiveTab("live")}
                     >
-                      Join as Creator
+                      <Zap className="mr-2 h-4 w-4" />
+                      Explore Live Creators
                     </Button>
+                  ) : (
+                    <>
+                      <Button 
+                        size="lg" 
+                        variant="hero"
+                        onClick={() => navigate("/auth")}
+                      >
+                        <Users className="mr-2 h-4 w-4" />
+                        Join Skip Now
+                      </Button>
+                      <Button 
+                        size="lg" 
+                        variant="outline" 
+                        className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                        onClick={() => setActiveTab("live")}
+                      >
+                        <Zap className="mr-2 h-4 w-4" />
+                        Browse Creators
+                      </Button>
+                    </>
                   )}
                 </div>
               </div>
