@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_placements: {
+        Row: {
+          click_through_rate: number | null
+          clicks: number | null
+          created_at: string
+          id: string
+          impressions: number | null
+          placement_type: string
+          revenue_generated: number | null
+          sponsor_id: string
+          target_creator_id: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          click_through_rate?: number | null
+          clicks?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          placement_type: string
+          revenue_generated?: number | null
+          sponsor_id: string
+          target_creator_id?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          click_through_rate?: number | null
+          clicks?: number | null
+          created_at?: string
+          id?: string
+          impressions?: number | null
+          placement_type?: string
+          revenue_generated?: number | null
+          sponsor_id?: string
+          target_creator_id?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       agencies: {
         Row: {
           created_at: string
@@ -337,6 +376,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      collaborative_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          host_creator_id: string
+          id: string
+          max_participants: number | null
+          scheduled_at: string
+          status: string
+          title: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_creator_id: string
+          id?: string
+          max_participants?: number | null
+          scheduled_at: string
+          status?: string
+          title: string
+          total_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          host_creator_id?: string
+          id?: string
+          max_participants?: number | null
+          scheduled_at?: string
+          status?: string
+          title?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       creator_availability: {
         Row: {
@@ -697,6 +778,60 @@ export type Database = {
           },
         ]
       }
+      event_collaborators: {
+        Row: {
+          created_at: string
+          creator_id: string
+          event_id: string
+          id: string
+          profit_share_percentage: number
+          role: string | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          event_id: string
+          id?: string
+          profit_share_percentage?: number
+          role?: string | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          event_id?: string
+          id?: string
+          profit_share_percentage?: number
+          role?: string | null
+        }
+        Relationships: []
+      }
+      event_registrations: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          event_id: string
+          id: string
+          registration_status: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          created_at?: string
+          event_id: string
+          id?: string
+          registration_status?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          event_id?: string
+          id?: string
+          registration_status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -821,6 +956,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sponsors: {
+        Row: {
+          ad_budget: number
+          campaign_end: string | null
+          campaign_start: string | null
+          company_name: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          status: string
+          target_audience: Json | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          ad_budget?: number
+          campaign_end?: string | null
+          campaign_start?: string | null
+          company_name: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          ad_budget?: number
+          campaign_end?: string | null
+          campaign_start?: string | null
+          company_name?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          status?: string
+          target_audience?: Json | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
       }
       user_feed_preferences: {
         Row: {
