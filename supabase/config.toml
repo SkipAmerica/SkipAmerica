@@ -12,3 +12,15 @@ verify_jwt = true
 
 [functions.voice-transcription]
 verify_jwt = true
+
+[functions.ai-market-rate-analysis]
+verify_jwt = false
+
+[functions.social-media-scraper]
+verify_jwt = false
+
+[functions.press-coverage-analyzer]
+verify_jwt = false
+
+[functions.performance-tracker]
+verify_jwt = false
