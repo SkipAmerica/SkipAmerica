@@ -42,6 +42,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   const [chatPaused, setChatPaused] = useState(false);
   const [callPaused, setCallPaused] = useState(false);
   const [pauseReason, setPauseReason] = useState('');
+  const [lastPausedTranscript, setLastPausedTranscript] = useState<string | null>(null);
   const [showModerationPanel, setShowModerationPanel] = useState(false);
   const [recentModerations, setRecentModerations] = useState<any[]>([]);
   
@@ -76,13 +77,18 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
 
   // Check for voice moderation pause in VideoCallInterface
   useEffect(() => {
-    if (voiceRecording.lastModeration?.action === 'pause' && !callPaused) {
-      setCallPaused(true);
-      setPauseReason(voiceRecording.lastModeration.reason || 'Voice content violated community guidelines');
-      setIsVideoOn(false);
-      setIsMicOn(false);
+    if (voiceRecording.lastModeration?.action === 'pause') {
+      const transcript = voiceRecording.transcript || '';
+      const isNewPause = transcript && transcript !== lastPausedTranscript;
+      if (isNewPause) {
+        setCallPaused(true);
+        setPauseReason(voiceRecording.lastModeration.reason || 'Voice content violated community guidelines');
+        setIsVideoOn(false);
+        setIsMicOn(false);
+        setLastPausedTranscript(transcript);
+      }
     }
-  }, [voiceRecording.lastModeration, callPaused]);
+  }, [voiceRecording.lastModeration, voiceRecording.transcript, lastPausedTranscript]);
   useEffect(() => {
     const timer = setInterval(() => {
       setCallDuration(prev => {
