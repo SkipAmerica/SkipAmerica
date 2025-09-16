@@ -40,9 +40,16 @@ export function useFileSharing(callId: string, userId: string) {
     try {
       setUploading(true);
       
+      // Check if user is authenticated
+      if (!userId) {
+        throw new Error('You must be logged in to upload files');
+      }
+      
       // Generate unique file path
       const fileExt = file.name.split('.').pop();
       const fileName = `${userId}/${Date.now()}_${file.name}`;
+      
+      console.log('Uploading call file with path:', fileName); // Debug log
       
       // Upload to call-attachments bucket
       const { error: uploadError } = await supabase.storage

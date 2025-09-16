@@ -42,7 +42,7 @@ interface CreatorFile {
 }
 
 export function FileRepository() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [files, setFiles] = useState<CreatorFile[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -62,10 +62,15 @@ export function FileRepository() {
     try {
       setLoading(true);
       
+      if (!user?.id) {
+        console.log('No user ID available for loading files');
+        return;
+      }
+      
       let query = supabase
         .from('creator_files')
         .select('*')
-        .eq('creator_id', user?.id)
+        .eq('creator_id', user.id)
         .order('upload_date', { ascending: false });
 
       if (filter === 'favorites') {
@@ -97,14 +102,21 @@ export function FileRepository() {
     try {
       setUploading(true);
       
+      // Check if user is authenticated
+      if (!user || !user.id) {
+        throw new Error('You must be logged in to upload files');
+      }
+      
       // Check file size (max 20MB)
       if (file.size > 20 * 1024 * 1024) {
         throw new Error('File size must be less than 20MB');
       }
       
-      // Generate unique file path
+      // Generate unique file path with proper user ID
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}/${Date.now()}_${file.name}`;
+      const fileName = `${user.id}/${Date.now()}_${file.name}`;
+      
+      console.log('Uploading file with path:', fileName); // Debug log
       
       // Upload to creator-files bucket
       const { error: uploadError } = await supabase.storage
@@ -117,7 +129,7 @@ export function FileRepository() {
       const { error: saveError } = await supabase
         .from('creator_files')
         .insert({
-          creator_id: user?.id,
+          creator_id: user.id,
           file_name: file.name,
           file_path: fileName,
           file_size: file.size,
@@ -295,12 +307,22 @@ export function FileRepository() {
         <CardTitle className="flex items-center justify-between">
           <span>File Repository</span>
           <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
+            onClick={() => {
+              if (!user || !user.id) {
+                toast({
+                  title: "Authentication Required",
+                  description: "Please log in to upload files",
+                  variant: "destructive"
+                });
+                return;
+              }
+              fileInputRef.current?.click();
+            }}
+            disabled={uploading || !user || authLoading}
             size="sm"
           >
             <Plus className="h-4 w-4 mr-2" />
-            {uploading ? 'Uploading...' : 'Add File'}
+            {authLoading ? 'Loading...' : uploading ? 'Uploading...' : 'Add File'}
           </Button>
         </CardTitle>
         
