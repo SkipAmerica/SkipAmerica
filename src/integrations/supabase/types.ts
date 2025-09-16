@@ -14,7 +14,152 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointment_messages: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          id: string
+          is_date_suggestion: boolean
+          message: string
+          sender_id: string
+          suggested_date: string | null
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          id?: string
+          is_date_suggestion?: boolean
+          message: string
+          sender_id: string
+          suggested_date?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          id?: string
+          is_date_suggestion?: boolean
+          message?: string
+          sender_id?: string
+          suggested_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_messages_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      appointments: {
+        Row: {
+          amount: number
+          cancellation_reason: string | null
+          cancelled_by: string | null
+          created_at: string
+          creator_id: string
+          duration_minutes: number
+          fan_id: string
+          id: string
+          reliability_impact: number | null
+          scheduled_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          creator_id: string
+          duration_minutes?: number
+          fan_id: string
+          id?: string
+          reliability_impact?: number | null
+          scheduled_at: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          cancellation_reason?: string | null
+          cancelled_by?: string | null
+          created_at?: string
+          creator_id?: string
+          duration_minutes?: number
+          fan_id?: string
+          id?: string
+          reliability_impact?: number | null
+          scheduled_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creator_availability: {
+        Row: {
+          created_at: string
+          creator_id: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      creator_reliability: {
+        Row: {
+          cancelled_appointments: number
+          creator_id: string
+          kept_appointments: number
+          last_updated: string
+          reliability_score: number
+          rescheduled_appointments: number
+          total_appointments: number
+        }
+        Insert: {
+          cancelled_appointments?: number
+          creator_id: string
+          kept_appointments?: number
+          last_updated?: string
+          reliability_score?: number
+          rescheduled_appointments?: number
+          total_appointments?: number
+        }
+        Update: {
+          cancelled_appointments?: number
+          creator_id?: string
+          kept_appointments?: number
+          last_updated?: string
+          reliability_score?: number
+          rescheduled_appointments?: number
+          total_appointments?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
