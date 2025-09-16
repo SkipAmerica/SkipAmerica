@@ -71,46 +71,59 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
 
-  // Mock data for now - in real app, this would come from Supabase
+  // Mock data representing diverse influential people
   const mockCreators: Creator[] = [
     {
       id: '1',
-      full_name: 'Sarah Johnson',
-      bio: 'Beauty & skincare expert with 5+ years experience. Specialized in Korean skincare routines.',
+      full_name: 'Emma Stone',
+      bio: 'Academy Award-winning actress. Available for career advice and entertainment industry insights.',
       avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150',
       account_type: 'creator',
       is_verified: true,
-      category: 'Beauty & Skincare',
-      specialties: ['K-Beauty', 'Anti-aging', 'Acne treatment'],
-      pricing: { callRate: 85, responseTime: '< 2 minutes' },
-      stats: { rating: 4.9, reviewCount: 234, totalCalls: 1250, isOnline: true },
+      category: 'Entertainment & Celebrity',
+      specialties: ['Acting', 'Career guidance', 'Hollywood insights'],
+      pricing: { callRate: 500, responseTime: '< 24 hours' },
+      stats: { rating: 4.9, reviewCount: 89, totalCalls: 156, isOnline: false },
       location: 'Los Angeles, CA'
     },
     {
       id: '2',
-      full_name: 'Emma Rodriguez',
-      bio: 'Fashion stylist and personal shopper. Help you find your perfect style and confidence.',
-      avatar_url: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150',
-      account_type: 'creator',
-      is_verified: true,
-      category: 'Fashion & Style',
-      specialties: ['Personal styling', 'Wardrobe audit', 'Color analysis'],
-      pricing: { callRate: 95, responseTime: '< 5 minutes' },
-      stats: { rating: 4.8, reviewCount: 189, totalCalls: 890, isOnline: false },
-      location: 'New York, NY'
-    },
-    {
-      id: '3',
-      full_name: 'Maya Patel',
-      bio: 'Wellness coach and yoga instructor. Bringing mindfulness and balance to your daily life.',
+      full_name: 'Dr. Sarah Chen',
+      bio: 'Leading AI researcher at Stanford. Expert in machine learning and artificial intelligence.',
       avatar_url: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150',
       account_type: 'creator',
       is_verified: true,
-      category: 'Fitness & Wellness',
-      specialties: ['Yoga', 'Meditation', 'Stress management'],
-      pricing: { callRate: 65, responseTime: '< 3 minutes' },
-      stats: { rating: 4.95, reviewCount: 312, totalCalls: 1580, isOnline: true },
+      category: 'Technology',
+      specialties: ['AI/ML', 'Research', 'Tech consulting'],
+      pricing: { callRate: 200, responseTime: '< 4 hours' },
+      stats: { rating: 4.95, reviewCount: 234, totalCalls: 890, isOnline: true },
+      location: 'Palo Alto, CA'
+    },
+    {
+      id: '3',
+      full_name: 'Marcus Johnson',
+      bio: 'Serial entrepreneur, founded 3 unicorn startups. Mentor for aspiring founders.',
+      avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+      account_type: 'creator',
+      is_verified: true,
+      category: 'Business Leaders',
+      specialties: ['Startups', 'Fundraising', 'Business strategy'],
+      pricing: { callRate: 350, responseTime: '< 8 hours' },
+      stats: { rating: 4.8, reviewCount: 167, totalCalls: 445, isOnline: true },
       location: 'San Francisco, CA'
+    },
+    {
+      id: '4',
+      full_name: 'Zoe Rodriguez',
+      bio: 'Fashion influencer with 10M+ followers. Style consultant and brand collaborator.',
+      avatar_url: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150',
+      account_type: 'creator',
+      is_verified: true,
+      category: 'Beauty & Fashion',
+      specialties: ['Fashion styling', 'Social media', 'Brand partnerships'],
+      pricing: { callRate: 150, responseTime: '< 2 hours' },
+      stats: { rating: 4.7, reviewCount: 892, totalCalls: 2340, isOnline: true },
+      location: 'New York, NY'
     }
   ];
 
@@ -251,7 +264,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium">
-                    Price Range: ${priceRange[0]} - ${priceRange[1]}/hour
+                    Price Range: ${priceRange[0]} - ${priceRange[1]}/session
                   </label>
                   <Slider
                     value={priceRange}
@@ -378,7 +391,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
                     <div>
                       <div className="flex items-center gap-1">
                         <span className="font-semibold">${creator.pricing?.callRate}</span>
-                        <span className="text-sm text-muted-foreground">/hour</span>
+                        <span className="text-sm text-muted-foreground">/session</span>
                       </div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
@@ -394,7 +407,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
                         className="h-8 px-3"
                       >
                         <MessageCircle className="h-3 w-3 mr-1" />
-                        Chat
+                        Connect
                       </Button>
                       <Button
                         size="sm"
@@ -403,7 +416,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
                         className="h-8 px-3"
                       >
                         <Video className="h-3 w-3 mr-1" />
-                        {creator.stats?.isOnline ? 'Call Now' : 'Offline'}
+                        {creator.stats?.isOnline ? 'Call Now' : 'Schedule'}
                       </Button>
                     </div>
                   </div>

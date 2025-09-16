@@ -15,6 +15,7 @@ import CreatorProfile from "@/components/CreatorProfile";
 import OnlineCreators from "@/components/OnlineCreators";
 import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
+import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Index = () => {
@@ -318,9 +319,9 @@ const Index = () => {
                   Discover the most influential people and trending conversations
                 </p>
               </div>
-              <OnlineCreators 
-                onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                onStartCall={(id) => setActiveTab("call")}
+              <InfluentialPeopleSearch 
+                onPersonSelect={(person) => setActiveTab("creator-profile")}
+                onStartCall={(person) => setActiveTab("call")}
               />
             </div>
           </TabsContent>

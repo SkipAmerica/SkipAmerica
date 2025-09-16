@@ -17,31 +17,31 @@ const FanInterface = ({ onBack }: FanInterfaceProps) => {
   
   const creators = [
     {
-      name: "Emma Wilson",
-      category: "Fitness Coach",
+      name: "Emma Stone",
+      category: "Entertainment & Celebrity",
       rating: 4.9,
-      price: 5,
-      avatar: "EW",
-      isLive: true,
-      totalCalls: 1200
-    },
-    {
-      name: "Alex Chen",
-      category: "Tech Reviewer",
-      rating: 4.8,
-      price: 8,
-      avatar: "AC",
-      isLive: true,
-      totalCalls: 850
-    },
-    {
-      name: "Maria Garcia",
-      category: "Life Coach",
-      rating: 4.9,
-      price: 12,
-      avatar: "MG",
+      price: 8.33,
+      avatar: "ES",
       isLive: false,
-      totalCalls: 2100
+      totalCalls: 156
+    },
+    {
+      name: "Dr. Sarah Chen",
+      category: "Technology Expert",
+      rating: 4.95,
+      price: 3.33,
+      avatar: "SC",
+      isLive: true,
+      totalCalls: 890
+    },
+    {
+      name: "Marcus Johnson",
+      category: "Business Leader",
+      rating: 4.8,
+      price: 5.83,
+      avatar: "MJ",
+      isLive: true,
+      totalCalls: 445
     }
   ];
 
@@ -57,7 +57,7 @@ const FanInterface = ({ onBack }: FanInterfaceProps) => {
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <h1 className="text-2xl font-bold">Browse Creators</h1>
+          <h1 className="text-2xl font-bold">Browse Influential People</h1>
           <Badge variant="secondary" className="ml-auto">
             Fan Dashboard
           </Badge>
@@ -123,7 +123,7 @@ const FanInterface = ({ onBack }: FanInterfaceProps) => {
                 <div className="bg-accent p-4 rounded-lg">
                   <h4 className="font-semibold mb-2">How It Works</h4>
                   <ul className="text-sm space-y-1 text-accent-foreground">
-                    <li>• Choose your favorite creator</li>
+                    <li>• Choose your favorite influential person</li>
                     <li>• Set call duration</li>
                     <li>• Join solo or invite friends</li>
                     <li>• Pay per minute used</li>
@@ -136,7 +136,7 @@ const FanInterface = ({ onBack }: FanInterfaceProps) => {
           {/* Creator Grid */}
           <div className="lg:col-span-3">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold">Available Creators</h2>
+              <h2 className="text-xl font-semibold">Available Influential People</h2>
               <div className="flex space-x-2">
                 <Button variant="outline" size="sm">
                   <Users className="h-4 w-4 mr-1" />

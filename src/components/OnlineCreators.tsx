@@ -17,79 +17,87 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
   const [liveCreators, setLiveCreators] = useState([
     {
       id: "1",
-      name: "Emma Wilson",
-      username: "@emmafitness",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150",
-      category: "Fitness & Wellness",
+      name: "Emma Stone",
+      username: "@emmastone",
+      avatar: "https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150",
+      category: "Entertainment & Celebrity",
       rating: 4.9,
-      totalRatings: 523,
-      pricePerMinute: 5.00,
-      speedGreetPrice: 15.00,
-      currentViewers: 12,
-      responseTime: "< 30s",
-      specialties: ["Personal Training", "Nutrition"],
-      isLive: true,
-      liveFor: "2h 15m",
-      totalFollowers: 12500,
-      recentActivity: "Just helped 3 people with workout plans!"
+      totalRatings: 89,
+      pricePerMinute: 8.33,
+      speedGreetPrice: 500.00,
+      currentViewers: 847,
+      responseTime: "< 24 hours",
+      specialties: ["Acting", "Career guidance", "Hollywood insights"],
+      isLive: false,
+      liveFor: "Scheduled",
+      totalFollowers: 2800000,
+      recentActivity: "Available for career advice and entertainment industry insights",
+      influence_type: "celebrity",
+      location: "Los Angeles, CA"
     },
     {
       id: "2", 
-      name: "Alex Chen",
-      username: "@alextech",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-      category: "Tech & Business",
-      rating: 4.8,
-      totalRatings: 391,
-      pricePerMinute: 8.00,
-      speedGreetPrice: 24.00,
-      currentViewers: 8,
-      responseTime: "< 1m",
-      specialties: ["App Development", "Tech Career"],
+      name: "Dr. Sarah Chen",
+      username: "@drsarahchen",
+      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
+      category: "Technology",
+      rating: 4.95,
+      totalRatings: 234,
+      pricePerMinute: 3.33,
+      speedGreetPrice: 200.00,
+      currentViewers: 28,
+      responseTime: "< 4 hours",
+      specialties: ["AI/ML", "Research", "Tech consulting"],
       isLive: true,
-      liveFor: "45m",
-      totalFollowers: 8900,
-      recentActivity: "Reviewing startup ideas with founders"
+      liveFor: "1h 30m",
+      totalFollowers: 45000,
+      recentActivity: "Leading AI researcher discussing machine learning trends",
+      influence_type: "expert",
+      location: "Palo Alto, CA"
     },
     {
       id: "3",
-      name: "Maria Garcia", 
-      username: "@marialife",
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
-      category: "Life Coaching",
-      rating: 4.9,
-      totalRatings: 721,
-      pricePerMinute: 12.00,
-      speedGreetPrice: 36.00,
+      name: "Marcus Johnson", 
+      username: "@marcusentrepreneur",
+      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
+      category: "Business Leaders",
+      rating: 4.8,
+      totalRatings: 167,
+      pricePerMinute: 5.83,
+      speedGreetPrice: 350.00,
       currentViewers: 15,
-      responseTime: "< 45s", 
-      specialties: ["Career Growth", "Mindfulness"],
+      responseTime: "< 8 hours", 
+      specialties: ["Startups", "Fundraising", "Business strategy"],
       isLive: true,
-      liveFor: "3h 20m",
-      totalFollowers: 18200,
-      recentActivity: "Helping professionals find work-life balance"
+      liveFor: "45m",
+      totalFollowers: 120000,
+      recentActivity: "Serial entrepreneur mentoring aspiring founders",
+      influence_type: "entrepreneur",
+      location: "San Francisco, CA"
     },
     {
       id: "4",
-      name: "David Kim",
-      username: "@davidmusic",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-      category: "Music & Arts",
+      name: "Zoe Rodriguez",
+      username: "@zoerodriguez",
+      avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150",
+      category: "Beauty & Fashion",
       rating: 4.7,
-      totalRatings: 289,
-      pricePerMinute: 6.00,
-      speedGreetPrice: 18.00,
-      currentViewers: 5,
-      responseTime: "< 2m",
-      specialties: ["Guitar Lessons", "Music Production"],
+      totalRatings: 892,
+      pricePerMinute: 2.50,
+      speedGreetPrice: 150.00,
+      currentViewers: 234,
+      responseTime: "< 2 hours",
+      specialties: ["Fashion styling", "Social media", "Brand partnerships"],
       isLive: true,
-      liveFor: "1h 30m",
-      totalFollowers: 5600,
-      recentActivity: "Teaching chord progressions and songwriting"
+      liveFor: "2h 15m",
+      totalFollowers: 10500000,
+      recentActivity: "Fashion influencer sharing style tips and brand collaborations",
+      influence_type: "influencer",
+      location: "New York, NY"
     }
   ]);
 
-  const categories = ["all", "Fitness & Wellness", "Tech & Business", "Life Coaching", "Music & Arts"];
+  const categories = ["all", "Entertainment & Celebrity", "Technology", "Business Leaders", "Beauty & Fashion"];
 
   const filteredCreators = liveCreators.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -117,10 +125,10 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
         <div>
           <h2 className="text-2xl font-bold flex items-center">
             <Zap className="h-6 w-6 mr-2 text-primary animate-pulse" />
-            Live Creators
+            Influential People Live
           </h2>
           <p className="text-muted-foreground">
-            {filteredCreators.length} creators available for instant calls
+            {filteredCreators.length} influential people available now
           </p>
         </div>
         
@@ -137,7 +145,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search creators or specialties..."
+            placeholder="Search influential people or specialties..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -288,7 +296,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
         <div className="text-center py-12">
           <div className="text-muted-foreground">
             <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <div className="font-semibold">No creators found</div>
+            <div className="font-semibold">No influential people found</div>
             <div className="text-sm">Try adjusting your search or filters</div>
           </div>
         </div>
