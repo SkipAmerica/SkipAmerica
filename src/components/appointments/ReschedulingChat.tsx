@@ -57,20 +57,33 @@ export function ReschedulingChat({ appointment, onClose }: ReschedulingChatProps
 
   const loadMessages = async () => {
     try {
-      const { data, error } = await supabase
+      // Load messages
+      const { data: messagesData, error } = await supabase
         .from('appointment_messages')
-        .select(`
-          *,
-          sender:profiles!sender_id(full_name)
-        `)
+        .select('*')
         .eq('appointment_id', appointment.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
 
-      const transformedMessages = data?.map(msg => ({
+      // Get unique sender IDs for profile lookup
+      const senderIds = [...new Set(messagesData?.map(msg => msg.sender_id) || [])];
+      
+      // Load profiles for senders
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', senderIds);
+
+      // Create a map of profiles
+      const profileMap = new Map<string, string>();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.id, profile.full_name || 'Unknown User');
+      });
+
+      const transformedMessages = messagesData?.map(msg => ({
         ...msg,
-        sender_name: msg.sender?.full_name || 'Unknown User'
+        sender_name: profileMap.get(msg.sender_id) || 'Unknown User'
       })) || [];
 
       setMessages(transformedMessages);

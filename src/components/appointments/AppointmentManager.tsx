@@ -42,23 +42,38 @@ export function AppointmentManager() {
       setLoading(true);
       
       // Load appointments where user is either creator or fan
-      const { data, error } = await supabase
+      const { data: appointmentsData, error } = await supabase
         .from('appointments')
-        .select(`
-          *,
-          creator:profiles!creator_id(full_name),
-          fan:profiles!fan_id(full_name)
-        `)
+        .select('*')
         .or(`creator_id.eq.${user.id},fan_id.eq.${user.id}`)
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
 
+      // Get unique user IDs for profile lookup
+      const userIds = new Set<string>();
+      appointmentsData?.forEach(apt => {
+        userIds.add(apt.creator_id);
+        userIds.add(apt.fan_id);
+      });
+
+      // Load profiles for all users
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', Array.from(userIds));
+
+      // Create a map of profiles
+      const profileMap = new Map<string, string>();
+      profilesData?.forEach(profile => {
+        profileMap.set(profile.id, profile.full_name || 'Unknown User');
+      });
+
       // Transform data to include names
-      const transformedData = data?.map(apt => ({
+      const transformedData = appointmentsData?.map(apt => ({
         ...apt,
-        creator_name: apt.creator?.full_name || 'Unknown Creator',
-        fan_name: apt.fan?.full_name || 'Unknown Fan'
+        creator_name: profileMap.get(apt.creator_id) || 'Unknown Creator',
+        fan_name: profileMap.get(apt.fan_id) || 'Unknown Fan'
       })) || [];
 
       setAppointments(transformedData);
