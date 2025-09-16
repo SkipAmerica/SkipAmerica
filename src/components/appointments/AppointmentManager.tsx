@@ -46,8 +46,8 @@ export function AppointmentManager() {
         .from('appointments')
         .select(`
           *,
-          profiles!appointments_creator_id_fkey(full_name),
-          profiles!appointments_fan_id_fkey(full_name)
+          creator:profiles!creator_id(full_name),
+          fan:profiles!fan_id(full_name)
         `)
         .or(`creator_id.eq.${user.id},fan_id.eq.${user.id}`)
         .order('scheduled_at', { ascending: true });
@@ -57,8 +57,8 @@ export function AppointmentManager() {
       // Transform data to include names
       const transformedData = data?.map(apt => ({
         ...apt,
-        creator_name: apt.profiles?.full_name || 'Unknown Creator',
-        fan_name: apt.profiles?.full_name || 'Unknown Fan'
+        creator_name: apt.creator?.full_name || 'Unknown Creator',
+        fan_name: apt.fan?.full_name || 'Unknown Fan'
       })) || [];
 
       setAppointments(transformedData);

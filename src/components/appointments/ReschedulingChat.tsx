@@ -61,7 +61,7 @@ export function ReschedulingChat({ appointment, onClose }: ReschedulingChatProps
         .from('appointment_messages')
         .select(`
           *,
-          profiles!appointment_messages_sender_id_fkey(full_name)
+          sender:profiles!sender_id(full_name)
         `)
         .eq('appointment_id', appointment.id)
         .order('created_at', { ascending: true });
@@ -70,7 +70,7 @@ export function ReschedulingChat({ appointment, onClose }: ReschedulingChatProps
 
       const transformedMessages = data?.map(msg => ({
         ...msg,
-        sender_name: msg.profiles?.full_name || 'Unknown User'
+        sender_name: msg.sender?.full_name || 'Unknown User'
       })) || [];
 
       setMessages(transformedMessages);
