@@ -5,6 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
+import { useAIModerator } from "@/hooks/useAIModerator";
+import ModerationPanel from "@/components/moderation/ModerationPanel";
 import { 
   ArrowLeft, 
   Video, 
@@ -17,7 +20,9 @@ import {
   DollarSign,
   Send,
   Shield,
-  Settings
+  Settings,
+  ShieldCheck,
+  AlertTriangle
 } from "lucide-react";
 
 interface VideoCallInterfaceProps {
@@ -31,6 +36,21 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
   const [callDuration, setCallDuration] = useState(0);
   const [currentCost, setCurrentCost] = useState(0);
   const [chatPaused, setChatPaused] = useState(false);
+  const [showModerationPanel, setShowModerationPanel] = useState(false);
+  const [recentModerations, setRecentModerations] = useState<any[]>([]);
+  
+  const { toast } = useToast();
+  const callId = 'call-123'; // In real app, this would be dynamic
+  const userId = 'user-456'; // In real app, this would come from auth
+  
+  const {
+    isEnabled: isModerationEnabled,
+    setIsEnabled: setModerationEnabled,
+    voiceRecording,
+    moderateText,
+    startVoiceMonitoring,
+    stopVoiceMonitoring,
+  } = useAIModerator(callId, userId);
 
   // Mock participants
   const participants = [
@@ -65,11 +85,34 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const handleSendMessage = () => {
-    if (message.trim() && !chatPaused) {
-      // In real app, would send message
-      setMessage("");
+  const handleSendMessage = async () => {
+    if (!message.trim() || chatPaused) return;
+    
+    // Moderate the message before sending
+    if (isModerationEnabled) {
+      const moderation = await moderateText(message);
+      
+      // Add to recent moderations for display
+      setRecentModerations(prev => [moderation, ...prev.slice(0, 9)]);
+      
+      if (moderation.action === 'block') {
+        toast({
+          title: "Message Blocked",
+          description: moderation.reason || "Message violates community guidelines",
+          variant: "destructive"
+        });
+        setMessage("");
+        return;
+      } else if (moderation.action === 'warn') {
+        toast({
+          title: "Content Warning",
+          description: moderation.reason || "Please keep messages appropriate",
+        });
+      }
     }
+    
+    // In real app, would send message after moderation check
+    setMessage("");
   };
 
   return (
@@ -96,6 +139,18 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
             <Users className="h-3 w-3 mr-1" />
             4 people
           </Badge>
+          {isModerationEnabled && (
+            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
+              <ShieldCheck className="h-3 w-3 mr-1" />
+              Protected
+            </Badge>
+          )}
+          {voiceRecording.isRecording && (
+            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+              <Mic className="h-3 w-3 mr-1" />
+              Monitoring
+            </Badge>
+          )}
         </div>
       </header>
 
@@ -154,12 +209,36 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
                 <Phone className="h-4 w-4" />
               </Button>
               
+              <Button 
+                variant="secondary" 
+                size="sm"
+                onClick={() => setShowModerationPanel(!showModerationPanel)}
+              >
+                <Shield className="h-4 w-4" />
+              </Button>
+              
               <Button variant="secondary" size="sm">
                 <Settings className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </div>
+
+        {/* Moderation Panel */}
+        {showModerationPanel && (
+          <div className="w-80 border-l bg-card">
+            <div className="p-4">
+              <ModerationPanel
+                isEnabled={isModerationEnabled}
+                onToggle={setModerationEnabled}
+                voiceRecording={voiceRecording}
+                onStartVoiceMonitoring={startVoiceMonitoring}
+                onStopVoiceMonitoring={stopVoiceMonitoring}
+                recentModerations={recentModerations}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Chat Sidebar */}
         <div className="w-80 border-l bg-card flex flex-col">
@@ -221,8 +300,26 @@ const VideoCallInterface = ({ onBack }: VideoCallInterfaceProps) => {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground">
-              Moderated chat • Inappropriate content is automatically blocked
+            <div className="flex items-center justify-between mt-2 text-xs">
+              <span className="text-muted-foreground">
+                {isModerationEnabled ? (
+                  <>
+                    <ShieldCheck className="h-3 w-3 inline mr-1" />
+                    AI moderation active
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-3 w-3 inline mr-1" />
+                    Moderation disabled
+                  </>
+                )}
+              </span>
+              {voiceRecording.isRecording && (
+                <span className="text-blue-600">
+                  <Mic className="h-3 w-3 inline mr-1" />
+                  Voice monitoring
+                </span>
+              )}
             </div>
           </div>
         </div>

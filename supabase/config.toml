@@ -6,3 +6,9 @@ site_url = "https://15f46a1e-4701-482b-98fb-246120c30114.lovableproject.com"
 
 [functions.social-verify]
 verify_jwt = false
+
+[functions.ai-moderation]
+verify_jwt = true
+
+[functions.voice-transcription]
+verify_jwt = true
