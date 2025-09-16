@@ -71,6 +71,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             full_name: fullName,
           },
@@ -184,6 +185,42 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  const resendConfirmation = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      })
+
+      if (error) {
+        toast({
+          title: "Resend failed",
+          description: error.message,
+          variant: "destructive",
+        })
+        return { error }
+      }
+
+      toast({
+        title: "Confirmation email sent",
+        description: "Please check your email for the confirmation link.",
+      })
+
+      return { error: null }
+    } catch (error) {
+      const authError = error as AuthError
+      toast({
+        title: "Resend failed",
+        description: authError.message,
+        variant: "destructive",
+      })
+      return { error: authError }
+    }
+  }
+
   const value = {
     user,
     session,
@@ -192,6 +229,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signIn,
     signOut,
     resetPassword,
+    resendConfirmation,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

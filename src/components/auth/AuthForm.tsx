@@ -13,9 +13,11 @@ interface AuthFormProps {
 }
 
 export const AuthForm = ({ onSuccess }: AuthFormProps) => {
-  const { signIn, signUp, resetPassword, loading } = useAuth()
+  const { signIn, signUp, resetPassword, resendConfirmation, loading } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
+  const [showResendConfirmation, setShowResendConfirmation] = useState(false)
 
   const [signInData, setSignInData] = useState({
     email: '',
@@ -37,7 +39,13 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     
     const { error } = await signIn(signInData.email, signInData.password)
     
-    if (!error) {
+    if (error) {
+      // Handle specific email confirmation error
+      if (error.message.includes('Email not confirmed')) {
+        setPendingEmail(signInData.email)
+        setShowResendConfirmation(true)
+      }
+    } else {
       onSuccess?.()
     }
     
@@ -60,10 +68,18 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     )
     
     if (!error) {
+      setPendingEmail(signUpData.email)
       onSuccess?.()
     }
     
     setIsLoading(false)
+  }
+
+  const handleResendConfirmation = async () => {
+    setIsLoading(true)
+    await resendConfirmation(pendingEmail)
+    setIsLoading(false)
+    setShowResendConfirmation(false)
   }
 
   const handleResetPassword = async (e: React.FormEvent) => {
