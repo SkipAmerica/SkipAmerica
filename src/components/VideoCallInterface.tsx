@@ -211,6 +211,19 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 End Call
               </Button>
             </div>
+            <div className="bg-muted/20 border rounded-lg p-3 mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Call Duration:</span>
+                <span className="font-mono">{formatDuration(callDuration)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-1">
+                <span className="text-muted-foreground">Current Cost:</span>
+                <span className="font-mono">${currentCost.toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Timer continues during pause - costs still accrue
+              </p>
+            </div>
             <p className="text-xs text-muted-foreground text-center">
               If you end the call, the participant will receive a system comment and 0 rating for the policy violation.
             </p>
