@@ -8,7 +8,8 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileRepository } from "@/components/creator/FileRepository";
-import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen } from "lucide-react";
+import { CallSettings } from "@/components/creator/CallSettings";
+import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders } from "lucide-react";
 
 interface CreatorDashboardProps {
   onBack: () => void;
@@ -36,14 +37,18 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
+            <TabsTrigger value="pricing" className="flex items-center gap-2">
+              <Sliders className="h-4 w-4" />
+              Pricing
+            </TabsTrigger>
             <TabsTrigger value="files" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
-              File Repository
+              Files
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -214,6 +219,10 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="pricing" className="mt-0">
+            <CallSettings creatorId="current-user-id" />
           </TabsContent>
 
           <TabsContent value="files" className="mt-0">
