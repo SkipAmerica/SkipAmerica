@@ -273,6 +273,36 @@ export type Database = {
         }
         Relationships: []
       }
+      creator_call_pricing: {
+        Row: {
+          created_at: string
+          creator_id: string
+          duration_minutes: number
+          id: string
+          is_active: boolean
+          price_per_block: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          duration_minutes: number
+          id?: string
+          is_active?: boolean
+          price_per_block: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          duration_minutes?: number
+          id?: string
+          is_active?: boolean
+          price_per_block?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       creator_content: {
         Row: {
           comment_count: number | null
