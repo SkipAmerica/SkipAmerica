@@ -4,10 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Clock, DollarSign, Settings, Plus, Trash2, Sparkles, AlertCircle, Save, Zap } from "lucide-react";
+import { Clock, DollarSign, Settings, Plus, Trash2, Sparkles, AlertCircle, Save, Zap, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { MarketRatePricing } from './MarketRatePricing';
 
@@ -29,6 +30,12 @@ interface SpeedGreetSettings {
   duration_minutes: number;
 }
 
+interface MarketRateData {
+  suggested_price: number;
+  confidence_score: number;
+  market_position: string;
+}
+
 export function CallSettings({ creatorId }: CallSettingsProps) {
   const [pricingTiers, setPricingTiers] = useState<CallPricingTier[]>([]);
   const [autoAcceptCalls, setAutoAcceptCalls] = useState(false);
@@ -37,12 +44,14 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
     price_multiplier: 3,
     duration_minutes: 2
   });
+  const [marketRateData, setMarketRateData] = useState<MarketRateData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     loadPricingTiers();
+    loadMarketRateData();
   }, [creatorId]);
 
   const loadPricingTiers = async () => {
@@ -80,6 +89,27 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
     }
   };
 
+  const loadMarketRateData = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-market-rate-analysis', {
+        body: { creator_id: creatorId }
+      });
+
+      if (error) throw error;
+      
+      if (data?.suggested_price_per_minute) {
+        setMarketRateData({
+          suggested_price: data.suggested_price_per_minute * 5, // Convert to 5-minute block
+          confidence_score: data.confidence_score || 0.8,
+          market_position: data.market_position || 'competitive'
+        });
+      }
+    } catch (error) {
+      console.error('Error loading market rate data:', error);
+      // Don't show error toast as this is optional data
+    }
+  };
+
   const addPricingTier = () => {
     setPricingTiers([...pricingTiers, { 
       duration_minutes: 20, 
@@ -97,6 +127,38 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
     const updated = [...pricingTiers];
     updated[index] = { ...updated[index], [field]: value };
     setPricingTiers(updated);
+  };
+
+  const getPriceSliderColor = (price: number) => {
+    if (!marketRateData) return 'hsl(var(--primary))';
+    
+    const suggested = marketRateData.suggested_price;
+    const difference = Math.abs(price - suggested);
+    const maxDifference = suggested * 0.5; // 50% difference for full red
+    
+    // Calculate proximity (0 = far away, 1 = close)
+    const proximity = Math.max(0, 1 - (difference / maxDifference));
+    
+    // Red to green gradient based on proximity
+    const red = Math.round(255 * (1 - proximity));
+    const green = Math.round(255 * proximity);
+    
+    return `rgb(${red}, ${green}, 0)`;
+  };
+
+  const getPriceIndicator = (price: number) => {
+    if (!marketRateData) return null;
+    
+    const suggested = marketRateData.suggested_price;
+    const difference = ((price - suggested) / suggested) * 100;
+    
+    if (Math.abs(difference) < 10) {
+      return { icon: null, text: 'Market Rate', color: 'text-green-600' };
+    } else if (difference > 0) {
+      return { icon: TrendingUp, text: `${difference.toFixed(0)}% above market`, color: 'text-red-600' };
+    } else {
+      return { icon: TrendingDown, text: `${Math.abs(difference).toFixed(0)}% below market`, color: 'text-red-600' };
+    }
   };
 
   const savePricingTier = async (tier: CallPricingTier, index: number) => {
@@ -216,16 +278,39 @@ export function CallSettings({ creatorId }: CallSettingsProps) {
                             max="120"
                           />
                         </div>
-                        <div>
-                          <Label htmlFor={`price-${index}`}>Price ($)</Label>
-                          <Input
-                            id={`price-${index}`}
-                            type="number"
-                            step="0.01"
-                            value={tier.price_per_block}
-                            onChange={(e) => updatePricingTier(index, 'price_per_block', parseFloat(e.target.value))}
-                            min="1"
-                          />
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label htmlFor={`price-${index}`}>Price ($)</Label>
+                            <span className="text-sm font-medium">${tier.price_per_block.toFixed(2)}</span>
+                          </div>
+                          <div className="space-y-2">
+                            <Slider
+                              id={`price-${index}`}
+                              min={5}
+                              max={200}
+                              step={5}
+                              value={[tier.price_per_block]}
+                              onValueChange={(value) => updatePricingTier(index, 'price_per_block', value[0])}
+                              className="w-full"
+                              style={{
+                                '--slider-thumb-color': getPriceSliderColor(tier.price_per_block),
+                                '--slider-track-color': getPriceSliderColor(tier.price_per_block)
+                              } as React.CSSProperties}
+                            />
+                            {marketRateData && (
+                              <div className="flex items-center gap-1 text-xs">
+                                {(() => {
+                                  const indicator = getPriceIndicator(tier.price_per_block);
+                                  return indicator ? (
+                                    <>
+                                      {indicator.icon && <indicator.icon className="h-3 w-3" />}
+                                      <span className={indicator.color}>{indicator.text}</span>
+                                    </>
+                                  ) : null;
+                                })()}
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <Switch
