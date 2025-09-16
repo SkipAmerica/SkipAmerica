@@ -54,7 +54,7 @@ const Index = () => {
           <div className="flex items-center space-x-2">
             <Video className="h-8 w-8 text-primary" />
             <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              CreatorCall
+              Skip
             </h1>
           </div>
           
@@ -158,7 +158,7 @@ const Index = () => {
             {/* Features */}
             <section>
               <h2 className="text-2xl font-bold text-center mb-8">
-                How CreatorCall Works
+                How Skip Works
               </h2>
               <div className="grid md:grid-cols-3 gap-6">
                 <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
