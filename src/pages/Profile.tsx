@@ -5,9 +5,8 @@ import { supabase } from '@/lib/supabase';
 import { CreatorProfileEnhanced } from '@/components/creator/CreatorProfileEnhanced';
 import { AgencyDashboard } from '@/components/agency/AgencyDashboard';
 import { GroupCallPricing } from '@/components/calls/GroupCallPricing';
+import { IOSNavBar } from '@/components/mobile/IOSNavBar';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { Video } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -57,35 +56,17 @@ export default function Profile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold">
-                <span className="text-skip-black">Sk</span>
-                <span className="relative">
-                  <span className="text-skip-black">i</span>
-                  <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
-                </span>
-                <span className="text-skip-black">p</span>
-              </h1>
-              <div className="text-lg font-semibold">Profile</div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
-                Home
-              </Button>
-              <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
-                Feed
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-lg">Loading profile...</div>
+      <div className="ios-screen">
+        <IOSNavBar
+          title="Profile"
+          leftButton={{
+            text: "Home",
+            onClick: () => window.location.href = '/'
+          }}
+        />
+        <div className="ios-content ios-loading-center">
+          <div className="ios-spinner" />
+          <div className="text-ios-secondary mt-3">Loading profile...</div>
         </div>
       </div>
     );
@@ -93,74 +74,36 @@ export default function Profile() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold">
-                <span className="text-skip-black">Sk</span>
-                <span className="relative">
-                  <span className="text-skip-black">i</span>
-                  <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
-                </span>
-                <span className="text-skip-black">p</span>
-              </h1>
-              <div className="text-lg font-semibold">Profile</div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
-                Home
-              </Button>
-              <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
-                Feed
-              </Button>
-            </div>
-          </div>
-        </header>
-
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-lg text-muted-foreground">Profile not found</div>
+      <div className="ios-screen">
+        <IOSNavBar
+          title="Profile"
+          leftButton={{
+            text: "Home",
+            onClick: () => window.location.href = '/'
+          }}
+        />
+        <div className="ios-content ios-loading-center">
+          <div className="text-ios-secondary">Profile not found</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold">
-              <span className="text-skip-black">Sk</span>
-              <span className="relative">
-                <span className="text-skip-black">i</span>
-                <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
-              </span>
-              <span className="text-skip-black">p</span>
-            </h1>
-            <div className="text-lg font-semibold">Profile</div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" onClick={() => window.location.href = '/'}>
-              Home
-            </Button>
-            <Button variant="ghost" onClick={() => window.location.href = '/feed'}>
-              Feed
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
+    <div className="ios-screen">
+      <IOSNavBar
+        title={profile.full_name || "Profile"}
+        leftButton={{
+          text: "Home",
+          onClick: () => window.location.href = '/'
+        }}
+      />
+      
+      <div className="ios-content">
         {profile.account_type === 'agency' && isOwnProfile ? (
           <AgencyDashboard />
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4">
             <CreatorProfileEnhanced 
               creator={profile} 
               isOwnProfile={isOwnProfile} 
@@ -169,7 +112,7 @@ export default function Profile() {
             {profile.account_type === 'creator' && (
               <GroupCallPricing
                 creatorId={profile.id}
-                basePrice={85} // This would come from creator pricing settings
+                basePrice={85}
                 isCreator={isOwnProfile}
               />
             )}

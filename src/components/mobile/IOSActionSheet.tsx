@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/sheet';
 
 interface IOSActionSheetProps {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   title?: string;
   description?: string;
   children: React.ReactNode;
@@ -29,9 +29,11 @@ export function IOSActionSheet({
 }: IOSActionSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        {trigger}
-      </SheetTrigger>
+      {trigger && (
+        <SheetTrigger asChild>
+          {trigger}
+        </SheetTrigger>
+      )}
       <SheetContent 
         side="bottom" 
         className={cn(

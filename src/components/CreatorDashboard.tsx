@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { IOSNavBar } from "@/components/mobile/IOSNavBar";
+import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
+import { IOSActionSheet } from "@/components/mobile/IOSActionSheet";
+import { IOSModal } from "@/components/mobile/IOSModal";
 import { FileRepository } from "@/components/creator/FileRepository";
 import { CallSettings } from "@/components/creator/CallSettings";
 import ProfileSettings from "@/components/creator/ProfileSettings";
@@ -20,7 +20,7 @@ import { DynamicPricingEngine } from "@/components/pricing/DynamicPricingEngine"
 import { CreatorPlaylists } from "@/components/curation/CreatorPlaylists";
 import { ReferralSystem } from "@/components/referrals/ReferralSystem";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone, Music, TrendingUp } from "lucide-react";
+import { DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone, Music, TrendingUp, ChevronRight, MoreHorizontal } from "lucide-react";
 
 interface CreatorDashboardProps {
   onBack: () => void;
@@ -30,263 +30,261 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
   const [pricePer5Min, setPricePer5Min] = useState("25.00");
   const [isLive, setIsLive] = useState(false);
   const [blockedWords, setBlockedWords] = useState("spam, inappropriate, rude");
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [showMoreSheet, setShowMoreSheet] = useState(false);
   const { user } = useAuth();
 
+  const mainSections = [
+    { id: 'dashboard', title: 'Dashboard', icon: DollarSign },
+    { id: 'pricing', title: 'Smart Pricing', icon: Sliders },
+    { id: 'profile', title: 'Profile', icon: User },
+    { id: 'availability', title: 'Schedule', icon: Calendar },
+  ];
+
+  const moreSections = [
+    { id: 'social', title: 'Social Links', icon: Link2 },
+    { id: 'playlists', title: 'Playlists', icon: Music },
+    { id: 'files', title: 'Files', icon: FolderOpen },
+    { id: 'events', title: 'Events', icon: CalendarDays },
+    { id: 'referrals', title: 'Referrals', icon: Users },
+    { id: 'sponsors', title: 'Sponsors', icon: Megaphone },
+    { id: 'analytics', title: 'Analytics', icon: TrendingUp },
+    { id: 'settings', title: 'Settings', icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center space-x-4 mb-4">
-            <Button variant="ghost" onClick={onBack}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h1 className="text-2xl font-bold">Creator Dashboard</h1>
-          </div>
-          <UserStatusHeader onStatusToggle={setIsLive} isLive={isLive} />
-        </div>
-      </header>
+    <div className="ios-screen">
+      <IOSNavBar
+        title="Creator Hub"
+        leftButton={{
+          text: "Back",
+          onClick: onBack
+        }}
+        rightButton={{
+          icon: MoreHorizontal,
+          onClick: () => setShowMoreSheet(true)
+        }}
+      />
+      
+      <UserStatusHeader onStatusToggle={setIsLive} isLive={isLive} />
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-12 mb-8">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <Sliders className="h-4 w-4" />
-              Smart Pricing
-            </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Profile
-            </TabsTrigger>
-            <TabsTrigger value="social" className="flex items-center gap-2">
-              <Link2 className="h-4 w-4" />
-              Social
-            </TabsTrigger>
-            <TabsTrigger value="playlists" className="flex items-center gap-2">
-              <Music className="h-4 w-4" />
-              Playlists
-            </TabsTrigger>
-            <TabsTrigger value="availability" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Schedule
-            </TabsTrigger>
-            <TabsTrigger value="files" className="flex items-center gap-2">
-              <FolderOpen className="h-4 w-4" />
-              Files
-            </TabsTrigger>
-            <TabsTrigger value="events" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Events
-            </TabsTrigger>
-            <TabsTrigger value="referrals" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Referrals
-            </TabsTrigger>
-            <TabsTrigger value="sponsors" className="flex items-center gap-2">
-              <Megaphone className="h-4 w-4" />
-              Sponsors
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="mt-0">
-            <div className="grid gap-8">
-              {/* Main Dashboard */}
-              <div className="space-y-6">
-                {/* Stats Cards */}
-                <div className="grid md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <DollarSign className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">$1,250</div>
-                      <p className="text-muted-foreground">This Month</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">24.5h</div>
-                      <p className="text-muted-foreground">Call Time</p>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-                      <div className="text-2xl font-bold">156</div>
-                      <p className="text-muted-foreground">Total Fans</p>
-                    </CardContent>
-                  </Card>
+      <div className="ios-content">
+        {/* Main Section Navigation */}
+        <IOSListView>
+          <IOSListSection header="Creator Hub">
+            {mainSections.map((section) => (
+              <IOSListItem
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                chevron
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="ios-icon-container">
+                    <section.icon className="h-5 w-5" />
+                  </div>
+                  <span>{section.title}</span>
                 </div>
+              </IOSListItem>
+            ))}
+          </IOSListSection>
+        </IOSListView>
 
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Call Requests</CardTitle>
-                    <CardDescription>
-                      Fans waiting to connect with you
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {[
-                        { name: "Sarah M.", duration: "15 min", amount: "$75", status: "waiting" },
-                        { name: "Mike R.", duration: "30 min", amount: "$150", status: "waiting" },
-                        { name: "Group Call (3)", duration: "20 min", amount: "$100", status: "waiting" }
-                      ].map((request, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
-                          <div>
-                            <div className="font-semibold">{request.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {request.duration} • {request.amount}
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              Decline
-                            </Button>
-                            <Button size="sm" className="bg-gradient-primary hover:bg-gradient-secondary">
-                              Accept
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+        {/* Content Sections */}
+        {activeSection === 'dashboard' && (
+          <div className="space-y-4">
+            {/* Stats Section */}
+            <IOSListView>
+              <IOSListSection header="Stats Overview">
+                <IOSListItem>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3">
+                      <div className="ios-icon-container bg-primary/10">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">This Month</div>
+                        <div className="text-sm text-ios-secondary">Total earnings</div>
+                      </div>
                     </div>
-                  </CardContent>
-                </Card>
+                    <div className="text-right">
+                      <div className="font-semibold">$1,250</div>
+                    </div>
+                  </div>
+                </IOSListItem>
+                <IOSListItem>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3">
+                      <div className="ios-icon-container bg-primary/10">
+                        <Clock className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Call Time</div>
+                        <div className="text-sm text-ios-secondary">Total this month</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">24.5h</div>
+                    </div>
+                  </div>
+                </IOSListItem>
+                <IOSListItem>
+                  <div className="flex items-center justify-between w-full">
+                    <div className="flex items-center space-x-3">
+                      <div className="ios-icon-container bg-primary/10">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">Total Fans</div>
+                        <div className="text-sm text-ios-secondary">Active followers</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">156</div>
+                    </div>
+                  </div>
+                </IOSListItem>
+              </IOSListSection>
+            </IOSListView>
 
-                {/* Go Live Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Start Accepting Calls</CardTitle>
-                    <CardDescription>
-                      Toggle your availability to start earning
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+            {/* Call Requests */}
+            <IOSListView>
+              <IOSListSection header="Pending Call Requests">
+                {[
+                  { name: "Sarah M.", duration: "15 min", amount: "$75", status: "waiting" },
+                  { name: "Mike R.", duration: "30 min", amount: "$150", status: "waiting" },
+                  { name: "Group Call (3)", duration: "20 min", amount: "$100", status: "waiting" }
+                ].map((request, index) => (
+                  <IOSListItem key={index}>
+                    <div className="flex items-center justify-between w-full">
+                      <div>
+                        <div className="font-medium">{request.name}</div>
+                        <div className="text-sm text-ios-secondary">
+                          {request.duration} • {request.amount}
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" className="ios-button-sm">
+                          Decline
+                        </Button>
+                        <Button size="sm" className="ios-button-primary ios-button-sm">
+                          Accept
+                        </Button>
+                      </div>
+                    </div>
+                  </IOSListItem>
+                ))}
+              </IOSListSection>
+            </IOSListView>
+
+            {/* Live Status */}
+            <IOSListView>
+              <IOSListSection header="Live Status">
+                <IOSListItem>
+                  <div className="text-center py-6">
                     {isLive ? (
-                      <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-gradient-primary rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <div>
+                        <div className="w-16 h-16 bg-primary rounded-full mx-auto mb-4 flex items-center justify-center">
                           <div className="w-4 h-4 bg-primary-foreground rounded-full animate-pulse"></div>
                         </div>
-                        <h3 className="text-xl font-semibold mb-2">You're Live!</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Fans can now request video calls with you at ${pricePer5Min}/5min
-                        </p>
+                        <div className="font-semibold mb-2">You're Live!</div>
+                        <div className="text-sm text-ios-secondary mb-4">
+                          Accepting calls at ${pricePer5Min}/5min
+                        </div>
                         <Button 
                           variant="outline" 
                           onClick={() => setIsLive(false)}
+                          className="ios-button"
                         >
                           Go Offline
                         </Button>
                       </div>
                     ) : (
-                      <div className="text-center py-8">
-                        <h3 className="text-xl font-semibold mb-2">Ready to Go Live?</h3>
-                        <p className="text-muted-foreground mb-4">
-                          Start accepting video call requests from your fans
-                        </p>
+                      <div>
+                        <div className="font-semibold mb-2">Ready to Go Live?</div>
+                        <div className="text-sm text-ios-secondary mb-4">
+                          Start accepting video call requests
+                        </div>
                         <Button 
-                          className="bg-gradient-primary hover:bg-gradient-secondary" 
+                          className="ios-button-primary" 
                           onClick={() => setIsLive(true)}
                         >
                           Go Live
                         </Button>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </TabsContent>
+                  </div>
+                </IOSListItem>
+              </IOSListSection>
+            </IOSListView>
+          </div>
+        )}
 
-          <TabsContent value="pricing" className="mt-0">
-            <DynamicPricingEngine />
-          </TabsContent>
-
-          <TabsContent value="profile" className="mt-0">
-            <ProfileSettings />
-          </TabsContent>
-
-          <TabsContent value="social" className="mt-0">
-            <SocialConnections />
-          </TabsContent>
-
-          <TabsContent value="playlists" className="mt-0">
-            <CreatorPlaylists />
-          </TabsContent>
-
-          <TabsContent value="availability" className="mt-0">
-            <AvailabilityManager />
-          </TabsContent>
-
-          <TabsContent value="files" className="mt-0">
-            <FileRepository />
-          </TabsContent>
-
-          <TabsContent value="events" className="mt-0">
-            <EventCreator />
-          </TabsContent>
-
-          <TabsContent value="referrals" className="mt-0">
-            <ReferralSystem />
-          </TabsContent>
-
-          <TabsContent value="sponsors" className="mt-0">
-            <SponsorManager />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="mt-0">
-            <EarningsDashboard />
-          </TabsContent>
-
-          <TabsContent value="settings" className="mt-0">
-            <div className="grid lg:grid-cols-2 gap-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Shield className="mr-2 h-5 w-5" />
-                    Content Moderation
-                  </CardTitle>
-                  <CardDescription>
-                    Automatically moderate chat messages
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
+        {activeSection === 'pricing' && <DynamicPricingEngine />}
+        {activeSection === 'profile' && <ProfileSettings />}
+        {activeSection === 'availability' && <AvailabilityManager />}
+        {activeSection === 'social' && <SocialConnections />}
+        {activeSection === 'playlists' && <CreatorPlaylists />}
+        {activeSection === 'files' && <FileRepository />}
+        {activeSection === 'events' && <EventCreator />}
+        {activeSection === 'referrals' && <ReferralSystem />}
+        {activeSection === 'sponsors' && <SponsorManager />}
+        {activeSection === 'analytics' && <EarningsDashboard />}
+        
+        {activeSection === 'settings' && (
+          <IOSListView>
+            <IOSListSection header="Content Moderation">
+              <IOSListItem>
+                <div className="space-y-3 w-full">
                   <div>
-                    <Label htmlFor="blocked">Blocked Words (comma separated)</Label>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Shield className="h-5 w-5 text-primary" />
+                      <span className="font-medium">Blocked Words</span>
+                    </div>
                     <Textarea
-                      id="blocked"
                       value={blockedWords}
                       onChange={(e) => setBlockedWords(e.target.value)}
-                      placeholder="Enter words to block..."
-                      className="h-20"
+                      placeholder="Enter words to block (comma separated)..."
+                      className="ios-textarea"
+                      rows={3}
                     />
                   </div>
-                  
-                  <div className="bg-muted p-3 rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      When blocked words are detected, the chat will be automatically paused and you'll be notified.
+                  <div className="ios-info-box">
+                    <p className="text-xs text-ios-secondary">
+                      When blocked words are detected, the chat will be paused and you'll be notified.
                     </p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                </div>
+              </IOSListItem>
+            </IOSListSection>
+          </IOSListView>
+        )}
       </div>
+
+      {/* More Sections Action Sheet */}
+      <IOSActionSheet
+        open={showMoreSheet}
+        onOpenChange={setShowMoreSheet}
+        title="More Options"
+      >
+        <div className="space-y-1">
+          {moreSections.map((section) => (
+            <IOSListItem
+              key={section.id}
+              onClick={() => {
+                setActiveSection(section.id);
+                setShowMoreSheet(false);
+              }}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="ios-icon-container">
+                  <section.icon className="h-5 w-5" />
+                </div>
+                <span>{section.title}</span>
+              </div>
+            </IOSListItem>
+          ))}
+        </div>
+      </IOSActionSheet>
     </div>
   );
 };

@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, User, Save, Link, ExternalLink } from "lucide-react";
+import { Upload, User, Save, Link, ExternalLink, Camera } from "lucide-react";
 
 const ProfileSettings = () => {
   const { user } = useAuth();
@@ -141,35 +140,32 @@ const ProfileSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <User className="mr-2 h-5 w-5" />
-            Profile Information
-          </CardTitle>
-          <CardDescription>
-            Update your public profile information
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Avatar Section */}
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-              <AvatarFallback>
-                {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <Label htmlFor="avatar-upload" className="cursor-pointer">
+    <div className="space-y-4">
+      {/* Profile Information */}
+      <IOSListView>
+        <IOSListSection header="Profile Information">
+          {/* Avatar */}
+          <IOSListItem>
+            <div className="flex items-center justify-between w-full py-3">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                  <AvatarFallback>
+                    {profile.full_name.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-medium">Profile Photo</div>
+                  <div className="text-sm text-ios-secondary">JPG, PNG or GIF. Max 5MB</div>
+                </div>
+              </div>
+              <label htmlFor="avatar-upload" className="cursor-pointer">
                 <Button variant="outline" size="sm" disabled={uploading} asChild>
                   <span>
-                    <Upload className="mr-2 h-4 w-4" />
-                    {uploading ? "Uploading..." : "Change Avatar"}
+                    <Camera className="h-4 w-4" />
                   </span>
                 </Button>
-              </Label>
+              </label>
               <Input
                 id="avatar-upload"
                 type="file"
@@ -177,74 +173,78 @@ const ProfileSettings = () => {
                 className="hidden"
                 onChange={handleAvatarUpload}
               />
-              <p className="text-sm text-muted-foreground mt-1">
-                JPG, PNG or GIF. Max size 5MB.
-              </p>
             </div>
-          </div>
+          </IOSListItem>
 
-          {/* Basic Info */}
-          <div className="grid gap-4">
-            <div>
-              <Label htmlFor="full_name">Display Name</Label>
+          {/* Display Name */}
+          <IOSListItem>
+            <div className="w-full">
+              <div className="text-sm text-ios-secondary mb-1">Display Name</div>
               <Input
-                id="full_name"
                 value={profile.full_name}
                 onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
                 placeholder="Your display name"
+                className="ios-input"
               />
             </div>
+          </IOSListItem>
 
-            <div>
-              <Label htmlFor="bio">Bio</Label>
+          {/* Bio */}
+          <IOSListItem>
+            <div className="w-full">
+              <div className="text-sm text-ios-secondary mb-1">Bio</div>
               <Textarea
-                id="bio"
                 value={profile.bio}
                 onChange={(e) => setProfile(prev => ({ ...prev, bio: e.target.value }))}
                 placeholder="Tell your fans about yourself..."
-                className="h-24"
+                className="ios-textarea"
+                rows={4}
               />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </IOSListItem>
+        </IOSListSection>
+      </IOSListView>
 
-      {/* Links Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Link className="mr-2 h-5 w-5" />
-            Social Links
-          </CardTitle>
-          <CardDescription>
-            Add links to your other platforms
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Social Links */}
+      <IOSListView>
+        <IOSListSection header="Social Links">
           {links.map((link, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <Label className="w-20 text-sm">{link.platform}:</Label>
-              <Input
-                value={link.url}
-                onChange={(e) => handleLinkChange(index, e.target.value)}
-                placeholder={`Your ${link.platform.toLowerCase()} URL`}
-                className="flex-1"
-              />
-              {link.url && (
-                <Button variant="ghost" size="sm" asChild>
-                  <a href={link.url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-            </div>
+            <IOSListItem key={index}>
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div className="ios-icon-container">
+                    <Link className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-ios-secondary mb-1">{link.platform}</div>
+                    <Input
+                      value={link.url}
+                      onChange={(e) => handleLinkChange(index, e.target.value)}
+                      placeholder={`Your ${link.platform.toLowerCase()} URL`}
+                      className="ios-input"
+                    />
+                  </div>
+                </div>
+                {link.url && (
+                  <Button variant="ghost" size="sm" asChild className="ml-2">
+                    <a href={link.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </IOSListItem>
           ))}
-        </CardContent>
-      </Card>
+        </IOSListSection>
+      </IOSListView>
 
       {/* Save Button */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={loading} className="bg-gradient-primary hover:bg-gradient-secondary">
+      <div className="ios-safe-bottom px-4">
+        <Button 
+          onClick={handleSave} 
+          disabled={loading} 
+          className="ios-button-primary w-full"
+        >
           <Save className="mr-2 h-4 w-4" />
           {loading ? "Saving..." : "Save Changes"}
         </Button>

@@ -78,62 +78,57 @@ const UserStatusHeader = ({ onStatusToggle, isLive }: UserStatusHeaderProps) => 
   };
 
   return (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex items-center space-x-4">
-        {/* Quick Stats */}
-        <div className="hidden md:flex items-center space-x-6 text-sm">
-          <div className="flex items-center space-x-1">
-            <DollarSign className="h-4 w-4 text-primary" />
-            <span className="font-medium">${stats.totalEarnings}</span>
-            <span className="text-muted-foreground">earned</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Users className="h-4 w-4 text-primary" />
-            <span className="font-medium">{stats.totalFans}</span>
-            <span className="text-muted-foreground">fans</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <Clock className="h-4 w-4 text-primary" />
-            <span className="font-medium">{stats.callTime}h</span>
-            <span className="text-muted-foreground">calls</span>
+    <div className="ios-status-bar">
+      <div className="flex items-center justify-between w-full px-4 py-3">
+        {/* Left side - Status and Stats */}
+        <div className="flex items-center space-x-3">
+          <Button
+            variant={isLive ? "default" : "outline"}
+            size="sm"
+            onClick={handleStatusToggle}
+            className={`ios-status-toggle ${isLive ? "ios-live-button" : "ios-offline-button"}`}
+          >
+            <Circle className={`mr-2 h-3 w-3 ${isLive ? 'fill-current' : ''}`} />
+            {isLive ? "LIVE" : "Offline"}
+          </Button>
+          
+          {/* Condensed Stats for mobile */}
+          <div className="flex items-center space-x-4 text-xs text-ios-secondary">
+            <div className="flex items-center space-x-1">
+              <DollarSign className="h-3 w-3" />
+              <span>${stats.totalEarnings}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Users className="h-3 w-3" />
+              <span>{stats.totalFans}</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <Clock className="h-3 w-3" />
+              <span>{stats.callTime}h</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* User Profile & Status */}
-      <div className="flex items-center space-x-4">
-        {/* Status Toggle */}
-        <Button
-          variant={isLive ? "default" : "outline"}
-          size="sm"
-          onClick={handleStatusToggle}
-          className={isLive ? "bg-gradient-primary hover:bg-gradient-secondary" : ""}
-        >
-          <Circle className={`mr-2 h-3 w-3 ${isLive ? 'fill-primary-foreground' : 'fill-muted-foreground'}`} />
-          {isLive ? "LIVE" : "Offline"}
-        </Button>
-
-        {/* User Info */}
+        {/* Right side - User Profile */}
         <div className="flex items-center space-x-3">
-          <div className="text-right hidden sm:block">
+          <div className="text-right">
             <div className="text-sm font-medium">
               {profile?.full_name || user?.email?.split('@')[0] || 'Creator'}
             </div>
-            <div className="text-xs text-muted-foreground">
-              {isLive ? "Available for calls" : "Offline"}
+            <div className="text-xs text-ios-secondary">
+              {isLive ? "Available" : "Offline"}
             </div>
           </div>
           
           <div className="relative">
-            <Avatar className="h-10 w-10">
+            <Avatar className="h-8 w-8">
               <AvatarImage src={profile?.avatar_url} alt={profile?.full_name} />
-              <AvatarFallback>
+              <AvatarFallback className="text-xs">
                 {profile?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 'U'}
               </AvatarFallback>
             </Avatar>
-            {/* Online status indicator */}
-            <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-background ${
-              isLive ? 'bg-green-500' : 'bg-gray-400'
+            <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
+              isLive ? 'bg-green-500' : 'bg-ios-tertiary'
             }`} />
           </div>
         </div>
