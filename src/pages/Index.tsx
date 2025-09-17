@@ -198,7 +198,7 @@ const Index = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-primary">For Creators</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Whether you're a musician, skateboarder, business leader, gamer, or industry expert—tired of 
+                      Whether you're a content creator, artist, fitness coach, entrepreneur, or wellness expert—tired of 
                       shouting into the void? Of algorithms deciding who sees your work? Skip cuts through 
                       the noise. Your most dedicated followers can reach you directly, one meaningful conversation 
                       at a time. No more competing for attention—just real connections with people who truly 
@@ -208,8 +208,8 @@ const Index = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-primary">For Fans</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Want real access to the creators you admire—musicians, skateboarders, entrepreneurs, 
-                      gamers, or industry experts? Skip gives you the chance to connect personally with the 
+                      Want real access to the creators you admire—content creators, artists, fitness coaches, 
+                      entrepreneurs, or wellness experts? Skip gives you the chance to connect personally with the 
                       people whose content, personality, and insights inspire you. No more hoping they'll 
                       see your comment—whether you want advice, inspiration, or just to say hello.
                     </p>
