@@ -126,7 +126,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             <Button 
               type="submit" 
               className="w-full" 
-              variant="default"
+              variant="gradient"
               disabled={isLoading}
             >
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -216,7 +216,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                variant="default"
+                variant="gradient"
                 disabled={isLoading || loading}
               >
                 {(isLoading || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -332,7 +332,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                variant="default"
+                variant="gradient"
                 disabled={isLoading || loading || signUpData.password !== signUpData.confirmPassword}
               >
                 {(isLoading || loading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -210,7 +210,7 @@ export function CallLobby({
                 {isCreatorView ? (
                   <>
                     <Button 
-                      variant="default" 
+                      variant="gradient" 
                       onClick={handleStartEarly}
                       className="min-w-32"
                     >

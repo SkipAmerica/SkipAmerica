@@ -20,8 +20,6 @@ import { EventCountdown } from "@/components/events/EventCountdown";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
-
-
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -60,57 +58,47 @@ const Index = () => {
 
   // Main social media interface
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header - Mobile Optimized */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
-                <Video className="h-6 w-6" />
-              </div>
-              <h1 className="text-2xl font-bold">
-                GoLive
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-3">
-              {user ? (
-                <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
-              ) : (
-                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
-                  Sign In
-                </Button>
-              )}
-            </div>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Video className="h-8 w-8 text-primary" />
+            <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              Skip
+            </h1>
           </div>
           
-          {/* Creator avatars row - OSMO style */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 overflow-x-auto pb-2">
-              {["Wealth Coach", "Business", "Tech Expert", "Designer"].map((title, index) => (
-                <div key={index} className="flex flex-col items-center min-w-0">
-                  <div className="relative mb-1">
-                    <div className="w-12 h-12 relative">
-                      <svg viewBox="0 0 100 100" className="w-full h-full absolute inset-0">
-                        <defs>
-                          <clipPath id={`header-hex-${index}`}>
-                            <polygon points="50,5 85,25 85,75 50,95 15,75 15,25" />
-                          </clipPath>
-                        </defs>
-                      </svg>
-                      <div 
-                        className="w-full h-full bg-white/90 rounded-lg flex items-center justify-center"
-                        style={{ clipPath: `url(#header-hex-${index})` }}
-                      >
-                        <span className="text-lg">👤</span>
-                      </div>
-                    </div>
-                  </div>
-                  <span className="text-xs text-white/90 text-center">{title}</span>
-                </div>
-              ))}
-            </div>
+          <div className="flex items-center space-x-4">
+            {user && (
+              <>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/feed")}>
+                  <Bell className="h-4 w-4 mr-1" />
+                  Feed
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
+                  Profile
+                </Button>
+              </>
+            )}
+            {user && profile?.account_type === 'creator' && (
+              <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
+                Creator Hub
+              </Button>
+            )}
+            {user ? (
+              <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
+            ) : (
+              <>
+                <Button variant="outline" onClick={() => navigate("/auth")}>
+                  Sign In
+                </Button>
+                <Button variant="gradient" onClick={() => navigate("/auth")}>
+                  <Users className="h-4 w-4 mr-1" />
+                  Join
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -145,7 +133,7 @@ const Index = () => {
 
           <TabsContent value="discover" className="space-y-8">
             {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-2xl bg-card text-foreground p-8 md:p-12 border">
+            <section className="relative overflow-hidden rounded-2xl bg-gradient-hero text-primary-foreground p-8 md:p-12">
               <div className="absolute inset-0 opacity-20">
                 <img 
                   src={heroImage} 
@@ -167,7 +155,7 @@ const Index = () => {
                   {user ? (
                     <Button 
                       size="lg" 
-                      variant="default"
+                      variant="hero"
                       onClick={() => setActiveTab("live")}
                     >
                       <Zap className="mr-2 h-4 w-4" />
@@ -177,7 +165,7 @@ const Index = () => {
                     <>
                       <Button 
                         size="lg" 
-                        variant="default"
+                        variant="hero"
                         className="text-lg px-8 py-4"
                         onClick={() => navigate("/auth")}
                       >
@@ -186,7 +174,7 @@ const Index = () => {
                       </Button>
                       <Button 
                         size="lg" 
-                        variant="outline"
+                        variant="hero-outline"
                         onClick={() => setActiveTab("live")}
                       >
                       <Zap className="mr-2 h-4 w-4" />
@@ -203,6 +191,19 @@ const Index = () => {
               </div>
             </section>
 
+            {/* Live Creators Preview */}
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Available Now</h2>
+                <Button variant="outline" onClick={() => setActiveTab("live")}>
+                  View All Live
+                </Button>
+              </div>
+              <OnlineCreators 
+                onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                onStartCall={(id) => setActiveTab("call")}
+              />
+            </section>
 
             {/* Sponsored Content */}
             <section>
@@ -362,7 +363,6 @@ const Index = () => {
           )}
         </Tabs>
       </div>
-
 
       {/* Rating Modal */}
       {showRatingModal && (
