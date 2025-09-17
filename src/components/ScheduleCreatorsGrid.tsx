@@ -122,12 +122,12 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
             className="flex flex-col items-center space-y-2 p-3 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
             onClick={() => onCreatorSelect(creator.id)}
           >
-            {/* Ratings Count and Rating */}
+            {/* Rating and Ratings Count */}
             <div className="text-center">
               <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
-                <span className="font-medium">({creator.ratingsCount})</span>
                 <span className="text-yellow-500">★</span>
                 <span>{creator.rating}</span>
+                <span className="font-medium">({creator.ratingsCount})</span>
               </div>
             </div>
             
