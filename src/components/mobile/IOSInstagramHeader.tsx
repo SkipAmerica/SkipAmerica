@@ -56,7 +56,7 @@ export function IOSInstagramHeader({
 
       {/* Bottom Row - User Profile + Online Creator Stories */}
       <div className="flex items-center">
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0 flex flex-col items-center">
           <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'Profile'} />
             <AvatarFallback className="text-sm font-medium">
@@ -64,6 +64,9 @@ export function IOSInstagramHeader({
                user?.email?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
+          <button className="text-xs text-primary font-medium mt-1">
+            What's new
+          </button>
         </div>
         
         {/* Online Creator Stories */}
