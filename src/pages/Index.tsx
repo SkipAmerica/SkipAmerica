@@ -20,6 +20,8 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
 import { UserInterestFilters } from "@/components/UserInterestFilters";
+import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
+import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -41,6 +43,7 @@ const Index = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilter, setSelectedFilter] = useState("all");
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   
@@ -78,9 +81,12 @@ const Index = () => {
 
 
             {/* Search and Filters */}
-            <div className="mx-4 space-y-4">
+            <div className="mx-4 space-y-6">
               {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-              <UserInterestFilters />
+              <UserInterestFilters 
+                selectedFilter={selectedFilter}
+                onFilterChange={setSelectedFilter}
+              />
               
               {/* Search Bar */}
               <div>
@@ -90,6 +96,18 @@ const Index = () => {
                   placeholder="Search creators..."
                 />
               </div>
+
+              {/* Who's Online Grid */}
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={(id) => setActiveTab("creator-profile")}
+              />
+
+              {/* Schedule in Advance Grid */}
+              <ScheduleCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={(id) => setActiveTab("creator-profile")}
+              />
             </div>
 
             {/* Features - Mobile Cards */}
