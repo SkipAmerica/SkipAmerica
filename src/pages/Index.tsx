@@ -311,11 +311,13 @@ const Index = () => {
   // Main iOS interface for signed in users
   return (
     <div className="min-h-screen bg-background relative">
-      {/* iOS Navigation Bar */}
-      <IOSInstagramHeader 
-        onMenuClick={() => setShowMenu(true)}
-        onCreatorSelect={(id) => setActiveTab("creator-profile")}
-      />
+      {/* iOS Navigation Bar - Hide when in advanced tab */}
+      {activeTab !== "advanced" && (
+        <IOSInstagramHeader 
+          onMenuClick={() => setShowMenu(true)}
+          onCreatorSelect={(id) => setActiveTab("creator-profile")}
+        />
+      )}
 
       {/* Main Content */}
       <div className={`${
