@@ -74,66 +74,6 @@ const Index = () => {
       case "discover":
         return (
           <div className="space-y-6">
-            {/* Hero Section - Mobile Optimized */}
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-hero text-primary-foreground p-6 mx-4 mt-4">
-              <div className="absolute inset-0 opacity-20">
-                <img 
-                  src={heroImage} 
-                  alt="Creators connecting with users through video calls" 
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="relative z-10">
-                <Badge className="mb-3 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 text-xs">
-                  Professional Access Platform
-                </Badge>
-                <h1 className="text-2xl font-bold mb-3">
-                  <span className="text-skip-black">Sk</span>
-                  <span className="relative">
-                    <span className="text-skip-black">i</span>
-                    <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
-                  </span>
-                  <span className="text-skip-black">p. Make it Count.</span>
-                </h1>
-                <p className="text-sm mb-6 opacity-90">
-                  Social platforms help you grow. Skip helps you connect.
-                </p>
-                <div className="flex flex-col gap-3">
-                  {user ? (
-                    <Button 
-                      size="lg" 
-                      variant="hero"
-                      onClick={() => setActiveTab("live")}
-                      className="w-full"
-                    >
-                      <Zap className="mr-2 h-4 w-4" />
-                      Explore Live Now
-                    </Button>
-                  ) : (
-                    <>
-                      <Button 
-                        size="lg" 
-                        variant="hero"
-                        className="w-full"
-                        onClick={() => navigate("/auth")}
-                      >
-                        <Users className="mr-2 h-4 w-4" />
-                        Start Monetizing - It's Free!
-                      </Button>
-                      <Button 
-                        size="lg" 
-                        variant="hero-outline"
-                        onClick={() => setActiveTab("live")}
-                        className="w-full"
-                      >
-                        <Zap className="mr-2 h-4 w-4" />
-                        Browse Creators
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
 
             {/* What Skip Does - Mobile Optimized */}
             <IOSListView className="mx-4">
@@ -165,6 +105,30 @@ const Index = () => {
                   View All
                 </Button>
               </div>
+              
+              {/* Sort Options */}
+              <div className="flex gap-2 mb-4 overflow-x-auto">
+                {["all", "Entertainment", "Technology", "Business", "Beauty"].map((category) => (
+                  <Button
+                    key={category}
+                    variant="outline"
+                    size="sm"
+                    className="whitespace-nowrap"
+                  >
+                    {category === "all" ? "All" : category}
+                  </Button>
+                ))}
+              </div>
+              
+              {/* Search Bar */}
+              <div className="mb-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search creators..."
+                />
+              </div>
+              
               <OnlineCreators 
                 onCreatorSelect={(id) => setActiveTab("creator-profile")}
                 onStartCall={(id) => setActiveTab("call")}
