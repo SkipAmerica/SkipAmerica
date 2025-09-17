@@ -103,7 +103,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
 
   if (showResetPassword) {
     return (
-      <Card className="w-full max-w-md mx-auto shadow-creator">
+      <Card className="w-full max-w-md mx-auto shadow-creator bg-white">
         <CardHeader className="text-center">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-gradient-primary rounded-full">
@@ -155,22 +155,22 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto shadow-creator">
+    <Card className="w-full max-w-md mx-auto shadow-creator bg-white">
       <CardHeader className="text-center">
         <div className="flex items-center justify-center mb-4">
           <h1 className="text-2xl font-bold">
-            <span className="text-skip-black">Sk</span>
+            <span className="text-black">Sk</span>
             <span className="relative">
-              <span className="text-skip-black">i</span>
-              <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
+              <span className="text-black">i</span>
+              <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-orange-500 rounded-full"></span>
             </span>
-            <span className="text-skip-black">p</span>
+            <span className="text-black">p</span>
           </h1>
         </div>
-        <CardTitle className="text-2xl bg-gradient-hero bg-clip-text text-transparent">
+        <CardTitle className="text-2xl text-black">
           Welcome to Skip
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-600">
           Connect with creators through live video calls
         </CardDescription>
       </CardHeader>
