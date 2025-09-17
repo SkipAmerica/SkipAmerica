@@ -11,6 +11,8 @@ interface Creator {
   category: string;
   isOnline: boolean;
   nextAvailable?: string;
+  industry: string;
+  rating: number;
 }
 
 interface ScheduleCreatorsGridProps {
@@ -21,18 +23,18 @@ interface ScheduleCreatorsGridProps {
 
 // Mock data - replace with real data
 const mockCreators: Creator[] = [
-  { id: '13', name: 'Jennifer Lopez', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Tomorrow 2pm' },
-  { id: '14', name: 'Elon Musk', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'technology', isOnline: false, nextAvailable: 'Today 6pm' },
-  { id: '15', name: 'Warren Buffett', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: false, nextAvailable: 'Next week' },
-  { id: '16', name: 'Kylie Jenner', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 10am' },
-  { id: '17', name: 'Tim Cook', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: false, nextAvailable: 'Friday 3pm' },
-  { id: '18', name: 'Oprah Winfrey', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Next Monday' },
-  { id: '19', name: 'Jeff Bezos', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150', category: 'business', isOnline: false, nextAvailable: 'Thursday 1pm' },
-  { id: '20', name: 'Rihanna', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 4pm' },
-  { id: '21', name: 'Mark Zuckerberg', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', category: 'technology', isOnline: false, nextAvailable: 'Today 8pm' },
-  { id: '22', name: 'Taylor Swift', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Saturday 11am' },
-  { id: '23', name: 'Richard Branson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: false, nextAvailable: 'Next Tuesday' },
-  { id: '24', name: 'Kim Kardashian', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 9am' },
+  { id: '13', name: 'Jennifer Lopez', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Tomorrow 2pm', industry: 'Music & Film', rating: 4.9 },
+  { id: '14', name: 'Elon Musk', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'technology', isOnline: false, nextAvailable: 'Today 6pm', industry: 'Space Tech', rating: 4.7 },
+  { id: '15', name: 'Warren Buffett', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: false, nextAvailable: 'Next week', industry: 'Investing', rating: 4.8 },
+  { id: '16', name: 'Kylie Jenner', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 10am', industry: 'Beauty', rating: 4.6 },
+  { id: '17', name: 'Tim Cook', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: false, nextAvailable: 'Friday 3pm', industry: 'Tech CEO', rating: 4.5 },
+  { id: '18', name: 'Oprah Winfrey', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Next Monday', industry: 'Media', rating: 4.9 },
+  { id: '19', name: 'Jeff Bezos', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150', category: 'business', isOnline: false, nextAvailable: 'Thursday 1pm', industry: 'E-commerce', rating: 4.4 },
+  { id: '20', name: 'Rihanna', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 4pm', industry: 'Fashion', rating: 4.8 },
+  { id: '21', name: 'Mark Zuckerberg', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', category: 'technology', isOnline: false, nextAvailable: 'Today 8pm', industry: 'Social Media', rating: 4.3 },
+  { id: '22', name: 'Taylor Swift', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'entertainment', isOnline: false, nextAvailable: 'Saturday 11am', industry: 'Music', rating: 4.9 },
+  { id: '23', name: 'Richard Branson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: false, nextAvailable: 'Next Tuesday', industry: 'Entrepreneurship', rating: 4.6 },
+  { id: '24', name: 'Kim Kardashian', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 9am', industry: 'Reality TV', rating: 4.5 },
 ];
 
 export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: ScheduleCreatorsGridProps) {
@@ -131,7 +133,14 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
                 <div className="w-4 h-4 bg-muted border-2 border-white rounded-full"></div>
               </div>
             </div>
-            <div className="text-center">
+            <div className="text-center space-y-1">
+              <div className="space-y-0.5">
+                <p className="text-xs text-muted-foreground font-medium">{creator.industry}</p>
+                <div className="flex items-center justify-center space-x-1">
+                  <span className="text-xs text-yellow-500">★</span>
+                  <span className="text-xs text-muted-foreground">{creator.rating}</span>
+                </div>
+              </div>
               <p className="text-sm font-medium leading-tight">{creator.name}</p>
               {creator.nextAvailable && (
                 <Badge variant="outline" className="text-xs mt-1">
