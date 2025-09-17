@@ -141,7 +141,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
 
   const filteredCategories = facets.categories?.filter((category: string) =>
     category.toLowerCase().includes(categorySearch.toLowerCase())
-  ) || []
+  ).sort((a, b) => a.localeCompare(b)) || []
 
   const searchCreators = useCallback(async () => {
     if (!user) return
