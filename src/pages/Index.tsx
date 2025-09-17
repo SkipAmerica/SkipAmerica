@@ -11,6 +11,7 @@ import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
 import VideoCallInterface from "@/components/VideoCallInterface";
 import CreatorProfile from "@/components/CreatorProfile";
+import { CallFlow } from "@/components/call/CallFlow";
 import OnlineCreators from "@/components/OnlineCreators";
 import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
@@ -38,6 +39,16 @@ import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActio
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 
+// Mock data - matches OnlineCreatorsGrid
+const mockCreators = [
+  { id: '1', name: 'Emma Stone', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1240, rating: 4.9, title: 'Academy Award Winner', callRate: 150, maxCallDuration: 30 },
+  { id: '2', name: 'Dr. Sarah Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'technology', isOnline: true, ratingsCount: 890, rating: 4.8, title: 'AI Research Director', callRate: 200, maxCallDuration: 45 },
+  { id: '3', name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'business', isOnline: true, ratingsCount: 650, rating: 4.7, title: 'Serial Entrepreneur', callRate: 300, maxCallDuration: 60 },
+  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: true, ratingsCount: 2100, rating: 4.9, title: 'Beauty Influencer', callRate: 100, maxCallDuration: 20 },
+  { id: '5', name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: true, ratingsCount: 420, rating: 4.6, title: 'Lead Developer', callRate: 180, maxCallDuration: 40 },
+  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1560, rating: 4.8, title: 'Grammy Nominee', callRate: 250, maxCallDuration: 35 },
+];
+
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
@@ -49,10 +60,39 @@ const Index = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [liveNowOpen, setLiveNowOpen] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(true);
+  const [activeCall, setActiveCall] = useState<string | null>(null);
   
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
+
+  // Handle video call
+  const handleCreatorSelect = (creatorId: string) => {
+    setActiveCall(creatorId);
+  };
+
+  const handleEndCall = () => {
+    setActiveCall(null);
+  };
+
+  // Show CallFlow if call is active
+  if (activeCall) {
+    const creator = mockCreators.find(c => c.id === activeCall);
+    if (creator) {
+      return (
+        <CallFlow
+          creator={creator}
+          fan={{
+            id: user?.id || 'fan-1',
+            name: user?.user_metadata?.full_name || profile?.full_name || 'Fan User',
+            avatar: profile?.avatar_url || 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150'
+          }}
+          onEndCall={handleEndCall}
+          isCreatorView={false}
+        />
+      );
+    }
+  }
 
   // Handle different views
   if (activeTab === "creator-dashboard") {
@@ -128,7 +168,7 @@ const Index = () => {
                     <div className="pt-4">
                       <OnlineCreatorsGrid 
                         selectedCategory={selectedFilter}
-                        onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                        onCreatorSelect={handleCreatorSelect}
                         searchQuery={searchQuery}
                         hideHeader={true}
                       />
