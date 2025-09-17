@@ -15,36 +15,37 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 13%;
 
-    /* Creator Brand Purple */
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 270 91% 65%;
+    /* OSMO-inspired Brand Colors */
+    --primary: 45 100% 51%;
+    --primary-foreground: 0 0% 0%;
+    --primary-glow: 33 100% 50%;
 
-    /* Accent Pink */
-    --secondary: 316 73% 69%;
-    --secondary-foreground: 0 0% 100%;
+    /* Accent Orange */
+    --secondary: 33 100% 50%;
+    --secondary-foreground: 0 0% 0%;
 
-    --muted: 220 13% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 45 25% 95%;
+    --muted-foreground: 45 8% 46%;
 
-    --accent: 270 95% 95%;
-    --accent-foreground: 262 83% 58%;
+    --accent: 51 100% 50%;
+    --accent-foreground: 0 0% 0%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 262 83% 58%;
+    --ring: 45 100% 51%;
 
-    /* Creator Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-secondary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
-    --gradient-hero: linear-gradient(135deg, hsl(262 83% 58%), hsl(316 73% 69%));
+    /* OSMO-inspired Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(45 100% 51%), hsl(33 100% 50%));
+    --gradient-secondary: linear-gradient(135deg, hsl(33 100% 50%), hsl(51 100% 50%));
+    --gradient-hero: linear-gradient(135deg, hsl(45 100% 51%), hsl(33 100% 50%));
+    --gradient-card: linear-gradient(135deg, hsl(51 100% 50%), hsl(45 100% 51%));
     
     /* Shadows */
-    --shadow-creator: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.2);
+    --shadow-creator: 0 10px 30px -10px hsl(45 100% 51% / 0.3);
+    --shadow-glow: 0 0 40px hsl(33 100% 50% / 0.2);
     
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
