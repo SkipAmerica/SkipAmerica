@@ -90,10 +90,6 @@ const IndustryResourceSetup = () => {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" onClick={() => navigate('/')}>
-              <Briefcase className="h-6 w-6 text-primary mr-2" />
-              <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
-            </Button>
             <div className="text-lg font-semibold">Industry Resource Setup</div>
           </div>
         </div>

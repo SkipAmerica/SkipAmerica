@@ -220,14 +220,6 @@ export default function Feed() {
         <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <Button 
-                variant="ghost" 
-                onClick={() => window.location.href = '/'}
-                className="flex items-center space-x-2"
-              >
-                <Video className="h-6 w-6 text-primary" />
-                <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
-              </Button>
               <div className="text-lg font-semibold">Feed</div>
             </div>
             
@@ -255,14 +247,6 @@ export default function Feed() {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
-              onClick={() => window.location.href = '/'}
-              className="flex items-center space-x-2"
-            >
-              <Video className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">Skip</span>
-            </Button>
             <div className="text-lg font-semibold">Feed</div>
           </div>
           
