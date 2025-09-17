@@ -47,8 +47,8 @@ const Index = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
-  const [liveNowOpen, setLiveNowOpen] = useState(true);
-  const [scheduleOpen, setScheduleOpen] = useState(true);
+  const [liveNowOpen, setLiveNowOpen] = useState(false);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   
   const { user } = useAuth();
   const { profile } = useProfile();
