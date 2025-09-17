@@ -198,20 +198,13 @@ const Index = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-primary">For Creators</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      From content creators and artists to fitness coaches and entrepreneurs—and so much more. 
-                      If you have a following or expertise that people value, you belong here. Skip cuts through 
-                      the noise so your most dedicated followers can reach you directly, one meaningful conversation 
-                      at a time. No more competing for attention—just real connections with people who truly 
-                      value what you bring to their lives.
+                      Skip is built for you — the creators who've poured energy into growing an audience but feel boxed in by crowded feeds and shifting algorithms. Here, your time and talent aren't hidden in the scroll. Skip gives you a simple way to share yourself directly, on your terms, and be valued for it.
                     </p>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-primary">For Users</h3>
+                    <h3 className="text-2xl font-semibold text-primary">For Fans & Clients</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Want real access to the creators you admire? Whether they're wellness experts, business leaders, 
-                      or something completely different—there's incredible diversity waiting to be discovered. Skip gives you the chance to connect personally with 
-                      people whose content, personality, and insights inspire you. No more hoping they'll 
-                      see your comment—whether you want advice, inspiration, or just to say hello.
+                      Skip is for you too — the people who admire, trust, and want more than likes or comments from the creators you follow. It's your chance to step beyond the noise, have a real moment, and learn something useful or meaningful, straight from the source.
                     </p>
                   </div>
                 </div>
