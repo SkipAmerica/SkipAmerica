@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useToast } from "@/components/ui/use-toast";
 import { useAIModerator } from "@/hooks/useAIModerator";
 import ModerationPanel from "@/components/moderation/ModerationPanel";
@@ -309,41 +310,46 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
       <div className="flex-1 flex">
         {/* Video Area */}
         <div className="flex-1 bg-muted/20 relative animate-fade-in">
-          {/* Main Video */}
-          <div className="absolute inset-4 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
-            {/* Watermark */}
-            <div className="absolute top-4 left-4 bg-black/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
-              @Sarah M. • Live Call
-            </div>
-            <div className="text-center text-primary-foreground animate-scale-in">
-              <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary-foreground/20">
-                <AvatarFallback className="bg-primary-foreground text-primary text-2xl">
-                  EW
-                </AvatarFallback>
-              </Avatar>
-              <h3 className="text-xl font-semibold">Emma Wilson</h3>
-              <p className="opacity-90">Fitness Coach</p>
-            </div>
-          </div>
-
-          {/* Participant Thumbnails */}
-          <div className="absolute top-4 right-4 space-y-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            {participants.filter(p => p.role === "fan").map((participant, index) => (
-              <div key={participant.id} className="w-20 h-16 bg-card rounded-xl p-2 shadow-md hover-scale" style={{ animationDelay: `${0.1 + index * 0.05}s` }}>
-                <div className="text-center">
-                  <Avatar className="h-8 w-8 mx-auto">
-                    <AvatarFallback className="text-xs bg-muted">
-                      {participant.avatar}
+          <div className="px-4 pt-4 pb-28">
+            <AspectRatio ratio={16 / 9}>
+              <div className="relative w-full h-full bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+                {/* Watermark */}
+                <div className="absolute top-3 left-3 bg-black/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  @Sarah M. • Live Call
+                </div>
+                
+                {/* Main Content */}
+                <div className="text-center text-primary-foreground animate-scale-in">
+                  <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary-foreground/20">
+                    <AvatarFallback className="bg-primary-foreground text-primary text-2xl">
+                      EW
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-xs mt-1 truncate font-medium">{participant.name.split(' ')[0]}</p>
+                  <h3 className="text-xl font-semibold">Emma Wilson</h3>
+                  <p className="opacity-90">Fitness Coach</p>
+                </div>
+
+                {/* Participant Thumbnails (overlay) */}
+                <div className="absolute top-3 right-3 space-y-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                  {participants.filter(p => p.role === "fan").map((participant, index) => (
+                    <div key={participant.id} className="w-20 h-16 bg-card rounded-xl p-2 shadow-md hover-scale" style={{ animationDelay: `${0.1 + index * 0.05}s` }}>
+                      <div className="text-center">
+                        <Avatar className="h-8 w-8 mx-auto">
+                          <AvatarFallback className="text-xs bg-muted">
+                            {participant.avatar}
+                          </AvatarFallback>
+                        </Avatar>
+                        <p className="text-xs mt-1 truncate font-medium">{participant.name.split(' ')[0]}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            </AspectRatio>
           </div>
 
           {/* Controls */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="flex items-center space-x-4 bg-background/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl border">
               <Button
                 variant={isMicOn ? "secondary" : "destructive"}
