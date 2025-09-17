@@ -1086,6 +1086,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_playlist_content_content_id"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_playlist_content_playlist_id"
             columns: ["playlist_id"]
             isOneToOne: false

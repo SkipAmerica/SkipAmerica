@@ -215,13 +215,14 @@ export function SmartTrendingEngine() {
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {trendingCreators.map((creator) => (
-            <TrendingCreatorCard 
-              key={creator.id}
-              creator={creator}
-              category={selectedCategory}
-            />
-          ))}
+            {trendingCreators.map((creator) => (
+              <TrendingCreatorCard 
+                key={creator.id}
+                creator={creator}
+                category={selectedCategory}
+                getTrendingBadge={getTrendingBadge}
+              />
+            ))}
         </div>
       )}
 
@@ -243,9 +244,10 @@ export function SmartTrendingEngine() {
 interface TrendingCreatorCardProps {
   creator: TrendingCreator;
   category: string;
+  getTrendingBadge: (creator: TrendingCreator) => any;
 }
 
-function TrendingCreatorCard({ creator, category }: TrendingCreatorCardProps) {
+function TrendingCreatorCard({ creator, category, getTrendingBadge }: TrendingCreatorCardProps) {
   const trendingBadge = getTrendingBadge(creator);
   const metrics = creator.trend_metrics!;
   const pricing = creator.pricing!;

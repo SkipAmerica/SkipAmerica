@@ -89,17 +89,30 @@ export function FanLoyaltyProgram() {
     try {
       const { data, error } = await supabase
         .from('fan_loyalty')
-        .select(`
-          *,
-          creator:profiles!fan_loyalty_creator_id_fkey(full_name, avatar_url)
-        `)
+        .select('*')
         .eq('fan_id', user.id)
         .order('total_spent', { ascending: false });
 
       if (error) throw error;
 
-      setLoyaltyData(data || []);
-      setTotalPoints(data?.reduce((sum, item) => sum + item.points, 0) || 0);
+      // Get creator info separately
+      const loyaltyWithCreators = await Promise.all(
+        (data || []).map(async (loyalty) => {
+          const { data: creatorData } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', loyalty.creator_id)
+            .single();
+
+          return {
+            ...loyalty,
+            creator: creatorData || { full_name: 'Creator', avatar_url: null }
+          };
+        })
+      );
+
+      setLoyaltyData(loyaltyWithCreators);
+      setTotalPoints(loyaltyWithCreators.reduce((sum, item) => sum + item.points, 0));
     } catch (error) {
       console.error('Error loading loyalty data:', error);
     } finally {
@@ -234,6 +247,25 @@ interface CreatorLoyaltyCardProps {
 }
 
 function CreatorLoyaltyCard({ loyalty }: CreatorLoyaltyCardProps) {
+  const getTierInfo = (level: number): TierInfo => {
+    return LOYALTY_TIERS.find(tier => tier.level === level) || LOYALTY_TIERS[0];
+  };
+
+  const getNextTier = (currentSpent: number): TierInfo | null => {
+    return LOYALTY_TIERS.find(tier => tier.minSpent > currentSpent) || null;
+  };
+
+  const calculateProgressToNextTier = (currentSpent: number, currentTier: number): number => {
+    const nextTier = LOYALTY_TIERS.find(tier => tier.level === currentTier + 1);
+    if (!nextTier) return 100;
+    
+    const prevTier = LOYALTY_TIERS.find(tier => tier.level === currentTier);
+    const prevTierMin = prevTier?.minSpent || 0;
+    
+    const progress = ((currentSpent - prevTierMin) / (nextTier.minSpent - prevTierMin)) * 100;
+    return Math.min(100, Math.max(0, progress));
+  };
+
   const currentTier = getTierInfo(loyalty.tier_level);
   const nextTier = getNextTier(loyalty.total_spent);
   const progress = calculateProgressToNextTier(loyalty.total_spent, loyalty.tier_level);

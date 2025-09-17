@@ -14,7 +14,7 @@ interface PricingData {
   competitor_avg_price: number;
   performance_score: number;
   booking_velocity: number;
-  peak_hours: number[];
+  peak_hours: any; // JSON type from database
 }
 
 export function DynamicPricingEngine() {
@@ -63,8 +63,12 @@ export function DynamicPricingEngine() {
         throw error;
       }
 
-      setPricingData(data);
-      calculateCurrentPrice(data);
+      const processedData = {
+        ...data,
+        peak_hours: Array.isArray(data.peak_hours) ? data.peak_hours : [9, 10, 11, 19, 20, 21]
+      };
+      setPricingData(processedData);
+      calculateCurrentPrice(processedData);
     } catch (error) {
       console.error('Error loading pricing data:', error);
     } finally {
@@ -114,8 +118,12 @@ export function DynamicPricingEngine() {
 
       if (error) throw error;
 
-      setPricingData(updatedData);
-      calculateCurrentPrice(updatedData);
+      const processedData = {
+        ...updatedData,
+        peak_hours: Array.isArray(updatedData.peak_hours) ? updatedData.peak_hours : [9, 10, 11, 19, 20, 21]
+      };
+      setPricingData(processedData);
+      calculateCurrentPrice(processedData);
     } catch (error) {
       console.error('Error updating pricing:', error);
     }

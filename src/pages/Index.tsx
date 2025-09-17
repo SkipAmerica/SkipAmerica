@@ -19,7 +19,11 @@ import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopl
 import { EventCountdown } from "@/components/events/EventCountdown";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
+import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
 import heroImage from "@/assets/hero-image.jpg";
+
+import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
+import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
 
 const Index = () => {
   console.log('Index page is rendering...');
@@ -102,7 +106,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className={`grid w-full ${user ? 'grid-cols-4' : 'grid-cols-3'}`}>
+          <TabsList className={`grid w-full ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
             <TabsTrigger value="discover" className="flex items-center space-x-2">
               <Zap className="h-4 w-4" />
               <span>Discover</span>
@@ -114,6 +118,10 @@ const Index = () => {
             <TabsTrigger value="trending" className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4" />
               <span>Trending</span>
+            </TabsTrigger>
+            <TabsTrigger value="platform" className="flex items-center space-x-2">
+              <Star className="h-4 w-4" />
+              <span>Platform</span>
             </TabsTrigger>
             {user && (
               <TabsTrigger value="following" className="flex items-center space-x-2">
@@ -330,23 +338,18 @@ const Index = () => {
 
           <TabsContent value="trending">
             <div className="space-y-6">
-              <div className="text-center py-8">
-                <TrendingUp className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-xl font-semibold mb-2">Trending People</h3>
-                <p className="text-muted-foreground">
-                  Discover the most influential people and trending conversations
-                </p>
-              </div>
-              <InfluentialPeopleSearch 
-                onPersonSelect={(person) => setActiveTab("creator-profile")}
-                onStartCall={(person) => setActiveTab("call")}
-              />
+              <SmartTrendingEngine />
             </div>
+          </TabsContent>
+
+          <TabsContent value="platform">
+            <CreatorEconomyShowcase />
           </TabsContent>
 
           {user && (
             <TabsContent value="following">
               <div className="space-y-6">
+                <FanLoyaltyProgram />
                 <div className="text-center py-8">
                   <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
                   <h3 className="text-xl font-semibold mb-2">Following Feed</h3>

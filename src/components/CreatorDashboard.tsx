@@ -12,11 +12,15 @@ import { CallSettings } from "@/components/creator/CallSettings";
 import ProfileSettings from "@/components/creator/ProfileSettings";
 import SocialConnections from "@/components/creator/SocialConnections";
 import AvailabilityManager from "@/components/creator/AvailabilityManager";
+import { EarningsDashboard } from "./creator/EarningsDashboard";
 import UserStatusHeader from "@/components/creator/UserStatusHeader";
 import { EventCreator } from "@/components/events/EventCreator";
 import { SponsorManager } from "@/components/ads/SponsorManager";
+import { DynamicPricingEngine } from "@/components/pricing/DynamicPricingEngine";
+import { CreatorPlaylists } from "@/components/curation/CreatorPlaylists";
+import { ReferralSystem } from "@/components/referrals/ReferralSystem";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone, Music, TrendingUp } from "lucide-react";
 
 interface CreatorDashboardProps {
   onBack: () => void;
@@ -45,14 +49,14 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-9 mb-8">
+          <TabsList className="grid w-full grid-cols-12 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Dashboard
             </TabsTrigger>
             <TabsTrigger value="pricing" className="flex items-center gap-2">
               <Sliders className="h-4 w-4" />
-              Pricing
+              Smart Pricing
             </TabsTrigger>
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -61,6 +65,10 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
             <TabsTrigger value="social" className="flex items-center gap-2">
               <Link2 className="h-4 w-4" />
               Social
+            </TabsTrigger>
+            <TabsTrigger value="playlists" className="flex items-center gap-2">
+              <Music className="h-4 w-4" />
+              Playlists
             </TabsTrigger>
             <TabsTrigger value="availability" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -74,9 +82,17 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
               <CalendarDays className="h-4 w-4" />
               Events
             </TabsTrigger>
+            <TabsTrigger value="referrals" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Referrals
+            </TabsTrigger>
             <TabsTrigger value="sponsors" className="flex items-center gap-2">
               <Megaphone className="h-4 w-4" />
               Sponsors
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -197,13 +213,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
           </TabsContent>
 
           <TabsContent value="pricing" className="mt-0">
-            {user?.id ? (
-              <CallSettings creatorId={user.id} />
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground">Please sign in to access pricing settings.</p>
-              </div>
-            )}
+            <DynamicPricingEngine />
           </TabsContent>
 
           <TabsContent value="profile" className="mt-0">
@@ -212,6 +222,10 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
 
           <TabsContent value="social" className="mt-0">
             <SocialConnections />
+          </TabsContent>
+
+          <TabsContent value="playlists" className="mt-0">
+            <CreatorPlaylists />
           </TabsContent>
 
           <TabsContent value="availability" className="mt-0">
@@ -226,8 +240,16 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
             <EventCreator />
           </TabsContent>
 
+          <TabsContent value="referrals" className="mt-0">
+            <ReferralSystem />
+          </TabsContent>
+
           <TabsContent value="sponsors" className="mt-0">
             <SponsorManager />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="mt-0">
+            <EarningsDashboard />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-0">

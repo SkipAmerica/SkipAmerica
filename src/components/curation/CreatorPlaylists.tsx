@@ -155,16 +155,29 @@ export function CreatorPlaylists() {
     try {
       const { data, error } = await supabase
         .from('playlist_content')
-        .select(`
-          *,
-          content:creator_content(title, thumbnail_url, content_type)
-        `)
+        .select('*')
         .eq('playlist_id', playlist.id)
         .order('position');
 
       if (error) throw error;
 
-      setPlaylistContent(data || []);
+      // Get content info separately
+      const contentWithDetails = await Promise.all(
+        (data || []).map(async (item) => {
+          const { data: contentData } = await supabase
+            .from('creator_content')
+            .select('title, thumbnail_url, content_type')
+            .eq('id', item.content_id)
+            .single();
+
+          return {
+            ...item,
+            content: contentData || { title: 'Unknown', content_type: 'unknown' }
+          };
+        })
+      );
+
+      setPlaylistContent(contentWithDetails);
       setSelectedPlaylist(playlist);
     } catch (error) {
       console.error('Error loading playlist content:', error);
