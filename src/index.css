@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Creator Economy Design System - FaceTime for Creators */
+/* Creator Economy Design System */
 @layer base {
   :root {
     /* Core Brand Colors */
@@ -15,40 +15,24 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 13% 13%;
 
-    /* OSMO-inspired Brand Colors */
-    --primary: 45 100% 51%;
-    --primary-foreground: 0 0% 0%;
-    --primary-glow: 33 100% 50%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
 
-    /* Accent Orange */
-    --secondary: 33 100% 50%;
-    --secondary-foreground: 0 0% 0%;
+    --secondary: 210 40% 98%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
 
-    --muted: 45 25% 95%;
-    --muted-foreground: 45 8% 46%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
 
-    --accent: 51 100% 50%;
-    --accent-foreground: 0 0% 0%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 45 100% 51%;
-
-    /* OSMO-inspired Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(45 100% 51%), hsl(33 100% 50%));
-    --gradient-secondary: linear-gradient(135deg, hsl(33 100% 50%), hsl(51 100% 50%));
-    --gradient-hero: linear-gradient(135deg, hsl(45 100% 51%), hsl(33 100% 50%));
-    --gradient-card: linear-gradient(135deg, hsl(51 100% 50%), hsl(45 100% 51%));
-    
-    /* Shadows */
-    --shadow-creator: 0 10px 30px -10px hsl(45 100% 51% / 0.3);
-    --shadow-glow: 0 0 40px hsl(33 100% 50% / 0.2);
-    
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --ring: 217.2 91.2% 59.8%;
 
     --radius: 1rem;
 

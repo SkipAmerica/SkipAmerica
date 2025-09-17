@@ -201,7 +201,7 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
                   <Heart className={`h-4 w-4 mr-2 ${isFollowing ? 'fill-current' : ''}`} />
                   {isFollowing ? 'Following' : 'Follow'}
                 </Button>
-                <Button variant="gradient" onClick={handleStartCall}>
+                <Button variant="default" onClick={handleStartCall}>
                   <Video className="h-4 w-4 mr-2" />
                   Start Call
                 </Button>
@@ -383,7 +383,7 @@ const CreatorProfile = ({ onBack, onStartCall }: CreatorProfileProps) => {
                       <div className="font-semibold text-green-800">Available Now</div>
                       <div className="text-sm text-green-600">Ready to take calls</div>
                     </div>
-                    <Button variant="gradient" onClick={handleStartCall}>
+                    <Button variant="default" onClick={handleStartCall}>
                       Start Call Now
                     </Button>
                   </div>

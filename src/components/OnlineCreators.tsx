@@ -250,7 +250,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
               {/* Actions */}
               <div className="space-y-2">
                 <Button 
-                  variant="hero"
+                  variant="default"
                   className="w-full relative overflow-hidden group/greet"
                   onClick={(e) => {
                     e.stopPropagation();
