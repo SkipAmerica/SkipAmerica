@@ -226,7 +226,7 @@ const Index = () => {
       <div className={`${
         activeTab === "advanced" 
           ? (user ? "pt-36" : "pt-24")
-          : (user ? "pt-28" : "pt-[var(--ios-nav-bar-height)]")
+          : (user ? "pt-40" : "pt-[var(--ios-nav-bar-height)]")
       }`}>
         {renderTabContent()}
       </div>
