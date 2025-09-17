@@ -79,23 +79,8 @@ const Index = () => {
 
             {/* Search and Filters */}
             <div className="mx-4 space-y-4">
-              {/* Sort Options - Show default categories */}
-              <div className="flex gap-2 overflow-x-auto user-interest-filters" style={{ 
-                scrollbarWidth: 'none', 
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch'
-              }}>
-                {["all", "Entertainment", "Technology", "Business", "Beauty"].map((category) => (
-                  <Button
-                    key={category}
-                    variant="outline"
-                    size="sm"
-                    className="whitespace-nowrap flex-shrink-0 min-w-fit px-4 py-2"
-                  >
-                    {category === "all" ? "All" : category}
-                  </Button>
-                ))}
-              </div>
+              {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+              <UserInterestFilters />
               
               {/* Search Bar */}
               <div>
