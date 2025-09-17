@@ -88,9 +88,9 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
           >
             <div className="relative">
               <div className="p-0.5 rounded-full bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
-                <Avatar className="h-12 w-12 ring-2 ring-background">
+                <Avatar className="h-16 w-16 ring-2 ring-background">
                   <AvatarImage src={creator.avatar} alt={creator.name} />
-                  <AvatarFallback className="text-xs font-medium">
+                  <AvatarFallback className="text-sm font-medium">
                     {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -105,7 +105,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
             </div>
             
             {/* Creator name - truncated for mobile */}
-            <div className="text-xs text-center mt-1 w-12 truncate">
+            <div className="text-xs text-center mt-1 w-16 truncate">
               {creator.name.split(' ')[0]}
             </div>
           </div>
