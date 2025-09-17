@@ -77,6 +77,21 @@ const Index = () => {
           <div className="space-y-6">
 
 
+            {/* Search and Filters */}
+            <div className="mx-4 mb-6">
+              {/* Sort Options - Dynamic based on user interests */}
+              <UserInterestFilters />
+              
+              {/* Search Bar */}
+              <div className="mb-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search creators..."
+                />
+              </div>
+            </div>
+
             {/* Features - Mobile Cards */}
             <IOSListView className="mx-4">
               <IOSListSection header="Monetize Your Following">
