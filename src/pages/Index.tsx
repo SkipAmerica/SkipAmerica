@@ -194,7 +194,7 @@ const Index = () => {
                 </div>
                 {!user && (
                   <p className="text-sm opacity-75 mt-4">
-                    Make your social media count.
+                    Make money while connecting with your audience in a deeper more meaningful way
                   </p>
                 )}
               </div>
