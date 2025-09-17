@@ -28,6 +28,7 @@ import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSea
 // iOS Components
 import { IOSTabBar } from "@/components/mobile/IOSTabBar";
 import { IOSNavBar } from "@/components/mobile/IOSNavBar";
+import { IOSInstagramHeader } from "@/components/mobile/IOSInstagramHeader";
 import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
 import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
 import { IOSModal } from "@/components/mobile/IOSModal";
@@ -268,28 +269,27 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background relative">
       {/* iOS Navigation Bar */}
-      <IOSNavBar
-        title={
-          activeTab === "discover" ? "Skip" :
-          activeTab === "live" ? "Live Now" :
-          activeTab === "trending" ? "Trending" :
-          activeTab === "advanced" ? "Search" :
-          activeTab === "following" ? "Following" : "Skip"
-        }
-        rightButton={
-          user ? {
-            icon: Menu,
-            onClick: () => setShowMenu(true)
-          } : {
+      {user ? (
+        <IOSInstagramHeader onMenuClick={() => setShowMenu(true)} />
+      ) : (
+        <IOSNavBar
+          title={
+            activeTab === "discover" ? "Skip" :
+            activeTab === "live" ? "Live Now" :
+            activeTab === "trending" ? "Trending" :
+            activeTab === "advanced" ? "Search" :
+            activeTab === "following" ? "Following" : "Skip"
+          }
+          rightButton={{
             text: "Sign In",
             onClick: () => navigate("/auth")
-          }
-        }
-      />
+          }}
+        />
+      )}
 
       {/* Search Bar - Show when in advanced tab */}
       {activeTab === "advanced" && (
-        <div className="fixed top-[var(--ios-nav-bar-height)] left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 p-4">
+        <div className={`fixed ${user ? 'top-28' : 'top-[var(--ios-nav-bar-height)]'} left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 p-4`}>
           <IOSSearchBar
             value={searchQuery}
             onChange={setSearchQuery}
@@ -299,7 +299,11 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <div className={`${activeTab === "advanced" ? "pt-24" : "pt-[var(--ios-nav-bar-height)]"}`}>
+      <div className={`${
+        activeTab === "advanced" 
+          ? (user ? "pt-36" : "pt-24")
+          : (user ? "pt-28" : "pt-[var(--ios-nav-bar-height)]")
+      }`}>
         {renderTabContent()}
       </div>
 
