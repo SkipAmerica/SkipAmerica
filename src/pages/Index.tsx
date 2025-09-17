@@ -81,15 +81,17 @@ const Index = () => {
 
 
             {/* Search and Filters */}
-            <div className="mx-4 space-y-6">
+            <div className="mx-4">
               {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-              <UserInterestFilters 
-                selectedFilter={selectedFilter}
-                onFilterChange={setSelectedFilter}
-              />
+              <div className="mb-3">
+                <UserInterestFilters 
+                  selectedFilter={selectedFilter}
+                  onFilterChange={setSelectedFilter}
+                />
+              </div>
               
               {/* Search Bar */}
-              <div>
+              <div className="mb-6">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -98,18 +100,22 @@ const Index = () => {
               </div>
 
               {/* Who's Online Grid */}
-              <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                searchQuery={searchQuery}
-              />
+              <div className="mb-6">
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                  searchQuery={searchQuery}
+                />
+              </div>
 
               {/* Schedule in Advance Grid */}
-              <ScheduleCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                searchQuery={searchQuery}
-              />
+              <div className="mb-6">
+                <ScheduleCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                  searchQuery={searchQuery}
+                />
+              </div>
             </div>
 
             {/* Features - Mobile Cards */}
