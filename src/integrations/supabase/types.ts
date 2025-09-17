@@ -435,6 +435,65 @@ export type Database = {
           },
         ]
       }
+      content_comments: {
+        Row: {
+          comment_text: string
+          content_id: string
+          created_at: string
+          id: string
+          parent_comment_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comment_text: string
+          content_id: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comment_text?: string
+          content_id?: string
+          created_at?: string
+          id?: string
+          parent_comment_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_content_comments_parent_id"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "content_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_reactions: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       creator_availability: {
         Row: {
           created_at: string
@@ -647,6 +706,50 @@ export type Database = {
             foreignKeyName: "creator_market_analysis_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_playlists: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          is_featured: boolean | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          view_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_featured?: boolean | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_creator_playlists_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -878,6 +981,57 @@ export type Database = {
           },
         ]
       }
+      fan_loyalty: {
+        Row: {
+          created_at: string
+          creator_id: string
+          fan_id: string
+          id: string
+          last_interaction: string | null
+          points: number | null
+          tier_level: number | null
+          total_spent: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          fan_id: string
+          id?: string
+          last_interaction?: string | null
+          points?: number | null
+          tier_level?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          fan_id?: string
+          id?: string
+          last_interaction?: string | null
+          points?: number | null
+          tier_level?: number | null
+          total_spent?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_fan_loyalty_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_fan_loyalty_fan_id"
+            columns: ["fan_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -907,6 +1061,88 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
+      }
+      playlist_content: {
+        Row: {
+          content_id: string
+          created_at: string
+          id: string
+          playlist_id: string
+          position: number
+        }
+        Insert: {
+          content_id: string
+          created_at?: string
+          id?: string
+          playlist_id: string
+          position?: number
+        }
+        Update: {
+          content_id?: string
+          created_at?: string
+          id?: string
+          playlist_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_playlist_content_playlist_id"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "creator_playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_analytics: {
+        Row: {
+          base_price_per_minute: number
+          booking_velocity: number | null
+          competitor_avg_price: number | null
+          created_at: string
+          creator_id: string
+          current_demand_score: number | null
+          id: string
+          peak_hours: Json | null
+          performance_score: number | null
+          surge_multiplier: number | null
+          updated_at: string
+        }
+        Insert: {
+          base_price_per_minute?: number
+          booking_velocity?: number | null
+          competitor_avg_price?: number | null
+          created_at?: string
+          creator_id: string
+          current_demand_score?: number | null
+          id?: string
+          peak_hours?: Json | null
+          performance_score?: number | null
+          surge_multiplier?: number | null
+          updated_at?: string
+        }
+        Update: {
+          base_price_per_minute?: number
+          booking_velocity?: number | null
+          competitor_avg_price?: number | null
+          created_at?: string
+          creator_id?: string
+          current_demand_score?: number | null
+          id?: string
+          peak_hours?: Json | null
+          performance_score?: number | null
+          surge_multiplier?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_pricing_analytics_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -940,6 +1176,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      referral_codes: {
+        Row: {
+          code: string
+          commission_rate: number | null
+          created_at: string
+          creator_id: string
+          id: string
+          is_active: boolean | null
+          uses_count: number | null
+        }
+        Insert: {
+          code: string
+          commission_rate?: number | null
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_active?: boolean | null
+          uses_count?: number | null
+        }
+        Update: {
+          code?: string
+          commission_rate?: number | null
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_active?: boolean | null
+          uses_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_referral_codes_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       social_accounts: {
         Row: {
@@ -1044,6 +1318,47 @@ export type Database = {
           website_url?: string | null
         }
         Relationships: []
+      }
+      trend_metrics: {
+        Row: {
+          calculated_at: string
+          creator_id: string
+          id: string
+          press_mentions: number | null
+          recent_bookings: number | null
+          rising_star_score: number | null
+          social_engagement: number | null
+          trend_score: number | null
+        }
+        Insert: {
+          calculated_at?: string
+          creator_id: string
+          id?: string
+          press_mentions?: number | null
+          recent_bookings?: number | null
+          rising_star_score?: number | null
+          social_engagement?: number | null
+          trend_score?: number | null
+        }
+        Update: {
+          calculated_at?: string
+          creator_id?: string
+          id?: string
+          press_mentions?: number | null
+          recent_bookings?: number | null
+          rising_star_score?: number | null
+          social_engagement?: number | null
+          trend_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trend_metrics_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_feed_preferences: {
         Row: {
