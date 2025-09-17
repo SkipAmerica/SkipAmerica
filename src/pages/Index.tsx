@@ -20,8 +20,8 @@ import { EventCountdown } from "@/components/events/EventCountdown";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
-import { CreatorCard } from "@/components/ui/creator-card";
-import { MobileNavigation } from "@/components/mobile/MobileNavigation";
+
+
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -60,13 +60,13 @@ const Index = () => {
 
   // Main social media interface
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-orange-50 to-yellow-100 pb-20">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header - Mobile Optimized */}
-      <header className="sticky top-0 z-40 bg-gradient-hero text-primary-foreground shadow-lg">
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+              <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
                 <Video className="h-6 w-6" />
               </div>
               <h1 className="text-2xl font-bold">
@@ -78,7 +78,7 @@ const Index = () => {
               {user ? (
                 <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
               ) : (
-                <Button variant="hero-outline" size="sm" onClick={() => navigate("/auth")}>
+                <Button variant="outline" size="sm" onClick={() => navigate("/auth")}>
                   Sign In
                 </Button>
               )}
@@ -145,7 +145,7 @@ const Index = () => {
 
           <TabsContent value="discover" className="space-y-8">
             {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-2xl bg-gradient-hero text-primary-foreground p-8 md:p-12">
+            <section className="relative overflow-hidden rounded-2xl bg-card text-foreground p-8 md:p-12 border">
               <div className="absolute inset-0 opacity-20">
                 <img 
                   src={heroImage} 
@@ -167,7 +167,7 @@ const Index = () => {
                   {user ? (
                     <Button 
                       size="lg" 
-                      variant="hero"
+                      variant="default"
                       onClick={() => setActiveTab("live")}
                     >
                       <Zap className="mr-2 h-4 w-4" />
@@ -177,7 +177,7 @@ const Index = () => {
                     <>
                       <Button 
                         size="lg" 
-                        variant="hero"
+                        variant="default"
                         className="text-lg px-8 py-4"
                         onClick={() => navigate("/auth")}
                       >
@@ -186,7 +186,7 @@ const Index = () => {
                       </Button>
                       <Button 
                         size="lg" 
-                        variant="hero-outline"
+                        variant="outline"
                         onClick={() => setActiveTab("live")}
                       >
                       <Zap className="mr-2 h-4 w-4" />
@@ -203,60 +203,6 @@ const Index = () => {
               </div>
             </section>
 
-            {/* OSMO-style Creator Cards */}
-            <section className="space-y-4">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Featured Creators</h2>
-                <Button variant="outline" onClick={() => setActiveTab("live")}>
-                  View All Live
-                </Button>
-              </div>
-              
-              {/* Sample OSMO-style creator cards */}
-              <div className="space-y-4">
-                <CreatorCard 
-                  creator={{
-                    id: "1",
-                    name: "Sonia Booker",
-                    category: "Finance",
-                    expertise: "Wealth",
-                    isVerified: true,
-                    title: "Women are building wealth and legacies...",
-                    description: "Sonia Booker thinks wealth building should be fun, as well as rewarding, and will introduce twelve women...",
-                    contentType: "BLOG",
-                    avatar: "/api/placeholder/64/64"
-                  }}
-                />
-                
-                <CreatorCard 
-                  creator={{
-                    id: "2", 
-                    name: "Arianna Huffington",
-                    category: "Business",
-                    expertise: "Leadership",
-                    isVerified: true,
-                    title: "Donald The Dementor: How 'Harry Potter' Explains Trump's Destructive Power",
-                    description: "Long before Donald Trump became the most dangerous, unstable, and unqualified presidential nominee...",
-                    contentType: "LINK",
-                    avatar: "/api/placeholder/64/64"
-                  }}
-                />
-
-                <CreatorCard 
-                  creator={{
-                    id: "3",
-                    name: "Woody Martin", 
-                    category: "Branding",
-                    expertise: "Graphic Design",
-                    title: "Developing A Powerful Brand Purpose",
-                    description: "A sizzling brand purpose sets out how a company intends to change the world for the better.",
-                    contentType: "PODCAST",
-                    image: "/api/placeholder/400/200",
-                    avatar: "/api/placeholder/64/64"
-                  }}
-                />
-              </div>
-            </section>
 
             {/* Sponsored Content */}
             <section>
@@ -417,13 +363,6 @@ const Index = () => {
         </Tabs>
       </div>
 
-      {/* Mobile Navigation - OSMO Style */}
-      <MobileNavigation 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        profile={profile ? { name: profile.full_name || 'User', avatar: profile.avatar_url } : undefined}
-        unreadMessages={3}
-      />
 
       {/* Rating Modal */}
       {showRatingModal && (
