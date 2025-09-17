@@ -121,6 +121,166 @@
   }
 }
 
+/* iOS-Specific Styles */
+:root {
+  /* iOS Safe Area Support */
+  --safe-area-top: env(safe-area-inset-top);
+  --safe-area-bottom: env(safe-area-inset-bottom);
+  --safe-area-left: env(safe-area-inset-left);
+  --safe-area-right: env(safe-area-inset-right);
+  
+  /* iOS Tab Bar Height */
+  --ios-tab-bar-height: calc(49px + var(--safe-area-bottom));
+  --ios-nav-bar-height: calc(44px + var(--safe-area-top));
+  
+  /* iOS Colors */
+  --ios-system-blue: 207 100% 50%;
+  --ios-system-gray: 142 12% 52%;
+  --ios-system-gray-2: 233 6% 95%;
+  --ios-system-gray-3: 233 6% 90%;
+  --ios-system-gray-4: 233 6% 80%;
+  --ios-system-gray-5: 233 6% 70%;
+  --ios-system-gray-6: 233 6% 60%;
+  --ios-separator: 233 6% 90%;
+  
+  /* iOS Animations */
+  --ios-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ios-ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* iOS Base Styles */
+.ios-app {
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: 'kern' 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation;
+}
+
+/* iOS Safe Areas */
+.ios-safe-top {
+  padding-top: var(--safe-area-top);
+}
+
+.ios-safe-bottom {
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.ios-safe-left {
+  padding-left: var(--safe-area-left);
+}
+
+.ios-safe-right {
+  padding-right: var(--safe-area-right);
+}
+
+.ios-safe-all {
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
+}
+
+/* iOS Tab Bar */
+.ios-tab-bar {
+  height: var(--ios-tab-bar-height);
+  padding-bottom: var(--safe-area-bottom);
+}
+
+/* iOS Navigation */
+.ios-nav-bar {
+  height: var(--ios-nav-bar-height);
+  padding-top: var(--safe-area-top);
+}
+
+/* iOS List Styles */
+.ios-list {
+  background: hsl(var(--background));
+}
+
+.ios-list-section {
+  margin: 35px 0 0 0;
+}
+
+.ios-list-section:first-child {
+  margin-top: 0;
+}
+
+.ios-list-header {
+  padding: 8px 16px 8px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  color: hsl(var(--muted-foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: hsl(var(--background));
+}
+
+.ios-list-item {
+  background: hsl(var(--card));
+  border-bottom: 0.5px solid hsl(var(--ios-separator));
+  min-height: 44px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+}
+
+.ios-list-item:first-child {
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+.ios-list-item:last-child {
+  border-bottom: none;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+/* iOS Touch Feedback */
+.ios-touchable {
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.15s ease-out;
+}
+
+.ios-touchable:active {
+  background-color: hsl(var(--ios-system-gray-2));
+}
+
+/* iOS Modal Presentation */
+.ios-modal-backdrop {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.ios-sheet {
+  border-top-left-radius: 13px;
+  border-top-right-radius: 13px;
+  background: hsl(var(--card));
+}
+
+/* iOS Button Styles */
+.ios-button {
+  min-height: 44px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 22px;
+  letter-spacing: -0.43px;
+}
+
+.ios-button-primary {
+  background: hsl(var(--ios-system-blue));
+  color: white;
+}
+
+.ios-button-secondary {
+  background: hsl(var(--ios-system-gray-2));
+  color: hsl(var(--ios-system-blue));
+}
+
 /* Privacy Protection for Video Calls */
 .privacy-protected {
   -webkit-user-select: none;

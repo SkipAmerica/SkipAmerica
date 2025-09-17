@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search } from "lucide-react";
+import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { UserMenu } from "@/components/UserMenu";
@@ -26,123 +25,56 @@ import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine"
 import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
 import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSearch";
 
+// iOS Components
+import { IOSTabBar } from "@/components/mobile/IOSTabBar";
+import { IOSNavBar } from "@/components/mobile/IOSNavBar";
+import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
+import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
+import { IOSModal } from "@/components/mobile/IOSModal";
+import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
+
 const Index = () => {
   console.log('Index page is rendering...');
-  const [activeTab, setActiveTab] = useState("home");
+  const [activeTab, setActiveTab] = useState("discover");
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
 
   // Handle different views
   if (activeTab === "creator-dashboard") {
-    return <CreatorDashboard onBack={() => setActiveTab("home")} />;
+    return <CreatorDashboard onBack={() => setActiveTab("discover")} />;
   }
 
   if (activeTab === "fan-interface") {
-    return <FanInterface onBack={() => setActiveTab("home")} />;
+    return <FanInterface onBack={() => setActiveTab("discover")} />;
   }
 
   if (activeTab === "call") {
-    return <VideoCallInterface onBack={() => setActiveTab("home")} />;
+    return <VideoCallInterface onBack={() => setActiveTab("discover")} />;
   }
 
   if (activeTab === "creator-profile") {
     return (
       <CreatorProfile 
-        onBack={() => setActiveTab("home")} 
+        onBack={() => setActiveTab("discover")} 
         onStartCall={() => setActiveTab("call")}
       />
     );
   }
 
-  // Main social media interface
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold">
-              <span className="text-skip-black">Sk</span>
-              <span className="relative">
-                <span className="text-skip-black">i</span>
-                <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
-              </span>
-              <span className="text-skip-black">p</span>
-            </h1>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            {user && (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/feed")}>
-                  <Bell className="h-4 w-4 mr-1" />
-                  Feed
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/profile")}>
-                  Profile
-                </Button>
-              </>
-            )}
-            {user && profile?.account_type === 'creator' && (
-              <Button variant="outline" onClick={() => setActiveTab("creator-dashboard")}>
-                Creator Hub
-              </Button>
-            )}
-            {user ? (
-              <UserMenu onCreatorDashboard={() => setActiveTab("creator-dashboard")} />
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => navigate("/auth")}>
-                  Sign In
-                </Button>
-                <Button variant="gradient" onClick={() => navigate("/auth")}>
-                  <Users className="h-4 w-4 mr-1" />
-                  Join
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-6">
-        <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className={`grid w-full ${user ? 'grid-cols-6' : 'grid-cols-5'} bg-black text-white`}>
-            <TabsTrigger value="discover" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              <Zap className="h-4 w-4" />
-              <span>Discover</span>
-            </TabsTrigger>
-            <TabsTrigger value="live" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              <Video className="h-4 w-4" />
-              <span>Live Now</span>
-            </TabsTrigger>
-            <TabsTrigger value="trending" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              <TrendingUp className="h-4 w-4" />
-              <span>Trending</span>
-            </TabsTrigger>
-            <TabsTrigger value="advanced" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              <Search className="h-4 w-4" />
-              <span>Advanced</span>
-            </TabsTrigger>
-            <TabsTrigger value="platform" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-              <Star className="h-4 w-4" />
-              <span>Platform</span>
-            </TabsTrigger>
-            {user && (
-              <TabsTrigger value="following" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
-                <Users className="h-4 w-4" />
-                <span>Following</span>
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="discover" className="space-y-8">
-            {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-2xl bg-gradient-hero text-primary-foreground p-8 md:p-12">
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "discover":
+        return (
+          <div className="space-y-6">
+            {/* Hero Section - Mobile Optimized */}
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-hero text-primary-foreground p-6 mx-4 mt-4">
               <div className="absolute inset-0 opacity-20">
                 <img 
                   src={heroImage} 
@@ -150,27 +82,28 @@ const Index = () => {
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="relative z-10 max-w-3xl">
-                <Badge className="mb-4 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
+              <div className="relative z-10">
+                <Badge className="mb-3 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30 text-xs">
                   Professional Access Platform
                 </Badge>
-                <h1 className="text-4xl md:text-5xl font-bold mb-4">
+                <h1 className="text-2xl font-bold mb-3">
                   <span className="text-skip-black">Sk</span>
                   <span className="relative">
                     <span className="text-skip-black">i</span>
-                    <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-skip-orange rounded-full"></span>
+                    <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
                   </span>
                   <span className="text-skip-black">p. Make it Count.</span>
                 </h1>
-                <p className="text-lg md:text-xl mb-8 opacity-90">
+                <p className="text-sm mb-6 opacity-90">
                   Social platforms help you grow. Skip helps you connect.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex flex-col gap-3">
                   {user ? (
                     <Button 
                       size="lg" 
                       variant="hero"
                       onClick={() => setActiveTab("live")}
+                      className="w-full"
                     >
                       <Zap className="mr-2 h-4 w-4" />
                       Explore Live Now
@@ -180,239 +113,285 @@ const Index = () => {
                       <Button 
                         size="lg" 
                         variant="hero"
-                        className="text-lg px-8 py-4"
+                        className="w-full"
                         onClick={() => navigate("/auth")}
                       >
-                        <Users className="mr-2 h-5 w-5" />
+                        <Users className="mr-2 h-4 w-4" />
                         Start Monetizing - It's Free!
                       </Button>
                       <Button 
                         size="lg" 
                         variant="hero-outline"
                         onClick={() => setActiveTab("live")}
+                        className="w-full"
                       >
-                      <Zap className="mr-2 h-4 w-4" />
-                      Browse Creators
+                        <Zap className="mr-2 h-4 w-4" />
+                        Browse Creators
                       </Button>
                     </>
                   )}
                 </div>
-                {!user && (
-                  <p className="text-sm opacity-75 mt-4">
-                    Make money while connecting with your audience in a deeper more meaningful way
-                  </p>
-                )}
               </div>
-            </section>
+            </div>
 
-            {/* What Skip Does - Explanatory Section */}
-            <section className="py-16 bg-gradient-to-b from-background to-muted/30">
-              <div className="container mx-auto px-4 max-w-4xl">
-                <div className="grid md:grid-cols-2 gap-8 md:gap-12">
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-primary">For Creators</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Skip is built for you — the creators who've poured energy into growing an audience but feel boxed in by crowded feeds and shifting algorithms. Here, your time and talent aren't hidden in the scroll. Skip gives you a simple way to share yourself directly, on your terms, and be valued for it.
+            {/* What Skip Does - Mobile Optimized */}
+            <IOSListView className="mx-4">
+              <IOSListSection header="How Skip Works">
+                <IOSListItem>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-primary">For Creators</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Convert your social following into direct revenue. Share yourself on your terms and be valued for it.
                     </p>
                   </div>
-                  <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-primary">For Fans & Clients</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Skip is for you too — the people who admire, trust, and want more than likes or comments from the creators you follow. It's your chance to step beyond the noise, have a real moment, and learn something useful or meaningful, straight from the source.
+                </IOSListItem>
+                <IOSListItem>
+                  <div className="space-y-2">
+                    <h3 className="font-semibold text-primary">For Fans & Clients</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Connect directly with creators you admire. Get real value beyond likes and comments.
                     </p>
                   </div>
-                </div>
-              </div>
-            </section>
+                </IOSListItem>
+              </IOSListSection>
+            </IOSListView>
 
             {/* Live Creators Preview */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Available Now</h2>
-                <Button variant="outline" onClick={() => setActiveTab("live")}>
-                  View All Live
+            <div className="mx-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Available Now</h2>
+                <Button variant="outline" size="sm" onClick={() => setActiveTab("live")}>
+                  View All
                 </Button>
               </div>
               <OnlineCreators 
                 onCreatorSelect={(id) => setActiveTab("creator-profile")}
                 onStartCall={(id) => setActiveTab("call")}
               />
-            </section>
+            </div>
+
+            {/* Features - Mobile Cards */}
+            <IOSListView className="mx-4">
+              <IOSListSection header="Monetize Your Following">
+                <IOSListItem chevron onClick={() => {}}>
+                  <div className="flex items-center space-x-3">
+                    <DollarSign className="h-8 w-8 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Direct Revenue Stream</div>
+                      <div className="text-sm text-muted-foreground">
+                        Set your rate, start earning per minute
+                      </div>
+                    </div>
+                  </div>
+                </IOSListItem>
+                <IOSListItem chevron onClick={() => {}}>
+                  <div className="flex items-center space-x-3">
+                    <Star className="h-8 w-8 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Professional Protection</div>
+                      <div className="text-sm text-muted-foreground">
+                        Secure payments & content moderation
+                      </div>
+                    </div>
+                  </div>
+                </IOSListItem>
+                <IOSListItem chevron onClick={() => {}}>
+                  <div className="flex items-center space-x-3">
+                    <Zap className="h-8 w-8 text-primary flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-medium">Easy Integration</div>
+                      <div className="text-sm text-muted-foreground">
+                        Works with your existing social presence
+                      </div>
+                    </div>
+                  </div>
+                </IOSListItem>
+              </IOSListSection>
+            </IOSListView>
 
             {/* Sponsored Content */}
-            <section>
+            <div className="mx-4">
               <AdBanner placement="banner" />
-            </section>
-
-            {/* Upcoming Events */}
-            <section>
-              <EventCountdown />
-            </section>
-
-            {/* New Features Demo */}
-            <section>
-              <FeatureDemo />
-            </section>
-
-            {/* Features */}
-            <section>
-                <h2 className="text-2xl font-bold text-center mb-8">
-                  Monetize Your Social Media Following
-                </h2>
-              <div className="grid md:grid-cols-3 gap-6">
-                <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
-                  <CardHeader>
-                    <DollarSign className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Direct Revenue Stream</CardTitle>
-                    <CardDescription>
-                      Convert your Instagram/TikTok followers into paying clients. Add Skip to your bio and start earning per minute.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-accent p-4 rounded-lg">
-                      <div className="text-sm text-accent-foreground">
-                        <div className="flex justify-between mb-1">
-                          <span>Set your rate:</span>
-                          <span className="font-bold">$5/min</span>
-                        </div>
-                        <div className="flex justify-between mb-1">
-                          <span>4 people join:</span>
-                          <span className="font-bold">$20/min total</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Your earnings:</span>
-                          <span className="font-bold text-primary">$20/min</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
-                  <CardHeader>
-                    <Star className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Professional Protection</CardTitle>
-                    <CardDescription>
-                      Built-in payment processing, ratings system, and content moderation. Focus on your expertise, we handle the rest.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Secure payments</span>
-                        <div className="w-3 h-3 bg-primary rounded-full"></div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Content moderation</span>
-                        <div className="w-3 h-3 bg-primary rounded-full"></div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        Professional business tools included
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
-                  <CardHeader>
-                    <Zap className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Easy Integration</CardTitle>
-                    <CardDescription>
-                      Works with your existing social presence. Share your Skip link anywhere - Instagram bio, TikTok, Twitter, YouTube.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">Instagram bio</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">TikTok profile</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm">YouTube about</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </section>
+            </div>
 
             {/* Activity Feed Preview */}
-            <section>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Recent Activity</h2>
-                <Button variant="outline" onClick={() => setActiveTab("following")}>
+            <div className="mx-4 pb-20">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold">Recent Activity</h2>
+                <Button variant="outline" size="sm" onClick={() => user && setActiveTab("following")}>
                   View Full Feed
                 </Button>
               </div>
-              <div className="grid gap-4">
-                <ActivityFeed />
-              </div>
-            </section>
-          </TabsContent>
+              <ActivityFeed />
+            </div>
+          </div>
+        );
 
-          <TabsContent value="live">
+      case "live":
+        return (
+          <div className="px-4 pt-4 pb-20">
             <OnlineCreators 
               onCreatorSelect={(id) => setActiveTab("creator-profile")}
               onStartCall={(id) => setActiveTab("call")}
             />
-          </TabsContent>
+          </div>
+        );
 
-          <TabsContent value="trending">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Discover Creators</h2>
-                <Button variant="outline" onClick={() => setActiveTab("advanced")}>
-                  <Search className="h-4 w-4 mr-2" />
-                  Advanced Search
-                </Button>
-              </div>
-              <SmartTrendingEngine />
-            </div>
-          </TabsContent>
+      case "trending":
+        return (
+          <div className="px-4 pt-4 pb-20 space-y-6">
+            <SmartTrendingEngine />
+          </div>
+        );
 
-          <TabsContent value="advanced">
+      case "advanced":
+        return (
+          <div className="px-4 pt-4 pb-20">
             <AdvancedCreatorSearch />
-          </TabsContent>
+          </div>
+        );
 
-          <TabsContent value="platform">
-            <CreatorEconomyShowcase />
-          </TabsContent>
+      case "following":
+        return (
+          <div className="px-4 pt-4 pb-20 space-y-6">
+            <FanLoyaltyProgram />
+            <ActivityFeed />
+          </div>
+        );
 
-          {user && (
-            <TabsContent value="following">
-              <div className="space-y-6">
-                <FanLoyaltyProgram />
-                <div className="text-center py-8">
-                  <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-xl font-semibold mb-2">Following Feed</h3>
-                  <p className="text-muted-foreground">
-                    Stay updated with people you follow
-                  </p>
-                </div>
-                <ActivityFeed showOnlyFollowing={true} />
-              </div>
-            </TabsContent>
-          )}
-        </Tabs>
+      default:
+        return null;
+    }
+  };
+
+  // Main iOS interface
+  return (
+    <div className="min-h-screen bg-background relative">
+      {/* iOS Navigation Bar */}
+      <IOSNavBar
+        title={
+          activeTab === "discover" ? "Skip" :
+          activeTab === "live" ? "Live Now" :
+          activeTab === "trending" ? "Trending" :
+          activeTab === "advanced" ? "Search" :
+          activeTab === "following" ? "Following" : "Skip"
+        }
+        rightButton={
+          user ? {
+            icon: Menu,
+            onClick: () => setShowMenu(true)
+          } : {
+            text: "Sign In",
+            onClick: () => navigate("/auth")
+          }
+        }
+      />
+
+      {/* Search Bar - Show when in advanced tab */}
+      {activeTab === "advanced" && (
+        <div className="fixed top-[var(--ios-nav-bar-height)] left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 p-4">
+          <IOSSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search creators..."
+          />
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className={`${activeTab === "advanced" ? "pt-24" : "pt-[var(--ios-nav-bar-height)]"}`}>
+        {renderTabContent()}
       </div>
 
+      {/* iOS Tab Bar */}
+      <IOSTabBar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        showFollowing={!!user}
+      />
+
+      {/* User Menu Action Sheet */}
+      <IOSActionSheet
+        trigger={<></>}
+        open={showMenu}
+        onOpenChange={setShowMenu}
+        title="Account"
+      >
+        {user && (
+          <>
+            <IOSActionSheetItem
+              onClick={() => {
+                navigate("/profile");
+                setShowMenu(false);
+              }}
+              icon={Users}
+            >
+              Profile
+            </IOSActionSheetItem>
+            <IOSActionSheetItem
+              onClick={() => {
+                navigate("/feed");
+                setShowMenu(false);
+              }}
+              icon={Bell}
+            >
+              Feed
+            </IOSActionSheetItem>
+            {profile?.account_type === 'creator' && (
+              <IOSActionSheetItem
+                onClick={() => {
+                  setActiveTab("creator-dashboard");
+                  setShowMenu(false);
+                }}
+                icon={Star}
+              >
+                Creator Hub
+              </IOSActionSheetItem>
+            )}
+          </>
+        )}
+        {!user && (
+          <>
+            <IOSActionSheetItem
+              onClick={() => {
+                navigate("/auth");
+                setShowMenu(false);
+              }}
+              icon={Users}
+            >
+              Sign In
+            </IOSActionSheetItem>
+            <IOSActionSheetItem
+              onClick={() => {
+                navigate("/auth");
+                setShowMenu(false);
+              }}
+              icon={Zap}
+            >
+              Join Skip
+            </IOSActionSheetItem>
+          </>
+        )}
+      </IOSActionSheet>
+
       {/* Rating Modal */}
-      {showRatingModal && (
-        <RatingSystem
-          isCreator={false}
-          targetName="Emma Wilson"
-          targetAvatar="EW"
-          onRatingSubmit={(rating, comment, tags) => {
-            console.log('Rating submitted:', { rating, comment, tags });
-            setShowRatingModal(false);
-          }}
-          onClose={() => setShowRatingModal(false)}
-        />
+      {showRatingModal && selectedCreator && (
+        <IOSModal
+          open={showRatingModal}
+          onOpenChange={setShowRatingModal}
+          title="Rate Creator"
+        >
+          <RatingSystem 
+            isCreator={false}
+            targetName="Creator"
+            targetAvatar=""
+            onRatingSubmit={(rating, comment, tags) => {
+              console.log('Rating submitted:', { rating, comment, tags });
+              setShowRatingModal(false);
+            }}
+            onClose={() => setShowRatingModal(false)}
+          />
+        </IOSModal>
       )}
     </div>
   );

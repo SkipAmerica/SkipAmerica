@@ -11,6 +11,7 @@ import Feed from "./pages/Feed";
 import IndustryResourceSetup from "./pages/IndustryResourceSetup";
 import NotFound from "./pages/NotFound";
 import { PWAInstallPrompt } from "@/components/mobile/PWAInstallPrompt";
+import { IOSAppShell } from "@/components/mobile/IOSAppShell";
 
 const queryClient = new QueryClient();
 
@@ -21,21 +22,23 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/:userId" element={<Profile />} />
-              <Route path="/feed" element={<Feed />} />
-              <Route path="/industry-setup" element={<IndustryResourceSetup />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <PWAInstallPrompt />
-          </BrowserRouter>
+          <IOSAppShell>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/:userId" element={<Profile />} />
+                <Route path="/feed" element={<Feed />} />
+                <Route path="/industry-setup" element={<IndustryResourceSetup />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <PWAInstallPrompt />
+            </BrowserRouter>
+          </IOSAppShell>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

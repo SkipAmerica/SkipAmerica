@@ -1,0 +1,98 @@
+import React from 'react';
+import { cn } from '@/lib/utils';
+import { X } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+
+interface IOSModalProps {
+  trigger?: React.ReactNode;
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  size?: 'sm' | 'md' | 'lg' | 'full';
+  showCloseButton?: boolean;
+}
+
+export function IOSModal({ 
+  trigger, 
+  title, 
+  description, 
+  children, 
+  open, 
+  onOpenChange,
+  size = 'md',
+  showCloseButton = true
+}: IOSModalProps) {
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-2xl',
+    full: 'max-w-[95vw] max-h-[90vh]'
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && (
+        <DialogTrigger asChild>
+          {trigger}
+        </DialogTrigger>
+      )}
+      <DialogContent 
+        className={cn(
+          "ios-modal-backdrop",
+          "rounded-xl border-0",
+          "p-0 gap-0",
+          "overflow-hidden",
+          sizeClasses[size]
+        )}
+      >
+        {/* Header */}
+        <DialogHeader className={cn(
+          "p-6 pb-4",
+          "relative text-center",
+          "border-b border-border/50"
+        )}>
+          {showCloseButton && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange?.(false)}
+              className="absolute right-4 top-4 h-8 w-8 rounded-full"
+            >
+              <X size={16} />
+            </Button>
+          )}
+          
+          {title && (
+            <DialogTitle className="text-xl font-semibold pr-12">
+              {title}
+            </DialogTitle>
+          )}
+          
+          {description && (
+            <DialogDescription className="text-muted-foreground mt-2">
+              {description}
+            </DialogDescription>
+          )}
+        </DialogHeader>
+
+        {/* Content */}
+        <div className={cn(
+          "p-6",
+          size === 'full' && "overflow-y-auto"
+        )}>
+          {children}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
