@@ -105,7 +105,7 @@ const Index = () => {
                     variant="ghost" 
                     size="sm"
                     onClick={() => setActiveTab("advanced")}
-                    className="text-primary font-normal px-0 h-auto"
+                    className="text-primary font-medium px-0 h-auto underline hover:no-underline"
                   >
                     find the perfect creator
                   </Button>
