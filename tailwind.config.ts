@@ -58,6 +58,10 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        skip: {
+          orange: "hsl(var(--skip-orange))",
+          black: "hsl(var(--skip-black))",
+        },
       },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',

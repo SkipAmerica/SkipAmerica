@@ -64,8 +64,13 @@ const Index = () => {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Video className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              Skip
+            <h1 className="text-2xl font-bold">
+              <span className="text-skip-black">Sk</span>
+              <span className="relative">
+                <span className="text-skip-black">i</span>
+                <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
+              </span>
+              <span className="text-skip-black">p</span>
             </h1>
           </div>
           
@@ -146,7 +151,12 @@ const Index = () => {
                   Professional Access Platform
                 </Badge>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Skip. Make it Count.
+                  <span className="text-skip-black">Sk</span>
+                  <span className="relative">
+                    <span className="text-skip-black">i</span>
+                    <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-3 h-3 bg-skip-orange rounded-full"></span>
+                  </span>
+                  <span className="text-skip-black">p. Make it Count.</span>
                 </h1>
                 <p className="text-lg md:text-xl mb-8 opacity-90">
                   Social platforms help you grow. Skip helps you connect.

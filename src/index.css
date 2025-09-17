@@ -46,6 +46,10 @@
     --shadow-creator: 0 10px 30px -10px hsl(var(--primary) / 0.3);
     --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.2);
     
+    /* Skip Brand Colors */
+    --skip-orange: 16 100% 60%;
+    --skip-black: 0 0% 10%;
+    
     /* Animations */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
