@@ -124,11 +124,11 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             onClick={() => onCreatorSelect(creator.id)}
           >
             {/* Ratings Count and Rating */}
-            <div className="text-center space-y-0.5">
-              <p className="text-xs text-muted-foreground font-medium">({creator.ratingsCount})</p>
-              <div className="flex items-center justify-center space-x-1">
-                <span className="text-xs text-yellow-500">★</span>
-                <span className="text-xs text-muted-foreground">{creator.rating}</span>
+            <div className="text-center">
+              <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
+                <span className="font-medium">({creator.ratingsCount})</span>
+                <span className="text-yellow-500">★</span>
+                <span>{creator.rating}</span>
               </div>
             </div>
             
