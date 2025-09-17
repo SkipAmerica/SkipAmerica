@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useUserInterests } from '@/hooks/useUserInterests';
-import { useAuth } from '@/hooks/useAuth';
 
 interface UserInterestFiltersProps {
   selectedFilter?: string;
@@ -12,34 +10,17 @@ export function UserInterestFilters({
   selectedFilter: externalSelectedFilter, 
   onFilterChange 
 }: UserInterestFiltersProps) {
-  const { user } = useAuth();
-  const { userInterests, getUserInterestLabels } = useUserInterests();
   const [internalSelectedFilter, setInternalSelectedFilter] = useState('all');
-  
   const selectedFilter = externalSelectedFilter ?? internalSelectedFilter;
 
-  // If user is not logged in or has no interests, show default categories
-  const getFilterOptions = () => {
-    if (!user || userInterests.length === 0) {
-      return [
-        { id: 'all', label: 'All' },
-        { id: 'entertainment', label: 'Entertainment' },
-        { id: 'technology', label: 'Technology' },
-        { id: 'business', label: 'Business' },
-        { id: 'beauty', label: 'Beauty' }
-      ];
-    }
-
-    // Show user's interests plus "All"
-    const userInterestLabels = getUserInterestLabels();
-    return [
-      { id: 'all', label: 'All' },
-      ...userInterests.slice(0, 4).map((interest, index) => ({
-        id: interest,
-        label: userInterestLabels[index] || interest
-      }))
-    ];
-  };
+  // Show default categories
+  const filterOptions = [
+    { id: 'all', label: 'All' },
+    { id: 'entertainment', label: 'Entertainment' },
+    { id: 'technology', label: 'Technology' },
+    { id: 'business', label: 'Business' },
+    { id: 'beauty', label: 'Beauty' }
+  ];
 
   const handleFilterSelect = (filterId: string) => {
     if (onFilterChange) {
@@ -49,11 +30,9 @@ export function UserInterestFilters({
     }
   };
 
-  const filterOptions = getFilterOptions();
-
   return (
     <div 
-      className="flex gap-2 mb-4 overflow-x-auto pb-2 user-interest-filters" 
+      className="flex gap-2 overflow-x-auto pb-2 user-interest-filters" 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',
@@ -65,7 +44,7 @@ export function UserInterestFilters({
           key={option.id}
           variant={selectedFilter === option.id ? "default" : "outline"}
           size="sm"
-          className="whitespace-nowrap flex-shrink-0 min-w-fit"
+          className="whitespace-nowrap flex-shrink-0 min-w-fit px-4 py-2"
           onClick={() => handleFilterSelect(option.id)}
         >
           {option.label}
