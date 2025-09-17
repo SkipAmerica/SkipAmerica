@@ -3,10 +3,20 @@ import { Button } from '@/components/ui/button';
 import { useUserInterests } from '@/hooks/useUserInterests';
 import { useAuth } from '@/hooks/useAuth';
 
-export function UserInterestFilters() {
+interface UserInterestFiltersProps {
+  selectedFilter?: string;
+  onFilterChange?: (filter: string) => void;
+}
+
+export function UserInterestFilters({ 
+  selectedFilter: externalSelectedFilter, 
+  onFilterChange 
+}: UserInterestFiltersProps) {
   const { user } = useAuth();
   const { userInterests, getUserInterestLabels } = useUserInterests();
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [internalSelectedFilter, setInternalSelectedFilter] = useState('all');
+  
+  const selectedFilter = externalSelectedFilter ?? internalSelectedFilter;
 
   // If user is not logged in or has no interests, show default categories
   const getFilterOptions = () => {
@@ -31,17 +41,32 @@ export function UserInterestFilters() {
     ];
   };
 
+  const handleFilterSelect = (filterId: string) => {
+    if (onFilterChange) {
+      onFilterChange(filterId);
+    } else {
+      setInternalSelectedFilter(filterId);
+    }
+  };
+
   const filterOptions = getFilterOptions();
 
   return (
-    <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
+    <div 
+      className="flex gap-2 mb-4 overflow-x-auto pb-2 user-interest-filters" 
+      style={{ 
+        scrollbarWidth: 'none', 
+        msOverflowStyle: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
       {filterOptions.map((option) => (
         <Button
           key={option.id}
           variant={selectedFilter === option.id ? "default" : "outline"}
           size="sm"
-          className="whitespace-nowrap flex-shrink-0"
-          onClick={() => setSelectedFilter(option.id)}
+          className="whitespace-nowrap flex-shrink-0 min-w-fit"
+          onClick={() => handleFilterSelect(option.id)}
         >
           {option.label}
         </Button>

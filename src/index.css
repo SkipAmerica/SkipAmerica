@@ -341,3 +341,8 @@
 .ios-horizontal-scroll > * {
   scroll-snap-align: start;
 }
+
+/* Hide scrollbars for horizontal scrolling components */
+.user-interest-filters::-webkit-scrollbar {
+  display: none;
+}
