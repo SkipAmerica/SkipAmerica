@@ -438,90 +438,55 @@ export const AdvancedCreatorSearch: React.FC = () => {
             </div>
           )}
 
-          {/* Creator Results */}
+          {/* Creator Results Grid */}
           {!loading && creators.length > 0 && (
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-2 gap-3">
               {creators.map((creator) => (
-                <Card key={creator.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardContent className="p-6">
-                    <div className="flex items-start space-x-4">
+                <div key={creator.id} className="bg-card rounded-xl p-3 cursor-pointer ios-touchable border border-border/50">
+                  <div className="flex flex-col items-center text-center space-y-2">
+                    <div className="relative">
                       <Avatar className="w-16 h-16">
                         <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
                         <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-lg truncate group-hover:text-primary transition-colors">
-                            {creator.full_name}
-                          </h3>
-                          {creator.verification_status === 'verified' && (
-                            <Star className="h-4 w-4 text-blue-500 fill-current" />
-                          )}
-                          <Badge className={getTierColor(creator.celebrity_tier)}>
-                            {creator.celebrity_tier}
-                          </Badge>
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground mb-2">{creator.headline}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{creator.bio}</p>
-                        
-                        {/* Categories */}
-                        <div className="flex flex-wrap gap-1 mb-3">
-                          {creator.categories.slice(0, 3).map((category) => (
-                            <Badge key={category} variant="secondary" className="text-xs">
-                              {category}
-                            </Badge>
-                          ))}
-                          {creator.categories.length > 3 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{creator.categories.length - 3}
-                            </Badge>
-                          )}
-                        </div>
-                        
-                        {/* Stats */}
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                          <div className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {formatFollowerCount(creator.total_followers)}
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <TrendingUp className="h-3 w-3" />
-                            {creator.avg_engagement_rate.toFixed(1)}%
-                          </div>
-                          {creator.location_country && (
-                            <div className="flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {creator.location_city}, {creator.location_country}
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Pricing */}
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm">
-                            <span className="font-medium">
-                              ${creator.base_rate_min} - ${creator.base_rate_max}
-                            </span>
-                            <span className="text-muted-foreground">/{creator.base_rate_currency}</span>
-                          </div>
-                          
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              View Profile
-                            </Button>
-                            {creator.available_for_booking && (
-                              <Button size="sm">
-                                Book Now
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                      {creator.available_for_booking && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                      )}
                     </div>
-                  </CardContent>
-                </Card>
+                    
+                    <div className="space-y-1 min-h-[60px] flex flex-col justify-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <h3 className="font-medium text-sm truncate max-w-[100px]">
+                          {creator.full_name}
+                        </h3>
+                        {creator.verification_status === 'verified' && (
+                          <Star className="h-3 w-3 text-blue-500 fill-current flex-shrink-0" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {creator.headline}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-center space-x-2 text-xs">
+                      {creator.total_followers > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <Users className="h-3 w-3" />
+                          <span>{formatFollowerCount(creator.total_followers)}</span>
+                        </div>
+                      )}
+                      {creator.base_rate_min > 0 && (
+                        <div className="flex items-center space-x-1">
+                          <span>${creator.base_rate_min}/min</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Badge className={`text-xs ${getTierColor(creator.celebrity_tier)}`}>
+                      {creator.celebrity_tier}
+                    </Badge>
+                  </div>
+                </div>
               ))}
             </div>
           )}

@@ -100,6 +100,16 @@ const Index = () => {
                   onChange={setSearchQuery}
                   placeholder="Search creators..."
                 />
+                <div className="flex justify-end mt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setActiveTab("advanced")}
+                    className="text-primary font-normal px-0 h-auto"
+                  >
+                    find the perfect creator
+                  </Button>
+                </div>
               </div>
 
               {/* Live Now Grid - Collapsible */}
