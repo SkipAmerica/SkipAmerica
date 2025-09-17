@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { Search, Filter, Star, MapPin, Users, Clock, TrendingUp, ChevronDown, X, ArrowLeft } from 'lucide-react'
+import { Search, Filter, Star, MapPin, Users, Clock, TrendingUp, ChevronDown, X, ArrowLeft, Phone, Heart, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { Slider } from '@/components/ui/slider'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Textarea } from '@/components/ui/textarea'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/hooks/useAuth'
 import { toast } from 'sonner'
@@ -101,6 +102,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
   const [keywordQuery, setKeywordQuery] = useState('')
   const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
   const [categorySearch, setCategorySearch] = useState('')
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({})
   const [keywordSuggestions] = useState([
     'Grammy nominated',
     'Song writer',
@@ -165,6 +167,35 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
     }
   }, [user, filters])
 
+  // Fetch appointment waitlist counts
+  const fetchAppointmentCounts = useCallback(async () => {
+    if (!user || creators.length === 0) return
+
+    try {
+      const creatorIds = creators.map(c => c.id)
+      const { data, error } = await supabase
+        .from('appointment_waitlist')
+        .select('creator_id')
+        .in('creator_id', creatorIds)
+        .eq('status', 'waiting')
+
+      if (error) {
+        console.error('Error fetching appointment counts:', error)
+        return
+      }
+
+      // Count appointments per creator
+      const counts: Record<string, number> = {}
+      data?.forEach(appointment => {
+        counts[appointment.creator_id] = (counts[appointment.creator_id] || 0) + 1
+      })
+
+      setAppointmentCounts(counts)
+    } catch (error) {
+      console.error('Error fetching appointment counts:', error)
+    }
+  }, [user, creators])
+
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
       searchCreators()
@@ -172,6 +203,10 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
 
     return () => clearTimeout(debounceTimer)
   }, [searchCreators])
+
+  useEffect(() => {
+    fetchAppointmentCounts()
+  }, [fetchAppointmentCounts])
 
   const updateFilter = (key: keyof SearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }))
@@ -608,19 +643,39 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
                         </p>
                       </div>
                       
-                      <div className="flex items-center justify-center space-x-2 text-xs">
-                        {creator.total_followers > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <Users className="h-3 w-3" />
-                            <span>{formatFollowerCount(creator.total_followers)}</span>
-                          </div>
-                        )}
-                        {creator.base_rate_min > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <span>${creator.base_rate_min}/min</span>
-                          </div>
-                        )}
-                      </div>
+                       <div className="flex items-center justify-center space-x-2 text-xs">
+                         {creator.total_followers > 0 && (
+                           <div className="flex items-center space-x-1">
+                             <Users className="h-3 w-3" />
+                             <span>{formatFollowerCount(creator.total_followers)}</span>
+                           </div>
+                         )}
+                         {creator.base_rate_min > 0 && (
+                           <div className="flex items-center space-x-1">
+                             <span>${creator.base_rate_min}/min</span>
+                           </div>
+                         )}
+                       </div>
+                       
+                       {/* Action Icons */}
+                       <div className="flex items-center justify-center space-x-3 mt-2">
+                         {/* Phone Icon with Appointment Count */}
+                         <div className="relative">
+                           <Phone 
+                             className={`h-4 w-4 text-muted-foreground ${
+                               appointmentCounts[creator.id] > 0 ? 'animate-pulse text-orange-500' : ''
+                             }`} 
+                           />
+                           {appointmentCounts[creator.id] > 0 && (
+                             <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                               {appointmentCounts[creator.id]}
+                             </div>
+                           )}
+                         </div>
+                         
+                         {/* Heart Icon */}
+                         <Heart className="h-4 w-4 text-muted-foreground hover:text-red-500 cursor-pointer" />
+                       </div>
                       
                       <Badge className={`text-xs ${getTierColor(creator.celebrity_tier)}`}>
                         {creator.celebrity_tier}
