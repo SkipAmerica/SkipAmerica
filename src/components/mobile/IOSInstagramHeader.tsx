@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { MessageCircle, Heart, Menu } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 
@@ -22,6 +23,33 @@ export function IOSInstagramHeader({
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
+
+  const handleRecordVideo = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.setAttribute('capture', 'user');
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        console.log('Recording selected for story:', file);
+      }
+    };
+    input.click();
+  };
+
+  const handleUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,video/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        console.log('File selected for story upload:', file);
+      }
+    };
+    input.click();
+  };
 
   return (
     <div className={cn(
@@ -64,27 +92,23 @@ export function IOSInstagramHeader({
                user?.email?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <button 
-            className="text-xs text-primary font-medium mt-1 hover:text-primary/80 transition-colors"
-            onClick={() => {
-              // Create file input for photo/video upload
-              const input = document.createElement('input');
-              input.type = 'file';
-              input.accept = 'image/*,video/*';
-              input.multiple = false;
-              input.onchange = (e) => {
-                const file = (e.target as HTMLInputElement).files?.[0];
-                if (file) {
-                  // Handle file upload here - for now just log it
-                  console.log('File selected for story upload:', file);
-                  // TODO: Implement actual upload logic
-                }
-              };
-              input.click();
-            }}
-          >
-            What's new
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className="text-xs text-primary font-medium mt-1 hover:text-primary/80 transition-colors"
+              >
+                What's new
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" side="bottom" className="min-w-[200px]">
+              <DropdownMenuItem onClick={handleRecordVideo}>
+                Record video story
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleUpload}>
+                Upload photo or video
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         
         {/* Online Creator Stories */}

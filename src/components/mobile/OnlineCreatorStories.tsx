@@ -119,8 +119,8 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
   if (onlineCreators.length === 0) return null;
 
   return (
-    <div className={cn("flex-1 ml-4", className)}>
-      <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide pb-1 touch-pan-x" style={{ touchAction: 'pan-x pan-y' }}>
+    <div className={cn("flex-1 ml-4 w-full", className)}>
+      <div className="ios-horizontal-scroll flex w-full items-center space-x-3 overflow-x-auto overflow-y-hidden scrollbar-hide pb-1 flex-nowrap">
         {onlineCreators.map((creator) => (
           <div
             key={creator.id}
@@ -131,7 +131,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               {/* Story indicator ring or gradient ring */}
               <div className={cn(
                 "p-0.5 rounded-full",
-                creator.hasStory 
+                creator.isOnline && creator.hasStory
                   ? "ring-2 ring-green-500 animate-pulse" 
                   : "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
               )}>
@@ -145,8 +145,8 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               
               {/* Online indicator */}
               {creator.isOnline && (
-                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-green-500 border-2 border-background flex items-center justify-center">
-                  <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[hsl(var(--online))] border-2 border-background flex items-center justify-center">
+                  <div className="h-2 w-2 rounded-full bg-[hsl(var(--background))] animate-pulse" />
                 </div>
               )}
             </div>

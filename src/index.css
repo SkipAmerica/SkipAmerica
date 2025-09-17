@@ -36,6 +36,9 @@
     --border: 0 0% 90%;
     --input: 0 0% 96%;
     --ring: 16 100% 60%;
+    
+    /* Status Colors */
+    --online: 142 70% 45%;
 
     /* Creator Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
@@ -324,4 +327,17 @@
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* iOS Horizontal Scroll helper */
+.ios-horizontal-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  touch-action: pan-x;
+}
+
+.ios-horizontal-scroll > * {
+  scroll-snap-align: start;
 }
