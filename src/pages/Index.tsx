@@ -110,25 +110,25 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className={`grid w-full ${user ? 'grid-cols-5' : 'grid-cols-4'}`}>
-            <TabsTrigger value="discover" className="flex items-center space-x-2">
+          <TabsList className={`grid w-full ${user ? 'grid-cols-5' : 'grid-cols-4'} bg-black text-white`}>
+            <TabsTrigger value="discover" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <Zap className="h-4 w-4" />
               <span>Discover</span>
             </TabsTrigger>
-            <TabsTrigger value="live" className="flex items-center space-x-2">
+            <TabsTrigger value="live" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <Video className="h-4 w-4" />
               <span>Live Now</span>
             </TabsTrigger>
-            <TabsTrigger value="trending" className="flex items-center space-x-2">
+            <TabsTrigger value="trending" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <TrendingUp className="h-4 w-4" />
               <span>Trending</span>
             </TabsTrigger>
-            <TabsTrigger value="platform" className="flex items-center space-x-2">
+            <TabsTrigger value="platform" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <Star className="h-4 w-4" />
               <span>Platform</span>
             </TabsTrigger>
             {user && (
-              <TabsTrigger value="following" className="flex items-center space-x-2">
+              <TabsTrigger value="following" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
                 <Users className="h-4 w-4" />
                 <span>Following</span>
               </TabsTrigger>
