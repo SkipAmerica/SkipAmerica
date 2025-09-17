@@ -237,7 +237,7 @@ const Index = () => {
       case "advanced":
         return (
           <div className="px-4 pt-4 pb-20">
-            <AdvancedCreatorSearch />
+            <AdvancedCreatorSearch onBack={() => setActiveTab("discover")} />
           </div>
         );
 
@@ -319,20 +319,9 @@ const Index = () => {
         onCreatorSelect={(id) => setActiveTab("creator-profile")}
       />
 
-      {/* Search Bar - Show when in advanced tab */}
-      {activeTab === "advanced" && (
-        <div className="fixed top-28 left-0 right-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 p-4">
-          <IOSSearchBar
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search creators..."
-          />
-        </div>
-      )}
-
       {/* Main Content */}
       <div className={`${
-        activeTab === "advanced" ? "pt-36" : "pt-40"
+        activeTab === "advanced" ? "pt-0" : "pt-40"
       }`}>
         {renderTabContent()}
       </div>
