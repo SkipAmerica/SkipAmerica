@@ -120,6 +120,7 @@ const Index = () => {
                         selectedCategory={selectedFilter}
                         onCreatorSelect={(id) => setActiveTab("creator-profile")}
                         searchQuery={searchQuery}
+                        hideHeader={true}
                       />
                     </div>
                   </CollapsibleContent>
@@ -141,6 +142,7 @@ const Index = () => {
                         selectedCategory={selectedFilter}
                         onCreatorSelect={(id) => setActiveTab("creator-profile")}
                         searchQuery={searchQuery}
+                        hideHeader={true}
                       />
                     </div>
                   </CollapsibleContent>

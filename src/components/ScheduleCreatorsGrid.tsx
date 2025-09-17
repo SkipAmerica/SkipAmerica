@@ -20,6 +20,7 @@ interface ScheduleCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
   searchQuery?: string;
+  hideHeader?: boolean;
 }
 
 // Mock data - replace with real data
@@ -38,7 +39,7 @@ const mockCreators: Creator[] = [
   { id: '24', name: 'Kim Kardashian', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 9am', ratingsCount: 6700, rating: 4.5, title: 'Media Personality' },
 ];
 
-export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: ScheduleCreatorsGridProps) {
+export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: ScheduleCreatorsGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
 
   // Filter creators by category (offline only) and search query
@@ -77,42 +78,44 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <Calendar className="h-5 w-5 text-primary" />
-          <h3 className="text-lg font-semibold">Schedule in advance</h3>
-          <span className="text-sm text-muted-foreground">
-            {offlineCreators.length} creator{offlineCreators.length === 1 ? '' : 's'} available
-          </span>
-        </div>
-
-        {/* Navigation */}
-        {totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={prevPage}
-              disabled={currentPage === 0}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Calendar className="h-5 w-5 text-primary" />
+            <h3 className="text-lg font-semibold">Schedule in advance</h3>
             <span className="text-sm text-muted-foreground">
-              {currentPage + 1} / {totalPages}
+              {offlineCreators.length} creator{offlineCreators.length === 1 ? '' : 's'} available
             </span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={nextPage}
-              disabled={currentPage === totalPages - 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
-        )}
-      </div>
+
+          {/* Navigation */}
+          {totalPages > 1 && (
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={prevPage}
+                disabled={currentPage === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={nextPage}
+                disabled={currentPage === totalPages - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 4x3 Grid */}
       <div className="grid grid-cols-4 gap-4">

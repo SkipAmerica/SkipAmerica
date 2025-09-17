@@ -18,6 +18,7 @@ interface OnlineCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
   searchQuery?: string;
+  hideHeader?: boolean;
 }
 
 // Mock data - replace with real data
@@ -36,7 +37,7 @@ const mockCreators: Creator[] = [
   { id: '12', name: 'Anna Taylor', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: true, ratingsCount: 1320, rating: 4.8, title: 'Fashion Designer' },
 ];
 
-export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: OnlineCreatorsGridProps) {
+export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: OnlineCreatorsGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
 
   // Filter creators by category, online status, and search query
@@ -75,45 +76,47 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="relative">
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-            <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
-          </div>
-          <h3 className="text-lg font-semibold">Live Now</h3>
-          <span className="text-sm text-muted-foreground">
-            {onlineCreators.length} creator{onlineCreators.length === 1 ? '' : 's'} available
-          </span>
-        </div>
-
-        {/* Navigation */}
-        {totalPages > 1 && (
-          <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={prevPage}
-              disabled={currentPage === 0}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+            </div>
+            <h3 className="text-lg font-semibold">Live Now</h3>
             <span className="text-sm text-muted-foreground">
-              {currentPage + 1} / {totalPages}
+              {onlineCreators.length} creator{onlineCreators.length === 1 ? '' : 's'} available
             </span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={nextPage}
-              disabled={currentPage === totalPages - 1}
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
-        )}
-      </div>
+
+          {/* Navigation */}
+          {totalPages > 1 && (
+            <div className="flex items-center space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={prevPage}
+                disabled={currentPage === 0}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={nextPage}
+                disabled={currentPage === totalPages - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 4x3 Grid */}
       <div className="grid grid-cols-4 gap-4">
