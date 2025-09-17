@@ -77,33 +77,6 @@ const Index = () => {
           <div className="space-y-6">
 
 
-            {/* Live Creators Preview */}
-            <div className="mx-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Available Now</h2>
-                <Button variant="outline" size="sm" onClick={() => setActiveTab("live")}>
-                  View All
-                </Button>
-              </div>
-              
-              {/* Sort Options - Dynamic based on user interests */}
-              <UserInterestFilters />
-              
-              {/* Search Bar */}
-              <div className="mb-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search creators..."
-                />
-              </div>
-              
-              <OnlineCreators 
-                onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                onStartCall={(id) => setActiveTab("call")}
-              />
-            </div>
-
             {/* Features - Mobile Cards */}
             <IOSListView className="mx-4">
               <IOSListSection header="Monetize Your Following">
