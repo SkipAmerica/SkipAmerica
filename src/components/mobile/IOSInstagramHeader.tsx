@@ -30,10 +30,10 @@ export function IOSInstagramHeader({
     )}>
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">
-        <div className="flex items-center">
+        <div className="flex-1 flex justify-center">
           <h1 className="text-2xl font-bold tracking-tight">Skip</h1>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="absolute right-4 flex items-center space-x-4">
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
             <Heart size={24} />
           </Button>
@@ -52,7 +52,7 @@ export function IOSInstagramHeader({
       </div>
 
       {/* Bottom Row - User Profile */}
-      <div className="flex items-center">
+      <div className="flex items-center justify-center">
         <div className="relative">
           <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'Profile'} />
