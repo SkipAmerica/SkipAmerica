@@ -19,6 +19,7 @@ import { EventCountdown } from "@/components/events/EventCountdown";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
+import { UserInterestFilters } from "@/components/UserInterestFilters";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -85,19 +86,8 @@ const Index = () => {
                 </Button>
               </div>
               
-              {/* Sort Options */}
-              <div className="flex gap-2 mb-4 overflow-x-auto">
-                {["all", "Entertainment", "Technology", "Business", "Beauty"].map((category) => (
-                  <Button
-                    key={category}
-                    variant="outline"
-                    size="sm"
-                    className="whitespace-nowrap"
-                  >
-                    {category === "all" ? "All" : category}
-                  </Button>
-                ))}
-              </div>
+              {/* Sort Options - Dynamic based on user interests */}
+              <UserInterestFilters />
               
               {/* Search Bar */}
               <div className="mb-4">

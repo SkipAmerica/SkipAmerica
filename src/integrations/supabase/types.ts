@@ -1523,6 +1523,7 @@ export type Database = {
           id: string
           independent_verified: boolean | null
           industry_specialization: string | null
+          interests: string[] | null
           is_verified: boolean | null
           updated_at: string
         }
@@ -1536,6 +1537,7 @@ export type Database = {
           id: string
           independent_verified?: boolean | null
           industry_specialization?: string | null
+          interests?: string[] | null
           is_verified?: boolean | null
           updated_at?: string
         }
@@ -1549,6 +1551,7 @@ export type Database = {
           id?: string
           independent_verified?: boolean | null
           industry_specialization?: string | null
+          interests?: string[] | null
           is_verified?: boolean | null
           updated_at?: string
         }
