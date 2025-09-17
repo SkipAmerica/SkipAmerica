@@ -79,8 +79,23 @@ const Index = () => {
 
             {/* Search and Filters */}
             <div className="mx-4 mb-6">
-              {/* Sort Options - Dynamic based on user interests */}
-              <UserInterestFilters />
+              {/* Sort Options - Show default categories */}
+              <div className="flex gap-2 mb-4 overflow-x-auto pb-2" style={{ 
+                scrollbarWidth: 'none', 
+                msOverflowStyle: 'none',
+                WebkitOverflowScrolling: 'touch'
+              }}>
+                {["all", "Entertainment", "Technology", "Business", "Beauty"].map((category) => (
+                  <Button
+                    key={category}
+                    variant="outline"
+                    size="sm"
+                    className="whitespace-nowrap flex-shrink-0"
+                  >
+                    {category === "all" ? "All" : category}
+                  </Button>
+                ))}
+              </div>
               
               {/* Search Bar */}
               <div className="mb-4">
