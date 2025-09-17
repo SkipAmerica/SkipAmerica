@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/hooks/useAuth'
-import { Loader2, Mail, Lock, User, Video, Users, Crown } from 'lucide-react'
+import { Loader2, Mail, Lock, User, Users, Crown } from 'lucide-react'
 
 interface AuthFormProps {
   onSuccess?: () => void
@@ -158,9 +158,14 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     <Card className="w-full max-w-md mx-auto shadow-creator">
       <CardHeader className="text-center">
         <div className="flex items-center justify-center mb-4">
-          <div className="p-3 bg-gradient-primary rounded-full">
-            <Video className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <h1 className="text-2xl font-bold">
+            <span className="text-skip-black">Sk</span>
+            <span className="relative">
+              <span className="text-skip-black">i</span>
+              <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
+            </span>
+            <span className="text-skip-black">p</span>
+          </h1>
         </div>
         <CardTitle className="text-2xl bg-gradient-hero bg-clip-text text-transparent">
           Welcome to Skip

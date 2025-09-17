@@ -63,6 +63,14 @@ const Index = () => {
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center">
+            <h1 className="text-2xl font-bold">
+              <span className="text-skip-black">Sk</span>
+              <span className="relative">
+                <span className="text-skip-black">i</span>
+                <span className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-skip-orange rounded-full"></span>
+              </span>
+              <span className="text-skip-black">p</span>
+            </h1>
           </div>
           
           <div className="flex items-center space-x-4">
