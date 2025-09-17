@@ -98,6 +98,24 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
     sort_by: 'relevance'
   })
 
+  const [keywordQuery, setKeywordQuery] = useState('')
+  const [keywordSuggestions] = useState([
+    'Grammy nominated',
+    'Song writer',
+    'Currently touring',
+    'Award winning',
+    'Chart topping',
+    'Platinum selling',
+    'Billboard charting',
+    'Producer',
+    'Multi-instrumentalist',
+    'Vocalist',
+    'Composer',
+    'Performer',
+    'Recording artist',
+    'Live performer'
+  ])
+
   const searchCreators = useCallback(async () => {
     if (!user) return
     
@@ -164,6 +182,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
       political_opt_in: false,
       sort_by: 'relevance'
     })
+    setKeywordQuery('')
   }
 
   const formatFollowerCount = (count: number): string => {
@@ -177,14 +196,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
   }
 
   const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'World Wide': return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white'
-      case 'National': return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white'
-      case 'Regional': return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white'
-      case 'Local': return 'bg-gradient-to-r from-green-400 to-green-600 text-white'
-      case 'Rising': return 'bg-gradient-to-r from-purple-400 to-purple-600 text-white'
-      default: return 'bg-gray-100 text-gray-800'
-    }
+    return 'bg-secondary text-secondary-foreground'
   }
 
   if (!user) {
@@ -250,160 +262,208 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
         <div className="grid lg:grid-cols-4 gap-6 px-4">
           {/* Filters Sidebar */}
           <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen} className="lg:col-span-1">
-            <CollapsibleContent className="space-y-6">
-              <Card>
-                <CardContent className="p-6 space-y-6">
-                  
-                  {/* Sort By */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">Sort By</label>
-                    <Select value={filters.sort_by} onValueChange={(value) => updateFilter('sort_by', value)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="relevance">Relevance</SelectItem>
-                        <SelectItem value="followers">Most Followers</SelectItem>
-                        <SelectItem value="engagement">Highest Engagement</SelectItem>
-                        <SelectItem value="recent">Recently Updated</SelectItem>
-                        <SelectItem value="rate_asc">Lowest Rate</SelectItem>
-                        <SelectItem value="rate_desc">Highest Rate</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+            <CollapsibleContent className="space-y-4">
+              
+              {/* Sort By */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Sort By</label>
+                  <Select value={filters.sort_by} onValueChange={(value) => updateFilter('sort_by', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="relevance">Relevance</SelectItem>
+                      <SelectItem value="followers">Most Followers</SelectItem>
+                      <SelectItem value="engagement">Highest Engagement</SelectItem>
+                      <SelectItem value="recent">Recently Updated</SelectItem>
+                      <SelectItem value="rate_asc">Lowest Rate</SelectItem>
+                      <SelectItem value="rate_desc">Highest Rate</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
 
-                  {/* Categories */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">Categories</label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {facets.categories?.map((category: string) => (
-                        <div key={category} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={filters.categories.includes(category)}
-                            onCheckedChange={() => toggleArrayFilter('categories', category)}
-                          />
-                          <label className="text-sm capitalize cursor-pointer">
-                            {category}
-                          </label>
-                        </div>
+              {/* Keywords */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Keywords</label>
+                  <div className="relative">
+                    <Input
+                      placeholder="e.g. Grammy nominated, Song writer..."
+                      value={keywordQuery}
+                      onChange={(e) => setKeywordQuery(e.target.value)}
+                      className="mb-2"
+                    />
+                    {keywordQuery && (
+                      <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
+                        {keywordSuggestions
+                          .filter(suggestion => 
+                            suggestion.toLowerCase().includes(keywordQuery.toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map((suggestion) => (
+                            <div
+                              key={suggestion}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                              onClick={() => setKeywordQuery(suggestion)}
+                            >
+                              {suggestion}
+                            </div>
+                          ))
+                        }
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Categories */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Categories</label>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {facets.categories?.map((category: string) => (
+                      <div key={category} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={filters.categories.includes(category)}
+                          onCheckedChange={() => toggleArrayFilter('categories', category)}
+                        />
+                        <label className="text-sm capitalize cursor-pointer">
+                          {category}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Creator Audience */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Creator Audience</label>
+                  <div className="space-y-2">
+                    {['Any', 'World Wide', 'National', 'Regional', 'Local', 'Rising'].map((tier) => (
+                      <div key={tier} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={filters.celebrity_tier.includes(tier)}
+                          onCheckedChange={() => toggleArrayFilter('celebrity_tier', tier)}
+                        />
+                        <Badge className={getTierColor(tier)}>
+                          {tier}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Verification Status */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Verification</label>
+                  <div className="space-y-2">
+                    {facets.verification_statuses?.map((status: string) => (
+                      <div key={status} className="flex items-center space-x-2">
+                        <Checkbox
+                          checked={filters.verification_status.includes(status)}
+                          onCheckedChange={() => toggleArrayFilter('verification_status', status)}
+                        />
+                        <label className="text-sm capitalize cursor-pointer">
+                          {status}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Budget Range */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">
+                    Budget Range: ${filters.min_budget} - ${filters.max_budget}
+                  </label>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Min Budget</label>
+                      <Slider
+                        value={[filters.min_budget]}
+                        onValueChange={([value]) => updateFilter('min_budget', value)}
+                        max={1000}
+                        step={25}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Max Budget</label>
+                      <Slider
+                        value={[filters.max_budget]}
+                        onValueChange={([value]) => updateFilter('max_budget', value)}
+                        max={1000}
+                        step={25}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Follower Range */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">
+                    Followers: {formatFollowerCount(filters.min_followers)} - {formatFollowerCount(filters.max_followers)}
+                  </label>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Min Followers</label>
+                      <Slider
+                        value={[filters.min_followers]}
+                        onValueChange={([value]) => updateFilter('min_followers', value)}
+                        max={10000000}
+                        step={100000}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Max Followers</label>
+                      <Slider
+                        value={[filters.max_followers]}
+                        onValueChange={([value]) => updateFilter('max_followers', value)}
+                        max={10000000}
+                        step={100000}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Country Filter */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <label className="text-sm font-medium mb-3 block">Country</label>
+                  <Select value={filters.location_country} onValueChange={(value) => updateFilter('location_country', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Countries</SelectItem>
+                      {facets.countries?.map((country: string) => (
+                        <SelectItem key={country} value={country}>
+                          {country}
+                        </SelectItem>
                       ))}
-                    </div>
-                  </div>
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
 
-                  {/* Celebrity Tier */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">Celebrity Tier</label>
-                    <div className="space-y-2">
-                      {['World Wide', 'National', 'Regional', 'Local', 'Rising'].map((tier) => (
-                        <div key={tier} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={filters.celebrity_tier.includes(tier)}
-                            onCheckedChange={() => toggleArrayFilter('celebrity_tier', tier)}
-                          />
-                          <Badge className={getTierColor(tier)}>
-                            {tier}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Verification Status */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">Verification</label>
-                    <div className="space-y-2">
-                      {facets.verification_statuses?.map((status: string) => (
-                        <div key={status} className="flex items-center space-x-2">
-                          <Checkbox
-                            checked={filters.verification_status.includes(status)}
-                            onCheckedChange={() => toggleArrayFilter('verification_status', status)}
-                          />
-                          <label className="text-sm capitalize cursor-pointer">
-                            {status}
-                          </label>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Budget Range */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">
-                      Budget Range: ${filters.min_budget} - ${filters.max_budget}
-                    </label>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Min Budget</label>
-                        <Slider
-                          value={[filters.min_budget]}
-                          onValueChange={([value]) => updateFilter('min_budget', value)}
-                          max={1000}
-                          step={25}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Max Budget</label>
-                        <Slider
-                          value={[filters.max_budget]}
-                          onValueChange={([value]) => updateFilter('max_budget', value)}
-                          max={1000}
-                          step={25}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Follower Range */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">
-                      Followers: {formatFollowerCount(filters.min_followers)} - {formatFollowerCount(filters.max_followers)}
-                    </label>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-xs text-muted-foreground">Min Followers</label>
-                        <Slider
-                          value={[filters.min_followers]}
-                          onValueChange={([value]) => updateFilter('min_followers', value)}
-                          max={10000000}
-                          step={100000}
-                          className="mt-1"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-xs text-muted-foreground">Max Followers</label>
-                        <Slider
-                          value={[filters.max_followers]}
-                          onValueChange={([value]) => updateFilter('max_followers', value)}
-                          max={10000000}
-                          step={100000}
-                          className="mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Country Filter */}
-                  <div>
-                    <label className="text-sm font-medium mb-3 block">Country</label>
-                    <Select value={filters.location_country} onValueChange={(value) => updateFilter('location_country', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select country" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Countries</SelectItem>
-                        {facets.countries?.map((country: string) => (
-                          <SelectItem key={country} value={country}>
-                            {country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Other Filters */}
-                  <div className="space-y-3 border-t pt-4">
+              {/* Other Filters */}
+              <Card className="bg-white">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
                     <div className="flex items-center space-x-2">
                       <Checkbox
                         checked={filters.available_only}
@@ -419,9 +479,9 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
                       <label className="text-sm">Has press mentions</label>
                     </div>
                   </div>
-
                 </CardContent>
               </Card>
+
             </CollapsibleContent>
           </Collapsible>
 
