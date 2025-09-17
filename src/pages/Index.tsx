@@ -191,6 +191,32 @@ const Index = () => {
               </div>
             </section>
 
+            {/* What Skip Does - Explanatory Section */}
+            <section className="py-16 bg-gradient-to-b from-background to-muted/30">
+              <div className="container mx-auto px-4 max-w-4xl">
+                <div className="grid md:grid-cols-2 gap-8 md:gap-12">
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-primary">For Creators</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Tired of shouting into the void? Of algorithms deciding who sees your work? 
+                      Skip cuts through the noise. Your most dedicated followers can reach you directly, 
+                      one meaningful conversation at a time. No more competing for attention—just real 
+                      connections with people who truly value what you offer.
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-2xl font-semibold text-primary">For Fans</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Want real access to the creators you admire? Skip gives you the chance to connect 
+                      personally with the people whose knowledge, creativity, and insights inspire you. 
+                      No more hoping they'll see your comment—get the guidance, advice, or moment 
+                      you've been looking for.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Live Creators Preview */}
             <section>
               <div className="flex items-center justify-between mb-6">
