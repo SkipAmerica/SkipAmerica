@@ -143,13 +143,13 @@ const Index = () => {
               </div>
               <div className="relative z-10 max-w-3xl">
                 <Badge className="mb-4 bg-primary-foreground/20 text-primary-foreground border-primary-foreground/30">
-                  Live Social Network
+                  Professional Access Platform
                 </Badge>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Break Through to Influential People
+                  Skip is the link in bio for real access
                 </h1>
                 <p className="text-lg md:text-xl mb-8 opacity-90">
-                  Connect directly with celebrities, experts, entrepreneurs, and influencers. Skip the barriers and get real access.
+                  Social platforms build your audience — Skip lets your top fans and clients actually reach you, one call at a time.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   {user ? (
@@ -170,7 +170,7 @@ const Index = () => {
                         onClick={() => navigate("/auth")}
                       >
                         <Users className="mr-2 h-5 w-5" />
-                        Join Skip - It's Free!
+                        Start Monetizing - It's Free!
                       </Button>
                       <Button 
                         size="lg" 
@@ -178,14 +178,14 @@ const Index = () => {
                         onClick={() => setActiveTab("live")}
                       >
                       <Zap className="mr-2 h-4 w-4" />
-                      Browse Talent
+                      Browse Creators
                       </Button>
                     </>
                   )}
                 </div>
                 {!user && (
                   <p className="text-sm opacity-75 mt-4">
-                    Connect with the people you've always wanted to meet.
+                    Turn your social media followers into paying clients.
                   </p>
                 )}
               </div>
@@ -223,31 +223,31 @@ const Index = () => {
             {/* Features */}
             <section>
                 <h2 className="text-2xl font-bold text-center mb-8">
-                  Break Through Traditional Barriers
+                  Monetize Your Social Media Following
                 </h2>
               <div className="grid md:grid-cols-3 gap-6">
                 <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
                   <CardHeader>
                     <DollarSign className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Fair Pricing</CardTitle>
+                    <CardTitle>Direct Revenue Stream</CardTitle>
                     <CardDescription>
-                      Per-minute pricing that splits with group size. More participants = lower cost for everyone.
+                      Convert your Instagram/TikTok followers into paying clients. Add Skip to your bio and start earning per minute.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="bg-accent p-4 rounded-lg">
                       <div className="text-sm text-accent-foreground">
                         <div className="flex justify-between mb-1">
-                          <span>1 person:</span>
+                          <span>Set your rate:</span>
                           <span className="font-bold">$5/min</span>
                         </div>
                         <div className="flex justify-between mb-1">
-                          <span>4 people:</span>
-                          <span className="font-bold">$1.25/min each</span>
+                          <span>4 people join:</span>
+                          <span className="font-bold">$20/min total</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>10 people:</span>
-                          <span className="font-bold">$0.50/min each</span>
+                          <span>Your earnings:</span>
+                          <span className="font-bold text-primary">$20/min</span>
                         </div>
                       </div>
                     </div>
@@ -257,31 +257,23 @@ const Index = () => {
                 <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
                   <CardHeader>
                     <Star className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Trust & Safety</CardTitle>
+                    <CardTitle>Professional Protection</CardTitle>
                     <CardDescription>
-                      Dual rating system for creators and fans. Content moderation keeps conversations respectful.
+                      Built-in payment processing, ratings system, and content moderation. Focus on your expertise, we handle the rest.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span>Creator ratings</span>
-                        <div className="flex">
-                          {[1,2,3,4,5].map(star => (
-                            <Star key={star} className="h-4 w-4 fill-primary text-primary" />
-                          ))}
-                        </div>
+                        <span>Secure payments</span>
+                        <div className="w-3 h-3 bg-primary rounded-full"></div>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Fan ratings</span>
-                        <div className="flex">
-                          {[1,2,3,4,5].map(star => (
-                            <Star key={star} className="h-4 w-4 fill-primary text-primary" />
-                          ))}
-                        </div>
+                        <span>Content moderation</span>
+                        <div className="w-3 h-3 bg-primary rounded-full"></div>
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        Auto-moderation + reporting system
+                        Professional business tools included
                       </div>
                     </div>
                   </CardContent>
@@ -290,24 +282,24 @@ const Index = () => {
                 <Card className="shadow-creator hover:shadow-glow transition-all duration-300">
                   <CardHeader>
                     <Zap className="h-12 w-12 text-primary mb-4" />
-                    <CardTitle>Instant Connection</CardTitle>
+                    <CardTitle>Easy Integration</CardTitle>
                     <CardDescription>
-                      See who's online and available. Join calls instantly or schedule for later.
+                      Works with your existing social presence. Share your Skip link anywhere - Instagram bio, TikTok, Twitter, YouTube.
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <span className="text-sm">Live indicators</span>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">Instagram bio</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">Response times</span>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">TikTok profile</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm">Group calls</span>
+                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span className="text-sm">YouTube about</span>
                       </div>
                     </div>
                   </CardContent>
