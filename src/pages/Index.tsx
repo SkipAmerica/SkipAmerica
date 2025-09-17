@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu } from "lucide-react";
+import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { UserMenu } from "@/components/UserMenu";
@@ -27,6 +27,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
 import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
 import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSearch";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 // iOS Components
 import { IOSTabBar } from "@/components/mobile/IOSTabBar";
@@ -46,6 +47,8 @@ const Index = () => {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [liveNowOpen, setLiveNowOpen] = useState(true);
+  const [scheduleOpen, setScheduleOpen] = useState(true);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -99,22 +102,49 @@ const Index = () => {
                 />
               </div>
 
-              {/* Who's Online Grid */}
+              {/* Live Now Grid - Collapsible */}
               <div className="mb-6">
-                <OnlineCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                  searchQuery={searchQuery}
-                />
+                <Collapsible open={liveNowOpen} onOpenChange={setLiveNowOpen}>
+                  <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                        <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                      </div>
+                      <h3 className="text-lg font-semibold">Live Now</h3>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pt-4">
+                      <OnlineCreatorsGrid 
+                        selectedCategory={selectedFilter}
+                        onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                        searchQuery={searchQuery}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
 
-              {/* Schedule in Advance Grid */}
+              {/* Schedule in Advance Grid - Collapsible */}
               <div className="mb-6">
-                <ScheduleCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                  searchQuery={searchQuery}
-                />
+                <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>
+                  <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
+                    <div className="flex items-center space-x-3">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Schedule in advance</h3>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="pt-4">
+                      <ScheduleCreatorsGrid 
+                        selectedCategory={selectedFilter}
+                        onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                        searchQuery={searchQuery}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             </div>
 

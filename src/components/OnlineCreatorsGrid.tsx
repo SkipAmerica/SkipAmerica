@@ -81,7 +81,7 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
             <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
           </div>
-          <h3 className="text-lg font-semibold">Who's Online?</h3>
+          <h3 className="text-lg font-semibold">Live Now</h3>
           <span className="text-sm text-muted-foreground">
             {onlineCreators.length} creator{onlineCreators.length === 1 ? '' : 's'} available
           </span>
