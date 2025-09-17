@@ -23,7 +23,7 @@ interface Creator {
   location_city: string
   categories: string[]
   languages: string[]
-  celebrity_tier: 'A' | 'B' | 'C' | 'Rising' | 'Local Hero'
+  celebrity_tier: 'World Wide' | 'National' | 'Regional' | 'Local' | 'Rising'
   verification_status: 'verified' | 'pending' | 'failed'
   total_followers: number
   avg_engagement_rate: number
@@ -178,10 +178,11 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
 
   const getTierColor = (tier: string) => {
     switch (tier) {
-      case 'A': return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white'
-      case 'B': return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white'
-      case 'C': return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white'
-      case 'Rising': return 'bg-gradient-to-r from-green-400 to-green-600 text-white'
+      case 'World Wide': return 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white'
+      case 'National': return 'bg-gradient-to-r from-orange-400 to-orange-600 text-white'
+      case 'Regional': return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white'
+      case 'Local': return 'bg-gradient-to-r from-green-400 to-green-600 text-white'
+      case 'Rising': return 'bg-gradient-to-r from-purple-400 to-purple-600 text-white'
       default: return 'bg-gray-100 text-gray-800'
     }
   }
@@ -293,7 +294,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
                   <div>
                     <label className="text-sm font-medium mb-3 block">Celebrity Tier</label>
                     <div className="space-y-2">
-                      {['A', 'B', 'C', 'Rising'].map((tier) => (
+                      {['World Wide', 'National', 'Regional', 'Local', 'Rising'].map((tier) => (
                         <div key={tier} className="flex items-center space-x-2">
                           <Checkbox
                             checked={filters.celebrity_tier.includes(tier)}
