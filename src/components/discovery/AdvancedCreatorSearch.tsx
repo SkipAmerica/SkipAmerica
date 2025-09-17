@@ -228,9 +228,9 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
       </div>
 
       {/* Main Content */}
-      <div className="pt-32 space-y-6">
-        {/* Search Header */}
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between px-4">
+      <div className="pt-32 pb-20">
+        {/* Filter Controls */}
+        <div className="px-4 mb-6">
           <div className="flex gap-2">
             <Button
               variant="outline"

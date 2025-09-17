@@ -236,9 +236,7 @@ const Index = () => {
 
       case "advanced":
         return (
-          <div className="px-4 pt-4 pb-20">
-            <AdvancedCreatorSearch onBack={() => setActiveTab("discover")} />
-          </div>
+          <AdvancedCreatorSearch onBack={() => setActiveTab("discover")} />
         );
 
       case "following":
@@ -321,7 +319,7 @@ const Index = () => {
 
       {/* Main Content */}
       <div className={`${
-        activeTab === "advanced" ? "pt-0" : "pt-40"
+        activeTab === "advanced" ? "" : "pt-40"
       }`}>
         {renderTabContent()}
       </div>
