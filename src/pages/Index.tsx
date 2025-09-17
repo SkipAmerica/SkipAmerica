@@ -270,7 +270,10 @@ const Index = () => {
     <div className="min-h-screen bg-background relative">
       {/* iOS Navigation Bar */}
       {user ? (
-        <IOSInstagramHeader onMenuClick={() => setShowMenu(true)} />
+        <IOSInstagramHeader 
+          onMenuClick={() => setShowMenu(true)}
+          onCreatorSelect={(id) => setActiveTab("creator-profile")}
+        />
       ) : (
         <IOSNavBar
           title={

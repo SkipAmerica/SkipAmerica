@@ -5,17 +5,20 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { MessageCircle, Heart, Menu } from 'lucide-react';
+import { OnlineCreatorStories } from './OnlineCreatorStories';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
   className?: string;
   onMenuClick?: () => void;
+  onCreatorSelect?: (creatorId: string) => void;
 }
 
 export function IOSInstagramHeader({ 
   transparent = false,
   className,
-  onMenuClick
+  onMenuClick,
+  onCreatorSelect
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -51,9 +54,9 @@ export function IOSInstagramHeader({
         </div>
       </div>
 
-      {/* Bottom Row - User Profile */}
+      {/* Bottom Row - User Profile + Online Creator Stories */}
       <div className="flex items-center">
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'Profile'} />
             <AvatarFallback className="text-sm font-medium">
@@ -62,6 +65,9 @@ export function IOSInstagramHeader({
             </AvatarFallback>
           </Avatar>
         </div>
+        
+        {/* Online Creator Stories */}
+        <OnlineCreatorStories onCreatorSelect={onCreatorSelect} />
       </div>
     </div>
   );
