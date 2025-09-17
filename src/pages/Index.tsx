@@ -137,7 +137,7 @@ const Index = () => {
               <div className="absolute inset-0 opacity-20">
                 <img 
                   src={heroImage} 
-                  alt="Creators connecting with fans through video calls" 
+                  alt="Creators connecting with users through video calls" 
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -206,7 +206,7 @@ const Index = () => {
                     </p>
                   </div>
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-semibold text-primary">For Fans</h3>
+                    <h3 className="text-2xl font-semibold text-primary">For Users</h3>
                     <p className="text-muted-foreground leading-relaxed">
                       Want real access to the creators you admire? Whether they're wellness experts, business leaders, 
                       or something completely different—there's incredible diversity waiting to be discovered. Skip gives you the chance to connect personally with 
