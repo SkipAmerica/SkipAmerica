@@ -51,8 +51,6 @@ export function CallLobby({
     const timer = setInterval(() => {
       setTimeRemaining(prev => {
         if (prev <= 1) {
-          // Auto-start call when timer reaches 0
-          onStartCall();
           return 0;
         }
         return prev - 1;
@@ -60,7 +58,14 @@ export function CallLobby({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [onStartCall]);
+  }, []);
+
+  // Handle auto-start when timer reaches 0
+  useEffect(() => {
+    if (timeRemaining === 0) {
+      onStartCall();
+    }
+  }, [timeRemaining, onStartCall]);
 
   const handleStartEarly = () => {
     toast({

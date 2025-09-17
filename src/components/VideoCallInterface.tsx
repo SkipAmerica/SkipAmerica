@@ -196,8 +196,8 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
           }}
         />
 
-        <div className="ios-content flex flex-col items-center justify-center space-y-6 animate-scale-in">
-          <div className="w-full max-w-sm space-y-6">
+        <div className="ios-content flex flex-col items-center justify-center space-y-6 animate-scale-in" style={{ paddingTop: 'calc(var(--ios-nav-bar-height) + 24px)' }}>
+          <div className="w-full max-w-sm space-y-6 px-4">
             <div className="text-center space-y-4">
               <div className="bg-destructive/10 rounded-full p-6 w-24 h-24 mx-auto flex items-center justify-center">
                 <AlertTriangle className="h-12 w-12 text-destructive animate-pulse" />
@@ -273,7 +273,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
       />
 
       {/* Status Bar */}
-      <div className="px-4 py-2 bg-card border-b animate-fade-in">
+      <div className="px-4 py-3 bg-card border-b animate-fade-in" style={{ paddingTop: 'calc(var(--ios-nav-bar-height) + 8px)' }}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground rounded-full">

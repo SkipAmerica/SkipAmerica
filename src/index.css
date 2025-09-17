@@ -199,6 +199,37 @@
   padding-top: var(--safe-area-top);
 }
 
+/* iOS Content Area */
+.ios-content {
+  padding-top: var(--ios-nav-bar-height);
+  padding-bottom: var(--ios-tab-bar-height);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+.ios-screen {
+  min-height: 100vh;
+  background: hsl(var(--background));
+  position: relative;
+}
+
+.ios-loading-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - var(--ios-nav-bar-height) - var(--ios-tab-bar-height));
+}
+
+.ios-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(var(--ios-system-gray-4));
+  border-top-color: hsl(var(--ios-system-blue));
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
 /* iOS List Styles */
 .ios-list {
   background: hsl(var(--background));
