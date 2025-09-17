@@ -120,7 +120,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
 
   return (
     <div className={cn("flex-1 ml-4", className)}>
-      <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide pb-1">
+      <div className="flex items-center space-x-3 overflow-x-auto scrollbar-hide pb-1 touch-pan-x" style={{ touchAction: 'pan-x pan-y' }}>
         {onlineCreators.map((creator) => (
           <div
             key={creator.id}

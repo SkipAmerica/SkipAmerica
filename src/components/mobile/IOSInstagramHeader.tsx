@@ -64,7 +64,25 @@ export function IOSInstagramHeader({
                user?.email?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-          <button className="text-xs text-primary font-medium mt-1">
+          <button 
+            className="text-xs text-primary font-medium mt-1 hover:text-primary/80 transition-colors"
+            onClick={() => {
+              // Create file input for photo/video upload
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = 'image/*,video/*';
+              input.multiple = false;
+              input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) {
+                  // Handle file upload here - for now just log it
+                  console.log('File selected for story upload:', file);
+                  // TODO: Implement actual upload logic
+                }
+              };
+              input.click();
+            }}
+          >
             What's new
           </button>
         </div>
