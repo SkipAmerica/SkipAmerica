@@ -75,27 +75,6 @@ const Index = () => {
         return (
           <div className="space-y-6">
 
-            {/* What Skip Does - Mobile Optimized */}
-            <IOSListView className="mx-4">
-              <IOSListSection header="How Skip Works">
-                <IOSListItem>
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-primary">For Creators</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Convert your social following into direct revenue. Share yourself on your terms and be valued for it.
-                    </p>
-                  </div>
-                </IOSListItem>
-                <IOSListItem>
-                  <div className="space-y-2">
-                    <h3 className="font-semibold text-primary">For Fans & Clients</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Connect directly with creators you admire. Get real value beyond likes and comments.
-                    </p>
-                  </div>
-                </IOSListItem>
-              </IOSListSection>
-            </IOSListView>
 
             {/* Live Creators Preview */}
             <div className="mx-4">
