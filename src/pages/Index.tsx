@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell } from "lucide-react";
+import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { UserMenu } from "@/components/UserMenu";
@@ -24,6 +24,7 @@ import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
 import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
+import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSearch";
 
 const Index = () => {
   console.log('Index page is rendering...');
@@ -110,7 +111,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="discover" className="space-y-6">
-          <TabsList className={`grid w-full ${user ? 'grid-cols-5' : 'grid-cols-4'} bg-black text-white`}>
+          <TabsList className={`grid w-full ${user ? 'grid-cols-6' : 'grid-cols-5'} bg-black text-white`}>
             <TabsTrigger value="discover" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <Zap className="h-4 w-4" />
               <span>Discover</span>
@@ -122,6 +123,10 @@ const Index = () => {
             <TabsTrigger value="trending" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <TrendingUp className="h-4 w-4" />
               <span>Trending</span>
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
+              <Search className="h-4 w-4" />
+              <span>Advanced</span>
             </TabsTrigger>
             <TabsTrigger value="platform" className="flex items-center space-x-2 text-white data-[state=active]:bg-white data-[state=active]:text-black">
               <Star className="h-4 w-4" />
@@ -361,6 +366,10 @@ const Index = () => {
             <div className="space-y-6">
               <SmartTrendingEngine />
             </div>
+          </TabsContent>
+
+          <TabsContent value="advanced">
+            <AdvancedCreatorSearch />
           </TabsContent>
 
           <TabsContent value="platform">

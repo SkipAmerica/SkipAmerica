@@ -897,6 +897,114 @@ export type Database = {
           },
         ]
       }
+      creators: {
+        Row: {
+          available_for_booking: boolean | null
+          avatar_url: string | null
+          avg_engagement_rate: number | null
+          base_rate_currency: string | null
+          base_rate_max: number | null
+          base_rate_min: number | null
+          bio: string | null
+          categories: string[] | null
+          celebrity_tier: Database["public"]["Enums"]["celebrity_tier"] | null
+          created_at: string | null
+          do_not_contact: boolean | null
+          full_name: string
+          headline: string | null
+          id: string
+          is_suppressed: boolean | null
+          languages: string[] | null
+          last_activity_at: string | null
+          location_city: string | null
+          location_country: string | null
+          long_bio: string | null
+          political_opt_in: boolean | null
+          political_tags: string[] | null
+          press_mentions_30d: number | null
+          press_mentions_total: number | null
+          press_opt_in: boolean | null
+          profile_completeness: number | null
+          response_time_hours: number | null
+          risk_flags: string[] | null
+          total_followers: number | null
+          updated_at: string | null
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Insert: {
+          available_for_booking?: boolean | null
+          avatar_url?: string | null
+          avg_engagement_rate?: number | null
+          base_rate_currency?: string | null
+          base_rate_max?: number | null
+          base_rate_min?: number | null
+          bio?: string | null
+          categories?: string[] | null
+          celebrity_tier?: Database["public"]["Enums"]["celebrity_tier"] | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          full_name: string
+          headline?: string | null
+          id?: string
+          is_suppressed?: boolean | null
+          languages?: string[] | null
+          last_activity_at?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          long_bio?: string | null
+          political_opt_in?: boolean | null
+          political_tags?: string[] | null
+          press_mentions_30d?: number | null
+          press_mentions_total?: number | null
+          press_opt_in?: boolean | null
+          profile_completeness?: number | null
+          response_time_hours?: number | null
+          risk_flags?: string[] | null
+          total_followers?: number | null
+          updated_at?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Update: {
+          available_for_booking?: boolean | null
+          avatar_url?: string | null
+          avg_engagement_rate?: number | null
+          base_rate_currency?: string | null
+          base_rate_max?: number | null
+          base_rate_min?: number | null
+          bio?: string | null
+          categories?: string[] | null
+          celebrity_tier?: Database["public"]["Enums"]["celebrity_tier"] | null
+          created_at?: string | null
+          do_not_contact?: boolean | null
+          full_name?: string
+          headline?: string | null
+          id?: string
+          is_suppressed?: boolean | null
+          languages?: string[] | null
+          last_activity_at?: string | null
+          location_city?: string | null
+          location_country?: string | null
+          long_bio?: string | null
+          political_opt_in?: boolean | null
+          political_tags?: string[] | null
+          press_mentions_30d?: number | null
+          press_mentions_total?: number | null
+          press_opt_in?: boolean | null
+          profile_completeness?: number | null
+          response_time_hours?: number | null
+          risk_flags?: string[] | null
+          total_followers?: number | null
+          updated_at?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+        }
+        Relationships: []
+      }
       event_collaborators: {
         Row: {
           created_at: string
@@ -1062,6 +1170,53 @@ export type Database = {
         }
         Relationships: []
       }
+      offer_rates: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          currency: string | null
+          id: string
+          is_active: boolean | null
+          max_rate: number
+          min_rate: number
+          notes: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          currency?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_rate?: number
+          min_rate?: number
+          notes?: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          currency?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_rate?: number
+          min_rate?: number
+          notes?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_rates_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           approved: boolean
@@ -1168,6 +1323,62 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_stats: {
+        Row: {
+          created_at: string | null
+          creator_id: string
+          engagement_rate_30d: number | null
+          follower_count: number | null
+          growth_rate_30d: number | null
+          handle: string
+          id: string
+          is_visible: boolean | null
+          last_sync_at: string | null
+          platform: Database["public"]["Enums"]["platform_name"]
+          updated_at: string | null
+          verified_on_platform: boolean | null
+          views_30d: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id: string
+          engagement_rate_30d?: number | null
+          follower_count?: number | null
+          growth_rate_30d?: number | null
+          handle: string
+          id?: string
+          is_visible?: boolean | null
+          last_sync_at?: string | null
+          platform: Database["public"]["Enums"]["platform_name"]
+          updated_at?: string | null
+          verified_on_platform?: boolean | null
+          views_30d?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string
+          engagement_rate_30d?: number | null
+          follower_count?: number | null
+          growth_rate_30d?: number | null
+          handle?: string
+          id?: string
+          is_visible?: boolean | null
+          last_sync_at?: string | null
+          platform?: Database["public"]["Enums"]["platform_name"]
+          updated_at?: string | null
+          verified_on_platform?: boolean | null
+          views_30d?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_stats_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playlist_content: {
         Row: {
           content_id: string
@@ -1203,6 +1414,50 @@ export type Database = {
             columns: ["playlist_id"]
             isOneToOne: false
             referencedRelation: "creator_playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      press_mentions: {
+        Row: {
+          article_url: string | null
+          created_at: string | null
+          creator_id: string
+          headline: string
+          id: string
+          outlet: string
+          published_date: string
+          sentiment_score: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          article_url?: string | null
+          created_at?: string | null
+          creator_id: string
+          headline: string
+          id?: string
+          outlet: string
+          published_date: string
+          sentiment_score?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          article_url?: string | null
+          created_at?: string | null
+          creator_id?: string
+          headline?: string
+          id?: string
+          outlet?: string
+          published_date?: string
+          sentiment_score?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "press_mentions_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creators"
             referencedColumns: ["id"]
           },
         ]
@@ -1556,6 +1811,26 @@ export type Database = {
     }
     Enums: {
       account_type: "fan" | "creator" | "agency" | "industry_resource"
+      celebrity_tier: "A" | "B" | "C" | "Rising" | "Local Hero"
+      offer_type:
+        | "live_1on1"
+        | "live_group"
+        | "ugc_video"
+        | "social_post"
+        | "story"
+        | "appearance"
+        | "panel"
+        | "brand_collab"
+      platform_name:
+        | "youtube"
+        | "instagram"
+        | "tiktok"
+        | "twitter"
+        | "linkedin"
+        | "twitch"
+        | "facebook"
+        | "snapchat"
+        | "pinterest"
       social_platform:
         | "twitter"
         | "instagram"
@@ -1691,6 +1966,28 @@ export const Constants = {
   public: {
     Enums: {
       account_type: ["fan", "creator", "agency", "industry_resource"],
+      celebrity_tier: ["A", "B", "C", "Rising", "Local Hero"],
+      offer_type: [
+        "live_1on1",
+        "live_group",
+        "ugc_video",
+        "social_post",
+        "story",
+        "appearance",
+        "panel",
+        "brand_collab",
+      ],
+      platform_name: [
+        "youtube",
+        "instagram",
+        "tiktok",
+        "twitter",
+        "linkedin",
+        "twitch",
+        "facebook",
+        "snapchat",
+        "pinterest",
+      ],
       social_platform: [
         "twitter",
         "instagram",
