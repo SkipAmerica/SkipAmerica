@@ -146,7 +146,7 @@ const Index = () => {
                   Professional Access Platform
                 </Badge>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Skip is the link in bio for real access
+                  Skip: The link in bio that opens the door to you
                 </h1>
                 <p className="text-lg md:text-xl mb-8 opacity-90">
                   Social platforms build your audience — Skip lets your top fans and clients actually reach you, one call at a time.
