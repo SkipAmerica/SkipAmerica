@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Phone, Heart } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Creator {
   id: string;
@@ -40,7 +42,9 @@ const mockCreators: Creator[] = [
 ];
 
 export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: ScheduleCreatorsGridProps) {
+  const { user } = useAuth()
   const [currentPage, setCurrentPage] = useState(0);
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
 
   // Filter creators by category (offline only) and search query
   const q = (searchQuery ?? '').toLowerCase();
@@ -62,6 +66,39 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
   useEffect(() => {
     setCurrentPage(0);
   }, [selectedCategory]);
+
+  // Fetch appointment waitlist counts
+  const fetchAppointmentCounts = useCallback(async () => {
+    if (!user || offlineCreators.length === 0) return
+
+    try {
+      const creatorIds = offlineCreators.map(c => c.id)
+      const { data, error } = await supabase
+        .from('appointment_waitlist')
+        .select('creator_id')
+        .in('creator_id', creatorIds)
+        .eq('status', 'waiting')
+
+      if (error) {
+        console.error('Error fetching appointment counts:', error)
+        return
+      }
+
+      // Count appointments per creator
+      const counts: Record<string, number> = {}
+      data?.forEach(appointment => {
+        counts[appointment.creator_id] = (counts[appointment.creator_id] || 0) + 1
+      })
+
+      setAppointmentCounts(counts)
+    } catch (error) {
+      console.error('Error fetching appointment counts:', error)
+    }
+  }, [user, offlineCreators])
+
+  useEffect(() => {
+    fetchAppointmentCounts()
+  }, [fetchAppointmentCounts])
 
   const nextPage = () => {
     if (currentPage < totalPages - 1) {
@@ -159,6 +196,26 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
                   {creator.nextAvailable}
                 </Badge>
               )}
+            </div>
+
+            {/* Action Icons */}
+            <div className="flex items-center justify-center space-x-3 mt-1">
+              {/* Phone Icon with Appointment Count */}
+              <div className="relative">
+                <Phone 
+                  className={`h-3 w-3 text-muted-foreground ${
+                    appointmentCounts[creator.id] > 0 ? 'animate-pulse text-orange-500' : ''
+                  }`} 
+                />
+                {appointmentCounts[creator.id] > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[12px] h-3 flex items-center justify-center px-1 text-[10px]">
+                    {appointmentCounts[creator.id]}
+                  </div>
+                )}
+              </div>
+              
+              {/* Heart Icon */}
+              <Heart className="h-3 w-3 text-muted-foreground hover:text-red-500 cursor-pointer" />
             </div>
           </div>
         ))}
