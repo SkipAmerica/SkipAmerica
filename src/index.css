@@ -15,10 +15,10 @@
     --popover: 0 0% 5%;
     --popover-foreground: 0 0% 95%;
 
-    /* Creator Brand Purple */
-    --primary: 262 83% 58%;
+    /* Creator Brand Orange */
+    --primary: 16 100% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 270 91% 65%;
+    --primary-glow: 25 100% 50%;
 
     /* Accent Pink */
     --secondary: 316 73% 69%;
@@ -35,7 +35,7 @@
 
     --border: 0 0% 20%;
     --input: 0 0% 10%;
-    --ring: 262 83% 58%;
+    --ring: 16 100% 60%;
 
     /* Creator Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
