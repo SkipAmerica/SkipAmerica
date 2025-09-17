@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import Feed from "./pages/Feed";
+import IndustryResourceSetup from "./pages/IndustryResourceSetup";
 import NotFound from "./pages/NotFound";
 import { PWAInstallPrompt } from "@/components/mobile/PWAInstallPrompt";
 
@@ -29,6 +30,7 @@ const App = () => {
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/:userId" element={<Profile />} />
               <Route path="/feed" element={<Feed />} />
+              <Route path="/industry-setup" element={<IndustryResourceSetup />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -30,7 +30,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     password: '',
     confirmPassword: '',
     fullName: '',
-    accountType: 'fan' as 'fan' | 'creator'
+    accountType: 'fan' as 'fan' | 'creator' | 'agency' | 'industry_resource'
   })
 
   const [resetEmail, setResetEmail] = useState('')
@@ -72,7 +72,14 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     
     if (!error) {
       setPendingEmail(signUpData.email)
-      onSuccess?.()
+      // Redirect industry resources to setup page
+      if (signUpData.accountType === 'industry_resource') {
+        onSuccess?.()
+        // Small delay to ensure state updates
+        setTimeout(() => window.location.href = '/industry-setup', 100)
+      } else {
+        onSuccess?.()
+      }
     }
     
     setIsLoading(false)
@@ -297,30 +304,57 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                 <Label>I want to join as:</Label>
                 <RadioGroup 
                   value={signUpData.accountType} 
-                  onValueChange={(value: 'fan' | 'creator') => 
+                  onValueChange={(value: 'fan' | 'creator' | 'agency' | 'industry_resource') => 
                     setSignUpData(prev => ({ ...prev, accountType: value }))
                   }
-                  className="grid grid-cols-2 gap-4"
+                  className="space-y-3"
                 >
-                  <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value="fan" id="fan" />
-                    <Label htmlFor="fan" className="flex items-center space-x-2 cursor-pointer flex-1">
-                      <Users className="h-4 w-4 text-primary" />
-                      <div>
-                        <div className="font-medium">Fan</div>
-                        <div className="text-xs text-muted-foreground">Connect with creators</div>
+                  {/* Primary Account Types - More Prominent */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-3 p-4 border-2 rounded-lg hover:bg-accent/50 transition-colors">
+                      <RadioGroupItem value="fan" id="fan" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          <Label htmlFor="fan" className="font-semibold cursor-pointer">User</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Discover and connect with creators</p>
                       </div>
-                    </Label>
+                    </div>
+                    <div className="flex items-center space-x-3 p-4 border-2 rounded-lg hover:bg-accent/50 transition-colors">
+                      <RadioGroupItem value="creator" id="creator" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Crown className="h-4 w-4 text-primary" />
+                          <Label htmlFor="creator" className="font-semibold cursor-pointer">Creator</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">Share your expertise and build your audience</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2 border rounded-lg p-3 hover:bg-accent/50 transition-colors">
-                    <RadioGroupItem value="creator" id="creator" />
-                    <Label htmlFor="creator" className="flex items-center space-x-2 cursor-pointer flex-1">
-                      <Crown className="h-4 w-4 text-primary" />
-                      <div>
-                        <div className="font-medium">Creator</div>
-                        <div className="text-xs text-muted-foreground">Share your expertise</div>
+                  
+                  {/* Secondary Account Types - Less Prominent */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/30 transition-colors opacity-75">
+                      <RadioGroupItem value="agency" id="agency" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded bg-blue-600" />
+                          <Label htmlFor="agency" className="text-sm font-medium cursor-pointer">Agency</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">Manage multiple creators</p>
                       </div>
-                    </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-accent/30 transition-colors opacity-75">
+                      <RadioGroupItem value="industry_resource" id="industry_resource" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <div className="h-3 w-3 rounded bg-purple-600" />
+                          <Label htmlFor="industry_resource" className="text-sm font-medium cursor-pointer">Industry Resource</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">Corporate talent and industry experts</p>
+                      </div>
+                    </div>
                   </div>
                 </RadioGroup>
               </div>

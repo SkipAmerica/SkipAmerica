@@ -1062,6 +1062,112 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_members: {
+        Row: {
+          approved: boolean
+          created_at: string
+          id: string
+          organization_id: string
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          organization_id: string
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean
+          created_at?: string
+          id?: string
+          organization_id?: string
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_rules: {
+        Row: {
+          created_at: string
+          id: string
+          max_session_duration: number | null
+          min_review_score: number | null
+          organization_id: string
+          sensitive_words: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          max_session_duration?: number | null
+          min_review_score?: number | null
+          organization_id: string
+          sensitive_words?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          max_session_duration?: number | null
+          min_review_score?: number | null
+          organization_id?: string
+          sensitive_words?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          admin_user_id: string
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: []
+      }
       playlist_content: {
         Row: {
           content_id: string
@@ -1157,8 +1263,11 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          creator_only_mode: boolean | null
           full_name: string | null
           id: string
+          independent_verified: boolean | null
+          industry_specialization: string | null
           is_verified: boolean | null
           updated_at: string
         }
@@ -1167,8 +1276,11 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          creator_only_mode?: boolean | null
           full_name?: string | null
           id: string
+          independent_verified?: boolean | null
+          industry_specialization?: string | null
           is_verified?: boolean | null
           updated_at?: string
         }
@@ -1177,8 +1289,11 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          creator_only_mode?: boolean | null
           full_name?: string | null
           id?: string
+          independent_verified?: boolean | null
+          industry_specialization?: string | null
           is_verified?: boolean | null
           updated_at?: string
         }
@@ -1440,7 +1555,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      account_type: "fan" | "creator" | "agency"
+      account_type: "fan" | "creator" | "agency" | "industry_resource"
       social_platform:
         | "twitter"
         | "instagram"
@@ -1575,7 +1690,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      account_type: ["fan", "creator", "agency"],
+      account_type: ["fan", "creator", "agency", "industry_resource"],
       social_platform: [
         "twitter",
         "instagram",

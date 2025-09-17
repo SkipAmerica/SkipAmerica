@@ -7,7 +7,7 @@ interface Profile {
   full_name: string | null
   bio: string | null
   avatar_url: string | null
-  account_type: 'fan' | 'creator' | 'agency'
+  account_type: 'fan' | 'creator' | 'agency' | 'industry_resource'
   is_verified: boolean | null
 }
 
