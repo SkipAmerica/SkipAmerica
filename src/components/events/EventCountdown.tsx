@@ -48,17 +48,9 @@ export function EventCountdown() {
 
   const loadEvents = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: eventsData, error } = await supabase
         .from('collaborative_events')
-        .select(`
-          *,
-          collaborators:event_collaborators(
-            creator_id,
-            profit_share_percentage,
-            role,
-            profiles(full_name)
-          )
-        `)
+        .select('*')
         .eq('status', 'scheduled')
         .gte('scheduled_at', new Date().toISOString())
         .order('scheduled_at', { ascending: true })
@@ -66,9 +58,26 @@ export function EventCountdown() {
 
       if (error) throw error;
 
-      // Get registration counts
-      const eventsWithCounts = await Promise.all(
-        (data || []).map(async (event) => {
+      if (!eventsData) {
+        setEvents([]);
+        return;
+      }
+
+      // Get collaborators and registration counts for each event
+      const eventsWithDetails = await Promise.all(
+        eventsData.map(async (event) => {
+          // Get collaborators
+          const { data: collaborators } = await supabase
+            .from('event_collaborators')
+            .select(`
+              creator_id,
+              profit_share_percentage,
+              role,
+              profiles(full_name)
+            `)
+            .eq('event_id', event.id);
+
+          // Get registration count
           const { count } = await supabase
             .from('event_registrations')
             .select('*', { count: 'exact', head: true })
@@ -77,12 +86,13 @@ export function EventCountdown() {
 
           return {
             ...event,
+            collaborators: collaborators || [],
             registrations_count: count || 0
           };
         })
       );
 
-      setEvents(eventsWithCounts);
+      setEvents(eventsWithDetails);
     } catch (error) {
       console.error('Error loading events:', error);
     }

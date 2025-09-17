@@ -64,30 +64,46 @@ export function LiveEventInterface({ eventId, onBack }: LiveEventProps) {
 
   const loadEventData = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: eventData, error } = await supabase
         .from('collaborative_events')
-        .select(`
-          *,
-          collaborators:event_collaborators(
-            creator_id,
-            profit_share_percentage,
-            role,
-            profiles(full_name, avatar_url)
-          ),
-          registrations:event_registrations(
-            user_id,
-            amount_paid,
-            profiles(full_name, avatar_url)
-          )
-        `)
+        .select('*')
         .eq('id', eventId)
         .single();
 
       if (error) throw error;
+      if (!eventData) throw new Error('Event not found');
 
-      setEvent(data);
-      setTotalRevenue(data.registrations.reduce((sum: number, reg: any) => sum + reg.amount_paid, 0));
-      setParticipantCount(data.registrations.length);
+      // Get collaborators
+      const { data: collaborators } = await supabase
+        .from('event_collaborators')
+        .select(`
+          creator_id,
+          profit_share_percentage,
+          role,
+          profiles(full_name, avatar_url)
+        `)
+        .eq('event_id', eventId);
+
+      // Get registrations
+      const { data: registrations } = await supabase
+        .from('event_registrations')
+        .select(`
+          user_id,
+          amount_paid,
+          profiles(full_name, avatar_url)
+        `)
+        .eq('event_id', eventId)
+        .eq('registration_status', 'confirmed');
+
+      const eventWithDetails = {
+        ...eventData,
+        collaborators: collaborators || [],
+        registrations: registrations || []
+      };
+
+      setEvent(eventWithDetails);
+      setTotalRevenue((registrations || []).reduce((sum: number, reg: any) => sum + (reg.amount_paid || 0), 0));
+      setParticipantCount((registrations || []).length);
     } catch (error) {
       console.error('Error loading event data:', error);
       toast.error("Failed to load event data");

@@ -13,8 +13,10 @@ import ProfileSettings from "@/components/creator/ProfileSettings";
 import SocialConnections from "@/components/creator/SocialConnections";
 import AvailabilityManager from "@/components/creator/AvailabilityManager";
 import UserStatusHeader from "@/components/creator/UserStatusHeader";
+import { EventCreator } from "@/components/events/EventCreator";
+import { SponsorManager } from "@/components/ads/SponsorManager";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar } from "lucide-react";
+import { ArrowLeft, DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone } from "lucide-react";
 
 interface CreatorDashboardProps {
   onBack: () => void;
@@ -43,7 +45,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 mb-8">
+          <TabsList className="grid w-full grid-cols-9 mb-8">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
               Dashboard
@@ -67,6 +69,14 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
             <TabsTrigger value="files" className="flex items-center gap-2">
               <FolderOpen className="h-4 w-4" />
               Files
+            </TabsTrigger>
+            <TabsTrigger value="events" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Events
+            </TabsTrigger>
+            <TabsTrigger value="sponsors" className="flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              Sponsors
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -210,6 +220,14 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
 
           <TabsContent value="files" className="mt-0">
             <FileRepository />
+          </TabsContent>
+
+          <TabsContent value="events" className="mt-0">
+            <EventCreator />
+          </TabsContent>
+
+          <TabsContent value="sponsors" className="mt-0">
+            <SponsorManager />
           </TabsContent>
 
           <TabsContent value="settings" className="mt-0">

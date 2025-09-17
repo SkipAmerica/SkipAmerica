@@ -51,7 +51,15 @@ export type Database = {
           target_creator_id?: string | null
           target_user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_ad_placements_sponsor_id"
+            columns: ["sponsor_id"]
+            isOneToOne: false
+            referencedRelation: "sponsors"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       agencies: {
         Row: {
@@ -417,7 +425,15 @@ export type Database = {
           total_price?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_collaborative_events_host_creator_id"
+            columns: ["host_creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       creator_availability: {
         Row: {
@@ -803,7 +819,22 @@ export type Database = {
           profit_share_percentage?: number
           role?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_event_collaborators_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_collaborators_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "collaborative_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_registrations: {
         Row: {
@@ -830,7 +861,22 @@ export type Database = {
           registration_status?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_event_registrations_event_id"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "collaborative_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_event_registrations_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {

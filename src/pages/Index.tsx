@@ -16,6 +16,9 @@ import OnlineCreators from "@/components/OnlineCreators";
 import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
 import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
+import { EventCountdown } from "@/components/events/EventCountdown";
+import { AdBanner } from "@/components/ads/AdBanner";
+import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import heroImage from "@/assets/hero-image.jpg";
 
 const Index = () => {
@@ -192,6 +195,21 @@ const Index = () => {
                 onCreatorSelect={(id) => setActiveTab("creator-profile")}
                 onStartCall={(id) => setActiveTab("call")}
               />
+            </section>
+
+            {/* Sponsored Content */}
+            <section>
+              <AdBanner placement="banner" />
+            </section>
+
+            {/* Upcoming Events */}
+            <section>
+              <EventCountdown />
+            </section>
+
+            {/* New Features Demo */}
+            <section>
+              <FeatureDemo />
             </section>
 
             {/* Features */}
