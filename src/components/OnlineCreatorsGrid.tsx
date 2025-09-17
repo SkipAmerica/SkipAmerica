@@ -11,6 +11,7 @@ interface Creator {
   isOnline: boolean;
   industry: string;
   rating: number;
+  title: string;
 }
 
 interface OnlineCreatorsGridProps {
@@ -21,18 +22,18 @@ interface OnlineCreatorsGridProps {
 
 // Mock data - replace with real data
 const mockCreators: Creator[] = [
-  { id: '1', name: 'Emma Stone', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: true, industry: 'Film & TV', rating: 4.9 },
-  { id: '2', name: 'Dr. Sarah Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'technology', isOnline: true, industry: 'AI Research', rating: 4.8 },
-  { id: '3', name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'business', isOnline: true, industry: 'Startups', rating: 4.7 },
-  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: true, industry: 'Cosmetics', rating: 4.9 },
-  { id: '5', name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: true, industry: 'Software', rating: 4.6 },
-  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: true, industry: 'Music', rating: 4.8 },
-  { id: '7', name: 'James Wilson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: true, industry: 'Finance', rating: 4.5 },
-  { id: '8', name: 'Sophia Kim', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'beauty', isOnline: true, industry: 'Skincare', rating: 4.9 },
-  { id: '9', name: 'David Lee', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150', category: 'technology', isOnline: true, industry: 'Crypto', rating: 4.4 },
-  { id: '10', name: 'Lisa Zhang', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'entertainment', isOnline: true, industry: 'Comedy', rating: 4.7 },
-  { id: '11', name: 'Ryan Garcia', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', category: 'business', isOnline: true, industry: 'Marketing', rating: 4.6 },
-  { id: '12', name: 'Anna Taylor', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: true, industry: 'Fashion', rating: 4.8 },
+  { id: '1', name: 'Emma Stone', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: true, industry: 'Film & TV', rating: 4.9, title: 'Academy Award Winner' },
+  { id: '2', name: 'Dr. Sarah Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'technology', isOnline: true, industry: 'AI Research', rating: 4.8, title: 'AI Research Director' },
+  { id: '3', name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'business', isOnline: true, industry: 'Startups', rating: 4.7, title: 'Serial Entrepreneur' },
+  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: true, industry: 'Cosmetics', rating: 4.9, title: 'Beauty Influencer' },
+  { id: '5', name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: true, industry: 'Software', rating: 4.6, title: 'Lead Developer' },
+  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: true, industry: 'Music', rating: 4.8, title: 'Grammy Nominee' },
+  { id: '7', name: 'James Wilson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: true, industry: 'Finance', rating: 4.5, title: 'Investment Advisor' },
+  { id: '8', name: 'Sophia Kim', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'beauty', isOnline: true, industry: 'Skincare', rating: 4.9, title: 'Skincare Expert' },
+  { id: '9', name: 'David Lee', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150', category: 'technology', isOnline: true, industry: 'Crypto', rating: 4.4, title: 'Blockchain Developer' },
+  { id: '10', name: 'Lisa Zhang', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'entertainment', isOnline: true, industry: 'Comedy', rating: 4.7, title: 'Stand-up Comedian' },
+  { id: '11', name: 'Ryan Garcia', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', category: 'business', isOnline: true, industry: 'Marketing', rating: 4.6, title: 'Marketing Director' },
+  { id: '12', name: 'Anna Taylor', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: true, industry: 'Fashion', rating: 4.8, title: 'Fashion Designer' },
 ];
 
 export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: OnlineCreatorsGridProps) {
@@ -122,6 +123,16 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             className="flex flex-col items-center space-y-2 p-3 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
             onClick={() => onCreatorSelect(creator.id)}
           >
+            {/* Industry and Rating */}
+            <div className="text-center space-y-0.5">
+              <p className="text-xs text-muted-foreground font-medium">{creator.industry}</p>
+              <div className="flex items-center justify-center space-x-1">
+                <span className="text-xs text-yellow-500">★</span>
+                <span className="text-xs text-muted-foreground">{creator.rating}</span>
+              </div>
+            </div>
+            
+            {/* Avatar */}
             <div className="relative">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={creator.avatar} alt={creator.name} />
@@ -134,15 +145,11 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
                 <div className="w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
               </div>
             </div>
-            <div className="text-center space-y-1">
-              <div className="space-y-0.5">
-                <p className="text-xs text-muted-foreground font-medium">{creator.industry}</p>
-                <div className="flex items-center justify-center space-x-1">
-                  <span className="text-xs text-yellow-500">★</span>
-                  <span className="text-xs text-muted-foreground">{creator.rating}</span>
-                </div>
-              </div>
+            
+            {/* Name and Title */}
+            <div className="text-center space-y-0.5">
               <p className="text-sm font-medium leading-tight">{creator.name}</p>
+              <p className="text-xs text-muted-foreground">{creator.title}</p>
             </div>
           </div>
         ))}
