@@ -16,6 +16,7 @@ interface Creator {
 interface ScheduleCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
+  searchQuery?: string;
 }
 
 // Mock data - replace with real data
@@ -34,7 +35,7 @@ const mockCreators: Creator[] = [
   { id: '24', name: 'Kim Kardashian', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: false, nextAvailable: 'Tomorrow 9am' },
 ];
 
-export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect }: ScheduleCreatorsGridProps) {
+export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: ScheduleCreatorsGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
 
   // Filter creators by category (offline only)

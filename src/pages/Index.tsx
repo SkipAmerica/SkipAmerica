@@ -101,12 +101,14 @@ const Index = () => {
               <OnlineCreatorsGrid 
                 selectedCategory={selectedFilter}
                 onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                searchQuery={searchQuery}
               />
 
               {/* Schedule in Advance Grid */}
               <ScheduleCreatorsGrid 
                 selectedCategory={selectedFilter}
                 onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                searchQuery={searchQuery}
               />
             </div>
 

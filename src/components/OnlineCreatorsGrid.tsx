@@ -14,6 +14,7 @@ interface Creator {
 interface OnlineCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
+  searchQuery?: string;
 }
 
 // Mock data - replace with real data
@@ -32,7 +33,7 @@ const mockCreators: Creator[] = [
   { id: '12', name: 'Anna Taylor', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: true },
 ];
 
-export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect }: OnlineCreatorsGridProps) {
+export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: OnlineCreatorsGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
 
   // Filter creators by category and online status
