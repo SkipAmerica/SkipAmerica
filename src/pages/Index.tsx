@@ -364,6 +364,13 @@ const Index = () => {
 
           <TabsContent value="trending">
             <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Discover Creators</h2>
+                <Button variant="outline" onClick={() => setActiveTab("advanced")}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Advanced Search
+                </Button>
+              </div>
               <SmartTrendingEngine />
             </div>
           </TabsContent>
