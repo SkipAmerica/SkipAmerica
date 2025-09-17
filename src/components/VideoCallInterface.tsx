@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAIModerator } from "@/hooks/useAIModerator";
 import ModerationPanel from "@/components/moderation/ModerationPanel";
 import { FileSharePanel } from "@/components/call/FileSharePanel";
+import { IOSNavBar } from "@/components/mobile/IOSNavBar";
 import { 
   ArrowLeft, 
   Video, 
@@ -26,7 +27,8 @@ import {
   AlertTriangle,
   Play,
   X,
-  Paperclip
+  Paperclip,
+  MoreVertical
 } from "lucide-react";
 
 interface VideoCallInterfaceProps {
@@ -184,29 +186,40 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
 
   if (callPaused) {
     return (
-      <div className="fixed inset-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-50">
-        <div className="container flex h-screen w-screen flex-col items-center justify-center">
-          <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[500px]">
-            <div className="flex flex-col space-y-2 text-center">
-              <AlertTriangle className="mx-auto h-16 w-16 text-destructive animate-pulse" />
-              <h1 className="text-3xl font-semibold tracking-tight text-destructive">
+      <div className="min-h-screen bg-background animate-fade-in">
+        {/* iOS Navigation Bar */}
+        <IOSNavBar
+          title="Call Paused"
+          leftButton={{
+            icon: ArrowLeft,
+            onClick: handleEndCallFromViolation
+          }}
+        />
+
+        <div className="ios-content flex flex-col items-center justify-center space-y-6 animate-scale-in">
+          <div className="w-full max-w-sm space-y-6">
+            <div className="text-center space-y-4">
+              <div className="bg-destructive/10 rounded-full p-6 w-24 h-24 mx-auto flex items-center justify-center">
+                <AlertTriangle className="h-12 w-12 text-destructive animate-pulse" />
+              </div>
+              <h1 className="text-2xl font-bold text-destructive">
                 Call Paused
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-muted-foreground">
                 {pauseReason}
               </p>
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 mt-4">
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4">
                 <p className="text-sm text-destructive font-medium">
                   A participant used language that violates our community guidelines. 
                   As the creator, you can choose to continue or end the call.
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="space-y-3">
               <Button 
-                variant="outline" 
                 onClick={handleContinueCall}
-                className="h-12"
+                className="w-full h-12 rounded-full bg-gradient-primary hover:shadow-lg hover-scale"
               >
                 <Play className="w-4 h-4 mr-2" />
                 Continue Call
@@ -214,25 +227,27 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
               <Button 
                 variant="destructive" 
                 onClick={handleEndCallFromViolation}
-                className="h-12"
+                className="w-full h-12 rounded-full hover-scale"
               >
                 <X className="w-4 h-4 mr-2" />
                 End Call
               </Button>
             </div>
-            <div className="bg-muted/20 border rounded-lg p-3 mt-4">
+
+            <div className="bg-muted/20 border rounded-xl p-4 space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Call Duration:</span>
-                <span className="font-mono">{formatDuration(callDuration)}</span>
+                <span className="font-mono font-semibold">{formatDuration(callDuration)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm mt-1">
+              <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Current Cost:</span>
-                <span className="font-mono">${currentCost.toFixed(2)}</span>
+                <span className="font-mono font-semibold text-primary">${currentCost.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Timer continues during pause - costs still accrue
               </p>
             </div>
+
             <p className="text-xs text-muted-foreground text-center">
               If you end the call, the participant will receive a system comment and 0 rating for the policy violation.
             </p>
@@ -243,121 +258,136 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   }
 
   return (
-    <div className="h-screen bg-background flex flex-col privacy-protected">
-      {/* Header */}
-      <header className="border-b bg-card p-4 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" onClick={onBack}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="font-semibold">Video Call with Emma Wilson</h1>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground">
-            <Clock className="h-3 w-3 mr-1" />
-            {formatDuration(callDuration)}
-          </Badge>
-          <Badge variant="outline">
-            <DollarSign className="h-3 w-3 mr-1" />
-            ${currentCost.toFixed(2)}
-          </Badge>
-          <Badge variant="secondary">
-            <Users className="h-3 w-3 mr-1" />
-            4 people
-          </Badge>
-          {isModerationEnabled && (
-            <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20">
-              <ShieldCheck className="h-3 w-3 mr-1" />
-              Protected
+    <div className="min-h-screen bg-background flex flex-col animate-slide-in-right">
+      {/* iOS Navigation Bar */}
+      <IOSNavBar
+        title="Emma Wilson"
+        leftButton={{
+          icon: ArrowLeft,
+          onClick: onBack
+        }}
+        rightButton={{
+          icon: MoreVertical,
+          onClick: () => {}
+        }}
+      />
+
+      {/* Status Bar */}
+      <div className="px-4 py-2 bg-card border-b animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground rounded-full">
+              <Clock className="h-3 w-3 mr-1" />
+              {formatDuration(callDuration)}
             </Badge>
-          )}
-          {voiceRecording.isRecording && (
-            <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
-              <Mic className="h-3 w-3 mr-1" />
-              Monitoring
+            <Badge variant="outline" className="rounded-full">
+              <DollarSign className="h-3 w-3 mr-1" />
+              ${currentCost.toFixed(2)}
             </Badge>
-          )}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary" className="rounded-full">
+              <Users className="h-3 w-3 mr-1" />
+              4
+            </Badge>
+            {isModerationEnabled && (
+              <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 rounded-full">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Protected
+              </Badge>
+            )}
+            {voiceRecording.isRecording && (
+              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 rounded-full animate-pulse">
+                <Mic className="h-3 w-3 mr-1" />
+                Live
+              </Badge>
+            )}
+          </div>
         </div>
-      </header>
+      </div>
 
       <div className="flex-1 flex">
         {/* Video Area */}
-        <div className="flex-1 bg-muted/20 relative">
+        <div className="flex-1 bg-muted/20 relative animate-fade-in">
           {/* Main Video */}
-          <div className="absolute inset-4 bg-gradient-primary rounded-lg flex items-center justify-center">
+          <div className="absolute inset-4 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
             {/* Watermark */}
-            <div className="absolute top-2 left-2 bg-black/20 text-white text-xs px-2 py-1 rounded backdrop-blur-sm">
+            <div className="absolute top-4 left-4 bg-black/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
               @Sarah M. • Live Call
             </div>
-            <div className="text-center text-primary-foreground">
-              <Avatar className="h-24 w-24 mx-auto mb-4">
+            <div className="text-center text-primary-foreground animate-scale-in">
+              <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary-foreground/20">
                 <AvatarFallback className="bg-primary-foreground text-primary text-2xl">
                   EW
                 </AvatarFallback>
               </Avatar>
               <h3 className="text-xl font-semibold">Emma Wilson</h3>
-              <p className="opacity-80">Fitness Coach</p>
+              <p className="opacity-90">Fitness Coach</p>
             </div>
           </div>
 
           {/* Participant Thumbnails */}
-          <div className="absolute top-4 right-4 space-y-2">
-            {participants.filter(p => p.role === "fan").map((participant) => (
-              <Card key={participant.id} className="w-24 h-18">
-                <CardContent className="p-2 text-center">
+          <div className="absolute top-4 right-4 space-y-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+            {participants.filter(p => p.role === "fan").map((participant, index) => (
+              <div key={participant.id} className="w-20 h-16 bg-card rounded-xl p-2 shadow-md hover-scale" style={{ animationDelay: `${0.1 + index * 0.05}s` }}>
+                <div className="text-center">
                   <Avatar className="h-8 w-8 mx-auto">
                     <AvatarFallback className="text-xs bg-muted">
                       {participant.avatar}
                     </AvatarFallback>
                   </Avatar>
-                  <p className="text-xs mt-1 truncate">{participant.name.split(' ')[0]}</p>
-                </CardContent>
-              </Card>
+                  <p className="text-xs mt-1 truncate font-medium">{participant.name.split(' ')[0]}</p>
+                </div>
+              </div>
             ))}
           </div>
 
           {/* Controls */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-            <div className="flex items-center space-x-4 bg-background/90 backdrop-blur-sm p-4 rounded-full shadow-lg">
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center space-x-4 bg-background/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl border">
               <Button
                 variant={isMicOn ? "secondary" : "destructive"}
                 size="sm"
                 onClick={() => setIsMicOn(!isMicOn)}
+                className="rounded-full h-12 w-12 hover-scale"
               >
-                {isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
               </Button>
               
               <Button
                 variant={isVideoOn ? "secondary" : "destructive"}
                 size="sm"
                 onClick={() => setIsVideoOn(!isVideoOn)}
+                className="rounded-full h-12 w-12 hover-scale"
               >
-                {isVideoOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
               </Button>
               
-              <Button variant="destructive" size="sm" onClick={onBack}>
-                <Phone className="h-4 w-4" />
+              <Button 
+                variant="destructive" 
+                size="sm" 
+                onClick={onBack}
+                className="rounded-full h-12 w-12 hover-scale bg-red-500 hover:bg-red-600"
+              >
+                <Phone className="h-5 w-5 rotate-[135deg]" />
               </Button>
               
               <Button 
                 variant="secondary" 
                 size="sm"
                 onClick={() => setShowModerationPanel(!showModerationPanel)}
+                className="rounded-full h-12 w-12 hover-scale"
               >
-                <Shield className="h-4 w-4" />
+                <Shield className="h-5 w-5" />
               </Button>
               
               <Button 
                 variant="secondary" 
                 size="sm"
                 onClick={() => setShowFilePanel(!showFilePanel)}
+                className="rounded-full h-12 w-12 hover-scale"
               >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              
-              <Button variant="secondary" size="sm">
-                <Settings className="h-4 w-4" />
+                <Paperclip className="h-5 w-5" />
               </Button>
             </div>
           </div>
@@ -365,17 +395,19 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
 
         {/* File Sharing Panel */}
         {showFilePanel && (
-          <FileSharePanel
-            callId={callId}
-            currentUserId={userId}
-            recipientId="recipient-123" // In real app, this would be dynamic
-            isCreator={true} // In real app, this would be determined by user role
-          />
+          <div className="w-80 border-l animate-slide-in-right">
+            <FileSharePanel
+              callId={callId}
+              currentUserId={userId}
+              recipientId="recipient-123"
+              isCreator={true}
+            />
+          </div>
         )}
 
         {/* Moderation Panel */}
         {showModerationPanel && (
-          <div className="w-80 border-l bg-card">
+          <div className="w-80 border-l bg-card animate-slide-in-right">
             <div className="p-4">
               <ModerationPanel
                 isEnabled={isModerationEnabled}
@@ -391,20 +423,18 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
 
         {/* Chat Sidebar */}
         {!showFilePanel && !showModerationPanel && (
-          <div className="w-80 border-l bg-card flex flex-col">
+          <div className="w-80 border-l bg-card flex flex-col animate-slide-in-right">
             <div className="p-4 border-b">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">Live Chat</h3>
-                <div className="flex items-center space-x-2">
-                  <Badge variant={chatPaused ? "destructive" : "secondary"}>
-                    {chatPaused ? <Shield className="h-3 w-3 mr-1" /> : null}
-                    {chatPaused ? "Paused" : "Active"}
-                  </Badge>
-                </div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg">Live Chat</h3>
+                <Badge variant={chatPaused ? "destructive" : "secondary"} className="rounded-full">
+                  {chatPaused ? <Shield className="h-3 w-3 mr-1" /> : null}
+                  {chatPaused ? "Paused" : "Active"}
+                </Badge>
               </div>
               {chatPaused && (
-                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
-                  <p className="text-xs text-destructive">
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3 animate-fade-in">
+                  <p className="text-xs text-destructive font-medium">
                     Chat paused due to inappropriate content detection
                   </p>
                 </div>
@@ -412,20 +442,20 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
             </div>
 
             <ScrollArea className="flex-1 p-4">
-              <div className="space-y-3">
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`${msg.isSystem ? 'text-center' : ''}`}>
+              <div className="space-y-4">
+                {messages.map((msg, index) => (
+                  <div key={msg.id} className={`animate-fade-in ${msg.isSystem ? 'text-center' : ''}`} style={{ animationDelay: `${index * 0.05}s` }}>
                     {msg.isSystem ? (
-                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded-lg">
+                      <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-xl">
                         {msg.message}
                       </div>
                     ) : (
-                      <div>
-                        <div className="flex items-center space-x-2 mb-1">
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
                           <span className="text-sm font-semibold">{msg.sender}</span>
                           <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
                         </div>
-                        <p className="text-sm bg-muted p-2 rounded-lg">{msg.message}</p>
+                        <p className="text-sm bg-muted/50 p-3 rounded-xl">{msg.message}</p>
                       </div>
                     )}
                   </div>
@@ -433,24 +463,26 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
               </div>
             </ScrollArea>
 
-            <div className="p-4 border-t">
-              <div className="flex space-x-2">
+            <div className="p-4 border-t bg-background">
+              <div className="flex space-x-2 mb-3">
                 <Input
                   placeholder={chatPaused ? "Chat is paused..." : "Type a message..."}
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   disabled={chatPaused}
+                  className="rounded-full flex-1"
                 />
                 <Button 
                   size="sm" 
                   onClick={handleSendMessage}
                   disabled={chatPaused || !message.trim()}
+                  className="rounded-full h-10 w-10 p-0 hover-scale"
                 >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
-              <div className="flex items-center justify-between mt-2 text-xs">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">
                   {isModerationEnabled ? (
                     <>
@@ -465,7 +497,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                   )}
                 </span>
                 {voiceRecording.isRecording && (
-                  <span className="text-blue-600">
+                  <span className="text-blue-600 animate-pulse">
                     <Mic className="h-3 w-3 inline mr-1" />
                     Voice monitoring
                   </span>
@@ -477,25 +509,25 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
       </div>
 
       {/* Cost Breakdown Footer */}
-      <div className="border-t bg-muted/50 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-6 text-sm">
-            <div>
-              <span className="text-muted-foreground">Base Rate:</span>
-              <span className="font-semibold ml-2">${callRate.toFixed(2)}/min</span>
+      <div className="border-t bg-card/50 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-4 text-sm">
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Rate</div>
+              <div className="font-semibold">${callRate.toFixed(2)}/min</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Split 4 ways:</span>
-              <span className="font-semibold ml-2">${(callRate / 4).toFixed(2)}/min each</span>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Split 4 ways</div>
+              <div className="font-semibold">${(callRate / 4).toFixed(2)}/min</div>
             </div>
-            <div>
-              <span className="text-muted-foreground">Duration:</span>
-              <span className="font-semibold ml-2">{formatDuration(callDuration)}</span>
+            <div className="text-center">
+              <div className="text-xs text-muted-foreground">Duration</div>
+              <div className="font-semibold font-mono">{formatDuration(callDuration)}</div>
             </div>
           </div>
           
           <div className="text-right">
-            <div className="text-sm text-muted-foreground">Your current cost</div>
+            <div className="text-xs text-muted-foreground">Your cost</div>
             <div className="text-xl font-bold text-primary">${currentCost.toFixed(2)}</div>
           </div>
         </div>

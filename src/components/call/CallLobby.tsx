@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
+import { IOSNavBar } from "@/components/mobile/IOSNavBar";
 import { 
   Play, 
   Clock, 
@@ -13,7 +13,8 @@ import {
   X,
   Settings,
   Upload,
-  Video
+  Video,
+  ArrowLeft
 } from "lucide-react";
 
 interface CallLobbyProps {
@@ -81,10 +82,23 @@ export function CallLobby({
   const progressPercentage = ((30 - timeRemaining) / 30) * 100;
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl space-y-6">
+    <div className="min-h-screen bg-background animate-slide-in-right">
+      {/* iOS Navigation Bar */}
+      <IOSNavBar
+        title="Safety Lobby"
+        leftButton={{
+          icon: ArrowLeft,
+          onClick: onRejectCall
+        }}
+        rightButton={isCreatorView ? {
+          icon: Settings,
+          onClick: () => {}
+        } : undefined}
+      />
+
+      <div className="ios-content space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-3 px-4">
           <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 border-blue-500/20">
             <Shield className="h-3 w-3 mr-1" />
             Safety Lobby
@@ -92,7 +106,7 @@ export function CallLobby({
           <h1 className="text-2xl font-bold">
             {isCreatorView ? 'Review Participant' : 'Connecting to Creator'}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {isCreatorView 
               ? 'Take a moment to review the participant before starting the call'
               : 'Please wait while the creator prepares for your session'
@@ -101,107 +115,104 @@ export function CallLobby({
         </div>
 
         {/* Main Content */}
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="px-4 space-y-6">
           {/* Video Preview */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center relative overflow-hidden">
-                {showVideoPreview ? (
-                  <div className="text-center">
-                    <Avatar className="h-20 w-20 mx-auto mb-4">
-                      <AvatarImage src={fan.avatar} />
-                      <AvatarFallback className="text-2xl">
-                        {fan.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h3 className="font-semibold">{fan.name}</h3>
-                    <p className="text-sm text-muted-foreground">Waiting to connect...</p>
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground">
-                    <Video className="h-12 w-12 mx-auto mb-2" />
-                    <p>Video preview disabled</p>
-                  </div>
-                )}
-              </div>
-              
-              {isCreatorView && (
-                <div className="mt-4 flex justify-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowVideoPreview(!showVideoPreview)}
-                  >
-                    {showVideoPreview ? 'Hide Preview' : 'Show Preview'}
-                  </Button>
+          <div className="bg-card rounded-xl p-4 shadow-sm border animate-scale-in">
+            <div className="aspect-video bg-muted rounded-xl flex items-center justify-center relative overflow-hidden">
+              {showVideoPreview ? (
+                <div className="text-center animate-fade-in">
+                  <Avatar className="h-20 w-20 mx-auto mb-4 ring-2 ring-primary/20">
+                    <AvatarImage src={fan.avatar} />
+                    <AvatarFallback className="text-2xl bg-gradient-primary text-primary-foreground">
+                      {fan.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="font-semibold text-lg">{fan.name}</h3>
+                  <p className="text-sm text-muted-foreground">Waiting to connect...</p>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground animate-fade-in">
+                  <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Video preview disabled</p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            
+            {isCreatorView && (
+              <div className="mt-4 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowVideoPreview(!showVideoPreview)}
+                  className="rounded-full"
+                >
+                  {showVideoPreview ? 'Hide Preview' : 'Show Preview'}
+                </Button>
+              </div>
+            )}
+          </div>
 
           {/* Creator's Custom Content */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="aspect-video bg-gradient-primary rounded-lg flex items-center justify-center relative overflow-hidden">
-                {creator.customLobbyMedia ? (
-                  creator.customLobbyMedia.type === 'image' ? (
-                    <img 
-                      src={creator.customLobbyMedia.url} 
-                      alt="Creator lobby"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <video 
-                      src={creator.customLobbyMedia.url}
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      muted
-                      loop
-                    />
-                  )
+          <div className="bg-card rounded-xl p-4 shadow-sm border animate-scale-in" style={{ animationDelay: '0.1s' }}>
+            <div className="aspect-video bg-gradient-primary rounded-xl flex items-center justify-center relative overflow-hidden">
+              {creator.customLobbyMedia ? (
+                creator.customLobbyMedia.type === 'image' ? (
+                  <img 
+                    src={creator.customLobbyMedia.url} 
+                    alt="Creator lobby"
+                    className="w-full h-full object-cover rounded-xl"
+                  />
                 ) : (
-                  <div className="text-center text-primary-foreground">
-                    <Avatar className="h-20 w-20 mx-auto mb-4">
-                      <AvatarImage src={creator.avatar} />
-                      <AvatarFallback className="text-2xl bg-primary-foreground text-primary">
-                        {creator.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <h3 className="text-xl font-semibold">{creator.name}</h3>
-                    <p className="opacity-80">
-                      {creator.lobbyMessage || "Welcome! I'll be with you shortly."}
-                    </p>
-                  </div>
-                )}
-              </div>
-              
-              {isCreatorView && (
-                <div className="mt-4 text-center">
-                  <Button variant="outline" size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Customize Lobby
-                  </Button>
+                  <video 
+                    src={creator.customLobbyMedia.url}
+                    className="w-full h-full object-cover rounded-xl"
+                    autoPlay
+                    muted
+                    loop
+                  />
+                )
+              ) : (
+                <div className="text-center text-primary-foreground animate-fade-in">
+                  <Avatar className="h-20 w-20 mx-auto mb-4 ring-2 ring-primary-foreground/20">
+                    <AvatarImage src={creator.avatar} />
+                    <AvatarFallback className="text-2xl bg-primary-foreground text-primary">
+                      {creator.name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h3 className="text-xl font-semibold">{creator.name}</h3>
+                  <p className="opacity-90 text-sm">
+                    {creator.lobbyMessage || "Welcome! I'll be with you shortly."}
+                  </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
+            </div>
+            
+            {isCreatorView && (
+              <div className="mt-4 text-center">
+                <Button variant="outline" size="sm" className="rounded-full">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Customize Lobby
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Timer and Controls */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-4">
+        <div className="px-4">
+          <div className="bg-card rounded-xl p-6 shadow-sm border animate-scale-in" style={{ animationDelay: '0.2s' }}>
+            <div className="space-y-6">
               {/* Timer */}
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-4">
                 <div className="flex items-center justify-center space-x-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-lg font-semibold">
-                    {timeRemaining}s remaining
+                  <Clock className="h-5 w-5 text-primary animate-pulse" />
+                  <span className="text-2xl font-bold text-primary">
+                    {timeRemaining}s
                   </span>
                 </div>
-                <Progress value={progressPercentage} className="w-full max-w-md mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  Call will start automatically when timer reaches zero
+                <Progress value={progressPercentage} className="w-full max-w-sm mx-auto h-2" />
+                <p className="text-xs text-muted-foreground">
+                  Call starts automatically when timer reaches zero
                 </p>
               </div>
 
@@ -210,9 +221,8 @@ export function CallLobby({
                 {isCreatorView ? (
                   <>
                     <Button 
-                      variant="gradient" 
                       onClick={handleStartEarly}
-                      className="min-w-32"
+                      className="min-w-32 rounded-full bg-gradient-primary hover:shadow-lg hover-scale"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Start Now
@@ -220,18 +230,22 @@ export function CallLobby({
                     <Button 
                       variant="destructive" 
                       onClick={handleReject}
-                      className="min-w-32"
+                      className="min-w-32 rounded-full hover-scale"
                     >
                       <X className="h-4 w-4 mr-2" />
                       End Call
                     </Button>
                   </>
                 ) : (
-                  <div className="text-center space-y-2">
+                  <div className="text-center space-y-4">
                     <p className="text-sm text-muted-foreground">
                       Please wait while {creator.name} reviews the connection
                     </p>
-                    <Button variant="outline" onClick={onRejectCall}>
+                    <Button 
+                      variant="outline" 
+                      onClick={onRejectCall}
+                      className="rounded-full px-8"
+                    >
                       Cancel Call
                     </Button>
                   </div>
@@ -240,7 +254,7 @@ export function CallLobby({
 
               {/* Safety Note */}
               {isCreatorView && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start space-x-3">
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
                   <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
                     <p className="font-medium text-amber-800">Safety Review</p>
@@ -252,8 +266,11 @@ export function CallLobby({
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+
+        {/* Bottom Padding for safe area */}
+        <div className="h-8" />
       </div>
     </div>
   );
