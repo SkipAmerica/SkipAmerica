@@ -99,6 +99,8 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
   })
 
   const [keywordQuery, setKeywordQuery] = useState('')
+  const [selectedKeywords, setSelectedKeywords] = useState<string[]>([])
+  const [categorySearch, setCategorySearch] = useState('')
   const [keywordSuggestions] = useState([
     'Grammy nominated',
     'Song writer',
@@ -115,6 +117,31 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
     'Recording artist',
     'Live performer'
   ])
+
+  const handleKeywordKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === ' ' && keywordQuery.trim()) {
+      e.preventDefault()
+      if (!selectedKeywords.includes(keywordQuery.trim())) {
+        setSelectedKeywords([...selectedKeywords, keywordQuery.trim()])
+      }
+      setKeywordQuery('')
+    }
+  }
+
+  const removeKeyword = (keyword: string) => {
+    setSelectedKeywords(selectedKeywords.filter(k => k !== keyword))
+  }
+
+  const addKeywordFromSuggestion = (suggestion: string) => {
+    if (!selectedKeywords.includes(suggestion)) {
+      setSelectedKeywords([...selectedKeywords, suggestion])
+    }
+    setKeywordQuery('')
+  }
+
+  const filteredCategories = facets.categories?.filter((category: string) =>
+    category.toLowerCase().includes(categorySearch.toLowerCase())
+  ) || []
 
   const searchCreators = useCallback(async () => {
     if (!user) return
@@ -183,6 +210,8 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
       sort_by: 'relevance'
     })
     setKeywordQuery('')
+    setSelectedKeywords([])
+    setCategorySearch('')
   }
 
   const formatFollowerCount = (count: number): string => {
@@ -288,25 +317,45 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
               <Card className="bg-white">
                 <CardContent className="p-4">
                   <label className="text-sm font-medium mb-3 block">Keywords</label>
+                  
+                  {/* Selected Keywords Tags */}
+                  {selectedKeywords.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {selectedKeywords.map((keyword) => (
+                        <Badge key={keyword} variant="secondary" className="flex items-center gap-1">
+                          {keyword}
+                          <button
+                            onClick={() => removeKeyword(keyword)}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X size={12} />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="relative">
-                    <Input
-                      placeholder="e.g. Grammy nominated, Song writer..."
+                    <textarea
+                      placeholder="Type keywords and press space to add them (e.g. Grammy nominated, Song writer...)"
                       value={keywordQuery}
                       onChange={(e) => setKeywordQuery(e.target.value)}
-                      className="mb-2"
+                      onKeyDown={handleKeywordKeyPress}
+                      className="w-full px-3 py-2 border border-input rounded-md resize-none h-20 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                     {keywordQuery && (
                       <div className="absolute z-10 w-full bg-white border rounded-md shadow-lg mt-1">
                         {keywordSuggestions
                           .filter(suggestion => 
-                            suggestion.toLowerCase().includes(keywordQuery.toLowerCase())
+                            suggestion.toLowerCase().includes(keywordQuery.toLowerCase()) &&
+                            !selectedKeywords.includes(suggestion)
                           )
                           .slice(0, 5)
                           .map((suggestion) => (
                             <div
                               key={suggestion}
                               className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                              onClick={() => setKeywordQuery(suggestion)}
+                              onClick={() => addKeywordFromSuggestion(suggestion)}
                             >
                               {suggestion}
                             </div>
@@ -322,8 +371,20 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
               <Card className="bg-white">
                 <CardContent className="p-4">
                   <label className="text-sm font-medium mb-3 block">Categories</label>
+                  
+                  {/* Category Search */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search categories..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {facets.categories?.map((category: string) => (
+                    {filteredCategories.map((category: string) => (
                       <div key={category} className="flex items-center space-x-2">
                         <Checkbox
                           checked={filters.categories.includes(category)}
@@ -334,6 +395,9 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
                         </label>
                       </div>
                     ))}
+                    {filteredCategories.length === 0 && categorySearch && (
+                      <p className="text-sm text-muted-foreground">No categories found</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
