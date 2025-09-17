@@ -198,19 +198,20 @@ const Index = () => {
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-primary">For Creators</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Tired of shouting into the void? Of algorithms deciding who sees your work? 
-                      Skip cuts through the noise. Your most dedicated followers can reach you directly, 
-                      one meaningful conversation at a time. No more competing for attention—just real 
-                      connections with people who truly value what you offer.
+                      Whether you're a musician, business leader, industry expert, or thought leader—tired of 
+                      shouting into the void? Of algorithms deciding who sees your expertise? Skip cuts through 
+                      the noise. Your most dedicated followers can reach you directly, one meaningful conversation 
+                      at a time. No more competing for attention—just real connections with people who truly 
+                      value your knowledge and experience.
                     </p>
                   </div>
                   <div className="space-y-4">
                     <h3 className="text-2xl font-semibold text-primary">For Fans</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Want real access to the creators you admire? Skip gives you the chance to connect 
-                      personally with the people whose knowledge, creativity, and insights inspire you. 
-                      No more hoping they'll see your comment—get the guidance, advice, or moment 
-                      you've been looking for.
+                      Want real access to the creators you admire—musicians, entrepreneurs, industry innovators, 
+                      and thought leaders? Skip gives you the chance to connect personally with established 
+                      professionals whose knowledge, creativity, and insights inspire you. No more hoping they'll 
+                      see your comment—get the guidance, advice, or expertise you've been looking for.
                     </p>
                   </div>
                 </div>
