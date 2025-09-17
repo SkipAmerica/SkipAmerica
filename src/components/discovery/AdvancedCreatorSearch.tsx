@@ -79,7 +79,7 @@ export const AdvancedCreatorSearch: React.FC = () => {
     categories: [],
     celebrity_tier: [],
     verification_status: [],
-    location_country: '',
+    location_country: 'all',
     languages: [],
     min_budget: 0,
     max_budget: 1000,
@@ -146,7 +146,7 @@ export const AdvancedCreatorSearch: React.FC = () => {
       categories: [],
       celebrity_tier: [],
       verification_status: [],
-      location_country: '',
+      location_country: 'all',
       languages: [],
       min_budget: 0,
       max_budget: 1000,
@@ -373,7 +373,7 @@ export const AdvancedCreatorSearch: React.FC = () => {
                       <SelectValue placeholder="Select country" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Countries</SelectItem>
+                      <SelectItem value="all">All Countries</SelectItem>
                       {facets.countries?.map((country: string) => (
                         <SelectItem key={country} value={country}>
                           {country}
