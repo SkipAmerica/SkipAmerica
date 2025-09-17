@@ -86,7 +86,7 @@ const Index = () => {
             {/* Search and Filters */}
             <div className="mx-4">
               {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-              <div className="mb-3">
+              <div className="mb-3 pt-3">
                 <UserInterestFilters 
                   selectedFilter={selectedFilter}
                   onFilterChange={setSelectedFilter}
