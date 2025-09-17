@@ -38,14 +38,16 @@ const mockCreators: Creator[] = [
 export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "" }: ScheduleCreatorsGridProps) {
   const [currentPage, setCurrentPage] = useState(0);
 
-  // Filter creators by category (offline only)
+  // Filter creators by category (offline only) and search query
+  const q = (searchQuery ?? '').toLowerCase();
   const offlineCreators = mockCreators.filter(creator => 
     !creator.isOnline && 
-    (selectedCategory === 'all' || creator.category === selectedCategory.toLowerCase())
+    (selectedCategory === 'all' || creator.category === selectedCategory.toLowerCase()) &&
+    (q === '' || creator.name.toLowerCase().includes(q))
   );
 
-  // Group creators into pages of 9
-  const creatorsPerPage = 9;
+  // Group creators into pages of 12 (4x3)
+  const creatorsPerPage = 12;
   const totalPages = Math.ceil(offlineCreators.length / creatorsPerPage);
   const currentCreators = offlineCreators.slice(
     currentPage * creatorsPerPage,
@@ -109,8 +111,8 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
         )}
       </div>
 
-      {/* 3x3 Grid */}
-      <div className="grid grid-cols-3 gap-4">
+      {/* 4x3 Grid */}
+      <div className="grid grid-cols-4 gap-4">
         {currentCreators.map((creator) => (
           <div
             key={creator.id}
