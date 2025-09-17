@@ -146,10 +146,10 @@ const Index = () => {
                   Professional Access Platform
                 </Badge>
                 <h1 className="text-4xl md:text-5xl font-bold mb-4">
-                  Skip: The link in bio that opens the door to you
+                  Skip. Make it Count.
                 </h1>
                 <p className="text-lg md:text-xl mb-8 opacity-90">
-                  Social platforms build your audience — Skip lets your top fans and clients actually reach you, one call at a time.
+                  Social platforms help you grow. Skip helps you connect.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   {user ? (
