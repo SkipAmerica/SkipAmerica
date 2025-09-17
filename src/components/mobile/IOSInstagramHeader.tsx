@@ -54,18 +54,13 @@ export function IOSInstagramHeader({
       {/* Bottom Row - User Profile */}
       <div className="flex items-center">
         <div className="relative">
-          <Avatar className="h-8 w-8 ring-2 ring-primary/20">
+          <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'Profile'} />
-            <AvatarFallback className="text-xs font-medium">
+            <AvatarFallback className="text-sm font-medium">
               {profile?.full_name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || 
                user?.email?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
-        </div>
-        <div className="ml-3">
-          <div className="text-sm font-medium">
-            {profile?.full_name || user?.email?.split('@')[0] || 'User'}
-          </div>
         </div>
       </div>
     </div>
