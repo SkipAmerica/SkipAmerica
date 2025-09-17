@@ -78,9 +78,9 @@ const Index = () => {
 
 
             {/* Search and Filters */}
-            <div className="mx-4 mb-6">
+            <div className="mx-4 space-y-4">
               {/* Sort Options - Show default categories */}
-              <div className="flex gap-2 mb-4 overflow-x-auto pb-2" style={{ 
+              <div className="flex gap-2 overflow-x-auto user-interest-filters" style={{ 
                 scrollbarWidth: 'none', 
                 msOverflowStyle: 'none',
                 WebkitOverflowScrolling: 'touch'
@@ -90,7 +90,7 @@ const Index = () => {
                     key={category}
                     variant="outline"
                     size="sm"
-                    className="whitespace-nowrap flex-shrink-0"
+                    className="whitespace-nowrap flex-shrink-0 min-w-fit px-4 py-2"
                   >
                     {category === "all" ? "All" : category}
                   </Button>
@@ -98,7 +98,7 @@ const Index = () => {
               </div>
               
               {/* Search Bar */}
-              <div className="mb-4">
+              <div>
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
