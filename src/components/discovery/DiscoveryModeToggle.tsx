@@ -9,11 +9,13 @@ interface DiscoveryModeToggleProps {
   mode: DiscoveryMode;
   onModeChange: (mode: DiscoveryMode) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export const DiscoveryModeToggle = ({ mode, onModeChange, className }: DiscoveryModeToggleProps) => {
+export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: DiscoveryModeToggleProps) => {
   return (
     <div
+      style={style}
       className={cn(
         // Full-bleed, edge-to-edge container to remove any side padding from parents
         "flex items-center bg-muted overflow-hidden gap-0 w-[100dvw] max-w-none ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] px-0",

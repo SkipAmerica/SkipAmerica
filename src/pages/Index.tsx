@@ -171,7 +171,8 @@ const Index = () => {
               <DiscoveryModeToggle 
                 mode={discoveryMode}
                 onModeChange={setDiscoveryMode}
-                className="w-full sticky top-0 z-30"
+                className="w-full sticky z-30"
+                style={{ top: headerHeight }}
               />
             </div>
 
