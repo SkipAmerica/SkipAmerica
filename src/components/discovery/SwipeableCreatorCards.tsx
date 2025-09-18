@@ -71,30 +71,30 @@ export const SwipeableCreatorCards = ({
     const matchesCategory = selectedCategory === "all" || creator.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState(0);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [isScrolling, setIsScrolling] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const currentCreator = filteredCreators[currentIndex];
   
-  const handleCardAction = useCallback((action: 'like' | 'pass' | 'superlike', creatorId?: string) => {
+  const handleCardAction = useCallback((action: 'like' | 'pass', creatorId?: string) => {
     const creator = creatorId ? filteredCreators.find(c => c.id === creatorId) : currentCreator;
     if (!creator) return;
 
     switch (action) {
       case 'like':
         onCreatorLike(creator.id);
-        toast.success(`Liked ${creator.name}`);
+        toast.success(`Interested in ${creator.name}`);
         break;
       case 'pass':
         onCreatorPass(creator.id);
-        break;
-      case 'superlike':
-        onCreatorSuperLike(creator.id);
-        toast.success(`Super liked ${creator.name}!`, {
-          description: "They'll be notified of your interest"
+        toast(`Passed on ${creator.name}`, {
+          description: "We'll find better matches for you"
         });
         break;
     }
@@ -111,7 +111,7 @@ export const SwipeableCreatorCards = ({
     // Reset card position
     setDragOffset({ x: 0, y: 0 });
     setRotation(0);
-  }, [currentIndex, filteredCreators, currentCreator, onCreatorLike, onCreatorPass, onCreatorSuperLike]);
+  }, [currentIndex, filteredCreators, currentCreator, onCreatorLike, onCreatorPass]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -119,12 +119,10 @@ export const SwipeableCreatorCards = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setIsDragging(true);
     const touch = e.touches[0];
     if (touch) {
-      const startX = touch.clientX - window.innerWidth / 2;
-      const startY = touch.clientY - window.innerHeight / 2;
-      setDragOffset({ x: startX, y: startY });
+      setTouchStart({ x: touch.clientX, y: touch.clientY });
+      setIsScrolling(false);
     }
   };
 
@@ -140,19 +138,35 @@ export const SwipeableCreatorCards = ({
   }, [isDragging]);
 
   const handleTouchMove = useCallback((e: TouchEvent) => {
-    if (!isDragging) return;
-    e.preventDefault();
-
+    if (!touchStart) return;
+    
     const touch = e.touches[0];
-    if (touch) {
-      const x = touch.clientX - window.innerWidth / 2;
-      const y = touch.clientY - window.innerHeight / 2;
+    if (!touch) return;
+
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // Determine if this is a scroll gesture (more vertical than horizontal)
+    if (absDeltaY > absDeltaX && absDeltaY > 10) {
+      setIsScrolling(true);
+      return;
+    }
+
+    // Only treat as swipe if horizontal movement is significant and not scrolling
+    if (!isScrolling && absDeltaX > 10) {
+      e.preventDefault(); // Only prevent default for swipe gestures
+      setIsDragging(true);
+      
+      const x = deltaX;
+      const y = deltaY;
       const newRotation = x * 0.1;
       
       setDragOffset({ x, y });
       setRotation(newRotation);
     }
-  }, [isDragging]);
+  }, [touchStart, isScrolling]);
 
   const handleMouseUp = useCallback(() => {
     if (!isDragging) return;
@@ -161,11 +175,8 @@ export const SwipeableCreatorCards = ({
     
     // Determine action based on drag distance
     const threshold = 100;
-    const superLikeThreshold = -150;
     
-    if (dragOffset.y < superLikeThreshold) {
-      handleCardAction('superlike');
-    } else if (dragOffset.x > threshold) {
+    if (dragOffset.x > threshold) {
       handleCardAction('like');
     } else if (dragOffset.x < -threshold) {
       handleCardAction('pass');
@@ -177,40 +188,49 @@ export const SwipeableCreatorCards = ({
   }, [isDragging, dragOffset, handleCardAction]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!isDragging) return;
+    if (!isDragging || isScrolling) {
+      // Reset state
+      setIsDragging(false);
+      setIsScrolling(false);
+      setTouchStart(null);
+      setDragOffset({ x: 0, y: 0 });
+      setRotation(0);
+      return;
+    }
     
     setIsDragging(false);
+    setTouchStart(null);
     
-    // Determine action based on drag distance
-    const threshold = 100;
-    const superLikeThreshold = -150;
+    // Determine action based on horizontal drag distance
+    const threshold = 80;
     
-    if (dragOffset.y < superLikeThreshold) {
-      handleCardAction('superlike');
-    } else if (dragOffset.x > threshold) {
-      handleCardAction('like');
+    if (dragOffset.x > threshold) {
+      handleCardAction('like'); // Swipe right = interested
     } else if (dragOffset.x < -threshold) {
-      handleCardAction('pass');
+      handleCardAction('pass'); // Swipe left = neutral/pass
     } else {
       // Reset position if not enough drag
       setDragOffset({ x: 0, y: 0 });
       setRotation(0);
     }
-  }, [isDragging, dragOffset, handleCardAction]);
+  }, [isDragging, isScrolling, dragOffset, handleCardAction]);
 
   useEffect(() => {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
-      document.addEventListener('touchmove', handleTouchMove, { passive: false });
-      document.addEventListener('touchend', handleTouchEnd);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-        document.removeEventListener('touchmove', handleTouchMove);
-        document.removeEventListener('touchend', handleTouchEnd);
-      };
     }
+    
+    // Always listen for touch events but handle them conditionally
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+    
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   if (!currentCreator) {
@@ -235,19 +255,11 @@ export const SwipeableCreatorCards = ({
       <div className="absolute top-4 left-0 right-0 z-20 flex justify-between px-6 pointer-events-none">
         <Badge 
           className={cn(
-            "bg-red-500 text-white transition-opacity duration-200",
+            "bg-orange-500 text-white transition-opacity duration-200",
             dragOffset.x < -50 ? "opacity-100" : "opacity-0"
           )}
         >
-          PASS
-        </Badge>
-        <Badge 
-          className={cn(
-            "bg-blue-500 text-white transition-opacity duration-200",
-            dragOffset.y < -50 ? "opacity-100" : "opacity-0"
-          )}
-        >
-          SUPER LIKE
+          NEUTRAL
         </Badge>
         <Badge 
           className={cn(
@@ -255,7 +267,7 @@ export const SwipeableCreatorCards = ({
             dragOffset.x > 50 ? "opacity-100" : "opacity-0"
           )}
         >
-          LIKE
+          INTERESTED
         </Badge>
       </div>
 
@@ -412,23 +424,14 @@ export const SwipeableCreatorCards = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="flex justify-center space-x-4 mt-6">
+      <div className="flex justify-center space-x-6 mt-6">
         <Button
           variant="outline"
           size="lg"
-          className="h-14 w-14 rounded-full border-2 border-red-500 bg-white hover:bg-red-50 group"
+          className="h-14 w-14 rounded-full border-2 border-orange-500 bg-white hover:bg-orange-50 group"
           onClick={() => handleCardAction('pass')}
         >
-          <X className="h-6 w-6 text-red-500 group-hover:scale-110 transition-transform" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size="lg"
-          className="h-12 w-12 rounded-full border-2 border-blue-500 bg-white hover:bg-blue-50 group"
-          onClick={() => handleCardAction('superlike')}
-        >
-          <Star className="h-5 w-5 text-blue-500 group-hover:scale-110 transition-transform" />
+          <X className="h-6 w-6 text-orange-500 group-hover:scale-110 transition-transform" />
         </Button>
 
         <Button
