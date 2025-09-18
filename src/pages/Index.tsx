@@ -26,6 +26,7 @@ import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
 import { CreatorSearch } from "@/components/discovery/CreatorSearch";
+import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -279,89 +280,113 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="h-full overflow-y-auto pb-20">
-            <div className="pb-2">
-              <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Filter creators..."
-                fullWidth
-              />
-            </div>
+          <div className="h-full flex flex-col">
+            {/* Sticky Search Header for search mode */}
             {discoveryMode === 'search' && (
-              <>
-                <div className="mx-4">
-                  {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                  <div className="mb-3">
-                    <UserInterestFilters 
-                      selectedFilter={selectedFilter}
-                      onFilterChange={setSelectedFilter}
-                    />
-                  </div>
-                  
-                  <div className="flex justify-end mt-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setActiveTab("advanced")}
-                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                    >
-                      Creator Matchmaker
-                    </Button>
-                  </div>
-                </div>
-              </>
+              <div className="mx-4">
+                <CreatorSearchHeader 
+                  searchTerm={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  showFilters={false}
+                  onToggleFilters={() => {}}
+                  selectedCategory={selectedFilter}
+                  onCategoryChange={setSelectedFilter}
+                  priceRange={[50, 1000]}
+                  onPriceRangeChange={() => {}}
+                  sortBy="rating"
+                  onSortChange={() => {}}
+                />
+              </div>
             )}
+            
+            {/* Regular search bar for other modes */}
+            {discoveryMode !== 'search' && (
+              <div className="pb-2">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  fullWidth
+                />
+              </div>
+            )}
+            
+            <div className="flex-1 overflow-y-auto pb-20">
+              {discoveryMode === 'search' && (
+                <>
+                  <div className="mx-4">
+                    {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                    <div className="mb-3">
+                      <UserInterestFilters 
+                        selectedFilter={selectedFilter}
+                        onFilterChange={setSelectedFilter}
+                      />
+                    </div>
+                    
+                    <div className="flex justify-end mt-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setActiveTab("advanced")}
+                        className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                      >
+                        Creator Matchmaker
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
 
-            {/* Search Results Based on Discovery Mode */}
-            {discoveryMode === 'cards' ? (
-              <div className="px-4">
-                <SwipeableCreatorCards
-                  selectedCategory={selectedFilter}
-                  searchQuery={searchQuery}
-                  onCreatorLike={handleCreatorLike}
-                  onCreatorPass={handleCreatorPass}
-                  onCreatorSuperLike={handleCreatorSuperLike}
-                  onCreatorMessage={handleCreatorMessage}
-                  onCreatorShare={handleCreatorShare}
-                  onCreatorBookmark={handleCreatorBookmark}
-                />
-              </div>
-            ) : discoveryMode === 'grid' ? (
-              <div className="mx-4">
-                <OnlineCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
-              </div>
-            ) : discoveryMode === 'schedule' ? (
-              <div className="mx-4">
-                <ScheduleCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
-              </div>
-            ) : discoveryMode === 'search' ? (
-              <div className="mx-4">
-                <CreatorSearch 
-                  onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                  onStartCall={(creator) => handleCreatorSelect(creator.id)}
-                />
-              </div>
-            ) : (
-              <div className="mx-4">
-                <OnlineCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
-              </div>
-            )}
+              {/* Search Results Based on Discovery Mode */}
+              {discoveryMode === 'cards' ? (
+                <div className="px-4">
+                  <SwipeableCreatorCards
+                    selectedCategory={selectedFilter}
+                    searchQuery={searchQuery}
+                    onCreatorLike={handleCreatorLike}
+                    onCreatorPass={handleCreatorPass}
+                    onCreatorSuperLike={handleCreatorSuperLike}
+                    onCreatorMessage={handleCreatorMessage}
+                    onCreatorShare={handleCreatorShare}
+                    onCreatorBookmark={handleCreatorBookmark}
+                  />
+                </div>
+              ) : discoveryMode === 'grid' ? (
+                <div className="mx-4">
+                  <OnlineCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              ) : discoveryMode === 'schedule' ? (
+                <div className="mx-4">
+                  <ScheduleCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              ) : discoveryMode === 'search' ? (
+                <div className="mx-4">
+                  <CreatorSearch 
+                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                  />
+                </div>
+              ) : (
+                <div className="mx-4">
+                  <OnlineCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         );
 
