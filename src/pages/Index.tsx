@@ -22,7 +22,6 @@ import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
 import { UserInterestFilters } from "@/components/UserInterestFilters";
 import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
-import { CategoryGrid } from "@/components/CategoryGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
@@ -42,14 +41,14 @@ import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActio
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 
-// Beauty, Fashion & Lifestyle focused creators for women
+// Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
-  { id: '1', name: 'Sophia Martinez', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'skincare', isOnline: true, ratingsCount: 1840, rating: 4.9, title: 'Celebrity Esthetician', callRate: 120, maxCallDuration: 45 },
-  { id: '2', name: 'Isabella Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'makeup', isOnline: true, ratingsCount: 2340, rating: 4.8, title: 'Pro Makeup Artist', callRate: 85, maxCallDuration: 30 },
-  { id: '3', name: 'Olivia Thompson', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'fashion', isOnline: true, ratingsCount: 1650, rating: 4.9, title: 'Personal Stylist', callRate: 95, maxCallDuration: 60 },
-  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'haircare', isOnline: true, ratingsCount: 2100, rating: 4.8, title: 'Hair Color Specialist', callRate: 75, maxCallDuration: 40 },
-  { id: '5', name: 'Ava Johnson', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'wellness', isOnline: true, ratingsCount: 920, rating: 4.7, title: 'Wellness Coach', callRate: 65, maxCallDuration: 50 },
-  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'lifestyle', isOnline: true, ratingsCount: 1560, rating: 4.8, title: 'Lifestyle Blogger', callRate: 55, maxCallDuration: 35 },
+  { id: '1', name: 'Emma Stone', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1240, rating: 4.9, title: 'Academy Award Winner', callRate: 150, maxCallDuration: 30 },
+  { id: '2', name: 'Dr. Sarah Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'technology', isOnline: true, ratingsCount: 890, rating: 4.8, title: 'AI Research Director', callRate: 200, maxCallDuration: 45 },
+  { id: '3', name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'business', isOnline: true, ratingsCount: 650, rating: 4.7, title: 'Serial Entrepreneur', callRate: 300, maxCallDuration: 60 },
+  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: true, ratingsCount: 2100, rating: 4.9, title: 'Beauty Influencer', callRate: 100, maxCallDuration: 20 },
+  { id: '5', name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: true, ratingsCount: 420, rating: 4.6, title: 'Lead Developer', callRate: 180, maxCallDuration: 40 },
+  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1560, rating: 4.8, title: 'Grammy Nominee', callRate: 250, maxCallDuration: 35 },
 ];
 
 const Index = () => {
@@ -60,7 +59,6 @@ const Index = () => {
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [liveNowOpen, setLiveNowOpen] = useState(true);
@@ -172,7 +170,7 @@ const Index = () => {
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
-                  placeholder="Search beauty experts..."
+                  placeholder="Search creators..."
                 />
                 <div className="flex justify-end mt-2">
                   <Button 
@@ -181,7 +179,7 @@ const Index = () => {
                     onClick={() => setActiveTab("advanced")}
                     className="text-primary font-medium px-0 h-auto underline hover:no-underline"
                   >
-                    Beauty Expert Finder
+                    Creator Matchmaker
                   </Button>
                 </div>
               </div>
@@ -203,14 +201,12 @@ const Index = () => {
                   searchQuery={searchQuery}
                   creators={mockCreators.map(creator => ({
                     ...creator,
-                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} happy clients. Specializing in personalized beauty and lifestyle consultations.`,
+                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
                     followers: Math.floor(Math.random() * 1000000) + 10000,
                     sessionHours: Math.floor(Math.random() * 500) + 10,
-                    location: creator.name.includes('Martinez') ? 'Los Angeles, CA' : 
+                    location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
                              creator.name.includes('Chen') ? 'San Francisco, CA' :
-                             creator.name.includes('Thompson') ? 'New York, NY' : 
-                             creator.name.includes('Rodriguez') ? 'Miami, FL' :
-                             creator.name.includes('Johnson') ? 'Chicago, IL' : 'Austin, TX',
+                             creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
                     isVerified: Math.random() > 0.5,
                     nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
                   }))}
@@ -279,16 +275,11 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="px-4 pt-4 pb-20">
-            <CategoryGrid 
-              onCategorySelect={(categoryId) => {
-                setSelectedCategory(categoryId);
-                console.log('Selected category:', categoryId);
-                // TODO: Navigate to creators in this category or apply filter
-              }}
-              searchQuery={searchQuery}
-            />
-          </div>
+          <OnlineCreatorsGrid 
+            selectedCategory={selectedFilter}
+            onCreatorSelect={handleCreatorSelect}
+            searchQuery={searchQuery}
+          />
         );
 
       case "trending":
