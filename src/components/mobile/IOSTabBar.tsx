@@ -113,7 +113,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                 "shadow-lg",
                 isLive 
                   ? "bg-destructive text-destructive-foreground scale-110" 
-                  : "bg-primary text-primary-foreground hover:scale-105"
+                  : "bg-[#008B8B] text-white hover:scale-105"
               )}>
                 {isLive ? (
                   <span className="text-sm font-bold">End</span>
@@ -121,15 +121,6 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   <ArrowUp size={20} />
                 )}
               </div>
-              <span className={cn(
-                "text-xs font-medium mt-1",
-                "transition-colors duration-200",
-                isLive 
-                  ? "text-destructive" 
-                  : "text-primary"
-              )}>
-                {isLive ? "End" : "Go Live"}
-              </span>
             </button>
           </div>
 
