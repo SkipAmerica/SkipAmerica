@@ -334,11 +334,19 @@ const Index = () => {
                 </div>
               ) : discoveryMode === 'browse' ? (
                 <div className="mx-4">
-                  <OnlineCreatorsGrid 
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorSelect={handleCreatorSelect}
-                    hideHeader={true}
-                  />
+                  {browseMode === 'live' ? (
+                    <OnlineCreatorsGrid 
+                      selectedCategory={filters.selectedCategory}
+                      onCreatorSelect={handleCreatorSelect}
+                      hideHeader={true}
+                    />
+                  ) : (
+                    <ScheduleCreatorsGrid 
+                      selectedCategory={filters.selectedCategory}
+                      onCreatorSelect={handleCreatorSelect}
+                      hideHeader={true}
+                    />
+                  )}
                 </div>
               ) : discoveryMode === 'search' ? (
                 <div className="mx-4">
