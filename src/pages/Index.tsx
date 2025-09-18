@@ -40,7 +40,7 @@ import { IOSInstagramHeader } from "@/components/mobile/IOSInstagramHeader";
 import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
 import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
 import { IOSModal } from "@/components/mobile/IOSModal";
-import { PullToRefresh } from "@/components/mobile/PullToRefresh";
+import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 
 // Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
@@ -201,162 +201,14 @@ const Index = () => {
                 />
               </div>
             ) : discoveryMode === 'grid' ? (
-              <PullToRefresh onRefresh={async () => {
-                // Trigger refresh of creator data
-                window.location.reload();
-              }}>
-                <div className="h-full overflow-y-auto pb-20">
-                  <div className="pb-2">
-                    <IOSSearchBar
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      placeholder="Filter creators..."
-                      fullWidth
-                    />
-                  </div>
-                   <div className="px-4">
-                    <OnlineCreatorsGrid 
-                      selectedCategory={selectedFilter}
-                      onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                      searchQuery={searchQuery}
-                      hideHeader={true}
-                    />
-                  </div>
-                </div>
-              </PullToRefresh>
-            ) : (
-              <PullToRefresh onRefresh={async () => {
-                // Trigger refresh of creator data
-                window.location.reload();
-              }}>
-                <div className="h-full overflow-y-auto pb-20">
-                  <div className="pb-2">
-                    <IOSSearchBar
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      placeholder="Filter creators..."
-                      fullWidth
-                    />
-                  </div>
-                  <div className="px-4">
-                    <ScheduleCreatorsGrid 
-                      selectedCategory={selectedFilter}
-                      onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                      searchQuery={searchQuery}
-                      hideHeader={true}
-                    />
-                  </div>
-                </div>
-              </PullToRefresh>
-            )}
-          </div>
-        );
-
-      case "live":
-        return (
-          <PullToRefresh onRefresh={async () => {
-            // Trigger refresh of creator data
-            window.location.reload();
-          }}>
-            <div className="h-full overflow-y-auto pb-20">
-              <div className="pb-2">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter live creators..."
-                  fullWidth
-                />
-              </div>
-            <div className="px-4">
-              <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={handleCreatorSelect}
-                searchQuery={searchQuery}
-                hideHeader={true}
-              />
-            </div>
-            </div>
-          </PullToRefresh>
-        );
-
-      case "trending":
-        return (
-          <PullToRefresh onRefresh={async () => {
-            // Trigger refresh of trending data
-            window.location.reload();
-          }}>
-            <div className="h-full overflow-y-auto pb-20">
-              <div className="pb-2">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter trending content..."
-                  fullWidth
-                />
-              </div>
-            <div className="px-4 pt-4 space-y-6">
-              <SmartTrendingEngine />
-            </div>
-            </div>
-          </PullToRefresh>
-        );
-
-      case "search":
-        return (
-          <PullToRefresh onRefresh={async () => {
-            // Trigger refresh of creator data
-            window.location.reload();
-          }}>
-            <div className="h-full overflow-y-auto pb-20">
-              <div className="pb-2">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
                   fullWidth
                 />
-              </div>
-              {discoveryMode === 'search' && (
-                <>
-                  <div className="mx-4">
-                    {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                    <div className="mb-3">
-                      <UserInterestFilters 
-                        selectedFilter={selectedFilter}
-                        onFilterChange={setSelectedFilter}
-                      />
-                    </div>
-                    
-                    <div className="flex justify-end mt-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setActiveTab("advanced")}
-                        className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                      >
-                        Creator Matchmaker
-                      </Button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Search Results Based on Discovery Mode */}
-              {discoveryMode === 'cards' ? (
-                <div className="px-4">
-                  <SwipeableCreatorCards
-                    selectedCategory={selectedFilter}
-                    searchQuery={searchQuery}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
-                  />
-                </div>
-              ) : discoveryMode === 'grid' ? (
-                <div className="mx-4">
+                 <div className="mx-4">
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -364,7 +216,15 @@ const Index = () => {
                     hideHeader={true}
                   />
                 </div>
-              ) : discoveryMode === 'schedule' ? (
+              </div>
+            ) : (
+              <div className="h-full overflow-y-auto pb-20">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  fullWidth
+                />
                 <div className="mx-4">
                   <ScheduleCreatorsGrid 
                     selectedCategory={selectedFilter}
@@ -373,25 +233,136 @@ const Index = () => {
                     hideHeader={true}
                   />
                 </div>
-              ) : discoveryMode === 'search' ? (
-                <div className="mx-4">
-                  <CreatorSearch 
-                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
-                  />
-                </div>
-              ) : (
-                <div className="mx-4">
-                  <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              )}
+              </div>
+            )}
+          </div>
+        );
+
+      case "live":
+        return (
+          <div className="h-full overflow-y-auto pb-20">
+            <div className="pb-2">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter live creators..."
+                fullWidth
+              />
             </div>
-          </PullToRefresh>
+            <div className="px-4">
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={handleCreatorSelect}
+                searchQuery={searchQuery}
+                hideHeader={true}
+              />
+            </div>
+          </div>
+        );
+
+      case "trending":
+        return (
+          <div className="h-full overflow-y-auto pb-20">
+            <div className="pb-2">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter trending content..."
+                fullWidth
+              />
+            </div>
+            <div className="px-4 pt-4 space-y-6">
+              <SmartTrendingEngine />
+            </div>
+          </div>
+        );
+
+      case "search":
+        return (
+          <div className="h-full overflow-y-auto pb-20">
+            <div className="pb-2">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter creators..."
+                fullWidth
+              />
+            </div>
+            {discoveryMode === 'search' && (
+              <>
+                <div className="mx-4">
+                  {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                  <div className="mb-3">
+                    <UserInterestFilters 
+                      selectedFilter={selectedFilter}
+                      onFilterChange={setSelectedFilter}
+                    />
+                  </div>
+                  
+                  <div className="flex justify-end mt-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setActiveTab("advanced")}
+                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                    >
+                      Creator Matchmaker
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Search Results Based on Discovery Mode */}
+            {discoveryMode === 'cards' ? (
+              <div className="px-4">
+                <SwipeableCreatorCards
+                  selectedCategory={selectedFilter}
+                  searchQuery={searchQuery}
+                  onCreatorLike={handleCreatorLike}
+                  onCreatorPass={handleCreatorPass}
+                  onCreatorSuperLike={handleCreatorSuperLike}
+                  onCreatorMessage={handleCreatorMessage}
+                  onCreatorShare={handleCreatorShare}
+                  onCreatorBookmark={handleCreatorBookmark}
+                />
+              </div>
+            ) : discoveryMode === 'grid' ? (
+              <div className="mx-4">
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            ) : discoveryMode === 'schedule' ? (
+              <div className="mx-4">
+                <ScheduleCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            ) : discoveryMode === 'search' ? (
+              <div className="mx-4">
+                <CreatorSearch 
+                  onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                  onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                />
+              </div>
+            ) : (
+              <div className="mx-4">
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            )}
+          </div>
         );
 
       case "advanced":

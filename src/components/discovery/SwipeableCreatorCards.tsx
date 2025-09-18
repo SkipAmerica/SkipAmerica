@@ -290,7 +290,7 @@ export const SwipeableCreatorCards = ({
       </div>
 
       {/* Card Stack */}
-      <div className="relative h-[600px] -mx-4 -mt-4">
+      <div className="relative h-[600px] -mx-4">
         {/* Next card (behind) */}
         {filteredCreators[currentIndex + 1] && (
           <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80 rounded-none border-0">
