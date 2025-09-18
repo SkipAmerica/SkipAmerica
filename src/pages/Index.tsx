@@ -178,28 +178,27 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Content */}
+          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
+            {/* Freeze Pane */}
+            <FreezePane
+              showDiscoveryToggle={showDiscoveryToggle}
+              discoveryMode={discoveryMode}
+              onDiscoveryModeChange={handleDiscoveryModeChange}
+              showBrowseSubTabs={discoveryMode === 'browse'}
+              browseMode={browseMode}
+              onBrowseModeChange={setBrowseMode}
+              searchValue={discoveryMode === 'browse' ? filters.query : ''}
+              onSearchChange={updateQuery}
+              searchPlaceholder="Filter creators..."
+              showInterestFilters={true}
+              selectedCategory={filters.selectedCategory}
+              onCategoryChange={updateSelectedCategory}
+              headerHeight={0}
+            />
+            
+            {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto pb-20">
-              {/* Freeze Pane */}
-              <FreezePane
-                showDiscoveryToggle={showDiscoveryToggle}
-                discoveryMode={discoveryMode}
-                onDiscoveryModeChange={handleDiscoveryModeChange}
-                showBrowseSubTabs={discoveryMode === 'browse'}
-                browseMode={browseMode}
-                onBrowseModeChange={setBrowseMode}
-                searchValue={discoveryMode === 'browse' ? filters.query : ''}
-                onSearchChange={updateQuery}
-                searchPlaceholder="Filter creators..."
-                showInterestFilters={false}
-                selectedCategory={filters.selectedCategory}
-                onCategoryChange={updateSelectedCategory}
-                headerHeight={headerHeight}
-              />
-              
-              {/* Scrollable Content */}
-              <div className="pt-32">
+              <div className="px-4 pt-4">
                 {discoveryMode === 'match' ? (
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
@@ -211,7 +210,7 @@ const Index = () => {
                     onCreatorBookmark={handleCreatorBookmark}
                   />
                 ) : discoveryMode === 'browse' ? (
-                  <div className="mx-4">
+                  <>
                     {browseMode === 'live' ? (
                       <OnlineCreatorsGrid 
                         selectedCategory={filters.selectedCategory}
@@ -225,14 +224,12 @@ const Index = () => {
                         hideHeader={true}
                       />
                     )}
-                  </div>
+                  </>
                 ) : (
-                  <div className="mx-4">
-                    <CreatorSearch 
-                      onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                      onStartCall={(creator) => handleCreatorSelect(creator.id)}
-                    />
-                  </div>
+                  <CreatorSearch 
+                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                  />
                 )}
               </div>
             </div>
