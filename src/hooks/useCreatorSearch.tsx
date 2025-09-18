@@ -226,27 +226,35 @@ export function useCreatorSearch({
       const searchResults = data?.creators || [];
       
       // Transform the data to match our expected Creator interface
-      const transformedCreators: Creator[] = searchResults.map((creator: any) => ({
-        id: creator.id,
-        full_name: creator.full_name || 'Unknown Creator',
-        avatar_url: creator.avatar_url || '',
-        categories: creator.categories || [],
-        isOnline: Math.random() > 0.7, // Mock online status for now
-        nextAvailable: availableOnly ? undefined : 'Tomorrow 2pm', // Mock availability
-        ratingsCount: 100 + Math.floor(Math.random() * 900),
-        rating: 4.0 + Math.random(),
-        headline: creator.headline || creator.bio?.substring(0, 50) + '...' || 'Creator',
-        bio: creator.bio || '',
-        location_country: creator.location_country,
-        location_city: creator.location_city,
-        celebrity_tier: creator.celebrity_tier,
-        verification_status: creator.verification_status,
-        total_followers: creator.total_followers,
-        avg_engagement_rate: creator.avg_engagement_rate,
-        base_rate_min: creator.base_rate_min,
-        base_rate_max: creator.base_rate_max,
-        available_for_booking: creator.available_for_booking
-      }));
+      const transformedCreators: Creator[] = searchResults.map((creator: any, index: number) => {
+        // Use consistent deterministic values based on creator ID to avoid random changes
+        const idHash = creator.id ? parseInt(creator.id.replace(/-/g, '').slice(0, 8), 16) : index;
+        const isOnline = (idHash % 3) === 0; // Consistent online status
+        const ratingsCount = 150 + (idHash % 800); // Consistent ratings count
+        const rating = 4.2 + ((idHash % 8) / 10); // Consistent rating between 4.2-4.9
+        
+        return {
+          id: creator.id,
+          full_name: creator.full_name || 'Unknown Creator',
+          avatar_url: creator.avatar_url || '',
+          categories: creator.categories || [],
+          isOnline,
+          nextAvailable: isOnline ? undefined : 'Tomorrow 2pm',
+          ratingsCount,
+          rating,
+          headline: creator.headline || creator.bio?.substring(0, 50) + '...' || 'Creator',
+          bio: creator.bio || '',
+          location_country: creator.location_country,
+          location_city: creator.location_city,
+          celebrity_tier: creator.celebrity_tier,
+          verification_status: creator.verification_status,
+          total_followers: creator.total_followers,
+          avg_engagement_rate: creator.avg_engagement_rate,
+          base_rate_min: creator.base_rate_min,
+          base_rate_max: creator.base_rate_max,
+          available_for_booking: creator.available_for_booking
+        };
+      });
 
       setCreators(transformedCreators);
     } catch (err) {
