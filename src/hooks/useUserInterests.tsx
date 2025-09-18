@@ -8,18 +8,18 @@ export interface Interest {
 }
 
 export const INTEREST_CATEGORIES: Record<string, Interest> = {
-  'entertainment': { id: 'entertainment', label: 'Entertainment' },
-  'technology': { id: 'technology', label: 'Technology' },
-  'business': { id: 'business', label: 'Business' },
-  'beauty': { id: 'beauty', label: 'Beauty' },
-  'fitness': { id: 'fitness', label: 'Fitness' },
-  'food': { id: 'food', label: 'Food' },
-  'education': { id: 'education', label: 'Education' },
-  'creative': { id: 'creative', label: 'Creative' },
-  'music': { id: 'music', label: 'Music' },
-  'photography': { id: 'photography', label: 'Photography' },
-  'gaming': { id: 'gaming', label: 'Gaming' },
-  'podcast': { id: 'podcast', label: 'Podcast' }
+  'skincare': { id: 'skincare', label: 'Skincare & Beauty' },
+  'makeup': { id: 'makeup', label: 'Makeup & Cosmetics' },
+  'fashion': { id: 'fashion', label: 'Fashion & Style' },
+  'haircare': { id: 'haircare', label: 'Hair & Styling' },
+  'wellness': { id: 'wellness', label: 'Wellness & Self-Care' },
+  'lifestyle': { id: 'lifestyle', label: 'Lifestyle & Living' },
+  'fitness': { id: 'fitness', label: 'Fitness & Health' },
+  'nutrition': { id: 'nutrition', label: 'Nutrition & Diet' },
+  'motherhood': { id: 'motherhood', label: 'Motherhood & Parenting' },
+  'career': { id: 'career', label: 'Career & Business' },
+  'relationships': { id: 'relationships', label: 'Love & Relationships' },
+  'travel': { id: 'travel', label: 'Travel & Adventure' }
 };
 
 export const useUserInterests = () => {

@@ -23,20 +23,20 @@ interface OnlineCreatorsGridProps {
   hideHeader?: boolean;
 }
 
-// Mock data - replace with real data
+// Beauty, Fashion & Lifestyle focused creators for women
 const mockCreators: Creator[] = [
-  { id: '1', name: 'Emma Stone', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1240, rating: 4.9, title: 'Academy Award Winner' },
-  { id: '2', name: 'Dr. Sarah Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'technology', isOnline: true, ratingsCount: 890, rating: 4.8, title: 'AI Research Director' },
-  { id: '3', name: 'Marcus Johnson', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150', category: 'business', isOnline: true, ratingsCount: 650, rating: 4.7, title: 'Serial Entrepreneur' },
-  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'beauty', isOnline: true, ratingsCount: 2100, rating: 4.9, title: 'Beauty Influencer' },
-  { id: '5', name: 'Alex Chen', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'technology', isOnline: true, ratingsCount: 420, rating: 4.6, title: 'Lead Developer' },
-  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'entertainment', isOnline: true, ratingsCount: 1560, rating: 4.8, title: 'Grammy Nominee' },
-  { id: '7', name: 'James Wilson', avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150', category: 'business', isOnline: true, ratingsCount: 340, rating: 4.5, title: 'Investment Advisor' },
-  { id: '8', name: 'Sophia Kim', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'beauty', isOnline: true, ratingsCount: 1850, rating: 4.9, title: 'Skincare Expert' },
-  { id: '9', name: 'David Lee', avatar: 'https://images.unsplash.com/photo-1519244703995-f4e0f30006d5?w=150', category: 'technology', isOnline: true, ratingsCount: 280, rating: 4.4, title: 'Blockchain Developer' },
-  { id: '10', name: 'Lisa Zhang', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'entertainment', isOnline: true, ratingsCount: 720, rating: 4.7, title: 'Stand-up Comedian' },
-  { id: '11', name: 'Ryan Garcia', avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150', category: 'business', isOnline: true, ratingsCount: 490, rating: 4.6, title: 'Marketing Director' },
-  { id: '12', name: 'Anna Taylor', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'beauty', isOnline: true, ratingsCount: 1320, rating: 4.8, title: 'Fashion Designer' },
+  { id: '1', name: 'Sophia Martinez', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150', category: 'skincare', isOnline: true, ratingsCount: 1840, rating: 4.9, title: 'Celebrity Esthetician' },
+  { id: '2', name: 'Isabella Chen', avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150', category: 'makeup', isOnline: true, ratingsCount: 2340, rating: 4.8, title: 'Pro Makeup Artist' },
+  { id: '3', name: 'Olivia Thompson', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', category: 'fashion', isOnline: true, ratingsCount: 1650, rating: 4.9, title: 'Personal Stylist' },
+  { id: '4', name: 'Zoe Rodriguez', avatar: 'https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150', category: 'haircare', isOnline: true, ratingsCount: 2100, rating: 4.8, title: 'Hair Color Specialist' },
+  { id: '5', name: 'Ava Johnson', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150', category: 'wellness', isOnline: true, ratingsCount: 920, rating: 4.7, title: 'Wellness Coach' },
+  { id: '6', name: 'Maya Patel', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150', category: 'lifestyle', isOnline: true, ratingsCount: 1560, rating: 4.8, title: 'Lifestyle Blogger' },
+  { id: '7', name: 'Emma Davis', avatar: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150', category: 'fitness', isOnline: true, ratingsCount: 890, rating: 4.6, title: 'Pilates Instructor' },
+  { id: '8', name: 'Chloe Kim', avatar: 'https://images.unsplash.com/photo-1502764613149-7f1d229e230f?w=150', category: 'motherhood', isOnline: true, ratingsCount: 750, rating: 4.7, title: 'Mom Life Coach' },
+  { id: '9', name: 'Natalie Brooks', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', category: 'nutrition', isOnline: true, ratingsCount: 680, rating: 4.5, title: 'Nutritionist' },
+  { id: '10', name: 'Rachel Green', avatar: 'https://images.unsplash.com/photo-1532074205216-d0e1f4b87368?w=150', category: 'career', isOnline: true, ratingsCount: 520, rating: 4.6, title: 'Career Coach' },
+  { id: '11', name: 'Jessica White', avatar: 'https://images.unsplash.com/photo-1485893086445-ed75865251e0?w=150', category: 'relationships', isOnline: true, ratingsCount: 440, rating: 4.4, title: 'Dating Expert' },
+  { id: '12', name: 'Amanda Rose', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', category: 'travel', isOnline: true, ratingsCount: 380, rating: 4.5, title: 'Travel Blogger' },
 ];
 
 export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: OnlineCreatorsGridProps) {
@@ -122,7 +122,7 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             </div>
             <h3 className="text-lg font-semibold">Live Now</h3>
             <span className="text-sm text-muted-foreground">
-              {onlineCreators.length} creator{onlineCreators.length === 1 ? '' : 's'} available
+              {onlineCreators.length} expert{onlineCreators.length === 1 ? '' : 's'} available
             </span>
           </div>
 
@@ -227,7 +227,7 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
 
       {onlineCreators.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          <p>No creators online in this category right now</p>
+          <p>No beauty experts online in this category right now</p>
           <p className="text-sm">Try selecting "All" or check back later</p>
         </div>
       )}

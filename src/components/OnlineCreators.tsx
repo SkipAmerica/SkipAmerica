@@ -17,87 +17,107 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
   const [liveCreators, setLiveCreators] = useState([
     {
       id: "1",
-      name: "Emma Stone",
-      username: "@emmastone",
+      name: "Sophia Martinez",
+      username: "@sophiaskin",
       avatar: "https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150",
-      category: "Entertainment & Celebrity",
+      category: "Skincare & Beauty",
       rating: 4.9,
-      totalRatings: 89,
-      pricePerMinute: 8.33,
-      speedGreetPrice: 500.00,
-      currentViewers: 847,
-      responseTime: "< 24 hours",
-      specialties: ["Acting", "Career guidance", "Hollywood insights"],
-      isLive: false,
-      liveFor: "Scheduled",
-      totalFollowers: 2800000,
-      recentActivity: "Available for career advice and entertainment industry insights",
-      influence_type: "celebrity",
+      totalRatings: 2840,
+      pricePerMinute: 4.17,
+      speedGreetPrice: 250.00,
+      currentViewers: 347,
+      responseTime: "< 2 hours",
+      specialties: ["Skincare routines", "Anti-aging", "Acne treatment"],
+      isLive: true,
+      liveFor: "1h 20m",
+      totalFollowers: 850000,
+      recentActivity: "Celebrity esthetician sharing personalized skincare advice",
+      influence_type: "expert",
       location: "Los Angeles, CA"
     },
     {
       id: "2", 
-      name: "Dr. Sarah Chen",
-      username: "@drsarahchen",
+      name: "Isabella Chen",
+      username: "@isabellamakeup",
       avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-      category: "Technology",
-      rating: 4.95,
-      totalRatings: 234,
+      category: "Makeup & Cosmetics",
+      rating: 4.8,
+      totalRatings: 1920,
       pricePerMinute: 3.33,
       speedGreetPrice: 200.00,
-      currentViewers: 28,
-      responseTime: "< 4 hours",
-      specialties: ["AI/ML", "Research", "Tech consulting"],
+      currentViewers: 189,
+      responseTime: "< 3 hours",
+      specialties: ["Bridal makeup", "Editorial looks", "Color matching"],
       isLive: true,
-      liveFor: "1h 30m",
-      totalFollowers: 45000,
-      recentActivity: "Leading AI researcher discussing machine learning trends",
-      influence_type: "expert",
-      location: "Palo Alto, CA"
+      liveFor: "2h 15m",
+      totalFollowers: 1200000,
+      recentActivity: "Professional makeup artist teaching advanced techniques",
+      influence_type: "artist",
+      location: "New York, NY"
     },
     {
       id: "3",
-      name: "Marcus Johnson", 
-      username: "@marcusentrepreneur",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-      category: "Business Leaders",
-      rating: 4.8,
-      totalRatings: 167,
-      pricePerMinute: 5.83,
-      speedGreetPrice: 350.00,
-      currentViewers: 15,
-      responseTime: "< 8 hours", 
-      specialties: ["Startups", "Fundraising", "Business strategy"],
+      name: "Olivia Thompson", 
+      username: "@oliviastyle",
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
+      category: "Fashion & Style",
+      rating: 4.9,
+      totalRatings: 1650,
+      pricePerMinute: 3.75,
+      speedGreetPrice: 225.00,
+      currentViewers: 156,
+      responseTime: "< 4 hours", 
+      specialties: ["Personal styling", "Wardrobe curation", "Body confidence"],
       isLive: true,
       liveFor: "45m",
-      totalFollowers: 120000,
-      recentActivity: "Serial entrepreneur mentoring aspiring founders",
-      influence_type: "entrepreneur",
-      location: "San Francisco, CA"
+      totalFollowers: 680000,
+      recentActivity: "Personal stylist helping women discover their signature style",
+      influence_type: "stylist",
+      location: "Chicago, IL"
     },
     {
       id: "4",
       name: "Zoe Rodriguez",
-      username: "@zoerodriguez",
+      username: "@zoehair",
       avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150",
-      category: "Beauty & Fashion",
-      rating: 4.7,
-      totalRatings: 892,
-      pricePerMinute: 2.50,
-      speedGreetPrice: 150.00,
+      category: "Hair & Styling",
+      rating: 4.8,
+      totalRatings: 2100,
+      pricePerMinute: 2.92,
+      speedGreetPrice: 175.00,
       currentViewers: 234,
       responseTime: "< 2 hours",
-      specialties: ["Fashion styling", "Social media", "Brand partnerships"],
+      specialties: ["Hair coloring", "Curly hair care", "Hair extensions"],
       isLive: true,
-      liveFor: "2h 15m",
-      totalFollowers: 10500000,
-      recentActivity: "Fashion influencer sharing style tips and brand collaborations",
-      influence_type: "influencer",
-      location: "New York, NY"
+      liveFor: "1h 50m",
+      totalFollowers: 950000,
+      recentActivity: "Hair color specialist sharing trending techniques and care tips",
+      influence_type: "stylist",
+      location: "Miami, FL"
+    },
+    {
+      id: "5",
+      name: "Ava Johnson",
+      username: "@avawellness",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+      category: "Wellness & Self-Care",
+      rating: 4.7,
+      totalRatings: 920,
+      pricePerMinute: 2.50,
+      speedGreetPrice: 150.00,
+      currentViewers: 98,
+      responseTime: "< 5 hours",
+      specialties: ["Mindfulness", "Self-care routines", "Stress management"],
+      isLive: true,
+      liveFor: "30m",
+      totalFollowers: 420000,
+      recentActivity: "Wellness coach guiding women through self-care practices",
+      influence_type: "coach",
+      location: "Austin, TX"
     }
   ]);
 
-  const categories = ["all", "Entertainment & Celebrity", "Technology", "Business Leaders", "Beauty & Fashion"];
+  const categories = ["all", "Skincare & Beauty", "Makeup & Cosmetics", "Fashion & Style", "Hair & Styling", "Wellness & Self-Care"];
 
   const filteredCreators = liveCreators.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -125,10 +145,10 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
         <div>
           <h2 className="text-2xl font-bold flex items-center">
             <Zap className="h-6 w-6 mr-2 text-primary animate-pulse" />
-            Influential People Live
+            Beauty Experts Live
           </h2>
           <p className="text-muted-foreground">
-            {filteredCreators.length} influential people available now
+            {filteredCreators.length} beauty experts available now
           </p>
         </div>
         
@@ -271,7 +291,7 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
         <div className="text-center py-12">
           <div className="text-muted-foreground">
             <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <div className="font-semibold">No influential people found</div>
+            <div className="font-semibold">No beauty experts found</div>
             <div className="text-sm">Try adjusting your search or filters</div>
           </div>
         </div>

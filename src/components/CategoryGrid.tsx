@@ -22,107 +22,107 @@ interface CategoryGridProps {
   hideHeader?: boolean;
 }
 
-// Mock category data - replace with real data
+// Beauty, Fashion & Lifestyle focused categories for women
 const mockCategories: CategoryData[] = [
   {
-    id: 'beauty',
-    name: 'Beauty & Style',
+    id: 'skincare',
+    name: 'Skincare & Beauty',
     icon: <Palette className="h-8 w-8" />,
-    onlineCount: 147,
-    totalMembers: 2840,
-    subcategories: ['Beauty Influencers', 'Stylists', 'Makeup Artists', 'Brand Reps', 'Agency Managers'],
+    onlineCount: 189,
+    totalMembers: 4250,
+    subcategories: ['Dermatologists', 'Estheticians', 'Beauty Influencers', 'Skincare Brands', 'Clean Beauty Experts'],
     color: 'bg-pink-100 text-pink-800',
-    description: 'Beauty experts, fashion stylists, and industry professionals'
+    description: 'Skincare experts, dermatologists, and beauty professionals'
   },
   {
-    id: 'business',
-    name: 'Business & Finance',
-    icon: <Briefcase className="h-8 w-8" />,
-    onlineCount: 89,
-    totalMembers: 1560,
-    subcategories: ['Entrepreneurs', 'Investors', 'Consultants', 'Financial Advisors', 'CEOs'],
-    color: 'bg-blue-100 text-blue-800',
-    description: 'Business leaders, entrepreneurs, and financial experts'
-  },
-  {
-    id: 'technology',
-    name: 'Tech & Innovation',
-    icon: <Monitor className="h-8 w-8" />,
-    onlineCount: 92,
-    totalMembers: 1820,
-    subcategories: ['Developers', 'AI Researchers', 'Tech CEOs', 'Product Managers', 'Engineers'],
-    color: 'bg-purple-100 text-purple-800',
-    description: 'Tech innovators, developers, and industry experts'
-  },
-  {
-    id: 'entertainment',
-    name: 'Entertainment',
-    icon: <Music className="h-8 w-8" />,
+    id: 'makeup',
+    name: 'Makeup & Cosmetics',
+    icon: <Palette className="h-8 w-8" />,
     onlineCount: 156,
-    totalMembers: 3420,
-    subcategories: ['Actors', 'Musicians', 'Comedians', 'Directors', 'Producers'],
-    color: 'bg-yellow-100 text-yellow-800',
-    description: 'Entertainers, artists, and media professionals'
+    totalMembers: 3890,
+    subcategories: ['Makeup Artists', 'Beauty Gurus', 'Brand Ambassadors', 'Color Specialists', 'Bridal Artists'],
+    color: 'bg-rose-100 text-rose-800',
+    description: 'Professional makeup artists and beauty creators'
+  },
+  {
+    id: 'fashion',
+    name: 'Fashion & Style',
+    icon: <Heart className="h-8 w-8" />,
+    onlineCount: 134,
+    totalMembers: 3240,
+    subcategories: ['Personal Stylists', 'Fashion Designers', 'Style Influencers', 'Wardrobe Consultants', 'Trend Forecasters'],
+    color: 'bg-purple-100 text-purple-800',
+    description: 'Fashion stylists, designers, and style experts'
+  },
+  {
+    id: 'haircare',
+    name: 'Hair & Styling',
+    icon: <Coffee className="h-8 w-8" />,
+    onlineCount: 98,
+    totalMembers: 2180,
+    subcategories: ['Hair Stylists', 'Colorists', 'Hair Care Experts', 'Curl Specialists', 'Extensions Artists'],
+    color: 'bg-amber-100 text-amber-800',
+    description: 'Professional hair stylists and hair care specialists'
+  },
+  {
+    id: 'wellness',
+    name: 'Wellness & Self-Care',
+    icon: <Heart className="h-8 w-8" />,
+    onlineCount: 112,
+    totalMembers: 2840,
+    subcategories: ['Wellness Coaches', 'Therapists', 'Mindfulness Experts', 'Self-Care Gurus', 'Mental Health Advocates'],
+    color: 'bg-green-100 text-green-800',
+    description: 'Wellness experts and self-care professionals'
+  },
+  {
+    id: 'lifestyle',
+    name: 'Lifestyle & Living',
+    icon: <Coffee className="h-8 w-8" />,
+    onlineCount: 87,
+    totalMembers: 2100,
+    subcategories: ['Lifestyle Bloggers', 'Home Decor Experts', 'Organization Specialists', 'Life Coaches', 'Influencers'],
+    color: 'bg-blue-100 text-blue-800',
+    description: 'Lifestyle experts and home living specialists'
   },
   {
     id: 'fitness',
-    name: 'Health & Fitness',
+    name: 'Fitness & Health',
     icon: <Dumbbell className="h-8 w-8" />,
-    onlineCount: 73,
-    totalMembers: 1240,
-    subcategories: ['Trainers', 'Nutritionists', 'Wellness Coaches', 'Athletes', 'Health Experts'],
-    color: 'bg-green-100 text-green-800',
-    description: 'Fitness trainers, health experts, and wellness coaches'
+    onlineCount: 76,
+    totalMembers: 1980,
+    subcategories: ['Personal Trainers', 'Yoga Instructors', 'Pilates Teachers', 'Nutrition Coaches', 'Fitness Influencers'],
+    color: 'bg-emerald-100 text-emerald-800',
+    description: 'Fitness trainers and health professionals for women'
   },
   {
-    id: 'food',
-    name: 'Food & Culinary',
-    icon: <Utensils className="h-8 w-8" />,
-    onlineCount: 64,
-    totalMembers: 980,
-    subcategories: ['Chefs', 'Food Critics', 'Nutritionists', 'Restaurant Owners', 'Food Bloggers'],
-    color: 'bg-orange-100 text-orange-800',
-    description: 'Culinary experts, chefs, and food industry professionals'
+    id: 'motherhood',
+    name: 'Motherhood & Parenting',
+    icon: <Heart className="h-8 w-8" />,
+    onlineCount: 94,
+    totalMembers: 2560,
+    subcategories: ['Mom Influencers', 'Parenting Coaches', 'Pediatric Nurses', 'Child Development Experts', 'Mom Entrepreneurs'],
+    color: 'bg-yellow-100 text-yellow-800',
+    description: 'Motherhood experts and parenting professionals'
   },
   {
-    id: 'education',
-    name: 'Education & Learning',
-    icon: <GraduationCap className="h-8 w-8" />,
-    onlineCount: 58,
-    totalMembers: 1100,
-    subcategories: ['Professors', 'Tutors', 'Researchers', 'Course Creators', 'Academic Writers'],
+    id: 'career',
+    name: 'Career & Business',
+    icon: <Briefcase className="h-8 w-8" />,
+    onlineCount: 65,
+    totalMembers: 1640,
+    subcategories: ['Female Entrepreneurs', 'Career Coaches', 'Leadership Experts', 'Business Mentors', 'Industry Leaders'],
     color: 'bg-indigo-100 text-indigo-800',
-    description: 'Educators, researchers, and learning professionals'
+    description: 'Female business leaders and career experts'
   },
   {
-    id: 'creative',
-    name: 'Creative Arts',
-    icon: <Palette className="h-8 w-8" />,
-    onlineCount: 81,
-    totalMembers: 1650,
-    subcategories: ['Artists', 'Designers', 'Writers', 'Photographers', 'Creative Directors'],
-    color: 'bg-teal-100 text-teal-800',
-    description: 'Creative professionals, artists, and designers'
-  },
-  {
-    id: 'photography',
-    name: 'Photography',
-    icon: <Camera className="h-8 w-8" />,
-    onlineCount: 45,
-    totalMembers: 720,
-    subcategories: ['Photographers', 'Photo Editors', 'Commercial Photographers', 'Wedding Photographers', 'Travel Photographers'],
-    color: 'bg-gray-100 text-gray-800',
-    description: 'Professional photographers and visual artists'
-  },
-  {
-    id: 'gaming',
-    name: 'Gaming & Esports',
-    icon: <Gamepad2 className="h-8 w-8" />,
-    onlineCount: 112,
-    totalMembers: 2100,
-    subcategories: ['Pro Gamers', 'Streamers', 'Game Developers', 'Esports Coaches', 'Gaming Content Creators'],
+    id: 'relationships',
+    name: 'Love & Relationships',
+    icon: <Heart className="h-8 w-8" />,
+    onlineCount: 58,
+    totalMembers: 1420,
+    subcategories: ['Dating Coaches', 'Relationship Therapists', 'Marriage Counselors', 'Love Experts', 'Communication Coaches'],
     color: 'bg-red-100 text-red-800',
-    description: 'Gaming professionals, streamers, and esports athletes'
+    description: 'Relationship experts and dating professionals'
   }
 ];
 
@@ -189,9 +189,9 @@ export function CategoryGrid({ onCategorySelect, searchQuery = "", hideHeader = 
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
             </div>
-            <h3 className="text-lg font-semibold">Interest Categories</h3>
+            <h3 className="text-lg font-semibold">Beauty & Lifestyle</h3>
             <span className="text-sm text-muted-foreground">
-              {getTotalOnline()} people online across categories
+              {getTotalOnline()} experts online now
             </span>
           </div>
 
