@@ -160,7 +160,7 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
         {currentCreators.map((creator) => (
           <div
             key={creator.id}
-            className="flex flex-col items-center space-y-2 p-3 bg-black/90 text-white rounded-lg hover:bg-black/80 transition-colors cursor-pointer"
+            className="flex flex-col items-center space-y-2 p-3 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
             onClick={() => onCreatorSelect(creator.id)}
           >
             {/* Rating and Ratings Count */}
