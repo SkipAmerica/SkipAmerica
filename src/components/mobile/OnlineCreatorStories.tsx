@@ -88,13 +88,16 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
       }
     ];
 
-    // Sort creators based on priority:
+    // Filter to only show creators that the user follows
+    const followedCreators = mockCreators.filter(creator => creator.isFollowed);
+    
+    // Sort followed creators based on priority:
     // 1. Online with stories (pulsing green)
     // 2. Online without stories
     // 3. Offline with stories
     // 4. Offline without stories
-    const sortedCreators = mockCreators.sort((a, b) => {
-      // Priority scoring
+    const sortedCreators = followedCreators.sort((a, b) => {
+      // Priority scoring for followed creators only
       const getScore = (creator: Creator) => {
         let score = 0;
         if (creator.isOnline && creator.hasStory) score = 1000;
@@ -102,10 +105,8 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
         else if (!creator.isOnline && creator.hasStory) score = 800;
         else score = 700;
         
-        // Boost for followed/interacted/interests
-        if (creator.isFollowed) score += 100;
+        // Additional boost for interaction history
         if (creator.hasInteracted) score += 50;
-        if (creator.matchesInterests) score += 25;
         
         return score;
       };
