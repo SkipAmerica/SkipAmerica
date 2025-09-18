@@ -334,12 +334,11 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="px-4 pt-4 pb-20">
-            <OnlineCreators 
-              onCreatorSelect={(id) => setActiveTab("creator-profile")}
-              onStartCall={(id) => setActiveTab("call")}
-            />
-          </div>
+          <OnlineCreatorsGrid 
+            selectedCategory={selectedFilter}
+            onCreatorSelect={handleCreatorSelect}
+            searchQuery={searchQuery}
+          />
         );
 
       case "trending":
