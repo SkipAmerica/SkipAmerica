@@ -24,7 +24,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
     <div
       style={style}
       className={cn(
-        "flex items-center bg-muted overflow-hidden gap-0 w-full px-0",
+        "flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-none border-b border-border h-12",
         className
       )}
     >
@@ -33,7 +33,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('cards')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
           mode === 'cards' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
@@ -46,7 +46,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('grid')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
           mode === 'grid' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
@@ -59,7 +59,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('schedule')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
           mode === 'schedule' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
@@ -72,7 +72,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('search')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
           mode === 'search' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >

@@ -275,40 +275,38 @@ const Index = () => {
             </div>
             
             <div className="pt-4 pb-20 space-y-4">
-              {/* Search and Filters */}
-              <div className="mx-4">
-                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                <div className="mb-3">
-                  <UserInterestFilters 
-                    selectedFilter={selectedFilter}
-                    onFilterChange={setSelectedFilter}
-                  />
-                </div>
-                
-                {/* Search Bar */}
-                <div className="mb-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search creators..."
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setActiveTab("advanced")}
-                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                    >
-                      Creator Matchmaker
-                    </Button>
+              {discoveryMode === 'search' && (
+                <div className="mx-4">
+                  {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                  <div className="mb-3">
+                    <UserInterestFilters 
+                      selectedFilter={selectedFilter}
+                      onFilterChange={setSelectedFilter}
+                    />
+                  </div>
+                  
+                  {/* Search Bar */}
+                  <div className="mb-4">
+                    <IOSSearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      placeholder="Search creators..."
+                    />
+                    <div className="flex justify-end mt-2">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setActiveTab("advanced")}
+                        className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                      >
+                        Creator Matchmaker
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Search Results Based on Discovery Mode */}
-              <div className="text-xs text-muted-foreground text-center mb-2">
-                Debug: Current mode = {discoveryMode}
-              </div>
               {discoveryMode === 'cards' ? (
                 <div className="pb-20">
                   <SwipeableCreatorCards
