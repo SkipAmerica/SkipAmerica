@@ -13,14 +13,14 @@ interface DiscoveryModeToggleProps {
 
 export const DiscoveryModeToggle = ({ mode, onModeChange, className }: DiscoveryModeToggleProps) => {
   return (
-    <div className={cn("flex w-full items-center bg-muted rounded-lg overflow-hidden", className)}>
+    <div className={cn("flex w-full items-center bg-muted overflow-hidden", className)}>
       <Button
         variant={mode === 'cards' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => onModeChange('cards')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none first:rounded-l-lg last:rounded-r-lg",
-          mode === 'cards' ? "bg-background shadow-sm" : "hover:bg-background/50"
+          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none",
+          mode === 'cards' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-background/50"
         )}
       >
         <Heart className="h-4 w-4" />
@@ -36,7 +36,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
         onClick={() => onModeChange('grid')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none",
-          mode === 'grid' ? "bg-background shadow-sm" : "hover:bg-background/50"
+          mode === 'grid' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-background/50"
         )}
       >
         <Grid3X3 className="h-4 w-4" />
@@ -48,8 +48,8 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
         size="sm"
         onClick={() => onModeChange('schedule')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none first:rounded-l-lg last:rounded-r-lg",
-          mode === 'schedule' ? "bg-background shadow-sm" : "hover:bg-background/50"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none",
+          mode === 'schedule' ? "bg-primary text-primary-foreground shadow-sm" : "hover:bg-background/50"
         )}
       >
         <List className="h-4 w-4" />
