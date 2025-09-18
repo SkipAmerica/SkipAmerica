@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,6 +64,17 @@ const Index = () => {
   const [liveNowOpen, setLiveNowOpen] = useState(true);
   const [scheduleOpen, setScheduleOpen] = useState(true);
   const [activeCall, setActiveCall] = useState<string | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      const el = document.getElementById("ig-header");
+      if (el) setHeaderHeight(el.getBoundingClientRect().height);
+    };
+    updateHeaderHeight();
+    window.addEventListener("resize", updateHeaderHeight);
+    return () => window.removeEventListener("resize", updateHeaderHeight);
+  }, []);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -160,7 +171,7 @@ const Index = () => {
               <DiscoveryModeToggle 
                 mode={discoveryMode}
                 onModeChange={setDiscoveryMode}
-                className="w-full"
+                className="w-full sticky top-0 z-30"
               />
             </div>
 
@@ -326,9 +337,9 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <div className={`${
-        activeTab === "advanced" ? "" : "pt-40"
-      }`}>
+      <div
+        style={activeTab === "advanced" ? undefined : { paddingTop: headerHeight }}
+      >
         {renderTabContent()}
       </div>
 
