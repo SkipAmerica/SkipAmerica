@@ -210,13 +210,13 @@ const Index = () => {
   }
 
   // Check if current tab should show discovery toggle
-  const showDiscoveryToggle = ["discover", "live", "search"].includes(activeTab);
+  const showDiscoveryToggle = activeTab === "discover";
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingTop: `${headerHeight}px` }}>
             {/* Freeze Pane */}
             <FreezePane
               showDiscoveryToggle={showDiscoveryToggle}
@@ -225,13 +225,12 @@ const Index = () => {
               showBrowseSubTabs={discoveryMode === 'browse'}
               browseMode={browseMode}
               onBrowseModeChange={setBrowseMode}
-              searchValue={filters.query}
+              searchValue={discoveryMode === 'browse' ? filters.query : ''}
               onSearchChange={updateQuery}
               searchPlaceholder="Filter creators..."
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
-              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -276,10 +275,10 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="h-full flex flex-col overflow-hidden">
+          <div className="h-full flex flex-col overflow-hidden" style={{ paddingTop: `${headerHeight}px` }}>
             {/* Freeze Pane */}
             <FreezePane
-              showDiscoveryToggle={showDiscoveryToggle}
+              showDiscoveryToggle={false}
               discoveryMode={discoveryMode}
               onDiscoveryModeChange={handleDiscoveryModeChange}
               showBrowseSubTabs={false}
@@ -287,11 +286,10 @@ const Index = () => {
               onBrowseModeChange={setBrowseMode}
               searchValue={filters.query}
               onSearchChange={updateQuery}
-              searchPlaceholder="Filter creators..."
+              searchPlaceholder="Filter live creators..."
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
-              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -310,22 +308,21 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
             {/* Freeze Pane */}
             <FreezePane
-              showDiscoveryToggle={showDiscoveryToggle}
+              showDiscoveryToggle={false}
               discoveryMode={discoveryMode}
               onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={discoveryMode === 'browse'}
+              showBrowseSubTabs={false}
               browseMode={browseMode}
               onBrowseModeChange={setBrowseMode}
               searchValue={filters.query}
               onSearchChange={updateQuery}
               searchPlaceholder="Search creators..."
-              showInterestFilters={discoveryMode === 'search'}
+              showInterestFilters={true}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
-              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -393,7 +390,7 @@ const Index = () => {
 
       case "following":
         return (
-          <div className="h-full flex flex-col">
+          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
             {/* Freeze Pane */}
             <FreezePane
               showDiscoveryToggle={false}
@@ -408,7 +405,6 @@ const Index = () => {
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
-              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -442,10 +438,7 @@ const Index = () => {
       )}
 
       {/* Main Content */}
-      <div
-        style={activeTab === "advanced" ? undefined : { paddingTop: headerHeight }}
-        className="flex flex-col h-screen"
-      >        
+      <div className="flex flex-col h-screen">
         {/* Tab Content - Scrollable area */}
         <div className="flex-1 overflow-hidden">
           {renderTabContent()}
