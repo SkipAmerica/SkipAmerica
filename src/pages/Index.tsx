@@ -25,6 +25,7 @@ import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
+import { CreatorSearch } from "@/components/discovery/CreatorSearch";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -325,6 +326,13 @@ const Index = () => {
                     onCreatorSelect={handleCreatorSelect}
                     searchQuery={searchQuery}
                     hideHeader={true}
+                  />
+                </div>
+              ) : discoveryMode === 'search' ? (
+                <div className="mx-4">
+                  <CreatorSearch 
+                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
                   />
                 </div>
               ) : (
