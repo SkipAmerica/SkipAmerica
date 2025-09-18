@@ -31,7 +31,6 @@ interface FreezePaneProps {
   
   // Layout
   className?: string;
-  headerHeight?: number;
 }
 
 export const FreezePane = ({
@@ -47,16 +46,14 @@ export const FreezePane = ({
   showInterestFilters,
   selectedCategory,
   onCategoryChange,
-  className,
-  headerHeight = 0
+  className
 }: FreezePaneProps) => {
   return (
     <div 
       className={cn(
-        "sticky z-50 bg-background/95 backdrop-blur-sm border-b border-border",
+        "sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border",
         className
       )}
-      style={{ top: `${headerHeight}px` }}
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (
