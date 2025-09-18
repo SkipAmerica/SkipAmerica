@@ -71,7 +71,7 @@ export function IOSInstagramHeader({
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2 relative">
             <Phone size={24} />
             {/* Badge for pending callers - you can add logic here */}
-            <div className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+            <div className="absolute top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
               3
             </div>
           </Button>
