@@ -54,7 +54,7 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule'>('cards');
+  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule' | 'search'>('cards');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -347,9 +347,18 @@ const Index = () => {
                     hideHeader={true}
                   />
                 </div>
-              ) : (
+              ) : discoveryMode === 'schedule' ? (
                 <div className="mx-4">
                   <ScheduleCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              ) : (
+                <div className="mx-4">
+                  <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
                     searchQuery={searchQuery}
