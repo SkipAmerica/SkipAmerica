@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Grid3X3, Heart, List, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type DiscoveryMode = 'grid' | 'cards' | 'schedule' | 'search';
+type DiscoveryMode = 'browse' | 'match' | 'schedule' | 'search';
 
 interface DiscoveryModeToggleProps {
   mode: DiscoveryMode;
@@ -29,29 +29,29 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       )}
     >
       <Button
-        variant={mode === 'cards' ? 'default' : 'ghost'}
+        variant={mode === 'match' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => handleModeChange('cards')}
+        onClick={() => handleModeChange('match')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'cards' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Heart className="h-4 w-4" />
-        <span>Discover</span>
+        <span>Match</span>
       </Button>
       
       <Button
-        variant={mode === 'grid' ? 'default' : 'ghost'}
+        variant={mode === 'browse' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => handleModeChange('grid')}
+        onClick={() => handleModeChange('browse')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'grid' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'browse' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Grid3X3 className="h-4 w-4" />
-        <span>Live</span>
+        <span>Browse</span>
       </Button>
       
       <Button
@@ -77,7 +77,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         )}
       >
         <Search className="h-4 w-4" />
-        <span>Match</span>
+        <span>Search</span>
       </Button>
     </div>
   );

@@ -56,9 +56,9 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule' | 'search'>('cards');
+  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'schedule' | 'search'>('match');
   
-  const handleDiscoveryModeChange = (mode: 'grid' | 'cards' | 'schedule' | 'search') => {
+  const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'schedule' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
     setDiscoveryMode(mode);
   };
@@ -182,7 +182,7 @@ const Index = () => {
         return (
           <div className="flex-1 overflow-hidden">
             {/* Discovery Content Based on Mode */}
-            {discoveryMode === 'cards' ? (
+            {discoveryMode === 'match' ? (
               <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
@@ -201,7 +201,7 @@ const Index = () => {
                   onCreatorBookmark={handleCreatorBookmark}
                 />
               </div>
-            ) : discoveryMode === 'grid' ? (
+            ) : discoveryMode === 'browse' ? (
               <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
@@ -338,7 +338,7 @@ const Index = () => {
               )}
 
               {/* Search Results Based on Discovery Mode */}
-              {discoveryMode === 'cards' ? (
+              {discoveryMode === 'match' ? (
                 <div className="px-4">
                   <SwipeableCreatorCards
                     selectedCategory={selectedFilter}
@@ -351,7 +351,7 @@ const Index = () => {
                     onCreatorBookmark={handleCreatorBookmark}
                   />
                 </div>
-              ) : discoveryMode === 'grid' ? (
+              ) : discoveryMode === 'browse' ? (
                 <div className="mx-4">
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
