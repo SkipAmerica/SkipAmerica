@@ -193,6 +193,7 @@ const Index = () => {
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
+              headerHeight={headerHeight}
             />
             
             {/* Content */}
