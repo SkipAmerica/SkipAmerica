@@ -204,8 +204,8 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
 
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="space-y-4">
+      {/* Search and Filters - Sticky */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-md border-b border-border/50 pb-4 space-y-4">
         <div className="flex gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
