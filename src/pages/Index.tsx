@@ -264,32 +264,58 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="px-4 pt-4 pb-20">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter live creators..."
-              className="mb-4"
-            />
-            <OnlineCreatorsGrid 
-              selectedCategory={selectedFilter}
-              onCreatorSelect={handleCreatorSelect}
-              searchQuery={searchQuery}
-              hideHeader={true}
-            />
+          <div>
+            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
+            <div 
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
+              style={{ top: 0 }}
+            >
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={handleDiscoveryModeChange}
+              />
+            </div>
+            
+            <div className="px-4 pt-4 pb-20">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter live creators..."
+                className="mb-4"
+              />
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={handleCreatorSelect}
+                searchQuery={searchQuery}
+                hideHeader={true}
+              />
+            </div>
           </div>
         );
 
       case "trending":
         return (
-          <div className="px-4 pt-4 pb-20 space-y-6">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter trending content..."
-              className="mb-4"
-            />
-            <SmartTrendingEngine />
+          <div>
+            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
+            <div 
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
+              style={{ top: 0 }}
+            >
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={handleDiscoveryModeChange}
+              />
+            </div>
+            
+            <div className="px-4 pt-4 pb-20 space-y-6">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter trending content..."
+                className="mb-4"
+              />
+              <SmartTrendingEngine />
+            </div>
           </div>
         );
 
