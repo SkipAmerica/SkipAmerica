@@ -99,7 +99,6 @@ const Index = () => {
   };
 
   const handleCreatorPass = (creatorId: string) => {
-    console.log('Passed creator:', creatorId);
     // TODO: Implement AI algorithm fine-tuning for passes
   };
 
