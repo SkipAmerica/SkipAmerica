@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface Creator {
   id: string;
@@ -36,19 +37,17 @@ interface Creator {
 }
 
 interface SwipeableCreatorCardsProps {
-  selectedCategory: string;
-  searchQuery: string;
-  onCreatorLike: (creatorId: string) => void;
-  onCreatorPass: (creatorId: string) => void;
-  onCreatorSuperLike: (creatorId: string) => void;
-  onCreatorMessage: (creatorId: string) => void;
-  onCreatorShare: (creatorId: string) => void;
-  onCreatorBookmark: (creatorId: string) => void;
+  selectedCategory?: string;
+  onCreatorLike?: (creatorId: string) => void;
+  onCreatorPass?: (creatorId: string) => void;
+  onCreatorSuperLike?: (creatorId: string) => void;
+  onCreatorMessage?: (creatorId: string) => void;
+  onCreatorShare?: (creatorId: string) => void;
+  onCreatorBookmark?: (creatorId: string) => void;
 }
 
 export const SwipeableCreatorCards = ({ 
   selectedCategory,
-  searchQuery,
   onCreatorLike,
   onCreatorPass,
   onCreatorSuperLike,
@@ -56,12 +55,15 @@ export const SwipeableCreatorCards = ({
   onCreatorShare,
   onCreatorBookmark
 }: SwipeableCreatorCardsProps) => {
+  // Use global search context
+  const { filters } = useSearch();
+  
   // Memoize search parameters to prevent unnecessary re-renders
   const searchParams = useMemo(() => ({
-    query: searchQuery,
-    categories: selectedCategory === 'all' ? [] : [selectedCategory],
-    availableOnly: false
-  }), [searchQuery, selectedCategory]);
+    query: filters.query,
+    categories: filters.selectedCategory === 'all' ? [] : [filters.selectedCategory],
+    availableOnly: filters.availableOnly
+  }), [filters.query, filters.selectedCategory, filters.availableOnly]);
 
   // Use enhanced creator search
   const { creators, loading, error } = useCreatorSearch(searchParams);

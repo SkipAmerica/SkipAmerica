@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useSearch } from "@/contexts/SearchContext";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -66,8 +67,9 @@ const Index = () => {
   };
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedFilter, setSelectedFilter] = useState("all");
+  
+  // Use global search context
+  const { filters, updateQuery, updateSelectedCategory } = useSearch();
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<string | null>(null);
@@ -187,14 +189,13 @@ const Index = () => {
             {discoveryMode === 'match' ? (
               <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
+                  value={filters.query}
+                  onChange={updateQuery}
                   placeholder="Filter creators..."
                   fullWidth
                 />
                 <SwipeableCreatorCards
-                  selectedCategory={selectedFilter}
-                  searchQuery={searchQuery}
+                  selectedCategory={filters.selectedCategory}
                   onCreatorLike={handleCreatorLike}
                   onCreatorPass={handleCreatorPass}
                   onCreatorSuperLike={handleCreatorSuperLike}
@@ -206,8 +207,8 @@ const Index = () => {
             ) : discoveryMode === 'browse' ? (
               <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
+                  value={filters.query}
+                  onChange={updateQuery}
                   placeholder="Filter creators..."
                   fullWidth
                 />
@@ -218,16 +219,14 @@ const Index = () => {
                 <div className="mx-4">
                   {browseMode === 'live' ? (
                     <OnlineCreatorsGrid 
-                      selectedCategory={selectedFilter}
+                      selectedCategory={filters.selectedCategory}
                       onCreatorSelect={handleCreatorSelect}
-                      searchQuery={searchQuery}
                       hideHeader={true}
                     />
                   ) : (
                     <ScheduleCreatorsGrid 
-                      selectedCategory={selectedFilter}
+                      selectedCategory={filters.selectedCategory}
                       onCreatorSelect={handleCreatorSelect}
-                      searchQuery={searchQuery}
                       hideHeader={true}
                     />
                   )}
@@ -236,8 +235,8 @@ const Index = () => {
             ) : (
               <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
+                  value={filters.query}
+                  onChange={updateQuery}
                   placeholder="Filter creators..."
                   fullWidth
                 />
@@ -257,17 +256,16 @@ const Index = () => {
           <div className="h-full overflow-y-auto pb-20">
             <div className="pb-2">
               <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
+                value={filters.query}
+                onChange={updateQuery}
                 placeholder="Filter creators..."
                 fullWidth
               />
             </div>
             <div className="px-4">
               <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
+                selectedCategory={filters.selectedCategory}
                 onCreatorSelect={handleCreatorSelect}
-                searchQuery={searchQuery}
                 hideHeader={true}
               />
             </div>
@@ -282,15 +280,15 @@ const Index = () => {
             {discoveryMode === 'search' && (
               <div className="mx-4">
                 <CreatorSearchHeader 
-                  searchTerm={searchQuery}
-                  onSearchChange={setSearchQuery}
+                  searchTerm={filters.query}
+                  onSearchChange={updateQuery}
                   showFilters={false}
                   onToggleFilters={() => {}}
-                  selectedCategory={selectedFilter}
-                  onCategoryChange={setSelectedFilter}
-                  priceRange={[50, 1000]}
+                  selectedCategory={filters.selectedCategory}
+                  onCategoryChange={updateSelectedCategory}
+                  priceRange={filters.priceRange}
                   onPriceRangeChange={() => {}}
-                  sortBy="rating"
+                  sortBy={filters.sortBy}
                   onSortChange={() => {}}
                 />
               </div>
@@ -300,8 +298,8 @@ const Index = () => {
             {discoveryMode !== 'search' && (
               <div className="pb-2">
                 <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
+                  value={filters.query}
+                  onChange={updateQuery}
                   placeholder="Filter creators..."
                   fullWidth
                 />
@@ -315,8 +313,8 @@ const Index = () => {
                     {/* Dynamic Sort Options - Based on user's interests from sign-up */}
                     <div className="mb-3">
                       <UserInterestFilters 
-                        selectedFilter={selectedFilter}
-                        onFilterChange={setSelectedFilter}
+                        selectedFilter={filters.selectedCategory}
+                        onFilterChange={updateSelectedCategory}
                       />
                     </div>
                     
@@ -338,8 +336,7 @@ const Index = () => {
               {discoveryMode === 'match' ? (
                 <div className="px-4">
                   <SwipeableCreatorCards
-                    selectedCategory={selectedFilter}
-                    searchQuery={searchQuery}
+                    selectedCategory={filters.selectedCategory}
                     onCreatorLike={handleCreatorLike}
                     onCreatorPass={handleCreatorPass}
                     onCreatorSuperLike={handleCreatorSuperLike}
@@ -351,9 +348,8 @@ const Index = () => {
               ) : discoveryMode === 'browse' ? (
                 <div className="mx-4">
                   <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
+                    selectedCategory={filters.selectedCategory}
                     onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
                     hideHeader={true}
                   />
                 </div>
@@ -367,9 +363,8 @@ const Index = () => {
               ) : (
                 <div className="mx-4">
                   <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
+                    selectedCategory={filters.selectedCategory}
                     onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
                     hideHeader={true}
                   />
                 </div>
@@ -388,8 +383,8 @@ const Index = () => {
           <div className="px-4 pt-4 pb-20 space-y-6">
             <div className="pb-2">
               <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
+                value={filters.query}
+                onChange={updateQuery}
                 placeholder="Filter following content..."
               />
             </div>

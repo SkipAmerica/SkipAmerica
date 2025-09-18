@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, Phone, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface Creator {
   id: string;
@@ -21,21 +22,23 @@ interface Creator {
 interface OnlineCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
-  searchQuery?: string;
   hideHeader?: boolean;
 }
 
 
-export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: OnlineCreatorsGridProps) {
+export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, hideHeader = false }: OnlineCreatorsGridProps) {
   const { user } = useAuth()
   const [currentPage, setCurrentPage] = useState(0);
   const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
 
+  // Use global search context
+  const { filters } = useSearch();
+
   // Use enhanced creator search
   const { creators, loading, error } = useCreatorSearch({
-    query: searchQuery,
+    query: filters.query,
     categories: selectedCategory === 'all' ? [] : [selectedCategory],
-    availableOnly: false
+    availableOnly: filters.availableOnly
   });
 
   // Filter for online creators only

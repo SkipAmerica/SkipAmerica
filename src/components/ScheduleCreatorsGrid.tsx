@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, Calendar, Phone, Heart } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface Creator {
   id: string;
@@ -23,19 +24,21 @@ interface Creator {
 interface ScheduleCreatorsGridProps {
   selectedCategory: string;
   onCreatorSelect: (creatorId: string) => void;
-  searchQuery?: string;
   hideHeader?: boolean;
 }
 
 
-export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, searchQuery = "", hideHeader = false }: ScheduleCreatorsGridProps) {
+export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, hideHeader = false }: ScheduleCreatorsGridProps) {
   const { user } = useAuth()
   const [currentPage, setCurrentPage] = useState(0);
   const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
+  
+  // Use global search context
+  const { filters } = useSearch();
 
   // Use enhanced creator search
   const { creators, loading, error } = useCreatorSearch({
-    query: searchQuery,
+    query: filters.query,
     categories: selectedCategory === 'all' ? [] : [selectedCategory],
     availableOnly: false // For scheduling, we want all creators
   });

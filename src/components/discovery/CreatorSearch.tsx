@@ -9,6 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/lib/supabase';
 import { Search, Filter, Star, MapPin, Clock, Zap, Heart, MessageCircle, Video } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSearch } from '@/contexts/SearchContext';
 
 interface Creator {
   id: string;
@@ -63,13 +64,14 @@ const sortOptions = [
 export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchProps) {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [priceRange, setPriceRange] = useState([0, 200]);
   const [sortBy, setSortBy] = useState('rating');
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
   const [favorites, setFavorites] = useState<string[]>([]);
+  
+  // Use global search context
+  const { filters, updateSelectedCategory } = useSearch();
 
   // Mock data representing diverse influential people
   const mockCreators: Creator[] = [
@@ -133,7 +135,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
 
   useEffect(() => {
     filterCreators();
-  }, [creators, searchTerm, selectedCategory, priceRange, sortBy]);
+  }, [creators, filters.query, filters.selectedCategory, priceRange, sortBy]);
 
   const loadCreators = async () => {
     try {
@@ -154,17 +156,17 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
     let filtered = [...creators];
 
     // Search filter
-    if (searchTerm) {
+    if (filters.query) {
       filtered = filtered.filter(creator =>
-        creator.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        creator.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        creator.specialties?.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
+        creator.full_name.toLowerCase().includes(filters.query.toLowerCase()) ||
+        creator.bio?.toLowerCase().includes(filters.query.toLowerCase()) ||
+        creator.specialties?.some(s => s.toLowerCase().includes(filters.query.toLowerCase()))
       );
     }
 
     // Category filter
-    if (selectedCategory !== 'All Categories') {
-      filtered = filtered.filter(creator => creator.category === selectedCategory);
+    if (filters.selectedCategory !== 'All Categories' && filters.selectedCategory !== 'all') {
+      filtered = filtered.filter(creator => creator.category === filters.selectedCategory);
     }
 
     // Price filter
@@ -359,8 +361,7 @@ export function CreatorSearch({ onCreatorSelect, onStartCall }: CreatorSearchPro
               <p className="text-muted-foreground">Try adjusting your search filters</p>
             </div>
             <Button variant="outline" onClick={() => {
-              setSearchTerm('');
-              setSelectedCategory('All Categories');
+              updateSelectedCategory('all');
               setPriceRange([0, 200]);
             }}>
               Clear Filters
