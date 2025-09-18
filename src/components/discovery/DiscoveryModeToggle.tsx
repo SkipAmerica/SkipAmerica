@@ -25,7 +25,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
         size="sm"
         onClick={() => onModeChange('cards')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'cards' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
@@ -38,7 +38,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
         size="sm"
         onClick={() => onModeChange('grid')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'grid' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
@@ -51,7 +51,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
         size="sm"
         onClick={() => onModeChange('schedule')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'schedule' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
