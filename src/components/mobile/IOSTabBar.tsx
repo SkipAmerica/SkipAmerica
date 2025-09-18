@@ -22,7 +22,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
-    { id: 'live', label: 'Live', icon: Sparkles },
+    { id: 'live', label: 'Live', icon: Users },
   ];
 
   const rightTabs: TabItem[] = [
@@ -118,7 +118,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                 {isLive ? (
                   <span className="text-sm font-bold">End</span>
                 ) : (
-                  <span className="text-xs font-bold">LIVE</span>
+                  <Sparkles size={20} />
                 )}
               </div>
             </button>
