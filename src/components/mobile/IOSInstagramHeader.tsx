@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { MessageCircle, Heart, Menu } from 'lucide-react';
+import { MessageCircle, Heart, Menu, Phone } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 
 interface IOSInstagramHeaderProps {
@@ -67,6 +67,13 @@ export function IOSInstagramHeader({
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
             <Heart size={24} />
+          </Button>
+          <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2 relative">
+            <Phone size={24} />
+            {/* Badge for pending callers - you can add logic here */}
+            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              3
+            </div>
           </Button>
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
             <MessageCircle size={24} />
