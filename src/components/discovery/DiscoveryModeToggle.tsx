@@ -13,7 +13,13 @@ interface DiscoveryModeToggleProps {
 
 export const DiscoveryModeToggle = ({ mode, onModeChange, className }: DiscoveryModeToggleProps) => {
   return (
-    <div className={cn("flex w-full items-center bg-muted overflow-hidden", className)}>
+    <div
+      className={cn(
+        // Full-bleed, edge-to-edge container to remove any side padding from parents
+        "flex items-center bg-muted overflow-hidden gap-0 w-screen max-w-none ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]",
+        className
+      )}
+    >
       <Button
         variant={mode === 'cards' ? 'default' : 'ghost'}
         size="sm"
