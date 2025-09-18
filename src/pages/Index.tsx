@@ -156,16 +156,17 @@ const Index = () => {
         return (
           <div className="space-y-6">
             {/* Discovery Mode Toggle */}
-            <div className="mx-4 pt-4">
+            <div className="px-4 pt-4">
               <DiscoveryModeToggle 
                 mode={discoveryMode}
                 onModeChange={setDiscoveryMode}
+                className="w-full"
               />
             </div>
 
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="px-4 pb-20">
+              <div className="pb-20">
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}
