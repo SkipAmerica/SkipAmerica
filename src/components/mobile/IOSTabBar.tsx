@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Home, Search, TrendingUp, Users, User, Sparkle } from 'lucide-react';
+import { Home, Search, TrendingUp, Users, User, Sparkles } from 'lucide-react';
 
 interface IOSTabBarProps {
   activeTab: string;
@@ -22,7 +22,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
-    { id: 'live', label: 'Live', icon: Users },
+    { id: 'live', label: 'Live', icon: Sparkles },
   ];
 
   const rightTabs: TabItem[] = [
@@ -84,7 +84,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     />
                   </div>
                   <span className={cn(
-                    "text-xs font-medium mt-1 mb-1",
+                    "text-xs font-medium mt-1 mb-3",
                     "transition-colors duration-200",
                     isActive 
                       ? "text-primary" 
@@ -158,7 +158,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     />
                   </div>
                   <span className={cn(
-                    "text-xs font-medium mt-1 mb-1",
+                    "text-xs font-medium mt-1 mb-3",
                     "transition-colors duration-200",
                     isActive 
                       ? "text-primary" 
@@ -211,7 +211,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   )}
                 </div>
                 <span className={cn(
-                  "text-xs font-medium mt-1 mb-1",
+                  "text-xs font-medium mt-1 mb-3",
                   "transition-colors duration-200",
                   isActive 
                     ? "text-primary" 
