@@ -13,6 +13,13 @@ interface DiscoveryModeToggleProps {
 }
 
 export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: DiscoveryModeToggleProps) => {
+  console.log('DiscoveryModeToggle render - current mode:', mode);
+  
+  const handleModeChange = (newMode: DiscoveryMode) => {
+    console.log('DiscoveryModeToggle - changing from', mode, 'to', newMode);
+    onModeChange(newMode);
+  };
+
   return (
     <div
       style={style}
@@ -24,7 +31,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       <Button
         variant={mode === 'cards' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => onModeChange('cards')}
+        onClick={() => handleModeChange('cards')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'cards' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
@@ -37,7 +44,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       <Button
         variant={mode === 'grid' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => onModeChange('grid')}
+        onClick={() => handleModeChange('grid')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'grid' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
@@ -50,7 +57,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       <Button
         variant={mode === 'schedule' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => onModeChange('schedule')}
+        onClick={() => handleModeChange('schedule')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'schedule' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
@@ -63,7 +70,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       <Button
         variant={mode === 'search' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => onModeChange('search')}
+        onClick={() => handleModeChange('search')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0",
           mode === 'search' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"

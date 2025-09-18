@@ -56,6 +56,11 @@ const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
   const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule' | 'search'>('cards');
+  
+  const handleDiscoveryModeChange = (mode: 'grid' | 'cards' | 'schedule' | 'search') => {
+    console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
+    setDiscoveryMode(mode);
+  };
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -250,7 +255,7 @@ const Index = () => {
             >
               <DiscoveryModeToggle 
                 mode={discoveryMode}
-                onModeChange={setDiscoveryMode}
+                onModeChange={handleDiscoveryModeChange}
               />
             </div>
             
@@ -286,6 +291,9 @@ const Index = () => {
               </div>
 
               {/* Search Results Based on Discovery Mode */}
+              <div className="text-xs text-muted-foreground text-center mb-2">
+                Debug: Current mode = {discoveryMode}
+              </div>
               {discoveryMode === 'cards' ? (
                 <div className="pb-20">
                   <SwipeableCreatorCards
