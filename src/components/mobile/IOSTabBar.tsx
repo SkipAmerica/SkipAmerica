@@ -45,7 +45,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
       "fixed bottom-0 left-0 right-0 z-50",
       "bg-card/95 backdrop-blur-md",
       "border-t border-border/50",
-      "pt-1 pb-[calc(env(safe-area-inset-bottom)+0.5rem)]"
+      "pt-1 pb-2"
     )}>
       {/* Creator Layout with 5 tabs */}
       {isCreator ? (
@@ -83,15 +83,6 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                       )}
                     />
                   </div>
-                  <span className={cn(
-                    "text-xs font-medium mt-1 mb-3",
-                    "transition-colors duration-200",
-                    isActive 
-                      ? "text-primary" 
-                      : "text-muted-foreground"
-                  )}>
-                    {tab.label}
-                  </span>
                 </button>
               );
             })}
@@ -108,7 +99,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
               )}
             >
               <div className={cn(
-                "w-12 h-12 rounded-full flex items-center justify-center",
+                "w-10 h-10 rounded-full flex items-center justify-center",
                 "transform transition-all duration-200",
                 "shadow-lg",
                 isLive 
@@ -116,9 +107,9 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
               )}>
                 {isLive ? (
-                  <span className="text-sm font-bold">End</span>
+                  <span className="text-xs font-bold">End</span>
                 ) : (
-                  <Sparkles size={20} />
+                  <Sparkles size={16} />
                 )}
               </div>
             </button>
@@ -157,15 +148,6 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                       )}
                     />
                   </div>
-                  <span className={cn(
-                    "text-xs font-medium mt-1 mb-3",
-                    "transition-colors duration-200",
-                    isActive 
-                      ? "text-primary" 
-                      : "text-muted-foreground"
-                  )}>
-                    {tab.label}
-                  </span>
                 </button>
               );
             })}
@@ -210,15 +192,6 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     </div>
                   )}
                 </div>
-                <span className={cn(
-                  "text-xs font-medium mt-1 mb-3",
-                  "transition-colors duration-200",
-                  isActive 
-                    ? "text-primary" 
-                    : "text-muted-foreground"
-                )}>
-                  {tab.label}
-                </span>
               </button>
             );
           })}
