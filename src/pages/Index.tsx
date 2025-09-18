@@ -22,6 +22,7 @@ import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
 import { UserInterestFilters } from "@/components/UserInterestFilters";
 import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
+import { CategoryGrid } from "@/components/CategoryGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
@@ -59,6 +60,7 @@ const Index = () => {
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [liveNowOpen, setLiveNowOpen] = useState(true);
@@ -275,11 +277,16 @@ const Index = () => {
 
       case "live":
         return (
-          <OnlineCreatorsGrid 
-            selectedCategory={selectedFilter}
-            onCreatorSelect={handleCreatorSelect}
-            searchQuery={searchQuery}
-          />
+          <div className="px-4 pt-4 pb-20">
+            <CategoryGrid 
+              onCategorySelect={(categoryId) => {
+                setSelectedCategory(categoryId);
+                console.log('Selected category:', categoryId);
+                // TODO: Navigate to creators in this category or apply filter
+              }}
+              searchQuery={searchQuery}
+            />
+          </div>
         );
 
       case "trending":
