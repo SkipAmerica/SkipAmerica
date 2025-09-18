@@ -188,6 +188,7 @@ const Index = () => {
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
+                  fullWidth
                 />
                 <div className="px-4 pt-4">
                   <SwipeableCreatorCards
@@ -208,6 +209,7 @@ const Index = () => {
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
+                  fullWidth
                 />
                 <div className="mx-4 mt-4">
                   <OnlineCreatorsGrid 
@@ -224,6 +226,7 @@ const Index = () => {
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
+                  fullWidth
                 />
                 <div className="mx-4 mt-4">
                   <ScheduleCreatorsGrid 
@@ -245,6 +248,7 @@ const Index = () => {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter live creators..."
+              fullWidth
             />
             <div className="px-4 pt-4">
               <OnlineCreatorsGrid 
@@ -264,6 +268,7 @@ const Index = () => {
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter trending content..."
+              fullWidth
             />
             <div className="px-4 pt-4 space-y-6">
               <SmartTrendingEngine />

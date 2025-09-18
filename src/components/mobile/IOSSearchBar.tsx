@@ -13,6 +13,7 @@ interface IOSSearchBarProps {
   onCancel?: () => void;
   showCancel?: boolean;
   className?: string;
+  fullWidth?: boolean;
 }
 
 export function IOSSearchBar({
@@ -23,14 +24,15 @@ export function IOSSearchBar({
   onBlur,
   onCancel,
   showCancel = false,
-  className
+  className,
+  fullWidth = false
 }: IOSSearchBarProps) {
   const handleClear = () => {
     onChange('');
   };
 
   return (
-    <div className={cn("flex items-center", className)}>
+    <div className={cn("flex items-center", fullWidth && "-mx-4 px-4", className)}>
       <div className="relative w-full">
         <Search 
           size={16} 
