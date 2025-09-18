@@ -428,8 +428,8 @@ const Index = () => {
         {/* Discovery Mode Toggle - Only for discovery tabs */}
         {showDiscoveryToggle && (
           <div 
-            className="sticky z-50 bg-background border-b border-border"
-            style={{ top: headerHeight }}
+            className="sticky z-40 bg-background border-b border-border"
+            style={{ top: headerHeight - 1 }}
           >
             <DiscoveryModeToggle 
               mode={discoveryMode}
