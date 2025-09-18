@@ -275,9 +275,9 @@ export const SwipeableCreatorCards = ({
       <div className="relative h-[600px]">
         {/* Next card (behind) */}
         {filteredCreators[currentIndex + 1] && (
-          <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80">
+          <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80 rounded-b-lg rounded-t-none">
             <CardContent className="p-0 h-full">
-              <div className="relative h-full rounded-lg overflow-hidden">
+              <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
                 <img
                   src={filteredCreators[currentIndex + 1].avatar}
                   alt={filteredCreators[currentIndex + 1].name}
@@ -292,7 +292,7 @@ export const SwipeableCreatorCards = ({
         <Card 
           ref={el => cardRefs.current[0] = el}
           className={cn(
-            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200 select-none",
+            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200 select-none rounded-b-lg rounded-t-none",
             isDragging ? "scale-105" : "scale-100"
           )}
           style={{
@@ -303,7 +303,7 @@ export const SwipeableCreatorCards = ({
           onTouchStart={handleTouchStart}
         >
           <CardContent className="p-0 h-full">
-            <div className="relative h-full rounded-lg overflow-hidden">
+            <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
               {/* Creator Image */}
               <img
                 src={currentCreator.avatar}
