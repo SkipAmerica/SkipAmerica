@@ -1,6 +1,6 @@
 # Architecture Guidelines
 
-This document outlines the enforced architectural principles for the Skip Creator Platform codebase.
+This document outlines the enforced architectural principles for the SkipAmerica codebase.
 
 ## Folder Discipline
 

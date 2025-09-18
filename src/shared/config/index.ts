@@ -2,7 +2,7 @@
 export const config = {
   // App metadata
   app: {
-    name: 'Skip Creator Platform',
+    name: 'SkipAmerica',
     version: '1.0.0',
     description: 'Connect with creators worldwide',
   },
