@@ -192,7 +192,7 @@ const Index = () => {
                 searchValue={discoveryMode === 'browse' ? filters.query : ''}
                 onSearchChange={updateQuery}
                 searchPlaceholder="Filter creators..."
-                showInterestFilters={false}
+                showInterestFilters={true}
                 selectedCategory={filters.selectedCategory}
                 onCategoryChange={updateSelectedCategory}
                 headerHeight={headerHeight}
