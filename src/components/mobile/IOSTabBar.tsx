@@ -64,7 +64,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     "ios-touchable",
                     "flex flex-col items-center justify-center",
                     "min-w-0 relative",
-                    "px-1 py-1 pb-0",
+                    "px-1 py-1",
                     "transition-all duration-200"
                   )}
                 >
@@ -138,7 +138,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     "ios-touchable",
                     "flex flex-col items-center justify-center",
                     "min-w-0 relative",
-                    "px-1 py-1 pb-0",
+                    "px-1 py-1",
                     "transition-all duration-200"
                   )}
                 >
@@ -186,7 +186,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   "ios-touchable",
                   "flex flex-col items-center justify-center",
                   "min-w-0 flex-1 relative",
-                  "px-1 py-1 pb-0",
+                  "px-1 py-1",
                   "transition-all duration-200"
                 )}
               >
