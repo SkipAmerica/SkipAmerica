@@ -202,30 +202,40 @@ const Index = () => {
               headerHeight={0}
             />
             
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto pb-20">
-              <div className="px-4 pt-2">
-                {discoveryMode === 'discover' ? (
+            {/* Separate Scrollable Containers for Each Discovery Mode */}
+            {discoveryMode === 'discover' && (
+              <div key="discover-scroll" className="flex-1 overflow-y-auto pb-20">
+                <div className="px-4 pt-2">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
                   </div>
-                ) : discoveryMode === 'browse' ? (
-                  <>
-                    {browseMode === 'live' ? (
-                      <OnlineCreatorsGrid 
-                        selectedCategory={filters.selectedCategory}
-                        onCreatorSelect={handleCreatorSelect}
-                        hideHeader={true}
-                      />
-                    ) : (
-                      <ScheduleCreatorsGrid 
-                        selectedCategory={filters.selectedCategory}
-                        onCreatorSelect={handleCreatorSelect}
-                        hideHeader={true}
-                      />
-                    )}
-                  </>
-                ) : (
+                </div>
+              </div>
+            )}
+            
+            {discoveryMode === 'browse' && (
+              <div key="browse-scroll" className="flex-1 overflow-y-auto pb-20">
+                <div className="px-4 pt-2">
+                  {browseMode === 'live' ? (
+                    <OnlineCreatorsGrid 
+                      selectedCategory={filters.selectedCategory}
+                      onCreatorSelect={handleCreatorSelect}
+                      hideHeader={true}
+                    />
+                  ) : (
+                    <ScheduleCreatorsGrid 
+                      selectedCategory={filters.selectedCategory}
+                      onCreatorSelect={handleCreatorSelect}
+                      hideHeader={true}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {discoveryMode === 'match' && (
+              <div key="match-scroll" className="flex-1 overflow-y-auto pb-20">
+                <div className="px-4 pt-2">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
                     onCreatorLike={handleCreatorLike}
@@ -235,9 +245,9 @@ const Index = () => {
                     onCreatorShare={handleCreatorShare}
                     onCreatorBookmark={handleCreatorBookmark}
                   />
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
 
