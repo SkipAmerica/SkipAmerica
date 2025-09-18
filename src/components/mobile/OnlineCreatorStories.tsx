@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Creator {
   id: string;
@@ -22,100 +24,74 @@ interface OnlineCreatorStoriesProps {
 
 export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreatorStoriesProps) {
   const [onlineCreators, setOnlineCreators] = useState<Creator[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Mock data for creators - in real app this would come from API
-    const mockCreators: Creator[] = [
-      {
-        id: "1",
-        name: "Emma Stone",
-        username: "@emmastone",
-        avatar: "https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150",
-        isOnline: true,
-        hasStory: true,
-        category: "Entertainment",
-        isFollowed: true,
-        hasInteracted: true
-      },
-      {
-        id: "2", 
-        name: "Dr. Sarah Chen",
-        username: "@drsarahchen",
-        avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-        isOnline: true,
-        hasStory: false,
-        category: "Technology",
-        matchesInterests: true
-      },
-      {
-        id: "3",
-        name: "Marcus Johnson",
-        username: "@marcusfit",
-        avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
-        isOnline: true,
-        hasStory: true,
-        category: "Fitness",
-        isFollowed: true
-      },
-      {
-        id: "4",
-        name: "Lisa Rodriguez",
-        username: "@lisa_creates",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150",
-        isOnline: false,
-        hasStory: true,
-        category: "Business",
-        isFollowed: true
-      },
-      {
-        id: "5",
-        name: "Alex Turner",
-        username: "@alexmusic",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-        isOnline: false,
-        hasStory: false,
-        category: "Music",
-        isFollowed: true
-      },
-      {
-        id: "6",
-        name: "Maya Patel",
-        username: "@mayacooks",
-        avatar: "https://images.unsplash.com/photo-1544725176-7c40e5a71c5e?w=150",
-        isOnline: true,
-        hasStory: false,
-        category: "Cooking"
+    const fetchFollowedCreators = async () => {
+      if (!user?.email) return;
+
+      try {
+        // Get followed creators from mock_user_follows and mock_creators tables
+        const { data: followedCreators, error } = await supabase
+          .from('mock_user_follows')
+          .select(`
+            following_creator_id,
+            mock_creators!inner (
+              id,
+              full_name,
+              avatar_url,
+              category,
+              is_online,
+              bio
+            )
+          `)
+          .eq('follower_email', user.email);
+
+        if (error) {
+          console.error('Error fetching followed creators:', error);
+          return;
+        }
+
+        // Transform data to match Creator interface
+        const creators: Creator[] = followedCreators?.map(follow => {
+          const creator = follow.mock_creators;
+          return {
+            id: creator.id,
+            name: creator.full_name,
+            username: `@${creator.full_name.toLowerCase().replace(' ', '')}`,
+            avatar: creator.avatar_url,
+            isOnline: creator.is_online,
+            hasStory: Math.random() > 0.6, // Randomly assign stories for demo
+            category: creator.category,
+            isFollowed: true,
+            hasInteracted: Math.random() > 0.7
+          };
+        }) || [];
+
+        // Sort creators based on priority
+        const sortedCreators = creators.sort((a, b) => {
+          const getScore = (creator: Creator) => {
+            let score = 0;
+            if (creator.isOnline && creator.hasStory) score = 1000;
+            else if (creator.isOnline && !creator.hasStory) score = 900;
+            else if (!creator.isOnline && creator.hasStory) score = 800;
+            else score = 700;
+            
+            if (creator.hasInteracted) score += 50;
+            return score;
+          };
+          
+          return getScore(b) - getScore(a);
+        });
+
+        setOnlineCreators(sortedCreators);
+      } catch (error) {
+        console.error('Error in fetchFollowedCreators:', error);
       }
-    ];
+    };
 
-    // Filter to only show creators that the user follows
-    const followedCreators = mockCreators.filter(creator => creator.isFollowed);
-    
-    // Sort followed creators based on priority:
-    // 1. Online with stories (pulsing green)
-    // 2. Online without stories
-    // 3. Offline with stories
-    // 4. Offline without stories
-    const sortedCreators = followedCreators.sort((a, b) => {
-      // Priority scoring for followed creators only
-      const getScore = (creator: Creator) => {
-        let score = 0;
-        if (creator.isOnline && creator.hasStory) score = 1000;
-        else if (creator.isOnline && !creator.hasStory) score = 900;
-        else if (!creator.isOnline && creator.hasStory) score = 800;
-        else score = 700;
-        
-        // Additional boost for interaction history
-        if (creator.hasInteracted) score += 50;
-        
-        return score;
-      };
-      
-      return getScore(b) - getScore(a);
-    });
-
-    setOnlineCreators(sortedCreators);
-  }, []);
+    fetchFollowedCreators();
+  }, [user]);
 
   if (onlineCreators.length === 0) return null;
 

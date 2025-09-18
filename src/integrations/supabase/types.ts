@@ -1170,6 +1170,80 @@ export type Database = {
         }
         Relationships: []
       }
+      mock_creators: {
+        Row: {
+          account_type: string
+          avatar_url: string | null
+          bio: string | null
+          call_rate: number | null
+          category: string | null
+          created_at: string
+          full_name: string
+          id: string
+          interests: string[] | null
+          is_online: boolean | null
+          rating: number | null
+          ratings_count: number | null
+        }
+        Insert: {
+          account_type?: string
+          avatar_url?: string | null
+          bio?: string | null
+          call_rate?: number | null
+          category?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          interests?: string[] | null
+          is_online?: boolean | null
+          rating?: number | null
+          ratings_count?: number | null
+        }
+        Update: {
+          account_type?: string
+          avatar_url?: string | null
+          bio?: string | null
+          call_rate?: number | null
+          category?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          interests?: string[] | null
+          is_online?: boolean | null
+          rating?: number | null
+          ratings_count?: number | null
+        }
+        Relationships: []
+      }
+      mock_user_follows: {
+        Row: {
+          created_at: string
+          follower_email: string
+          following_creator_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_email: string
+          following_creator_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_email?: string
+          following_creator_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mock_user_follows_following_creator_id_fkey"
+            columns: ["following_creator_id"]
+            isOneToOne: false
+            referencedRelation: "mock_creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offer_rates: {
         Row: {
           created_at: string | null
@@ -1774,6 +1848,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       virtual_gifts: {
         Row: {
