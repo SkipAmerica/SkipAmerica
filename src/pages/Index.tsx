@@ -178,25 +178,27 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingTop: `${headerHeight}px` }}>
-            {/* Freeze Pane */}
-            <FreezePane
-              showDiscoveryToggle={showDiscoveryToggle}
-              discoveryMode={discoveryMode}
-              onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={discoveryMode === 'browse'}
-              browseMode={browseMode}
-              onBrowseModeChange={setBrowseMode}
-              searchValue={discoveryMode === 'browse' ? filters.query : ''}
-              onSearchChange={updateQuery}
-              searchPlaceholder="Filter creators..."
-              showInterestFilters={false}
-              selectedCategory={filters.selectedCategory}
-              onCategoryChange={updateSelectedCategory}
-            />
-            
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Content */}
             <div className="flex-1 overflow-y-auto pb-20">
+              {/* Freeze Pane */}
+              <FreezePane
+                showDiscoveryToggle={showDiscoveryToggle}
+                discoveryMode={discoveryMode}
+                onDiscoveryModeChange={handleDiscoveryModeChange}
+                showBrowseSubTabs={discoveryMode === 'browse'}
+                browseMode={browseMode}
+                onBrowseModeChange={setBrowseMode}
+                searchValue={discoveryMode === 'browse' ? filters.query : ''}
+                onSearchChange={updateQuery}
+                searchPlaceholder="Filter creators..."
+                showInterestFilters={false}
+                selectedCategory={filters.selectedCategory}
+                onCategoryChange={updateSelectedCategory}
+                headerHeight={headerHeight}
+              />
+              
+              {/* Scrollable Content */}
               {discoveryMode === 'match' ? (
                 <SwipeableCreatorCards
                   selectedCategory={filters.selectedCategory}
