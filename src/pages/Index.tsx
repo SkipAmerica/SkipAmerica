@@ -206,7 +206,7 @@ const Index = () => {
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
                   searchQuery={searchQuery}
-                  hideHeader={false}
+                  hideHeader={true}
                 />
               </div>
             ) : (
@@ -215,7 +215,7 @@ const Index = () => {
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
                   searchQuery={searchQuery}
-                  hideHeader={false}
+                  hideHeader={true}
                 />
               </div>
             )}
