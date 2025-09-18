@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+
 import { Grid3X3, Heart, List } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +16,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
     <div
       className={cn(
         // Full-bleed, edge-to-edge container to remove any side padding from parents
-        "flex items-center bg-muted overflow-hidden gap-0 w-screen max-w-none ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]",
+        "flex items-center bg-muted overflow-hidden gap-0 w-[100dvw] max-w-none ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] px-0",
         className
       )}
     >
@@ -31,9 +31,6 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
       >
         <Heart className="h-4 w-4" />
         <span>Discover</span>
-        <Badge variant="secondary" className="ml-1 h-5 text-xs bg-gradient-primary text-white border-0">
-          New
-        </Badge>
       </Button>
       
       <Button
