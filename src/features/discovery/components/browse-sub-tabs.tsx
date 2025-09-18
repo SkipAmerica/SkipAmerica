@@ -13,7 +13,7 @@ interface BrowseSubTabsProps {
 export function BrowseSubTabs({ mode, onModeChange, className }: BrowseSubTabsProps) {
   return (
     <div className={cn(
-      'flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-lg border border-border h-10 mb-4',
+      'flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-lg border border-border h-10 mb-2',
       className
     )}>
       <Button

@@ -198,7 +198,7 @@ const Index = () => {
             
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto pb-20">
-              <div className="px-4 pt-4">
+              <div className="px-4 pt-2">
                 {discoveryMode === 'match' ? (
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}

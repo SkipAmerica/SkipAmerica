@@ -68,7 +68,7 @@ export const FreezePane = ({
       
       {/* Browse Sub Tabs */}
       {showBrowseSubTabs && (
-        <div className="px-4 pt-3">
+        <div className="px-4 pt-2">
           <BrowseSubTabs 
             mode={browseMode}
             onModeChange={onBrowseModeChange}
@@ -77,7 +77,7 @@ export const FreezePane = ({
       )}
       
       {/* Search Bar */}
-      <div className="pb-2">
+      <div className="pb-1">
         <IOSSearchBar
           value={searchValue}
           onChange={onSearchChange}
@@ -88,7 +88,7 @@ export const FreezePane = ({
       
       {/* Interest Filters */}
       {showInterestFilters && (
-        <div className="px-4 pb-3">
+        <div className="px-4 pb-1">
           <UserInterestFilters 
             selectedFilter={selectedCategory}
             onFilterChange={onCategoryChange}

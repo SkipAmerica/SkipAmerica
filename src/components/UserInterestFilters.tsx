@@ -32,7 +32,7 @@ export function UserInterestFilters({
 
   return (
     <div 
-      className="flex gap-2 overflow-x-auto pb-2 user-interest-filters" 
+      className="flex gap-1.5 overflow-x-auto user-interest-filters" 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',
