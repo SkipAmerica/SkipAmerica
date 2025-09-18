@@ -156,7 +156,7 @@ const Index = () => {
         return (
           <div className="space-y-6">
             {/* Discovery Mode Toggle */}
-            <div className="pt-4">
+            <div>
               <DiscoveryModeToggle 
                 mode={discoveryMode}
                 onModeChange={setDiscoveryMode}
