@@ -7,6 +7,7 @@ import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, S
 import { useAuth } from "@/app/providers/auth-provider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
+import { useLiveStatus } from "@/hooks/useLiveStatus";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -89,6 +90,7 @@ const Index = () => {
   
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { isLive, toggleLiveStatus } = useLiveStatus();
   const navigate = useNavigate();
 
   // Handle swipeable card actions
@@ -329,6 +331,9 @@ const Index = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         showFollowing={!!user}
+        isCreator={profile?.account_type === 'creator'}
+        isLive={isLive}
+        onToggleLive={toggleLiveStatus}
       />
 
       {/* User Menu Action Sheet */}
