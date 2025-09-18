@@ -56,7 +56,7 @@ export function IOSInstagramHeader({
       "fixed top-0 left-0 right-0 z-40",
       "flex flex-col",
       "px-4 pt-safe-area-top pb-2",
-      !transparent && "bg-[#40E0D0]/15 backdrop-blur-md border-b border-border/50",
+      !transparent && "bg-[#40E0D0]/8 backdrop-blur-md border-b border-border/50",
       className
     )}>
       {/* Top Row - Skip Logo */}
