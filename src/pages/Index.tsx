@@ -183,53 +183,59 @@ const Index = () => {
           <div className="flex-1 overflow-hidden">
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="h-full overflow-y-auto pb-20 pt-4 px-4">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
-                  className="mb-4"
+                  className=""
                 />
-                <SwipeableCreatorCards
-                  selectedCategory={selectedFilter}
-                  searchQuery={searchQuery}
-                  onCreatorLike={handleCreatorLike}
-                  onCreatorPass={handleCreatorPass}
-                  onCreatorSuperLike={handleCreatorSuperLike}
-                  onCreatorMessage={handleCreatorMessage}
-                  onCreatorShare={handleCreatorShare}
-                  onCreatorBookmark={handleCreatorBookmark}
-                />
+                <div className="px-4">
+                  <SwipeableCreatorCards
+                    selectedCategory={selectedFilter}
+                    searchQuery={searchQuery}
+                    onCreatorLike={handleCreatorLike}
+                    onCreatorPass={handleCreatorPass}
+                    onCreatorSuperLike={handleCreatorSuperLike}
+                    onCreatorMessage={handleCreatorMessage}
+                    onCreatorShare={handleCreatorShare}
+                    onCreatorBookmark={handleCreatorBookmark}
+                  />
+                </div>
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="h-full overflow-y-auto mx-4 pt-4 pb-20">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
-                  className="mb-4"
+                  className=""
                 />
-                <OnlineCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
+                <div className="mx-4">
+                  <OnlineCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="h-full overflow-y-auto mx-4 pt-4 pb-20">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
-                  className="mb-4"
+                  className=""
                 />
-                <ScheduleCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
+                <div className="mx-4">
+                  <ScheduleCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -237,55 +243,58 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="h-full overflow-y-auto px-4 pt-4 pb-20">
+          <div className="h-full overflow-y-auto pb-20">
             <IOSSearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter live creators..."
-              className="mb-4"
+              className=""
             />
-            <OnlineCreatorsGrid 
-              selectedCategory={selectedFilter}
-              onCreatorSelect={handleCreatorSelect}
-              searchQuery={searchQuery}
-              hideHeader={true}
-            />
+            <div className="px-4">
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={handleCreatorSelect}
+                searchQuery={searchQuery}
+                hideHeader={true}
+              />
+            </div>
           </div>
         );
 
       case "trending":
         return (
-          <div className="h-full overflow-y-auto px-4 pt-4 pb-20 space-y-6">
+          <div className="h-full overflow-y-auto pb-20 space-y-6">
             <IOSSearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter trending content..."
-              className="mb-4"
+              className=""
             />
-            <SmartTrendingEngine />
+            <div className="px-4">
+              <SmartTrendingEngine />
+            </div>
           </div>
         );
 
       case "search":
         return (
-          <div className="h-full overflow-y-auto pt-4 pb-20 space-y-4">
+          <div className="h-full overflow-y-auto pb-20 space-y-4">
             {discoveryMode === 'search' && (
-              <div className="mx-4">
-                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                <div className="mb-3">
-                  <UserInterestFilters 
-                    selectedFilter={selectedFilter}
-                    onFilterChange={setSelectedFilter}
-                  />
-                </div>
-                
-                {/* Search Bar */}
-                <div className="mb-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search creators..."
-                  />
+              <>
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search creators..."
+                />
+                <div className="mx-4">
+                  {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                  <div className="mb-3">
+                    <UserInterestFilters 
+                      selectedFilter={selectedFilter}
+                      onFilterChange={setSelectedFilter}
+                    />
+                  </div>
+                  
                   <div className="flex justify-end mt-2">
                     <Button 
                       variant="ghost" 
@@ -297,18 +306,12 @@ const Index = () => {
                     </Button>
                   </div>
                 </div>
-              </div>
+              </>
             )}
 
             {/* Search Results Based on Discovery Mode */}
             {discoveryMode === 'cards' ? (
               <div className="px-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter creators..."
-                  className="mb-4"
-                />
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}

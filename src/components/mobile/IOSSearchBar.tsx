@@ -30,8 +30,8 @@ export function IOSSearchBar({
   };
 
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <div className="relative flex-1">
+    <div className={cn("flex items-center", className)}>
+      <div className="relative w-full">
         <Search 
           size={16} 
           className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" 
@@ -46,7 +46,7 @@ export function IOSSearchBar({
             "ios-button",
             "pl-10 pr-10",
             "bg-muted/50 border-0",
-            "rounded-lg",
+            "rounded-none",
             "text-base",
             "focus-visible:ring-0",
             "placeholder:text-muted-foreground"
