@@ -84,7 +84,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     />
                   </div>
                   <span className={cn(
-                    "text-xs font-medium mt-1",
+                    "text-xs font-medium mt-1 mb-1",
                     "transition-colors duration-200",
                     isActive 
                       ? "text-primary" 
@@ -158,7 +158,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     />
                   </div>
                   <span className={cn(
-                    "text-xs font-medium mt-1",
+                    "text-xs font-medium mt-1 mb-1",
                     "transition-colors duration-200",
                     isActive 
                       ? "text-primary" 
@@ -211,7 +211,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   )}
                 </div>
                 <span className={cn(
-                  "text-xs font-medium mt-1",
+                  "text-xs font-medium mt-1 mb-1",
                   "transition-colors duration-200",
                   isActive 
                     ? "text-primary" 
