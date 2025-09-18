@@ -189,7 +189,7 @@ export function CategoryGrid({ onCategorySelect, searchQuery = "", hideHeader = 
               <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
               <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
             </div>
-            <h3 className="text-lg font-semibold">Beauty & Lifestyle</h3>
+            <h3 className="text-lg font-semibold">Beauty & Lifestyle Categories</h3>
             <span className="text-sm text-muted-foreground">
               {getTotalOnline()} experts online now
             </span>
