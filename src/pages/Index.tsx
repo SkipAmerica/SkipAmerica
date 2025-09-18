@@ -231,6 +231,7 @@ const Index = () => {
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
+              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -290,6 +291,7 @@ const Index = () => {
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
+              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -323,6 +325,7 @@ const Index = () => {
               showInterestFilters={discoveryMode === 'search'}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
+              headerHeight={headerHeight}
             />
             
             {/* Content */}
@@ -405,6 +408,7 @@ const Index = () => {
               showInterestFilters={false}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
+              headerHeight={headerHeight}
             />
             
             {/* Content */}
