@@ -152,14 +152,21 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             className="flex flex-col items-center space-y-2 cursor-pointer"
             onClick={() => onCreatorSelect(creator.id)}
           >
+            {/* Rating above avatar */}
+            <div className="flex items-center space-x-1">
+              <span className="text-yellow-400">★</span>
+              <span className="text-sm font-medium">{creator.rating}</span>
+              <span className="text-xs text-muted-foreground">({creator.ratingsCount})</span>
+            </div>
+            
             {/* Avatar with Online indicator */}
             <div className="relative">
               <Avatar className="h-20 w-20">
                 <AvatarImage src={creator.avatar_url} />
                 <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
-              {/* Online indicator */}
-              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+              {/* Online indicator - bottom right */}
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
               </div>
             </div>
@@ -168,32 +175,6 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
             <div className="text-center">
               <h3 className="font-medium text-sm">{creator.full_name}</h3>
               <p className="text-xs text-muted-foreground">{creator.headline}</p>
-              
-              {/* Rating */}
-              <div className="flex items-center justify-center space-x-1 mt-1">
-                <span className="text-yellow-400">★</span>
-                <span className="text-sm">{creator.rating}</span>
-              </div>
-            </div>
-            
-            {/* Action Icons */}
-            <div className="flex items-center space-x-3">
-              {/* Phone Icon with Appointment Count */}
-              <div className="relative">
-                <Phone 
-                  className={`h-5 w-5 ${
-                    appointmentCounts[creator.id] > 0 ? 'text-orange-500' : 'text-muted-foreground'
-                  }`} 
-                />
-                {appointmentCounts[creator.id] > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
-                    {appointmentCounts[creator.id]}
-                  </div>
-                )}
-              </div>
-              
-              {/* Heart Icon */}
-              <Heart className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         ))}

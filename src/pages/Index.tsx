@@ -244,7 +244,7 @@ const Index = () => {
       case "live":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <div className="pb-1">
+            <div className="pb-2">
               <IOSSearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
@@ -266,7 +266,7 @@ const Index = () => {
       case "trending":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <div className="pb-1">
+            <div className="pb-2">
               <IOSSearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
@@ -283,7 +283,7 @@ const Index = () => {
       case "search":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <div className="pb-1">
+            <div className="pb-2">
               <IOSSearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
@@ -376,7 +376,7 @@ const Index = () => {
       case "following":
         return (
           <div className="px-4 pt-4 pb-20 space-y-6">
-            <div className="pb-1">
+            <div className="pb-2">
               <IOSSearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
