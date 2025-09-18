@@ -197,7 +197,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
           }}
         />
 
-        <div className="ios-content flex flex-col items-center justify-center space-y-6 animate-scale-in" style={{ paddingTop: 'calc(var(--ios-nav-bar-height) + 24px)' }}>
+        <div className="ios-content flex flex-col items-center justify-center space-y-6 animate-scale-in">
           <div className="w-full max-w-sm space-y-6 px-4">
             <div className="text-center space-y-4">
               <div className="bg-destructive/10 rounded-full p-6 w-24 h-24 mx-auto flex items-center justify-center">
@@ -259,7 +259,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col animate-slide-in-right">
+    <div className="ios-screen">
       {/* iOS Navigation Bar */}
       <IOSNavBar
         title="Emma Wilson"
@@ -273,46 +273,47 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
         }}
       />
 
-      {/* Status Bar */}
-      <div className="px-4 py-3 bg-card border-b animate-fade-in" style={{ paddingTop: 'calc(var(--ios-nav-bar-height) + 8px)' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground rounded-full">
-              <Clock className="h-3 w-3 mr-1" />
-              {formatDuration(callDuration)}
-            </Badge>
-            <Badge variant="outline" className="rounded-full">
-              <DollarSign className="h-3 w-3 mr-1" />
-              ${currentCost.toFixed(2)}
-            </Badge>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Badge variant="secondary" className="rounded-full">
-              <Users className="h-3 w-3 mr-1" />
-              4
-            </Badge>
-            {isModerationEnabled && (
-              <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 rounded-full">
-                <ShieldCheck className="h-3 w-3 mr-1" />
-                Protected
+      <div className="ios-content">
+        {/* Status Bar */}
+        <div className="px-4 py-3 bg-card border-b animate-fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground rounded-full">
+                <Clock className="h-3 w-3 mr-1" />
+                {formatDuration(callDuration)}
               </Badge>
-            )}
-            {voiceRecording.isRecording && (
-              <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 rounded-full animate-pulse">
-                <Mic className="h-3 w-3 mr-1" />
-                Live
+              <Badge variant="outline" className="rounded-full">
+                <DollarSign className="h-3 w-3 mr-1" />
+                ${currentCost.toFixed(2)}
               </Badge>
-            )}
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="rounded-full">
+                <Users className="h-3 w-3 mr-1" />
+                4
+              </Badge>
+              {isModerationEnabled && (
+                <Badge variant="secondary" className="bg-green-500/10 text-green-600 border-green-500/20 rounded-full">
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Protected
+                </Badge>
+              )}
+              {voiceRecording.isRecording && (
+                <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-500/20 rounded-full animate-pulse">
+                  <Mic className="h-3 w-3 mr-1" />
+                  Live
+                </Badge>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="flex-1 flex">
-        {/* Video Area */}
-        <div className="flex-1 bg-muted/20 relative animate-fade-in">
-          <div className="px-4 pt-4 pb-28">
-            <AspectRatio ratio={16 / 9}>
-              <div className="relative w-full h-full bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
+        <div className="flex flex-col lg:flex-row flex-1">
+          {/* Video Area */}
+          <div className="flex-1 bg-muted/20 relative">
+            <div className="p-4">
+              <AspectRatio ratio={16 / 9}>
+                <div className="relative w-full h-full bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
                 {/* Watermark */}
                 <div className="absolute top-3 left-3 bg-black/30 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm">
                   @Sarah M. • Live Call
@@ -320,21 +321,21 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 
                 {/* Main Content */}
                 <div className="text-center text-primary-foreground animate-scale-in">
-                  <Avatar className="h-24 w-24 mx-auto mb-4 ring-4 ring-primary-foreground/20">
-                    <AvatarFallback className="bg-primary-foreground text-primary text-2xl">
+                  <Avatar className="h-16 w-16 lg:h-24 lg:w-24 mx-auto mb-4 ring-4 ring-primary-foreground/20">
+                    <AvatarFallback className="bg-primary-foreground text-primary text-lg lg:text-2xl">
                       EW
                     </AvatarFallback>
                   </Avatar>
-                  <h3 className="text-xl font-semibold">Emma Wilson</h3>
-                  <p className="opacity-90">Fitness Coach</p>
+                  <h3 className="text-lg lg:text-xl font-semibold">Emma Wilson</h3>
+                  <p className="opacity-90 text-sm lg:text-base">Fitness Coach</p>
                 </div>
 
                 {/* Participant Thumbnails (overlay) */}
-                <div className="absolute top-3 right-3 space-y-3 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <div className="absolute top-3 right-3 space-y-2 lg:space-y-3">
                   {participants.filter(p => p.role === "fan").map((participant, index) => (
-                    <div key={participant.id} className="w-20 h-16 bg-card rounded-xl p-2 shadow-md hover-scale" style={{ animationDelay: `${0.1 + index * 0.05}s` }}>
+                    <div key={participant.id} className="w-16 h-12 lg:w-20 lg:h-16 bg-card rounded-lg lg:rounded-xl p-1 lg:p-2 shadow-md">
                       <div className="text-center">
-                        <Avatar className="h-8 w-8 mx-auto">
+                        <Avatar className="h-6 w-6 lg:h-8 lg:w-8 mx-auto">
                           <AvatarFallback className="text-xs bg-muted">
                             {participant.avatar}
                           </AvatarFallback>
@@ -344,18 +345,51 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                     </div>
                   ))}
                 </div>
-              </div>
-            </AspectRatio>
+
+                {/* Mobile Controls Overlay */}
+                <div className="absolute bottom-4 left-0 right-0 lg:hidden">
+                  <div className="flex justify-center space-x-3 px-4">
+                    <Button
+                      size="sm"
+                      variant={isMicOn ? "default" : "destructive"}
+                      onClick={() => setIsMicOn(!isMicOn)}
+                      className="h-10 w-10 rounded-full shadow-lg"
+                    >
+                      {isMicOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant={isVideoOn ? "default" : "destructive"}
+                      onClick={() => setIsVideoOn(!isVideoOn)}
+                      className="h-10 w-10 rounded-full shadow-lg"
+                    >
+                      {isVideoOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
+                    </Button>
+                    
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={onBack}
+                      className="h-10 w-10 rounded-full shadow-lg"
+                    >
+                      <Phone className="h-4 w-4 rotate-[135deg]" />
+                    </Button>
+                  </div>
+                </div>
+                </div>
+              </AspectRatio>
+            </div>
           </div>
 
-          {/* Controls */}
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          {/* Desktop Controls - Hidden on mobile */}
+          <div className="hidden lg:block absolute bottom-8 left-1/2 -translate-x-1/2">
             <div className="flex items-center space-x-4 bg-background/95 backdrop-blur-sm p-4 rounded-2xl shadow-xl border">
               <Button
                 variant={isMicOn ? "secondary" : "destructive"}
                 size="sm"
                 onClick={() => setIsMicOn(!isMicOn)}
-                className="rounded-full h-12 w-12 hover-scale"
+                className="rounded-full h-12 w-12"
               >
                 {isMicOn ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
               </Button>
@@ -364,7 +398,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 variant={isVideoOn ? "secondary" : "destructive"}
                 size="sm"
                 onClick={() => setIsVideoOn(!isVideoOn)}
-                className="rounded-full h-12 w-12 hover-scale"
+                className="rounded-full h-12 w-12"
               >
                 {isVideoOn ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
               </Button>
@@ -373,7 +407,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 variant="destructive" 
                 size="sm" 
                 onClick={onBack}
-                className="rounded-full h-12 w-12 hover-scale bg-red-500 hover:bg-red-600"
+                className="rounded-full h-12 w-12 bg-red-500 hover:bg-red-600"
               >
                 <Phone className="h-5 w-5 rotate-[135deg]" />
               </Button>
@@ -382,7 +416,7 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 variant="secondary" 
                 size="sm"
                 onClick={() => setShowModerationPanel(!showModerationPanel)}
-                className="rounded-full h-12 w-12 hover-scale"
+                className="rounded-full h-12 w-12"
               >
                 <Shield className="h-5 w-5" />
               </Button>
@@ -391,11 +425,67 @@ const VideoCallInterface = ({ onBack, maxDuration = 60, callRate = 5.00 }: Video
                 variant="secondary" 
                 size="sm"
                 onClick={() => setShowFilePanel(!showFilePanel)}
-                className="rounded-full h-12 w-12 hover-scale"
+                className="rounded-full h-12 w-12"
               >
                 <Paperclip className="h-5 w-5" />
               </Button>
             </div>
+          </div>
+
+          {/* Chat Sidebar - Desktop Only */}
+          <div className="hidden lg:flex w-80 border-l bg-card flex-col">
+            <div className="p-4 border-b">
+              <h3 className="font-semibold">Chat</h3>
+            </div>
+            
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-3">
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`${msg.isSystem ? 'bg-destructive/10 border border-destructive/20 rounded-lg p-3' : ''}`}>
+                    <div className="flex items-start space-x-3">
+                      {!msg.isSystem && (
+                        <Avatar className="h-8 w-8 flex-shrink-0">
+                          <AvatarFallback className="text-xs">
+                            {msg.sender.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2">
+                          <p className={`text-sm font-medium ${msg.isSystem ? 'text-destructive' : ''}`}>
+                            {msg.sender}
+                          </p>
+                          <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                        </div>
+                        <p className={`text-sm mt-1 ${msg.isSystem ? 'text-destructive' : 'text-foreground'}`}>
+                          {msg.message}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+
+            {!chatPaused && (
+              <div className="p-4 border-t">
+                <div className="flex space-x-2">
+                  <Input
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="Type a message..."
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+                  <Button onClick={handleSendMessage}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
