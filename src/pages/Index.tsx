@@ -191,8 +191,12 @@ const Index = () => {
               onSearchChange={updateQuery}
               searchPlaceholder="Filter creators..."
               showInterestFilters={true}
-              selectedCategory={filters.selectedCategory}
-              onCategoryChange={updateSelectedCategory}
+              selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+              onFiltersChange={(newFilters) => {
+                // Convert array back to single category for existing logic
+                const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all';
+                updateSelectedCategory(newCategory);
+              }}
               headerHeight={0}
             />
             

@@ -26,8 +26,8 @@ interface FreezePaneProps {
   
   // Interest Filters
   showInterestFilters: boolean;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
+  selectedFilters: string[];
+  onFiltersChange: (filters: string[]) => void;
   
   // Layout
   className?: string;
@@ -45,8 +45,8 @@ export const FreezePane = ({
   onSearchChange,
   searchPlaceholder = "Search creators...",
   showInterestFilters,
-  selectedCategory,
-  onCategoryChange,
+  selectedFilters,
+  onFiltersChange,
   className,
   headerHeight = 0
 }: FreezePaneProps) => {
@@ -90,8 +90,8 @@ export const FreezePane = ({
       {showInterestFilters && (
         <div className="px-4 pb-1">
           <UserInterestFilters 
-            selectedFilter={selectedCategory}
-            onFilterChange={onCategoryChange}
+            selectedFilters={selectedFilters}
+            onFiltersChange={onFiltersChange}
           />
         </div>
       )}

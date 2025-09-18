@@ -2,16 +2,16 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface UserInterestFiltersProps {
-  selectedFilter?: string;
-  onFilterChange?: (filter: string) => void;
+  selectedFilters?: string[];
+  onFiltersChange?: (filters: string[]) => void;
 }
 
 export function UserInterestFilters({ 
-  selectedFilter: externalSelectedFilter, 
-  onFilterChange 
+  selectedFilters: externalSelectedFilters, 
+  onFiltersChange 
 }: UserInterestFiltersProps) {
-  const [internalSelectedFilter, setInternalSelectedFilter] = useState('all');
-  const selectedFilter = externalSelectedFilter ?? internalSelectedFilter;
+  const [internalSelectedFilters, setInternalSelectedFilters] = useState<string[]>(['all']);
+  const selectedFilters = externalSelectedFilters ?? internalSelectedFilters;
 
   // Show default categories
   const filterOptions = [
@@ -23,10 +23,32 @@ export function UserInterestFilters({
   ];
 
   const handleFilterSelect = (filterId: string) => {
-    if (onFilterChange) {
-      onFilterChange(filterId);
+    let newSelectedFilters: string[];
+    
+    if (filterId === 'all') {
+      // When "all" is clicked, select only "all" and deselect others
+      newSelectedFilters = ['all'];
     } else {
-      setInternalSelectedFilter(filterId);
+      // Remove "all" if it was selected
+      const currentFilters = selectedFilters.filter(f => f !== 'all');
+      
+      if (currentFilters.includes(filterId)) {
+        // Deselect the filter
+        newSelectedFilters = currentFilters.filter(f => f !== filterId);
+        // If no filters left, select "all"
+        if (newSelectedFilters.length === 0) {
+          newSelectedFilters = ['all'];
+        }
+      } else {
+        // Select the filter
+        newSelectedFilters = [...currentFilters, filterId];
+      }
+    }
+    
+    if (onFiltersChange) {
+      onFiltersChange(newSelectedFilters);
+    } else {
+      setInternalSelectedFilters(newSelectedFilters);
     }
   };
 
@@ -39,17 +61,20 @@ export function UserInterestFilters({
         WebkitOverflowScrolling: 'touch'
       }}
     >
-      {filterOptions.map((option) => (
-        <Button
-          key={option.id}
-          variant={selectedFilter === option.id ? "default" : "outline"}
-          size="sm"
-          className="whitespace-nowrap flex-shrink-0 min-w-fit px-4 py-2"
-          onClick={() => handleFilterSelect(option.id)}
-        >
-          {option.label}
-        </Button>
-      ))}
+      {filterOptions.map((option) => {
+        const isSelected = selectedFilters.includes(option.id);
+        return (
+          <Button
+            key={option.id}
+            variant={isSelected ? "secondary" : "outline"}
+            size="sm"
+            className="whitespace-nowrap flex-shrink-0 min-w-fit px-4 py-2"
+            onClick={() => handleFilterSelect(option.id)}
+          >
+            {option.label}
+          </Button>
+        );
+      })}
     </div>
   );
 }
