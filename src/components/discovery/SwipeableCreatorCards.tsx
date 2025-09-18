@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,15 +56,18 @@ export const SwipeableCreatorCards = ({
   onCreatorShare,
   onCreatorBookmark
 }: SwipeableCreatorCardsProps) => {
-  // Use enhanced creator search
-  const { creators, loading, error } = useCreatorSearch({
+  // Memoize search parameters to prevent unnecessary re-renders
+  const searchParams = useMemo(() => ({
     query: searchQuery,
     categories: selectedCategory === 'all' ? [] : [selectedCategory],
     availableOnly: false
-  });
+  }), [searchQuery, selectedCategory]);
 
-  // Use all creators from search (no additional filtering needed)
-  const filteredCreators = creators;
+  // Use enhanced creator search
+  const { creators, loading, error } = useCreatorSearch(searchParams);
+
+  // Memoize filtered creators to prevent unnecessary re-computation
+  const filteredCreators = useMemo(() => creators, [creators]);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -74,7 +77,7 @@ export const SwipeableCreatorCards = ({
   const [isScrolling, setIsScrolling] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const currentCreator = filteredCreators[currentIndex];
+  const currentCreator = useMemo(() => filteredCreators[currentIndex], [filteredCreators, currentIndex]);
   
   const handleCardAction = useCallback((action: 'like' | 'pass', creatorId?: string) => {
     const creator = creatorId ? filteredCreators.find(c => c.id === creatorId) : currentCreator;
@@ -297,9 +300,11 @@ export const SwipeableCreatorCards = ({
             <CardContent className="p-0 h-full">
               <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
                 <img
+                  key={filteredCreators[currentIndex + 1].id}
                   src={filteredCreators[currentIndex + 1].avatar_url}
                   alt={filteredCreators[currentIndex + 1].full_name}
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               </div>
             </CardContent>
@@ -324,9 +329,11 @@ export const SwipeableCreatorCards = ({
             <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
               {/* Creator Image */}
               <img
+                key={currentCreator.id}
                 src={currentCreator.avatar_url}
                 alt={currentCreator.full_name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover animate-fade-in"
+                loading="eager"
               />
               
               {/* Gradient Overlay */}
