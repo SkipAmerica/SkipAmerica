@@ -155,50 +155,50 @@ const Index = () => {
       case "discover":
         return (
           <div className="space-y-6">
-            {/* Discovery Mode Toggle */}
+            {/* Search and Filters */}
             <div className="mx-4 pt-4">
+              {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+              <div className="mb-3">
+                <UserInterestFilters 
+                  selectedFilter={selectedFilter}
+                  onFilterChange={setSelectedFilter}
+                />
+              </div>
+              
+              {/* Search Bar */}
+              <div className="mb-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search creators..."
+                />
+                <div className="flex justify-end mt-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setActiveTab("advanced")}
+                    className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                  >
+                    Creator Matchmaker
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Discovery Mode Toggle */}
+            <div className="mx-4">
               <DiscoveryModeToggle 
                 mode={discoveryMode}
                 onModeChange={setDiscoveryMode}
               />
             </div>
 
-            {/* Search and Filters */}
-            {discoveryMode !== 'cards' && (
-              <div className="mx-4">
-                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                <div className="mb-3 pt-3">
-                  <UserInterestFilters 
-                    selectedFilter={selectedFilter}
-                    onFilterChange={setSelectedFilter}
-                  />
-                </div>
-                
-                {/* Search Bar */}
-                <div className="mb-6">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Search creators..."
-                  />
-                  <div className="flex justify-end mt-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setActiveTab("advanced")}
-                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                    >
-                      Creator Matchmaker
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
               <div className="px-4 pb-20">
                 <SwipeableCreatorCards
+                  selectedCategory={selectedFilter}
+                  searchQuery={searchQuery}
                   creators={mockCreators.map(creator => ({
                     ...creator,
                     bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,

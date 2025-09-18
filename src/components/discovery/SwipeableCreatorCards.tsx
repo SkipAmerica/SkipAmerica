@@ -42,6 +42,8 @@ interface Creator {
 
 interface SwipeableCreatorCardsProps {
   creators: Creator[];
+  selectedCategory: string;
+  searchQuery: string;
   onCreatorLike: (creatorId: string) => void;
   onCreatorPass: (creatorId: string) => void;
   onCreatorSuperLike: (creatorId: string) => void;
@@ -52,6 +54,8 @@ interface SwipeableCreatorCardsProps {
 
 export const SwipeableCreatorCards = ({ 
   creators, 
+  selectedCategory,
+  searchQuery,
   onCreatorLike,
   onCreatorPass,
   onCreatorSuperLike,
@@ -59,16 +63,24 @@ export const SwipeableCreatorCards = ({
   onCreatorShare,
   onCreatorBookmark
 }: SwipeableCreatorCardsProps) => {
+  // Filter creators based on search and category
+  const filteredCreators = creators.filter(creator => {
+    const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         creator.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         creator.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "all" || creator.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [rotation, setRotation] = useState(0);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const currentCreator = creators[currentIndex];
+  const currentCreator = filteredCreators[currentIndex];
   
   const handleCardAction = useCallback((action: 'like' | 'pass' | 'superlike', creatorId?: string) => {
-    const creator = creatorId ? creators.find(c => c.id === creatorId) : currentCreator;
+    const creator = creatorId ? filteredCreators.find(c => c.id === creatorId) : currentCreator;
     if (!creator) return;
 
     switch (action) {
@@ -88,7 +100,7 @@ export const SwipeableCreatorCards = ({
     }
 
     // Move to next creator
-    if (currentIndex < creators.length - 1) {
+    if (currentIndex < filteredCreators.length - 1) {
       setCurrentIndex(prev => prev + 1);
     } else {
       toast.info("No more creators to show", {
@@ -99,7 +111,7 @@ export const SwipeableCreatorCards = ({
     // Reset card position
     setDragOffset({ x: 0, y: 0 });
     setRotation(0);
-  }, [currentIndex, creators, currentCreator, onCreatorLike, onCreatorPass, onCreatorSuperLike]);
+  }, [currentIndex, filteredCreators, currentCreator, onCreatorLike, onCreatorPass, onCreatorSuperLike]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -199,13 +211,13 @@ export const SwipeableCreatorCards = ({
       {/* Card Stack */}
       <div className="relative h-[600px]">
         {/* Next card (behind) */}
-        {creators[currentIndex + 1] && (
+        {filteredCreators[currentIndex + 1] && (
           <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80">
             <CardContent className="p-0 h-full">
               <div className="relative h-full rounded-lg overflow-hidden">
                 <img
-                  src={creators[currentIndex + 1].avatar}
-                  alt={creators[currentIndex + 1].name}
+                  src={filteredCreators[currentIndex + 1].avatar}
+                  alt={filteredCreators[currentIndex + 1].name}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -391,7 +403,7 @@ export const SwipeableCreatorCards = ({
 
       {/* Progress Indicator */}
       <div className="flex justify-center mt-4 space-x-1">
-        {creators.slice(0, Math.min(creators.length, 5)).map((_, index) => (
+        {filteredCreators.slice(0, Math.min(filteredCreators.length, 5)).map((_, index) => (
           <div
             key={index}
             className={cn(
@@ -400,9 +412,9 @@ export const SwipeableCreatorCards = ({
             )}
           />
         ))}
-        {creators.length > 5 && (
+        {filteredCreators.length > 5 && (
           <span className="text-sm text-muted-foreground ml-2">
-            +{creators.length - 5} more
+            +{filteredCreators.length - 5} more
           </span>
         )}
       </div>
