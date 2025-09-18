@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Home, Search, TrendingUp, Users, User, Star } from 'lucide-react';
+import { Home, Search, TrendingUp, Users, User, Sparkle } from 'lucide-react';
 
 interface IOSTabBarProps {
   activeTab: string;
@@ -118,7 +118,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                 {isLive ? (
                   <span className="text-sm font-bold">End</span>
                 ) : (
-                  <Star size={20} fill="currentColor" />
+                  <Sparkle size={20} fill="currentColor" />
                 )}
               </div>
             </button>
