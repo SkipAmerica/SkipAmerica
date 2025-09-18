@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 
-import { Grid3X3, Heart, List, Search } from 'lucide-react';
+import { Grid3X3, Heart, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type DiscoveryMode = 'browse' | 'match' | 'schedule' | 'search';
+type DiscoveryMode = 'browse' | 'match' | 'search';
 
 interface DiscoveryModeToggleProps {
   mode: DiscoveryMode;
@@ -52,19 +52,6 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       >
         <Grid3X3 className="h-4 w-4" />
         <span>Browse</span>
-      </Button>
-      
-      <Button
-        variant={mode === 'schedule' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleModeChange('schedule')}
-        className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'schedule' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
-        )}
-      >
-        <List className="h-4 w-4" />
-        <span>Schedule</span>
       </Button>
       
       <Button

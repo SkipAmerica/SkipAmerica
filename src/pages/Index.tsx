@@ -27,6 +27,7 @@ import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCa
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
 import { CreatorSearch } from "@/components/discovery/CreatorSearch";
 import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader";
+import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -56,9 +57,10 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'schedule' | 'search'>('match');
+  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'search'>('match');
+  const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
   
-  const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'schedule' | 'search') => {
+  const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
     setDiscoveryMode(mode);
   };
@@ -174,7 +176,7 @@ const Index = () => {
   }
 
   // Check if current tab should show discovery toggle
-  const showDiscoveryToggle = ["discover", "live", "trending", "search"].includes(activeTab);
+  const showDiscoveryToggle = ["discover", "live", "search"].includes(activeTab);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -226,13 +228,26 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
+                <BrowseSubTabs 
+                  mode={browseMode}
+                  onModeChange={setBrowseMode}
+                />
                 <div className="mx-4">
-                  <ScheduleCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
+                  {browseMode === 'live' ? (
+                    <OnlineCreatorsGrid 
+                      selectedCategory={selectedFilter}
+                      onCreatorSelect={handleCreatorSelect}
+                      searchQuery={searchQuery}
+                      hideHeader={true}
+                    />
+                  ) : (
+                    <ScheduleCreatorsGrid 
+                      selectedCategory={selectedFilter}
+                      onCreatorSelect={handleCreatorSelect}
+                      searchQuery={searchQuery}
+                      hideHeader={true}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -246,37 +261,34 @@ const Index = () => {
               <IOSSearchBar
                 value={searchQuery}
                 onChange={setSearchQuery}
-                placeholder="Filter live creators..."
+                placeholder="Filter creators..."
                 fullWidth
               />
             </div>
+            <BrowseSubTabs 
+              mode={browseMode}
+              onModeChange={setBrowseMode}
+            />
             <div className="px-4">
-              <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={handleCreatorSelect}
-                searchQuery={searchQuery}
-                hideHeader={true}
-              />
+              {browseMode === 'live' ? (
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              ) : (
+                <ScheduleCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              )}
             </div>
           </div>
         );
 
-      case "trending":
-        return (
-          <div className="h-full overflow-y-auto pb-20">
-            <div className="pb-2">
-              <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Filter trending content..."
-                fullWidth
-              />
-            </div>
-            <div className="px-4 pt-4 space-y-6">
-              <SmartTrendingEngine />
-            </div>
-          </div>
-        );
 
       case "search":
         return (
@@ -354,15 +366,6 @@ const Index = () => {
               ) : discoveryMode === 'browse' ? (
                 <div className="mx-4">
                   <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              ) : discoveryMode === 'schedule' ? (
-                <div className="mx-4">
-                  <ScheduleCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
                     searchQuery={searchQuery}

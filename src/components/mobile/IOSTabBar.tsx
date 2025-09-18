@@ -19,7 +19,6 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing }: IOSTabBarPr
   const baseTabs: TabItem[] = [
     { id: 'discover', label: 'Match', icon: Home },
     { id: 'live', label: 'Browse', icon: Users },
-    { id: 'trending', label: 'Trending', icon: TrendingUp },
     { id: 'search', label: 'Search', icon: Search },
   ];
 
