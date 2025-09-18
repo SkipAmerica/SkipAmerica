@@ -155,8 +155,16 @@ const Index = () => {
       case "discover":
         return (
           <div className="space-y-6">
-            {/* Search and Filters */}
+            {/* Discovery Mode Toggle */}
             <div className="mx-4 pt-4">
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={setDiscoveryMode}
+              />
+            </div>
+
+            {/* Search and Filters */}
+            <div className="mx-4">
               {/* Dynamic Sort Options - Based on user's interests from sign-up */}
               <div className="mb-3">
                 <UserInterestFilters 
@@ -183,14 +191,6 @@ const Index = () => {
                   </Button>
                 </div>
               </div>
-            </div>
-
-            {/* Discovery Mode Toggle */}
-            <div className="mx-4">
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={setDiscoveryMode}
-              />
             </div>
 
             {/* Discovery Content Based on Mode */}
