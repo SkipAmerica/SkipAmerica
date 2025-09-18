@@ -23,6 +23,8 @@ import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase
 import { UserInterestFilters } from "@/components/UserInterestFilters";
 import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
+import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
+import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -52,6 +54,7 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
+  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule'>('grid');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -65,6 +68,37 @@ const Index = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
+
+  // Handle swipeable card actions
+  const handleCreatorLike = (creatorId: string) => {
+    console.log('Liked creator:', creatorId);
+    // TODO: Implement AI algorithm fine-tuning for likes
+  };
+
+  const handleCreatorPass = (creatorId: string) => {
+    console.log('Passed creator:', creatorId);
+    // TODO: Implement AI algorithm fine-tuning for passes
+  };
+
+  const handleCreatorSuperLike = (creatorId: string) => {
+    console.log('Super liked creator:', creatorId);
+    // TODO: Implement AI algorithm fine-tuning for super likes
+  };
+
+  const handleCreatorMessage = (creatorId: string) => {
+    console.log('Messaging creator:', creatorId);
+    // TODO: Open messaging interface
+  };
+
+  const handleCreatorShare = (creatorId: string) => {
+    console.log('Sharing creator:', creatorId);
+    // TODO: Implement sharing functionality
+  };
+
+  const handleCreatorBookmark = (creatorId: string) => {
+    console.log('Bookmarked creator:', creatorId);
+    // TODO: Implement bookmark functionality
+  };
 
   // Handle video call
   const handleCreatorSelect = (creatorId: string) => {
@@ -121,139 +155,180 @@ const Index = () => {
       case "discover":
         return (
           <div className="space-y-6">
-
+            {/* Discovery Mode Toggle */}
+            <div className="mx-4 pt-4">
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={setDiscoveryMode}
+              />
+            </div>
 
             {/* Search and Filters */}
-            <div className="mx-4">
-              {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-              <div className="mb-3 pt-3">
-                <UserInterestFilters 
-                  selectedFilter={selectedFilter}
-                  onFilterChange={setSelectedFilter}
-                />
-              </div>
-              
-              {/* Search Bar */}
-              <div className="mb-6">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search creators..."
-                />
-                <div className="flex justify-end mt-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setActiveTab("advanced")}
-                    className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                  >
-                    Creator Matchmaker
-                  </Button>
+            {discoveryMode !== 'cards' && (
+              <div className="mx-4">
+                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                <div className="mb-3 pt-3">
+                  <UserInterestFilters 
+                    selectedFilter={selectedFilter}
+                    onFilterChange={setSelectedFilter}
+                  />
+                </div>
+                
+                {/* Search Bar */}
+                <div className="mb-6">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search creators..."
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setActiveTab("advanced")}
+                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                    >
+                      Creator Matchmaker
+                    </Button>
+                  </div>
                 </div>
               </div>
+            )}
 
-              {/* Live Now Grid - Collapsible */}
-              <div className="mb-6">
-                <Collapsible open={liveNowOpen} onOpenChange={setLiveNowOpen}>
-                  <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
-                      </div>
-                      <h3 className="text-lg font-semibold">Live Now</h3>
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="pt-4">
-                      <OnlineCreatorsGrid 
-                        selectedCategory={selectedFilter}
-                        onCreatorSelect={handleCreatorSelect}
-                        searchQuery={searchQuery}
-                        hideHeader={true}
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+            {/* Discovery Content Based on Mode */}
+            {discoveryMode === 'cards' ? (
+              <div className="px-4 pb-20">
+                <SwipeableCreatorCards
+                  creators={mockCreators.map(creator => ({
+                    ...creator,
+                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
+                    followers: Math.floor(Math.random() * 1000000) + 10000,
+                    sessionHours: Math.floor(Math.random() * 500) + 10,
+                    location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
+                             creator.name.includes('Chen') ? 'San Francisco, CA' :
+                             creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
+                    isVerified: Math.random() > 0.5,
+                    nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
+                  }))}
+                  onCreatorLike={handleCreatorLike}
+                  onCreatorPass={handleCreatorPass}
+                  onCreatorSuperLike={handleCreatorSuperLike}
+                  onCreatorMessage={handleCreatorMessage}
+                  onCreatorShare={handleCreatorShare}
+                  onCreatorBookmark={handleCreatorBookmark}
+                />
               </div>
-
-              {/* Schedule in Advance Grid - Collapsible */}
-              <div className="mb-6">
-                <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>
-                  <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
-                    <div className="flex items-center space-x-3">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      <h3 className="text-lg font-semibold">Schedule in advance</h3>
-                    </div>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <div className="pt-4">
-                      <ScheduleCreatorsGrid 
-                        selectedCategory={selectedFilter}
-                        onCreatorSelect={(id) => setActiveTab("creator-profile")}
-                        searchQuery={searchQuery}
-                        hideHeader={true}
-                      />
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+            ) : discoveryMode === 'grid' ? (
+              <div className="mx-4">
+                {/* Live Now Grid - Collapsible */}
+                <div className="mb-6">
+                  <Collapsible open={liveNowOpen} onOpenChange={setLiveNowOpen}>
+                    <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
+                      <div className="flex items-center space-x-3">
+                        <div className="relative">
+                          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="absolute inset-0 w-3 h-3 bg-green-500 rounded-full animate-ping"></div>
+                        </div>
+                        <h3 className="text-lg font-semibold">Live Now</h3>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="pt-4">
+                        <OnlineCreatorsGrid 
+                          selectedCategory={selectedFilter}
+                          onCreatorSelect={handleCreatorSelect}
+                          searchQuery={searchQuery}
+                          hideHeader={true}
+                        />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               </div>
-            </div>
-
-            {/* Features - Mobile Cards */}
-            <IOSListView className="mx-4">
-              <IOSListSection header="Monetize Your Following">
-                <IOSListItem chevron onClick={() => {}}>
-                  <div className="flex items-center space-x-3">
-                    <DollarSign className="h-8 w-8 text-primary flex-shrink-0" />
-                    <div className="min-w-0">
-                      <div className="font-medium">Direct Revenue Stream</div>
-                      <div className="text-sm text-muted-foreground">
-                        Set your rate, start earning per minute
+            ) : (
+              <div className="mx-4">
+                {/* Schedule in Advance Grid */}
+                <div className="mb-6">
+                  <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>
+                    <CollapsibleTrigger className="w-full flex items-center justify-between p-0 hover:no-underline">
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Schedule in advance</h3>
                       </div>
-                    </div>
-                  </div>
-                </IOSListItem>
-                <IOSListItem chevron onClick={() => {}}>
-                  <div className="flex items-center space-x-3">
-                    <Star className="h-8 w-8 text-primary flex-shrink-0" />
-                    <div className="min-w-0">
-                      <div className="font-medium">Professional Protection</div>
-                      <div className="text-sm text-muted-foreground">
-                        Secure payments & content moderation
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="pt-4">
+                        <ScheduleCreatorsGrid 
+                          selectedCategory={selectedFilter}
+                          onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                          searchQuery={searchQuery}
+                          hideHeader={true}
+                        />
                       </div>
-                    </div>
-                  </div>
-                </IOSListItem>
-                <IOSListItem chevron onClick={() => {}}>
-                  <div className="flex items-center space-x-3">
-                    <Zap className="h-8 w-8 text-primary flex-shrink-0" />
-                    <div className="min-w-0">
-                      <div className="font-medium">Easy Integration</div>
-                      <div className="text-sm text-muted-foreground">
-                        Works with your existing social presence
-                      </div>
-                    </div>
-                  </div>
-                </IOSListItem>
-              </IOSListSection>
-            </IOSListView>
-
-            {/* Sponsored Content */}
-            <div className="mx-4">
-              <AdBanner placement="banner" />
-            </div>
-
-            {/* Activity Feed Preview */}
-            <div className="mx-4 pb-20">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">Recent Activity</h2>
-                <Button variant="outline" size="sm" onClick={() => user && setActiveTab("following")}>
-                  View Full Feed
-                </Button>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
               </div>
-              <ActivityFeed />
-            </div>
+            )}
+
+            {/* Features - Mobile Cards (only show for grid/schedule modes) */}
+            {discoveryMode !== 'cards' && (
+              <>
+                <IOSListView className="mx-4">
+                  <IOSListSection header="Monetize Your Following">
+                    <IOSListItem chevron onClick={() => {}}>
+                      <div className="flex items-center space-x-3">
+                        <DollarSign className="h-8 w-8 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium">Direct Revenue Stream</div>
+                          <div className="text-sm text-muted-foreground">
+                            Set your rate, start earning per minute
+                          </div>
+                        </div>
+                      </div>
+                    </IOSListItem>
+                    <IOSListItem chevron onClick={() => {}}>
+                      <div className="flex items-center space-x-3">
+                        <Star className="h-8 w-8 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium">Professional Protection</div>
+                          <div className="text-sm text-muted-foreground">
+                            Secure payments & content moderation
+                          </div>
+                        </div>
+                      </div>
+                    </IOSListItem>
+                    <IOSListItem chevron onClick={() => {}}>
+                      <div className="flex items-center space-x-3">
+                        <Zap className="h-8 w-8 text-primary flex-shrink-0" />
+                        <div className="min-w-0">
+                          <div className="font-medium">Easy Integration</div>
+                          <div className="text-sm text-muted-foreground">
+                            Works with your existing social presence
+                          </div>
+                        </div>
+                      </div>
+                    </IOSListItem>
+                  </IOSListSection>
+                </IOSListView>
+
+                {/* Sponsored Content */}
+                <div className="mx-4">
+                  <AdBanner placement="banner" />
+                </div>
+
+                {/* Activity Feed Preview */}
+                <div className="mx-4 pb-20">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold">Recent Activity</h2>
+                    <Button variant="outline" size="sm" onClick={() => user && setActiveTab("following")}>
+                      View Full Feed
+                    </Button>
+                  </div>
+                  <ActivityFeed />
+                </div>
+              </>
+            )}
           </div>
         );
 
