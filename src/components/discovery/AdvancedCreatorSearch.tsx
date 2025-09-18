@@ -150,7 +150,7 @@ export const AdvancedCreatorSearch: React.FC<AdvancedCreatorSearchProps> = ({ on
     
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('creator-search', {
+      const { data, error } = await supabase.functions.invoke('enhanced-creator-search', {
         body: { filters }
       })
 
