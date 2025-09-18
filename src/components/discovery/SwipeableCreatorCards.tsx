@@ -20,28 +20,22 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useCreatorSearch } from '@/hooks/useCreatorSearch';
 
 interface Creator {
   id: string;
-  name: string;
-  avatar: string;
-  category: string;
+  full_name: string;
+  avatar_url: string;
+  categories: string[];
   isOnline: boolean;
   ratingsCount: number;
   rating: number;
-  title: string;
-  callRate: number;
-  maxCallDuration: number;
-  bio?: string;
-  followers?: number;
-  sessionHours?: number;
-  location?: string;
-  isVerified?: boolean;
+  headline: string;
+  bio: string;
   nextAvailable?: string;
 }
 
 interface SwipeableCreatorCardsProps {
-  creators: Creator[];
   selectedCategory: string;
   searchQuery: string;
   onCreatorLike: (creatorId: string) => void;
@@ -53,7 +47,6 @@ interface SwipeableCreatorCardsProps {
 }
 
 export const SwipeableCreatorCards = ({ 
-  creators, 
   selectedCategory,
   searchQuery,
   onCreatorLike,
@@ -63,14 +56,15 @@ export const SwipeableCreatorCards = ({
   onCreatorShare,
   onCreatorBookmark
 }: SwipeableCreatorCardsProps) => {
-  // Filter creators based on search and category
-  const filteredCreators = creators.filter(creator => {
-    const matchesSearch = creator.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         creator.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         creator.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "all" || creator.category === selectedCategory;
-    return matchesSearch && matchesCategory;
+  // Use enhanced creator search
+  const { creators, loading, error } = useCreatorSearch({
+    query: searchQuery,
+    categories: selectedCategory === 'all' ? [] : [selectedCategory],
+    availableOnly: false
   });
+
+  // Use all creators from search (no additional filtering needed)
+  const filteredCreators = creators;
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -89,11 +83,11 @@ export const SwipeableCreatorCards = ({
     switch (action) {
       case 'like':
         onCreatorLike(creator.id);
-        toast.success(`Interested in ${creator.name}`);
+        toast.success(`Interested in ${creator.full_name}`);
         break;
       case 'pass':
         onCreatorPass(creator.id);
-        toast(`Passed on ${creator.name}`, {
+        toast(`Passed on ${creator.full_name}`, {
           description: "We'll find better matches for you"
         });
         break;
@@ -233,6 +227,30 @@ export const SwipeableCreatorCards = ({
     };
   }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
+        <div className="text-4xl">🔍</div>
+        <h3 className="text-xl font-semibold">Finding creators...</h3>
+        <p className="text-muted-foreground text-center">
+          Searching for the perfect matches for you.
+        </p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
+        <div className="text-4xl">⚠️</div>
+        <h3 className="text-xl font-semibold">Unable to load creators</h3>
+        <p className="text-muted-foreground text-center">
+          Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   if (!currentCreator) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[600px] space-y-4">
@@ -279,8 +297,8 @@ export const SwipeableCreatorCards = ({
             <CardContent className="p-0 h-full">
               <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
                 <img
-                  src={filteredCreators[currentIndex + 1].avatar}
-                  alt={filteredCreators[currentIndex + 1].name}
+                  src={filteredCreators[currentIndex + 1].avatar_url}
+                  alt={filteredCreators[currentIndex + 1].full_name}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -306,8 +324,8 @@ export const SwipeableCreatorCards = ({
             <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
               {/* Creator Image */}
               <img
-                src={currentCreator.avatar}
-                alt={currentCreator.name}
+                src={currentCreator.avatar_url}
+                alt={currentCreator.full_name}
                 className="w-full h-full object-cover"
               />
               
@@ -353,20 +371,11 @@ export const SwipeableCreatorCards = ({
               {/* Creator Info */}
               <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
                 <div className="flex items-center space-x-3 mb-3">
-                  <h2 className="text-2xl font-bold">{currentCreator.name}</h2>
-                  {currentCreator.isVerified && (
-                    <CheckCircle className="h-6 w-6 text-blue-400 fill-current" />
-                  )}
+                  <h2 className="text-2xl font-bold">{currentCreator.full_name}</h2>
+                  <CheckCircle className="h-6 w-6 text-blue-400 fill-current" />
                 </div>
                 
-                <p className="text-lg mb-2 opacity-90">{currentCreator.title}</p>
-                
-                {currentCreator.location && (
-                  <div className="flex items-center space-x-1 mb-3 opacity-80">
-                    <MapPin className="h-4 w-4" />
-                    <span className="text-sm">{currentCreator.location}</span>
-                  </div>
-                )}
+                <p className="text-lg mb-2 opacity-90">{currentCreator.headline}</p>
 
                 {currentCreator.bio && (
                   <p className="text-sm opacity-80 mb-4 line-clamp-2">{currentCreator.bio}</p>
@@ -376,9 +385,9 @@ export const SwipeableCreatorCards = ({
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm opacity-80">Followers</span>
-                      <span className="font-semibold">
-                        {currentCreator.followers ? `${(currentCreator.followers / 1000).toFixed(0)}K` : 'N/A'}
+                      <span className="text-sm opacity-80">Categories</span>
+                      <span className="font-semibold text-xs">
+                        {currentCreator.categories.join(', ')}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
@@ -393,14 +402,16 @@ export const SwipeableCreatorCards = ({
                   
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm opacity-80">Session Hours</span>
+                      <span className="text-sm opacity-80">Status</span>
                       <span className="font-semibold">
-                        {currentCreator.sessionHours || 0}h
+                        {currentCreator.isOnline ? 'Online' : 'Offline'}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm opacity-80">Rate</span>
-                      <span className="font-semibold">${currentCreator.callRate}/min</span>
+                      <span className="text-sm opacity-80">Available</span>
+                      <span className="font-semibold text-xs">
+                        {currentCreator.nextAvailable || 'Now'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -408,7 +419,7 @@ export const SwipeableCreatorCards = ({
                 {/* Category & Availability */}
                 <div className="flex items-center justify-between mb-4">
                   <Badge variant="secondary" className="bg-white/20 text-white border-0">
-                    {currentCreator.category}
+                    {currentCreator.categories[0] || 'Creator'}
                   </Badge>
                   {!currentCreator.isOnline && currentCreator.nextAvailable && (
                     <div className="flex items-center space-x-1 text-sm opacity-80">
@@ -449,7 +460,7 @@ export const SwipeableCreatorCards = ({
           className="h-12 w-12 rounded-full border-2 border-purple-500 bg-white hover:bg-purple-50 group"
           onClick={() => {
             onCreatorMessage(currentCreator.id);
-            toast.success(`Sent message to ${currentCreator.name}`);
+            toast.success(`Sent message to ${currentCreator.full_name}`);
           }}
         >
           <MessageSquare className="h-5 w-5 text-purple-500 group-hover:scale-110 transition-transform" />

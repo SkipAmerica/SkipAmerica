@@ -193,17 +193,6 @@ const Index = () => {
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}
-                  creators={mockCreators.map(creator => ({
-                    ...creator,
-                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
-                    followers: Math.floor(Math.random() * 1000000) + 10000,
-                    sessionHours: Math.floor(Math.random() * 500) + 10,
-                    location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
-                             creator.name.includes('Chen') ? 'San Francisco, CA' :
-                             creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
-                    isVerified: Math.random() > 0.5,
-                    nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
-                  }))}
                   onCreatorLike={handleCreatorLike}
                   onCreatorPass={handleCreatorPass}
                   onCreatorSuperLike={handleCreatorSuperLike}
@@ -323,17 +312,6 @@ const Index = () => {
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}
-                  creators={mockCreators.map(creator => ({
-                    ...creator,
-                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
-                    followers: Math.floor(Math.random() * 1000000) + 10000,
-                    sessionHours: Math.floor(Math.random() * 500) + 10,
-                    location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
-                             creator.name.includes('Chen') ? 'San Francisco, CA' :
-                             creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
-                    isVerified: Math.random() > 0.5,
-                    nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
-                  }))}
                   onCreatorLike={handleCreatorLike}
                   onCreatorPass={handleCreatorPass}
                   onCreatorSuperLike={handleCreatorSuperLike}

@@ -27,11 +27,7 @@ serve(async (req) => {
     let supabaseQuery = supabase
       .from('creators')
       .select(`
-        *,
-        platform_stats(*),
-        offer_rates(*),
-        creator_press_coverage(*),
-        press_mentions(*)
+        *
       `)
       .eq('is_suppressed', false);
 
@@ -102,16 +98,12 @@ serve(async (req) => {
         profileMatches = profiles;
       }
 
-      // Search in creator press coverage
-      const { data: press, error: pressError } = await supabase
-        .from('creator_press_coverage')
-        .select('creator_id, title, publication, article_content')
-        .or(`title.ilike.%${searchTerm}%,publication.ilike.%${searchTerm}%,article_content.ilike.%${searchTerm}%`)
-        .limit(200);
-
-      if (!pressError && press) {
-        pressMatches = press;
-      }
+      // Search in creator press coverage - skip due to missing foreign key
+      // const { data: press, error: pressError } = await supabase
+      //   .from('creator_press_coverage')
+      //   .select('creator_id, title, publication, article_content')
+      //   .or(`title.ilike.%${searchTerm}%,publication.ilike.%${searchTerm}%,article_content.ilike.%${searchTerm}%`)
+      //   .limit(200);
 
       // Search in platform stats for handles and platforms
       const { data: platforms, error: platformError } = await supabase
@@ -179,11 +171,7 @@ serve(async (req) => {
         const { data: additional } = await supabase
           .from('creators')
           .select(`
-            *,
-            platform_stats(*),
-            offer_rates(*),
-            creator_press_coverage(*),
-            press_mentions(*)
+            *
           `)
           .in('id', additionalIds)
           .eq('is_suppressed', false);
