@@ -173,15 +173,15 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, search
             
             {/* Avatar */}
             <div className="relative">
-              <Avatar className="h-16 w-16 opacity-75">
-                <AvatarImage src={creator.avatar} alt={creator.name} />
-                <AvatarFallback className="bg-gradient-secondary text-secondary-foreground">
-                  {creator.name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
-              {/* Offline indicator */}
+            <Avatar className="h-16 w-16">
+              <AvatarImage src={creator.avatar} alt={creator.name} />
+              <AvatarFallback className="bg-gradient-primary text-primary-foreground">
+                {creator.name.split(' ').map(n => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+              {/* Live indicator - same as online creators */}
               <div className="absolute -bottom-1 -right-1">
-                <div className="w-4 h-4 bg-muted border-2 border-white rounded-full"></div>
+                <div className="w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
               </div>
             </div>
             
