@@ -183,13 +183,13 @@ const Index = () => {
           <div className="flex-1 overflow-hidden">
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="h-full overflow-y-auto pb-20 space-y-4">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
                 />
-                <div className="px-4">
+                <div className="px-4 pt-4">
                   <SwipeableCreatorCards
                     selectedCategory={selectedFilter}
                     searchQuery={searchQuery}
@@ -203,13 +203,13 @@ const Index = () => {
                 </div>
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="h-full overflow-y-auto pb-20 space-y-4">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
                 />
-                <div className="mx-4">
+                <div className="mx-4 mt-4">
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -219,13 +219,13 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <div className="h-full overflow-y-auto pb-20 space-y-4">
+              <div className="h-full overflow-y-auto pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
                   placeholder="Filter creators..."
                 />
-                <div className="mx-4">
+                <div className="mx-4 mt-4">
                   <ScheduleCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -240,13 +240,13 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="h-full overflow-y-auto pb-20 space-y-4">
+          <div className="h-full overflow-y-auto pb-20">
             <IOSSearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter live creators..."
             />
-            <div className="px-4">
+            <div className="px-4 pt-4">
               <OnlineCreatorsGrid 
                 selectedCategory={selectedFilter}
                 onCreatorSelect={handleCreatorSelect}
@@ -259,13 +259,13 @@ const Index = () => {
 
       case "trending":
         return (
-          <div className="h-full overflow-y-auto pb-20 space-y-4">
+          <div className="h-full overflow-y-auto pb-20">
             <IOSSearchBar
               value={searchQuery}
               onChange={setSearchQuery}
               placeholder="Filter trending content..."
             />
-            <div className="px-4 space-y-6">
+            <div className="px-4 pt-4 space-y-6">
               <SmartTrendingEngine />
             </div>
           </div>
