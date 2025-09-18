@@ -173,32 +173,17 @@ const Index = () => {
     );
   }
 
+  // Check if current tab should show discovery toggle
+  const showDiscoveryToggle = ["discover", "live", "trending", "search"].includes(activeTab);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div>
-            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
-            <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
-              style={{ top: 0 }}
-            >
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={(mode) => {
-                  if (mode === 'search') {
-                    console.log('Index - redirecting to Search tab from Discover toggle');
-                    setActiveTab('search');
-                    return;
-                  }
-                  setDiscoveryMode(mode);
-                }}
-              />
-            </div>
-
+          <div className="flex-1 overflow-hidden">
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="pb-20 pt-4 px-4">
+              <div className="h-full overflow-y-auto pb-20 pt-4 px-4">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -228,7 +213,7 @@ const Index = () => {
                 />
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="mx-4 pt-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 64}px)` }}>
+              <div className="h-full overflow-y-auto mx-4 pt-4 pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -243,7 +228,7 @@ const Index = () => {
                 />
               </div>
             ) : (
-              <div className="mx-4 pt-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 64}px)` }}>
+              <div className="h-full overflow-y-auto mx-4 pt-4 pb-20">
                 <IOSSearchBar
                   value={searchQuery}
                   onChange={setSearchQuery}
@@ -258,198 +243,158 @@ const Index = () => {
                 />
               </div>
             )}
-
           </div>
         );
 
       case "live":
         return (
-          <div>
-            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
-            <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
-              style={{ top: 0 }}
-            >
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={handleDiscoveryModeChange}
-              />
-            </div>
-            
-            <div className="px-4 pt-4 pb-20">
-              <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Filter live creators..."
-                className="mb-4"
-              />
-              <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={handleCreatorSelect}
-                searchQuery={searchQuery}
-                hideHeader={true}
-              />
-            </div>
+          <div className="h-full overflow-y-auto px-4 pt-4 pb-20">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter live creators..."
+              className="mb-4"
+            />
+            <OnlineCreatorsGrid 
+              selectedCategory={selectedFilter}
+              onCreatorSelect={handleCreatorSelect}
+              searchQuery={searchQuery}
+              hideHeader={true}
+            />
           </div>
         );
 
       case "trending":
         return (
-          <div>
-            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
-            <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
-              style={{ top: 0 }}
-            >
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={handleDiscoveryModeChange}
-              />
-            </div>
-            
-            <div className="px-4 pt-4 pb-20 space-y-6">
-              <IOSSearchBar
-                value={searchQuery}
-                onChange={setSearchQuery}
-                placeholder="Filter trending content..."
-                className="mb-4"
-              />
-              <SmartTrendingEngine />
-            </div>
+          <div className="h-full overflow-y-auto px-4 pt-4 pb-20 space-y-6">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter trending content..."
+              className="mb-4"
+            />
+            <SmartTrendingEngine />
           </div>
         );
 
       case "search":
         return (
-          <div>
-            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
-            <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
-              style={{ top: 0 }}
-            >
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={handleDiscoveryModeChange}
-              />
-            </div>
-            
-            <div className="pt-4 pb-20 space-y-4">
-              {discoveryMode === 'search' && (
-                <div className="mx-4">
-                  {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-                  <div className="mb-3">
-                    <UserInterestFilters 
-                      selectedFilter={selectedFilter}
-                      onFilterChange={setSelectedFilter}
-                    />
-                  </div>
-                  
-                  {/* Search Bar */}
-                  <div className="mb-4">
-                    <IOSSearchBar
-                      value={searchQuery}
-                      onChange={setSearchQuery}
-                      placeholder="Search creators..."
-                    />
-                    <div className="flex justify-end mt-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => setActiveTab("advanced")}
-                        className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                      >
-                        Creator Matchmaker
-                      </Button>
-                    </div>
+          <div className="h-full overflow-y-auto pt-4 pb-20 space-y-4">
+            {discoveryMode === 'search' && (
+              <div className="mx-4">
+                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                <div className="mb-3">
+                  <UserInterestFilters 
+                    selectedFilter={selectedFilter}
+                    onFilterChange={setSelectedFilter}
+                  />
+                </div>
+                
+                {/* Search Bar */}
+                <div className="mb-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search creators..."
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setActiveTab("advanced")}
+                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                    >
+                      Creator Matchmaker
+                    </Button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Search Results Based on Discovery Mode */}
-              {discoveryMode === 'cards' ? (
-                <div className="px-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Filter creators..."
-                    className="mb-4"
-                  />
-                  <SwipeableCreatorCards
-                    selectedCategory={selectedFilter}
-                    searchQuery={searchQuery}
-                    creators={mockCreators.map(creator => ({
-                      ...creator,
-                      bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
-                      followers: Math.floor(Math.random() * 1000000) + 10000,
-                      sessionHours: Math.floor(Math.random() * 500) + 10,
-                      location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
-                               creator.name.includes('Chen') ? 'San Francisco, CA' :
-                               creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
-                      isVerified: Math.random() > 0.5,
-                      nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
-                    }))}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
-                  />
-                </div>
-              ) : discoveryMode === 'grid' ? (
-                <div className="mx-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Filter creators..."
-                    className="mb-4"
-                  />
-                  <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              ) : discoveryMode === 'schedule' ? (
-                <div className="mx-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Filter creators..."
-                    className="mb-4"
-                  />
-                  <ScheduleCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              ) : discoveryMode === 'search' ? (
-                <div className="mx-4">
-                  <CreatorSearch 
-                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
-                  />
-                </div>
-              ) : (
-                <div className="mx-4">
-                  <IOSSearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder="Filter creators..."
-                    className="mb-4"
-                  />
-                  <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              )}
-            </div>
+            {/* Search Results Based on Discovery Mode */}
+            {discoveryMode === 'cards' ? (
+              <div className="px-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
+                <SwipeableCreatorCards
+                  selectedCategory={selectedFilter}
+                  searchQuery={searchQuery}
+                  creators={mockCreators.map(creator => ({
+                    ...creator,
+                    bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
+                    followers: Math.floor(Math.random() * 1000000) + 10000,
+                    sessionHours: Math.floor(Math.random() * 500) + 10,
+                    location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
+                             creator.name.includes('Chen') ? 'San Francisco, CA' :
+                             creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
+                    isVerified: Math.random() > 0.5,
+                    nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
+                  }))}
+                  onCreatorLike={handleCreatorLike}
+                  onCreatorPass={handleCreatorPass}
+                  onCreatorSuperLike={handleCreatorSuperLike}
+                  onCreatorMessage={handleCreatorMessage}
+                  onCreatorShare={handleCreatorShare}
+                  onCreatorBookmark={handleCreatorBookmark}
+                />
+              </div>
+            ) : discoveryMode === 'grid' ? (
+              <div className="mx-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            ) : discoveryMode === 'schedule' ? (
+              <div className="mx-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
+                <ScheduleCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            ) : discoveryMode === 'search' ? (
+              <div className="mx-4">
+                <CreatorSearch 
+                  onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                  onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                />
+              </div>
+            ) : (
+              <div className="mx-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
+                <OnlineCreatorsGrid 
+                  selectedCategory={selectedFilter}
+                  onCreatorSelect={handleCreatorSelect}
+                  searchQuery={searchQuery}
+                  hideHeader={true}
+                />
+              </div>
+            )}
           </div>
         );
 
@@ -497,8 +442,29 @@ const Index = () => {
       {/* Main Content */}
       <div
         style={activeTab === "advanced" ? undefined : { paddingTop: headerHeight }}
+        className="flex flex-col h-screen"
       >
-        {renderTabContent()}
+        {/* Discovery Mode Toggle - Only for discovery tabs */}
+        {showDiscoveryToggle && (
+          <div className="sticky top-0 z-30 bg-background border-b border-border">
+            <DiscoveryModeToggle 
+              mode={discoveryMode}
+              onModeChange={(mode) => {
+                if (mode === 'search' && activeTab !== 'search') {
+                  console.log('Index - redirecting to Search tab from Discovery toggle');
+                  setActiveTab('search');
+                  return;
+                }
+                handleDiscoveryModeChange(mode);
+              }}
+            />
+          </div>
+        )}
+        
+        {/* Tab Content - Scrollable area */}
+        <div className="flex-1 overflow-hidden">
+          {renderTabContent()}
+        </div>
       </div>
 
       {/* iOS Tab Bar */}
