@@ -16,7 +16,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className }: Discovery
     <div
       className={cn(
         // Full-bleed, edge-to-edge container to remove any side padding from parents
-        "flex items-center bg-muted overflow-hidden gap-0 w-[calc(100vw+2px)] max-w-none ml-[calc(50%-50vw)] mr-[calc(50%-50vw-2px)] px-0",
+        "flex items-center bg-muted overflow-hidden gap-0 w-[100dvw] max-w-none ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] px-0",
         className
       )}
     >
