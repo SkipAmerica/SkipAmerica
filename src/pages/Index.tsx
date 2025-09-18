@@ -211,23 +211,6 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
-                 <div className="mx-4">
-                  <OnlineCreatorsGrid 
-                    selectedCategory={selectedFilter}
-                    onCreatorSelect={handleCreatorSelect}
-                    searchQuery={searchQuery}
-                    hideHeader={true}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="h-full overflow-y-auto pb-20">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter creators..."
-                  fullWidth
-                />
                 <BrowseSubTabs 
                   mode={browseMode}
                   onModeChange={setBrowseMode}
@@ -250,6 +233,21 @@ const Index = () => {
                   )}
                 </div>
               </div>
+            ) : (
+              <div className="h-full overflow-y-auto pb-20">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  fullWidth
+                />
+                <div className="mx-4">
+                  <CreatorSearch 
+                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                  />
+                </div>
+              </div>
             )}
           </div>
         );
@@ -265,26 +263,13 @@ const Index = () => {
                 fullWidth
               />
             </div>
-            <BrowseSubTabs 
-              mode={browseMode}
-              onModeChange={setBrowseMode}
-            />
             <div className="px-4">
-              {browseMode === 'live' ? (
-                <OnlineCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
-              ) : (
-                <ScheduleCreatorsGrid 
-                  selectedCategory={selectedFilter}
-                  onCreatorSelect={handleCreatorSelect}
-                  searchQuery={searchQuery}
-                  hideHeader={true}
-                />
-              )}
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={handleCreatorSelect}
+                searchQuery={searchQuery}
+                hideHeader={true}
+              />
             </div>
           </div>
         );
