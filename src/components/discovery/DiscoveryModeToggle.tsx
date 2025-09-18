@@ -34,7 +34,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         onClick={() => handleModeChange('match')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'match' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-background/50"
         )}
       >
         <Heart className="h-4 w-4" />
@@ -47,7 +47,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         onClick={() => handleModeChange('browse')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'browse' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'browse' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-background/50"
         )}
       >
         <Grid3X3 className="h-4 w-4" />
@@ -60,7 +60,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         onClick={() => handleModeChange('search')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'search' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'search' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-background/50"
         )}
       >
         <Search className="h-4 w-4" />
