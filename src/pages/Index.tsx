@@ -65,23 +65,6 @@ const Index = () => {
   
   const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
-    
-    // If we're on search tab and user wants to go to browse/match, switch to discover tab
-    if (activeTab === 'search' && (mode === 'browse' || mode === 'match')) {
-      console.log('Index - switching from search tab to discover tab with mode:', mode);
-      setPreviousDiscoveryMode(mode);
-      setActiveTab('discover');
-      return;
-    }
-    
-    // Store previous mode before changing to search
-    if (mode === 'search' && discoveryMode !== 'search') {
-      if (discoveryMode === 'browse' || discoveryMode === 'match') {
-        setPreviousDiscoveryMode(discoveryMode);
-      }
-      setActiveTab('search');
-    }
-    
     setDiscoveryMode(mode);
   };
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -104,18 +87,12 @@ const Index = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
   
+  
   // Handle discovery mode changes based on active tab
   useEffect(() => {
     console.log('Index - tab changed to:', activeTab, 'current discovery mode:', discoveryMode);
     
-    if (activeTab === "search" && discoveryMode !== "search") {
-      console.log("Index - auto switching discovery mode to 'search' for Search tab");
-      // Store current mode before switching
-      if (discoveryMode === 'browse' || discoveryMode === 'match') {
-        setPreviousDiscoveryMode(discoveryMode);
-      }
-      setDiscoveryMode("search");
-    } else if (activeTab === "discover" && discoveryMode === "search") {
+    if (activeTab === "discover" && discoveryMode === "search") {
       console.log("Index - restoring previous discovery mode:", previousDiscoveryMode);
       setDiscoveryMode(previousDiscoveryMode);
     } else if (activeTab === "discover" && discoveryMode !== "browse" && discoveryMode !== "match") {
@@ -311,7 +288,7 @@ const Index = () => {
           <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
             {/* Freeze Pane */}
             <FreezePane
-              showDiscoveryToggle={false}
+              showDiscoveryToggle={true}
               discoveryMode={discoveryMode}
               onDiscoveryModeChange={handleDiscoveryModeChange}
               showBrowseSubTabs={false}
