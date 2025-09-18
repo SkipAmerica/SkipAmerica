@@ -441,27 +441,7 @@ const Index = () => {
       <div
         style={activeTab === "advanced" ? undefined : { paddingTop: headerHeight }}
         className="flex flex-col h-screen"
-      >
-        {/* Discovery Mode Toggle - Only for discovery tabs */}
-        {showDiscoveryToggle && (
-          <div 
-            className="sticky z-40 bg-background border-b border-border"
-            style={{ top: headerHeight - 1 }}
-          >
-            <DiscoveryModeToggle 
-              mode={discoveryMode}
-              onModeChange={(mode) => {
-                if (mode === 'search' && activeTab !== 'search') {
-                  console.log('Index - redirecting to Search tab from Discovery toggle');
-                  setActiveTab('search');
-                  return;
-                }
-                handleDiscoveryModeChange(mode);
-              }}
-            />
-          </div>
-        )}
-        
+      >        
         {/* Tab Content - Scrollable area */}
         <div className="flex-1 overflow-hidden">
           {renderTabContent()}
