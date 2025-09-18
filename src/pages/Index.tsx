@@ -199,40 +199,42 @@ const Index = () => {
               />
               
               {/* Scrollable Content */}
-              {discoveryMode === 'match' ? (
-                <SwipeableCreatorCards
-                  selectedCategory={filters.selectedCategory}
-                  onCreatorLike={handleCreatorLike}
-                  onCreatorPass={handleCreatorPass}
-                  onCreatorSuperLike={handleCreatorSuperLike}
-                  onCreatorMessage={handleCreatorMessage}
-                  onCreatorShare={handleCreatorShare}
-                  onCreatorBookmark={handleCreatorBookmark}
-                />
-              ) : discoveryMode === 'browse' ? (
-                <div className="mx-4">
-                  {browseMode === 'live' ? (
-                    <OnlineCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  ) : (
-                    <ScheduleCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  )}
-                </div>
-              ) : (
-                <div className="mx-4">
-                  <CreatorSearch 
-                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
+              <div className="pt-32">
+                {discoveryMode === 'match' ? (
+                  <SwipeableCreatorCards
+                    selectedCategory={filters.selectedCategory}
+                    onCreatorLike={handleCreatorLike}
+                    onCreatorPass={handleCreatorPass}
+                    onCreatorSuperLike={handleCreatorSuperLike}
+                    onCreatorMessage={handleCreatorMessage}
+                    onCreatorShare={handleCreatorShare}
+                    onCreatorBookmark={handleCreatorBookmark}
                   />
-                </div>
-              )}
+                ) : discoveryMode === 'browse' ? (
+                  <div className="mx-4">
+                    {browseMode === 'live' ? (
+                      <OnlineCreatorsGrid 
+                        selectedCategory={filters.selectedCategory}
+                        onCreatorSelect={handleCreatorSelect}
+                        hideHeader={true}
+                      />
+                    ) : (
+                      <ScheduleCreatorsGrid 
+                        selectedCategory={filters.selectedCategory}
+                        onCreatorSelect={handleCreatorSelect}
+                        hideHeader={true}
+                      />
+                    )}
+                  </div>
+                ) : (
+                  <div className="mx-4">
+                    <CreatorSearch 
+                      onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                      onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         );
