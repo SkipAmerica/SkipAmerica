@@ -166,13 +166,16 @@ const Index = () => {
       case "discover":
         return (
           <div>
-            {/* Discovery Mode Toggle - Sticky */}
-            <DiscoveryModeToggle 
-              mode={discoveryMode}
-              onModeChange={setDiscoveryMode}
-              className="w-full sticky z-30"
+            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
+            <div 
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
               style={{ top: headerHeight }}
-            />
+            >
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={setDiscoveryMode}
+              />
+            </div>
 
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
@@ -274,13 +277,16 @@ const Index = () => {
       case "search":
         return (
           <div>
-            {/* Discovery Mode Toggle - Sticky */}
-            <DiscoveryModeToggle 
-              mode={discoveryMode}
-              onModeChange={setDiscoveryMode}
-              className="w-full sticky z-30"
+            {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
+            <div 
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
               style={{ top: headerHeight }}
-            />
+            >
+              <DiscoveryModeToggle 
+                mode={discoveryMode}
+                onModeChange={setDiscoveryMode}
+              />
+            </div>
             
             <div className="pt-4 pb-20 space-y-4">
               {/* Search and Filters */}
