@@ -189,18 +189,16 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
-                <div className="px-4">
-                  <SwipeableCreatorCards
-                    selectedCategory={selectedFilter}
-                    searchQuery={searchQuery}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
-                  />
-                </div>
+                <SwipeableCreatorCards
+                  selectedCategory={selectedFilter}
+                  searchQuery={searchQuery}
+                  onCreatorLike={handleCreatorLike}
+                  onCreatorPass={handleCreatorPass}
+                  onCreatorSuperLike={handleCreatorSuperLike}
+                  onCreatorMessage={handleCreatorMessage}
+                  onCreatorShare={handleCreatorShare}
+                  onCreatorBookmark={handleCreatorBookmark}
+                />
               </div>
             ) : discoveryMode === 'grid' ? (
               <div className="h-full overflow-y-auto pb-20">
