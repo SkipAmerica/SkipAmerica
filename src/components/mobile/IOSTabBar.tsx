@@ -118,7 +118,10 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                 {isLive ? (
                   <span className="text-sm font-bold">End</span>
                 ) : (
-                  <Sparkle size={20} fill="currentColor" />
+                  <div className="flex flex-col items-center leading-none">
+                    <span className="text-xs font-bold">GO</span>
+                    <span className="text-xs font-bold">LIVE</span>
+                  </div>
                 )}
               </div>
             </button>
