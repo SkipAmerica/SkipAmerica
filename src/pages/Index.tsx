@@ -80,6 +80,14 @@ const Index = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
   
+  // Ensure proper default when entering the Search tab
+  useEffect(() => {
+    if (activeTab === "search" && discoveryMode !== "search") {
+      console.log("Index - auto switching discovery mode to 'search' for Search tab");
+      setDiscoveryMode("search");
+    }
+  }, [activeTab]);  
+  
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -177,7 +185,14 @@ const Index = () => {
             >
               <DiscoveryModeToggle 
                 mode={discoveryMode}
-                onModeChange={setDiscoveryMode}
+                onModeChange={(mode) => {
+                  if (mode === 'search') {
+                    console.log('Index - redirecting to Search tab from Discover toggle');
+                    setActiveTab('search');
+                    return;
+                  }
+                  setDiscoveryMode(mode);
+                }}
               />
             </div>
 
