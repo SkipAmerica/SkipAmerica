@@ -144,61 +144,67 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
         </div>
       )}
 
-      {/* 4x3 Grid */}
-      <div className="grid grid-cols-4 gap-4">
+      {/* Full Width Grid */}
+      <div className="space-y-4">
         {currentCreators.map((creator) => (
           <div
             key={creator.id}
-            className="flex flex-col items-center space-y-2 p-3 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+            className="relative h-48 rounded-lg overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform"
             onClick={() => onCreatorSelect(creator.id)}
           >
-            {/* Rating and Ratings Count */}
-            <div className="text-center">
-              <div className="flex items-center justify-center space-x-1 text-xs text-muted-foreground">
-                <span className="text-yellow-500">★</span>
-                <span>{creator.rating}</span>
-                <span className="font-medium">({creator.ratingsCount})</span>
-              </div>
-            </div>
-            
-            {/* Avatar */}
-            <div className="relative">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground">
-                  {creator.full_name.split(' ').map(n => n[0]).join('')}
-                </AvatarFallback>
-              </Avatar>
+            {/* Full Width Creator Image */}
+            <div className="relative w-full h-full">
+              <img
+                src={creator.avatar_url}
+                alt={creator.full_name}
+                className="w-full h-full object-cover"
+              />
+              
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+              
               {/* Online indicator */}
-              <div className="absolute -bottom-1 -right-1">
-                <div className="w-4 h-4 bg-green-500 border-2 border-white rounded-full animate-pulse"></div>
-              </div>
-            </div>
-            
-            {/* Name and Title */}
-            <div className="text-center space-y-0.5">
-              <p className="text-sm font-medium leading-tight">{creator.full_name}</p>
-              <p className="text-xs text-muted-foreground">{creator.headline}</p>
-            </div>
-
-            {/* Action Icons */}
-            <div className="flex items-center justify-center space-x-3 mt-1">
-              {/* Phone Icon with Appointment Count */}
-              <div className="relative">
-                <Phone 
-                  className={`h-3 w-3 text-muted-foreground ${
-                    appointmentCounts[creator.id] > 0 ? 'animate-pulse text-orange-500' : ''
-                  }`} 
-                />
-                {appointmentCounts[creator.id] > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[12px] h-3 flex items-center justify-center px-1 text-[10px]">
-                    {appointmentCounts[creator.id]}
-                  </div>
-                )}
+              <div className="absolute top-4 right-4 flex items-center space-x-1 bg-green-500 text-white px-2 py-1 rounded-full text-sm">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                <span>Live</span>
               </div>
               
-              {/* Heart Icon */}
-              <Heart className="h-3 w-3 text-muted-foreground hover:text-red-500 cursor-pointer" />
+              {/* Rating */}
+              <div className="absolute top-4 left-4 flex items-center space-x-1 bg-black/50 text-white px-2 py-1 rounded-full text-sm backdrop-blur-sm">
+                <span className="text-yellow-400">★</span>
+                <span>{creator.rating}</span>
+                <span className="text-xs opacity-80">({creator.ratingsCount})</span>
+              </div>
+            </div>
+            
+            {/* Creator Info Overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="font-semibold text-lg">{creator.full_name}</h3>
+                  <p className="text-sm opacity-90">{creator.headline}</p>
+                </div>
+                
+                {/* Action Icons */}
+                <div className="flex items-center space-x-3">
+                  {/* Phone Icon with Appointment Count */}
+                  <div className="relative">
+                    <Phone 
+                      className={`h-5 w-5 text-white ${
+                        appointmentCounts[creator.id] > 0 ? 'animate-pulse text-orange-400' : ''
+                      }`} 
+                    />
+                    {appointmentCounts[creator.id] > 0 && (
+                      <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
+                        {appointmentCounts[creator.id]}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Heart Icon */}
+                  <Heart className="h-5 w-5 text-white hover:text-red-400 cursor-pointer transition-colors" />
+                </div>
+              </div>
             </div>
           </div>
         ))}
