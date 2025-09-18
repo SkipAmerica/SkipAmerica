@@ -5,7 +5,7 @@ import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
 import { UserInterestFilters } from '@/components/UserInterestFilters';
 
-type DiscoveryMode = 'browse' | 'match' | 'search';
+type DiscoveryMode = 'discover' | 'browse' | 'match';
 type BrowseMode = 'live' | 'schedule';
 
 interface FreezePaneProps {

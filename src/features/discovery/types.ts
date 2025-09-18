@@ -1,5 +1,5 @@
 // Discovery feature types
-export type DiscoveryMode = 'browse' | 'match' | 'search'
+export type DiscoveryMode = 'discover' | 'browse' | 'match'
 export type BrowseMode = 'live' | 'schedule'
 
 export interface DiscoveryFilters {

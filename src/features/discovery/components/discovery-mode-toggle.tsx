@@ -16,9 +16,9 @@ export function DiscoveryModeToggle({ mode, onModeChange, className }: Discovery
   }
 
   const modes = [
+    { key: 'discover' as const, label: 'Discover', icon: Search },
     { key: 'browse' as const, label: 'Browse', icon: Grid3X3 },
     { key: 'match' as const, label: 'Match', icon: Heart },
-    { key: 'search' as const, label: 'Search', icon: Search },
   ]
 
   return (

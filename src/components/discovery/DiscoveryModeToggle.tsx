@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Grid3X3, Heart, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type DiscoveryMode = 'browse' | 'match' | 'search';
+type DiscoveryMode = 'discover' | 'browse' | 'match';
 
 interface DiscoveryModeToggleProps {
   mode: DiscoveryMode;
@@ -29,16 +29,16 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       )}
     >
       <Button
-        variant={mode === 'match' ? 'default' : 'ghost'}
+        variant={mode === 'discover' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => handleModeChange('match')}
+        onClick={() => handleModeChange('discover')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'discover' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
-        <Heart className="h-4 w-4" />
-        <span>Match</span>
+        <Search className="h-4 w-4" />
+        <span>Discover</span>
       </Button>
       
       <Button
@@ -55,16 +55,16 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       </Button>
       
       <Button
-        variant={mode === 'search' ? 'default' : 'ghost'}
+        variant={mode === 'match' ? 'default' : 'ghost'}
         size="sm"
-        onClick={() => handleModeChange('search')}
+        onClick={() => handleModeChange('match')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
-          mode === 'search' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
-        <Search className="h-4 w-4" />
-        <span>Search</span>
+        <Heart className="h-4 w-4" />
+        <span>Match</span>
       </Button>
     </div>
   );

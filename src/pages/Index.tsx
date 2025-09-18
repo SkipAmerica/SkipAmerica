@@ -60,10 +60,10 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'search'>('browse');
+  const [discoveryMode, setDiscoveryMode] = useState<'discover' | 'browse' | 'match'>('discover');
   const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
   
-  const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
+  const handleDiscoveryModeChange = (mode: 'discover' | 'browse' | 'match') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
     setDiscoveryMode(mode);
   };
@@ -205,16 +205,10 @@ const Index = () => {
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto pb-20">
               <div className="px-4 pt-2">
-                {discoveryMode === 'match' ? (
-                  <SwipeableCreatorCards
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
-                  />
+                {discoveryMode === 'discover' ? (
+                  <div className="flex items-center justify-center h-64 text-muted-foreground">
+                    <p>Discover functionality coming soon...</p>
+                  </div>
                 ) : discoveryMode === 'browse' ? (
                   <>
                     {browseMode === 'live' ? (
@@ -232,9 +226,14 @@ const Index = () => {
                     )}
                   </>
                 ) : (
-                  <CreatorSearch 
-                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
+                  <SwipeableCreatorCards
+                    selectedCategory={filters.selectedCategory}
+                    onCreatorLike={handleCreatorLike}
+                    onCreatorPass={handleCreatorPass}
+                    onCreatorSuperLike={handleCreatorSuperLike}
+                    onCreatorMessage={handleCreatorMessage}
+                    onCreatorShare={handleCreatorShare}
+                    onCreatorBookmark={handleCreatorBookmark}
                   />
                 )}
               </div>
