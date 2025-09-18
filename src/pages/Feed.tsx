@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { FeedToggle } from '@/components/feed/FeedToggle';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 

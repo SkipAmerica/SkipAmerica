@@ -1,6 +1,6 @@
 import { AuthForm } from '@/components/auth/AuthForm'
 import { InterestsSelection } from '@/components/auth/InterestsSelection'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/app/providers/auth-provider'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'

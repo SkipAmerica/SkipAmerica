@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { CreatorProfileEnhanced } from '@/components/creator/CreatorProfileEnhanced';
 import { AgencyDashboard } from '@/components/agency/AgencyDashboard';
