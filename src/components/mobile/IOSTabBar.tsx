@@ -45,7 +45,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
       "fixed bottom-0 left-0 right-0 z-50",
       "bg-card/95 backdrop-blur-md",
       "border-t border-border/50",
-      "pt-1 pb-2"
+      "pt-2 pb-3"
     )}>
       {/* Creator Layout with 5 tabs */}
       {isCreator ? (
@@ -64,7 +64,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     "ios-touchable",
                     "flex flex-col items-center justify-center",
                     "min-w-0 relative",
-                    "px-1 py-1",
+                    "px-1 py-2",
                     "transition-all duration-200"
                   )}
                 >
@@ -138,7 +138,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                     "ios-touchable",
                     "flex flex-col items-center justify-center",
                     "min-w-0 relative",
-                    "px-1 py-1",
+                    "px-1 py-2",
                     "transition-all duration-200"
                   )}
                 >
@@ -186,7 +186,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                   "ios-touchable",
                   "flex flex-col items-center justify-center",
                   "min-w-0 flex-1 relative",
-                  "px-1 py-1",
+                  "px-1 py-2",
                   "transition-all duration-200"
                 )}
               >
