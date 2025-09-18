@@ -273,45 +273,90 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="pt-4 pb-20 space-y-4">
-            {/* Search and Filters */}
-            <div className="mx-4">
-              {/* Dynamic Sort Options - Based on user's interests from sign-up */}
-              <div className="mb-3">
-                <UserInterestFilters 
-                  selectedFilter={selectedFilter}
-                  onFilterChange={setSelectedFilter}
-                />
-              </div>
-              
-              {/* Search Bar */}
-              <div className="mb-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search creators..."
-                />
-                <div className="flex justify-end mt-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => setActiveTab("advanced")}
-                    className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                  >
-                    Creator Matchmaker
-                  </Button>
+          <div>
+            {/* Discovery Mode Toggle - Sticky */}
+            <DiscoveryModeToggle 
+              mode={discoveryMode}
+              onModeChange={setDiscoveryMode}
+              className="w-full sticky z-30"
+              style={{ top: headerHeight }}
+            />
+            
+            <div className="pt-4 pb-20 space-y-4">
+              {/* Search and Filters */}
+              <div className="mx-4">
+                {/* Dynamic Sort Options - Based on user's interests from sign-up */}
+                <div className="mb-3">
+                  <UserInterestFilters 
+                    selectedFilter={selectedFilter}
+                    onFilterChange={setSelectedFilter}
+                  />
+                </div>
+                
+                {/* Search Bar */}
+                <div className="mb-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search creators..."
+                  />
+                  <div className="flex justify-end mt-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setActiveTab("advanced")}
+                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                    >
+                      Creator Matchmaker
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Search Results Grid */}
-            <div className="mx-4">
-              <OnlineCreatorsGrid 
-                selectedCategory={selectedFilter}
-                onCreatorSelect={handleCreatorSelect}
-                searchQuery={searchQuery}
-                hideHeader={true}
-              />
+              {/* Search Results Based on Discovery Mode */}
+              {discoveryMode === 'cards' ? (
+                <div className="pb-20">
+                  <SwipeableCreatorCards
+                    selectedCategory={selectedFilter}
+                    searchQuery={searchQuery}
+                    creators={mockCreators.map(creator => ({
+                      ...creator,
+                      bio: `Passionate ${creator.category} expert with ${creator.ratingsCount} satisfied clients. Available for personalized consultations and advice.`,
+                      followers: Math.floor(Math.random() * 1000000) + 10000,
+                      sessionHours: Math.floor(Math.random() * 500) + 10,
+                      location: creator.name.includes('Stone') ? 'Los Angeles, CA' : 
+                               creator.name.includes('Chen') ? 'San Francisco, CA' :
+                               creator.name.includes('Johnson') ? 'New York, NY' : 'Austin, TX',
+                      isVerified: Math.random() > 0.5,
+                      nextAvailable: creator.isOnline ? undefined : 'Tomorrow 2PM'
+                    }))}
+                    onCreatorLike={handleCreatorLike}
+                    onCreatorPass={handleCreatorPass}
+                    onCreatorSuperLike={handleCreatorSuperLike}
+                    onCreatorMessage={handleCreatorMessage}
+                    onCreatorShare={handleCreatorShare}
+                    onCreatorBookmark={handleCreatorBookmark}
+                  />
+                </div>
+              ) : discoveryMode === 'grid' ? (
+                <div className="mx-4">
+                  <OnlineCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              ) : (
+                <div className="mx-4">
+                  <ScheduleCreatorsGrid 
+                    selectedCategory={selectedFilter}
+                    onCreatorSelect={handleCreatorSelect}
+                    searchQuery={searchQuery}
+                    hideHeader={true}
+                  />
+                </div>
+              )}
             </div>
           </div>
         );
