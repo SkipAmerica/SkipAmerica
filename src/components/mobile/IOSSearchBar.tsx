@@ -32,7 +32,7 @@ export function IOSSearchBar({
   };
 
   return (
-    <div className={cn("flex items-center w-full", fullWidth && "-mx-4", className)}>
+    <div className={cn("flex items-center w-full", fullWidth && "px-4 ios-safe-left ios-safe-right", className)}>
       <div className="relative w-full">
         <Search 
           size={16} 
