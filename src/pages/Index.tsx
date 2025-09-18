@@ -165,20 +165,18 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="space-y-6">
-            {/* Discovery Mode Toggle */}
-            <div>
-              <DiscoveryModeToggle 
-                mode={discoveryMode}
-                onModeChange={setDiscoveryMode}
-                className="w-full sticky z-30"
-                style={{ top: headerHeight }}
-              />
-            </div>
+          <div>
+            {/* Discovery Mode Toggle - Sticky */}
+            <DiscoveryModeToggle 
+              mode={discoveryMode}
+              onModeChange={setDiscoveryMode}
+              className="w-full sticky z-30"
+              style={{ top: headerHeight }}
+            />
 
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="pb-20 -mt-6">
+              <div className="pb-20">
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}
@@ -202,7 +200,7 @@ const Index = () => {
                 />
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="mx-4 -mt-6 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
+              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
                 {/* Live Now Grid - Collapsible */}
                 <div className="mb-6">
                   <Collapsible open={liveNowOpen} onOpenChange={setLiveNowOpen}>
@@ -229,7 +227,7 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <div className="mx-4 -mt-6 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
+              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
                 {/* Schedule in Advance Grid */}
                 <div className="mb-6">
                   <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>

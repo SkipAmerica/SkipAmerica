@@ -275,7 +275,7 @@ export const SwipeableCreatorCards = ({
       <div className="relative h-[600px]">
         {/* Next card (behind) */}
         {filteredCreators[currentIndex + 1] && (
-          <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80 rounded-b-lg rounded-t-none">
+          <Card className="absolute inset-0 bg-card shadow-lg scale-95 opacity-80 rounded-b-lg rounded-t-none border-0">
             <CardContent className="p-0 h-full">
               <div className="relative h-full rounded-b-lg rounded-t-none overflow-hidden">
                 <img
@@ -292,7 +292,7 @@ export const SwipeableCreatorCards = ({
         <Card 
           ref={el => cardRefs.current[0] = el}
           className={cn(
-            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200 select-none rounded-b-lg rounded-t-none",
+            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200 select-none rounded-b-lg rounded-t-none border-0",
             isDragging ? "scale-105" : "scale-100"
           )}
           style={{
