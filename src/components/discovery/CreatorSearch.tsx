@@ -9,7 +9,7 @@ import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/lib/supabase';
 import { Search, Filter, Star, MapPin, Clock, Zap, Heart, MessageCircle, Video } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSearch } from '@/contexts/SearchContext';
+import { useSearch } from '@/app/providers/search-provider';
 
 interface Creator {
   id: string;

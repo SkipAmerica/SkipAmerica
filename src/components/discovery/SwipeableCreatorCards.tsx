@@ -21,7 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
-import { useSearch } from '@/contexts/SearchContext';
+import { useSearch } from '@/app/providers/search-provider';
 
 interface Creator {
   id: string;
@@ -62,8 +62,8 @@ export const SwipeableCreatorCards = ({
   const searchParams = useMemo(() => ({
     query: filters.query,
     categories: filters.selectedCategory === 'all' ? [] : [filters.selectedCategory],
-    availableOnly: filters.availableOnly
-  }), [filters.query, filters.selectedCategory, filters.availableOnly]);
+    availableOnly: filters.filters?.isAvailable || false
+  }), [filters.query, filters.selectedCategory, filters.filters?.isAvailable]);
 
   // Use enhanced creator search
   const { creators, loading, error } = useCreatorSearch(searchParams);
