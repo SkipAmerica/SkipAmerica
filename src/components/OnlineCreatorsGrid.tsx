@@ -144,65 +144,64 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, searchQu
         </div>
       )}
 
-      {/* 4x3 Grid */}
-      <div className="grid grid-cols-4 gap-3">
+      {/* Creators Grid */}
+      <div className="grid grid-cols-3 gap-4">
         {currentCreators.map((creator) => (
           <div
             key={creator.id}
-            className="flex flex-col items-center space-y-2 p-3 bg-card rounded-lg border cursor-pointer hover:bg-accent transition-colors"
+            className="flex flex-col items-center space-y-2 cursor-pointer"
             onClick={() => onCreatorSelect(creator.id)}
           >
             {/* Avatar with Online indicator */}
             <div className="relative">
-              <Avatar className="h-16 w-16">
+              <Avatar className="h-20 w-20">
                 <AvatarImage src={creator.avatar_url} />
                 <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
               </Avatar>
               {/* Online indicator */}
-              <div className="absolute -top-1 -right-1 flex items-center space-x-1 bg-green-500 text-white px-1.5 py-0.5 rounded-full text-xs">
-                <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+              <div className="absolute -top-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-background flex items-center justify-center">
+                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
               </div>
             </div>
             
             {/* Creator Info */}
             <div className="text-center">
-              <h3 className="text-sm font-medium truncate w-full">{creator.full_name}</h3>
-              <p className="text-xs text-muted-foreground truncate w-full">{creator.headline}</p>
+              <h3 className="font-medium text-sm">{creator.full_name}</h3>
+              <p className="text-xs text-muted-foreground">{creator.headline}</p>
               
               {/* Rating */}
               <div className="flex items-center justify-center space-x-1 mt-1">
-                <span className="text-yellow-500 text-xs">★</span>
-                <span className="text-xs">{creator.rating}</span>
-                <span className="text-xs text-muted-foreground">({creator.ratingsCount})</span>
+                <span className="text-yellow-400">★</span>
+                <span className="text-sm">{creator.rating}</span>
               </div>
             </div>
             
             {/* Action Icons */}
-            <div className="flex items-center space-x-2 mt-2">
+            <div className="flex items-center space-x-3">
               {/* Phone Icon with Appointment Count */}
               <div className="relative">
                 <Phone 
-                  className={`h-4 w-4 ${
-                    appointmentCounts[creator.id] > 0 ? 'animate-pulse text-orange-500' : 'text-muted-foreground'
+                  className={`h-5 w-5 ${
+                    appointmentCounts[creator.id] > 0 ? 'text-orange-500' : 'text-muted-foreground'
                   }`} 
                 />
                 {appointmentCounts[creator.id] > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[14px] h-3.5 flex items-center justify-center px-0.5">
+                  <div className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-[18px] flex items-center justify-center">
                     {appointmentCounts[creator.id]}
                   </div>
                 )}
               </div>
               
               {/* Heart Icon */}
-              <Heart className="h-4 w-4 text-muted-foreground hover:text-red-500 cursor-pointer transition-colors" />
+              <Heart className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         ))}
 
-        {/* Fill empty slots if less than 12 creators */}
+        {/* Fill empty slots to maintain grid layout */}
         {Array.from({ length: Math.max(0, creatorsPerPage - currentCreators.length) }).map((_, index) => (
-          <div key={`empty-${index}`} className="flex flex-col items-center space-y-2 p-3 opacity-30">
-            <div className="h-16 w-16 bg-muted rounded-full border-2 border-dashed border-muted-foreground/30"></div>
+          <div key={`empty-${index}`} className="flex flex-col items-center space-y-2 opacity-30">
+            <div className="h-20 w-20 bg-muted rounded-full border-2 border-dashed border-muted-foreground/30"></div>
             <div className="text-center">
               <p className="text-xs text-muted-foreground">Available Soon</p>
             </div>

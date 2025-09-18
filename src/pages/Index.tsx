@@ -244,12 +244,14 @@ const Index = () => {
       case "live":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter live creators..."
-              fullWidth
-            />
+            <div className="pb-1">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter live creators..."
+                fullWidth
+              />
+            </div>
             <div className="px-4">
               <OnlineCreatorsGrid 
                 selectedCategory={selectedFilter}
@@ -264,12 +266,14 @@ const Index = () => {
       case "trending":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter trending content..."
-              fullWidth
-            />
+            <div className="pb-1">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter trending content..."
+                fullWidth
+              />
+            </div>
             <div className="px-4 pt-4 space-y-6">
               <SmartTrendingEngine />
             </div>
@@ -279,12 +283,14 @@ const Index = () => {
       case "search":
         return (
           <div className="h-full overflow-y-auto pb-20">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter creators..."
-              fullWidth
-            />
+            <div className="pb-1">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter creators..."
+                fullWidth
+              />
+            </div>
             {discoveryMode === 'search' && (
               <>
                 <div className="mx-4">
@@ -370,12 +376,13 @@ const Index = () => {
       case "following":
         return (
           <div className="px-4 pt-4 pb-20 space-y-6">
-            <IOSSearchBar
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Filter following content..."
-              className="mb-4"
-            />
+            <div className="pb-1">
+              <IOSSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Filter following content..."
+              />
+            </div>
             <FanLoyaltyProgram />
             <ActivityFeed />
           </div>
