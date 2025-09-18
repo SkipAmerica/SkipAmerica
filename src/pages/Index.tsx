@@ -291,13 +291,13 @@ const Index = () => {
               showDiscoveryToggle={true}
               discoveryMode={discoveryMode}
               onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={false}
+              showBrowseSubTabs={discoveryMode === 'browse'}
               browseMode={browseMode}
               onBrowseModeChange={setBrowseMode}
-              searchValue={filters.query}
+              searchValue={discoveryMode === 'match' ? '' : filters.query}
               onSearchChange={updateQuery}
-              searchPlaceholder="Search creators..."
-              showInterestFilters={true}
+              searchPlaceholder={discoveryMode === 'search' ? "Search creators..." : "Filter creators..."}
+              showInterestFilters={discoveryMode === 'search'}
               selectedCategory={filters.selectedCategory}
               onCategoryChange={updateSelectedCategory}
             />
