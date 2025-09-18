@@ -22,7 +22,7 @@ export const BrowseSubTabs = ({ mode, onModeChange, className }: BrowseSubTabsPr
         onClick={() => onModeChange('live')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-r-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8",
-          mode === 'live' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          mode === 'live' ? "bg-cyan-500 text-white" : "hover:bg-background/50"
         )}
       >
         <Users className="h-4 w-4" />
@@ -34,8 +34,8 @@ export const BrowseSubTabs = ({ mode, onModeChange, className }: BrowseSubTabsPr
         size="sm"
         onClick={() => onModeChange('schedule')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-l-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8",
-          mode === 'schedule' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-l-none rounded-r-lg px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8",
+          mode === 'schedule' ? "bg-cyan-500 text-white" : "hover:bg-background/50"
         )}
       >
         <Calendar className="h-4 w-4" />
