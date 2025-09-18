@@ -292,60 +292,10 @@ const Index = () => {
     }
   };
 
-  // Show signed out experience
+  // Redirect non-logged in users to auth page
   if (!user) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center px-8 text-white">
-        {/* Skip Logo */}
-        <div className="text-center mb-12">
-          <h1 className="text-6xl font-bold mb-4">Skip</h1>
-          <p className="text-xl text-gray-300 mb-8">
-            Connect with creators and experts instantly
-          </p>
-        </div>
-
-        {/* Hero Content */}
-        <div className="text-center max-w-md mb-12">
-          <h2 className="text-2xl font-semibold mb-4">
-            Monetize Your Following
-          </h2>
-          <p className="text-gray-300 mb-6">
-            Set your rate, start earning per minute. Professional protection with secure payments & content moderation.
-          </p>
-          
-          <div className="space-y-4 mb-8">
-            <div className="flex items-center space-x-3">
-              <DollarSign className="h-6 w-6 text-primary" />
-              <span>Direct Revenue Stream</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Shield className="h-6 w-6 text-primary" />
-              <span>Professional Protection</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Zap className="h-6 w-6 text-primary" />
-              <span>Easy Integration</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Auth Buttons */}
-        <div className="w-full max-w-sm space-y-4">
-          <Button 
-            className="w-full bg-white text-black hover:bg-gray-100"
-            onClick={() => navigate("/auth")}
-          >
-            Sign Up
-          </Button>
-          <Button 
-            className="w-full bg-transparent border-2 border-white text-white hover:bg-white hover:text-black"
-            onClick={() => navigate("/auth")}
-          >
-            Sign In
-          </Button>
-        </div>
-      </div>
-    );
+    navigate("/auth");
+    return null;
   }
 
   // Main iOS interface for signed in users
