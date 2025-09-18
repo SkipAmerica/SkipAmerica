@@ -65,11 +65,20 @@ const Index = () => {
   const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
     
+    // If we're on search tab and user wants to go to browse/match, switch to discover tab
+    if (activeTab === 'search' && (mode === 'browse' || mode === 'match')) {
+      console.log('Index - switching from search tab to discover tab with mode:', mode);
+      setPreviousDiscoveryMode(mode);
+      setActiveTab('discover');
+      return;
+    }
+    
     // Store previous mode before changing to search
     if (mode === 'search' && discoveryMode !== 'search') {
       if (discoveryMode === 'browse' || discoveryMode === 'match') {
         setPreviousDiscoveryMode(discoveryMode);
       }
+      setActiveTab('search');
     }
     
     setDiscoveryMode(mode);
