@@ -118,6 +118,16 @@ export const SwipeableCreatorCards = ({
     e.preventDefault();
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    const touch = e.touches[0];
+    if (touch) {
+      const startX = touch.clientX - window.innerWidth / 2;
+      const startY = touch.clientY - window.innerHeight / 2;
+      setDragOffset({ x: startX, y: startY });
+    }
+  };
+
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
 
@@ -129,7 +139,44 @@ export const SwipeableCreatorCards = ({
     setRotation(newRotation);
   }, [isDragging]);
 
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    if (touch) {
+      const x = touch.clientX - window.innerWidth / 2;
+      const y = touch.clientY - window.innerHeight / 2;
+      const newRotation = x * 0.1;
+      
+      setDragOffset({ x, y });
+      setRotation(newRotation);
+    }
+  }, [isDragging]);
+
   const handleMouseUp = useCallback(() => {
+    if (!isDragging) return;
+    
+    setIsDragging(false);
+    
+    // Determine action based on drag distance
+    const threshold = 100;
+    const superLikeThreshold = -150;
+    
+    if (dragOffset.y < superLikeThreshold) {
+      handleCardAction('superlike');
+    } else if (dragOffset.x > threshold) {
+      handleCardAction('like');
+    } else if (dragOffset.x < -threshold) {
+      handleCardAction('pass');
+    } else {
+      // Reset position if not enough drag
+      setDragOffset({ x: 0, y: 0 });
+      setRotation(0);
+    }
+  }, [isDragging, dragOffset, handleCardAction]);
+
+  const handleTouchEnd = useCallback(() => {
     if (!isDragging) return;
     
     setIsDragging(false);
@@ -155,12 +202,16 @@ export const SwipeableCreatorCards = ({
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
   if (!currentCreator) {
     return (
@@ -229,7 +280,7 @@ export const SwipeableCreatorCards = ({
         <Card 
           ref={el => cardRefs.current[0] = el}
           className={cn(
-            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200",
+            "absolute inset-0 cursor-grab active:cursor-grabbing shadow-elegant transition-transform duration-200 select-none",
             isDragging ? "scale-105" : "scale-100"
           )}
           style={{
@@ -237,6 +288,7 @@ export const SwipeableCreatorCards = ({
             zIndex: 10
           }}
           onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
         >
           <CardContent className="p-0 h-full">
             <div className="relative h-full rounded-lg overflow-hidden">
@@ -259,11 +311,11 @@ export const SwipeableCreatorCards = ({
               )}
 
               {/* Action Buttons - Top */}
-              <div className="absolute top-4 left-4 flex space-x-2 z-30">
+              <div className="absolute top-4 left-4 flex space-x-2 z-30 pointer-events-auto">
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-8 w-8 p-0 bg-white/20 backdrop-blur-sm border-0 hover:bg-white/30"
+                  className="h-8 w-8 p-0 bg-black/40 backdrop-blur-sm border-0 hover:bg-black/60"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreatorBookmark(currentCreator.id);
@@ -275,7 +327,7 @@ export const SwipeableCreatorCards = ({
                 <Button
                   size="sm"
                   variant="secondary"
-                  className="h-8 w-8 p-0 bg-white/20 backdrop-blur-sm border-0 hover:bg-white/30"
+                  className="h-8 w-8 p-0 bg-black/40 backdrop-blur-sm border-0 hover:bg-black/60"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreatorShare(currentCreator.id);

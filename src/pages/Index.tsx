@@ -54,7 +54,7 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule'>('grid');
+  const [discoveryMode, setDiscoveryMode] = useState<'grid' | 'cards' | 'schedule'>('cards');
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
