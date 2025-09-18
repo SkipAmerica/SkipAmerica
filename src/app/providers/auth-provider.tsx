@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/shared/api/client'
-import { toast } from '@/components/ui/use-toast'
 
 interface AuthContextType {
   user: User | null
@@ -35,18 +34,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(session?.user ?? null)
         setLoading(false)
 
-        // Handle auth events
-        if (event === 'SIGNED_OUT') {
-          toast({
-            title: 'Signed out',
-            description: 'You have been signed out successfully.',
-          })
-        } else if (event === 'SIGNED_IN') {
-          toast({
-            title: 'Welcome back!',
-            description: 'You have been signed in successfully.',
-          })
-        }
+        // Handle auth events - removed popup prompts
       }
     )
 
@@ -66,13 +54,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       password,
     })
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error signing in',
-        description: error.message,
-      })
-    }
+    // Error handled silently - no popup prompts
 
     return { error }
   }
@@ -92,18 +74,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       },
     })
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error signing up',
-        description: error.message,
-      })
-    } else {
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a confirmation link to complete your signup.',
-      })
-    }
+    // Success/error handled silently - no popup prompts
 
     return { error }
   }
@@ -111,13 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error signing out',
-        description: error.message,
-      })
-    }
+    // Error handled silently - no popup prompts
 
     return { error }
   }
@@ -129,18 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       redirectTo: redirectUrl,
     })
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error sending reset email',
-        description: error.message,
-      })
-    } else {
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a password reset link.',
-      })
-    }
+    // Success/error handled silently - no popup prompts
 
     return { error }
   }
@@ -154,18 +108,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     })
 
-    if (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error resending confirmation',
-        description: error.message,
-      })
-    } else {
-      toast({
-        title: 'Check your email',
-        description: 'We sent you a new confirmation link.',
-      })
-    }
+    // Success/error handled silently - no popup prompts
 
     return { error }
   }
