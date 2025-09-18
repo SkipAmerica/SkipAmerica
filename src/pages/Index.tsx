@@ -270,65 +270,6 @@ const Index = () => {
                 </div>
               </div>
             )}
-
-            {/* Features - Mobile Cards (only show for grid/schedule modes) */}
-            {discoveryMode !== 'cards' && (
-              <>
-                <IOSListView className="mx-4">
-                  <IOSListSection header="Monetize Your Following">
-                    <IOSListItem chevron onClick={() => {}}>
-                      <div className="flex items-center space-x-3">
-                        <DollarSign className="h-8 w-8 text-primary flex-shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-medium">Direct Revenue Stream</div>
-                          <div className="text-sm text-muted-foreground">
-                            Set your rate, start earning per minute
-                          </div>
-                        </div>
-                      </div>
-                    </IOSListItem>
-                    <IOSListItem chevron onClick={() => {}}>
-                      <div className="flex items-center space-x-3">
-                        <Star className="h-8 w-8 text-primary flex-shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-medium">Professional Protection</div>
-                          <div className="text-sm text-muted-foreground">
-                            Secure payments & content moderation
-                          </div>
-                        </div>
-                      </div>
-                    </IOSListItem>
-                    <IOSListItem chevron onClick={() => {}}>
-                      <div className="flex items-center space-x-3">
-                        <Zap className="h-8 w-8 text-primary flex-shrink-0" />
-                        <div className="min-w-0">
-                          <div className="font-medium">Easy Integration</div>
-                          <div className="text-sm text-muted-foreground">
-                            Works with your existing social presence
-                          </div>
-                        </div>
-                      </div>
-                    </IOSListItem>
-                  </IOSListSection>
-                </IOSListView>
-
-                {/* Sponsored Content */}
-                <div className="mx-4">
-                  <AdBanner placement="banner" />
-                </div>
-
-                {/* Activity Feed Preview */}
-                <div className="mx-4 pb-20">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">Recent Activity</h2>
-                    <Button variant="outline" size="sm" onClick={() => user && setActiveTab("following")}>
-                      View Full Feed
-                    </Button>
-                  </div>
-                  <ActivityFeed />
-                </div>
-              </>
-            )}
           </div>
         );
 
