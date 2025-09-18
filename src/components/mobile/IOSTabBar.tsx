@@ -17,8 +17,8 @@ interface TabItem {
 
 export function IOSTabBar({ activeTab, onTabChange, showFollowing }: IOSTabBarProps) {
   const baseTabs: TabItem[] = [
-    { id: 'discover', label: 'Match', icon: Home },
-    { id: 'live', label: 'Browse', icon: Users },
+    { id: 'discover', label: 'Discover', icon: Home },
+    { id: 'live', label: 'Live', icon: Users },
     { id: 'search', label: 'Search', icon: Search },
   ];
 

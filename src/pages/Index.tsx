@@ -61,7 +61,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("discover");
   const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'search'>('browse');
   const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
-  const [previousDiscoveryMode, setPreviousDiscoveryMode] = useState<'browse' | 'match'>('browse');
   
   const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
@@ -87,20 +86,6 @@ const Index = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
   
-  
-  // Handle discovery mode changes based on active tab
-  useEffect(() => {
-    console.log('Index - tab changed to:', activeTab, 'current discovery mode:', discoveryMode);
-    
-    if (activeTab === "discover" && discoveryMode === "search") {
-      console.log("Index - restoring previous discovery mode:", previousDiscoveryMode);
-      setDiscoveryMode(previousDiscoveryMode);
-    } else if (activeTab === "discover" && discoveryMode !== "browse" && discoveryMode !== "match") {
-      // Fallback to browse mode for discover tab
-      console.log("Index - defaulting to browse mode for discover tab");
-      setDiscoveryMode('browse');
-    }
-  }, [activeTab, discoveryMode, previousDiscoveryMode]);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -253,31 +238,13 @@ const Index = () => {
       case "live":
         return (
           <div className="h-full flex flex-col overflow-hidden" style={{ paddingTop: `${headerHeight}px` }}>
-            {/* Freeze Pane */}
-            <FreezePane
-              showDiscoveryToggle={false}
-              discoveryMode={discoveryMode}
-              onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={false}
-              browseMode={browseMode}
-              onBrowseModeChange={setBrowseMode}
-              searchValue={filters.query}
-              onSearchChange={updateQuery}
-              searchPlaceholder="Filter live creators..."
-              showInterestFilters={false}
-              selectedCategory={filters.selectedCategory}
-              onCategoryChange={updateSelectedCategory}
-            />
-            
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20">
-              <div className="px-4">
-                <OnlineCreatorsGrid 
-                  selectedCategory={filters.selectedCategory}
-                  onCreatorSelect={handleCreatorSelect}
-                  hideHeader={true}
-                />
-              </div>
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
+              <OnlineCreatorsGrid 
+                selectedCategory={filters.selectedCategory}
+                onCreatorSelect={handleCreatorSelect}
+                hideHeader={false}
+              />
             </div>
           </div>
         );
@@ -286,84 +253,22 @@ const Index = () => {
       case "search":
         return (
           <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
-            {/* Freeze Pane */}
-            <FreezePane
-              showDiscoveryToggle={true}
-              discoveryMode={discoveryMode}
-              onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={discoveryMode === 'browse'}
-              browseMode={browseMode}
-              onBrowseModeChange={setBrowseMode}
-              searchValue={discoveryMode === 'match' ? '' : filters.query}
-              onSearchChange={updateQuery}
-              searchPlaceholder={discoveryMode === 'search' ? "Search creators..." : "Filter creators..."}
-              showInterestFilters={discoveryMode === 'search'}
-              selectedCategory={filters.selectedCategory}
-              onCategoryChange={updateSelectedCategory}
-            />
-            
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20">
-              {discoveryMode === 'search' && (
-                <div className="mx-4">
-                  <div className="flex justify-end mt-2 mb-3">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setActiveTab("advanced")}
-                      className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                    >
-                      Creator Matchmaker
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Search Results Based on Discovery Mode */}
-              {discoveryMode === 'match' ? (
-                <div className="px-4">
-                  <SwipeableCreatorCards
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
-                  />
-                </div>
-              ) : discoveryMode === 'browse' ? (
-                <div className="mx-4">
-                  {browseMode === 'live' ? (
-                    <OnlineCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  ) : (
-                    <ScheduleCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  )}
-                </div>
-              ) : discoveryMode === 'search' ? (
-                <div className="mx-4">
-                  <CreatorSearch 
-                    onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                    onStartCall={(creator) => handleCreatorSelect(creator.id)}
-                  />
-                </div>
-              ) : (
-                <div className="mx-4">
-                  <OnlineCreatorsGrid 
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorSelect={handleCreatorSelect}
-                    hideHeader={true}
-                  />
-                </div>
-              )}
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
+              <div className="flex justify-end mb-3">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setActiveTab("advanced")}
+                  className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+                >
+                  Creator Matchmaker
+                </Button>
+              </div>
+              <CreatorSearch 
+                onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+                onStartCall={(creator) => handleCreatorSelect(creator.id)}
+              />
             </div>
           </div>
         );
@@ -376,22 +281,6 @@ const Index = () => {
       case "following":
         return (
           <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
-            {/* Freeze Pane */}
-            <FreezePane
-              showDiscoveryToggle={false}
-              discoveryMode={discoveryMode}
-              onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={false}
-              browseMode={browseMode}
-              onBrowseModeChange={setBrowseMode}
-              searchValue={filters.query}
-              onSearchChange={updateQuery}
-              searchPlaceholder="Filter following content..."
-              showInterestFilters={false}
-              selectedCategory={filters.selectedCategory}
-              onCategoryChange={updateSelectedCategory}
-            />
-            
             {/* Content */}
             <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6">
               <FanLoyaltyProgram />
