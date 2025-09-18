@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.15f46a1e4701482b98fb246120c30114',
+  appId: 'com.lovable.skipcreator',
   appName: 'skip-creator-platform',
   webDir: 'dist',
   server: {
