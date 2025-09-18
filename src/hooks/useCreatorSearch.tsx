@@ -58,6 +58,51 @@ export function useCreatorSearch({
     setError(null);
 
     try {
+      // If no query and no filters, return mock data to avoid empty results
+      if (!query && categories.length === 0) {
+        const mockCreators = [
+          { 
+            id: '1', 
+            full_name: 'Taylor Swift', 
+            headline: 'Grammy-winning Artist & Songwriter',
+            bio: 'Multi-platinum recording artist with numerous Grammy Awards and Billboard chart-toppers.',
+            avatar_url: 'https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=150',
+            categories: ['entertainment', 'music'],
+            isOnline: false,
+            nextAvailable: 'Tomorrow 2pm',
+            ratingsCount: 8900,
+            rating: 4.9,
+          },
+          { 
+            id: '2', 
+            full_name: 'Elon Musk', 
+            headline: 'CEO & Technology Innovator',
+            bio: 'Entrepreneur and business magnate, CEO of Tesla and SpaceX, pioneering sustainable transport and space exploration.',
+            avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
+            categories: ['technology', 'business'],
+            isOnline: false,
+            nextAvailable: 'Friday 3pm',
+            ratingsCount: 2180,
+            rating: 4.7,
+          },
+          { 
+            id: '3', 
+            full_name: 'Jennifer Lopez', 
+            headline: 'Multi-Platinum Artist & Performer',
+            bio: 'Award-winning singer, actress, and businesswoman with decades of entertainment industry experience.',
+            avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150',
+            categories: ['entertainment', 'music'],
+            isOnline: false,
+            nextAvailable: 'Monday 10am',
+            ratingsCount: 3450,
+            rating: 4.9,
+          }
+        ];
+        
+        setCreators(mockCreators as Creator[]);
+        return;
+      }
+
       const { data, error: searchError } = await supabase.functions.invoke('enhanced-creator-search', {
         body: {
           query,
@@ -68,6 +113,7 @@ export function useCreatorSearch({
       });
 
       if (searchError) {
+        console.error('Search error details:', searchError);
         throw new Error(searchError.message || 'Search failed');
       }
 
