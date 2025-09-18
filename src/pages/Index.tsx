@@ -190,7 +190,7 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
-                <div className="px-4 pt-4">
+                <div className="px-4">
                   <SwipeableCreatorCards
                     selectedCategory={selectedFilter}
                     searchQuery={searchQuery}
@@ -211,7 +211,7 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
-                <div className="mx-4 mt-4">
+                 <div className="mx-4">
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -228,7 +228,7 @@ const Index = () => {
                   placeholder="Filter creators..."
                   fullWidth
                 />
-                <div className="mx-4 mt-4">
+                <div className="mx-4">
                   <ScheduleCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -250,7 +250,7 @@ const Index = () => {
               placeholder="Filter live creators..."
               fullWidth
             />
-            <div className="px-4 pt-4">
+            <div className="px-4">
               <OnlineCreatorsGrid 
                 selectedCategory={selectedFilter}
                 onCreatorSelect={handleCreatorSelect}
@@ -278,14 +278,15 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="h-full overflow-y-auto pb-20 space-y-4">
+          <div className="h-full overflow-y-auto pb-20">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter creators..."
+              fullWidth
+            />
             {discoveryMode === 'search' && (
               <>
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Search creators..."
-                />
                 <div className="mx-4">
                   {/* Dynamic Sort Options - Based on user's interests from sign-up */}
                   <div className="mb-3">
@@ -325,12 +326,6 @@ const Index = () => {
               </div>
             ) : discoveryMode === 'grid' ? (
               <div className="mx-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter creators..."
-                  className="mb-4"
-                />
                 <OnlineCreatorsGrid 
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
@@ -340,12 +335,6 @@ const Index = () => {
               </div>
             ) : discoveryMode === 'schedule' ? (
               <div className="mx-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter creators..."
-                  className="mb-4"
-                />
                 <ScheduleCreatorsGrid 
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
@@ -362,12 +351,6 @@ const Index = () => {
               </div>
             ) : (
               <div className="mx-4">
-                <IOSSearchBar
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                  placeholder="Filter creators..."
-                  className="mb-4"
-                />
                 <OnlineCreatorsGrid 
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
