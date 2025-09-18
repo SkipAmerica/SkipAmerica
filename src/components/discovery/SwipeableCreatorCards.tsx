@@ -90,9 +90,6 @@ export const SwipeableCreatorCards = ({
         break;
       case 'pass':
         onCreatorPass(creator.id);
-        toast(`Passed on ${creator.full_name}`, {
-          description: "We'll find better matches for you"
-        });
         break;
     }
 
