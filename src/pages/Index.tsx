@@ -180,7 +180,7 @@ const Index = () => {
           <div>
             {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
             <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
               style={{ top: 0 }}
             >
               <DiscoveryModeToggle 
@@ -198,7 +198,13 @@ const Index = () => {
 
             {/* Discovery Content Based on Mode */}
             {discoveryMode === 'cards' ? (
-              <div className="pb-20">
+              <div className="pb-20 pt-4 px-4">
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
                 <SwipeableCreatorCards
                   selectedCategory={selectedFilter}
                   searchQuery={searchQuery}
@@ -222,7 +228,13 @@ const Index = () => {
                 />
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
+              <div className="mx-4 pt-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 64}px)` }}>
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
                 <OnlineCreatorsGrid 
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
@@ -231,7 +243,13 @@ const Index = () => {
                 />
               </div>
             ) : (
-              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
+              <div className="mx-4 pt-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 64}px)` }}>
+                <IOSSearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Filter creators..."
+                  className="mb-4"
+                />
                 <ScheduleCreatorsGrid 
                   selectedCategory={selectedFilter}
                   onCreatorSelect={handleCreatorSelect}
@@ -246,16 +264,31 @@ const Index = () => {
 
       case "live":
         return (
-          <OnlineCreatorsGrid 
-            selectedCategory={selectedFilter}
-            onCreatorSelect={handleCreatorSelect}
-            searchQuery={searchQuery}
-          />
+          <div className="px-4 pt-4 pb-20">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter live creators..."
+              className="mb-4"
+            />
+            <OnlineCreatorsGrid 
+              selectedCategory={selectedFilter}
+              onCreatorSelect={handleCreatorSelect}
+              searchQuery={searchQuery}
+              hideHeader={true}
+            />
+          </div>
         );
 
       case "trending":
         return (
           <div className="px-4 pt-4 pb-20 space-y-6">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter trending content..."
+              className="mb-4"
+            />
             <SmartTrendingEngine />
           </div>
         );
@@ -265,7 +298,7 @@ const Index = () => {
           <div>
             {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
             <div 
-              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
+              className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)] -mb-0"
               style={{ top: 0 }}
             >
               <DiscoveryModeToggle 
@@ -308,7 +341,13 @@ const Index = () => {
 
               {/* Search Results Based on Discovery Mode */}
               {discoveryMode === 'cards' ? (
-                <div className="pb-20">
+                <div className="px-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filter creators..."
+                    className="mb-4"
+                  />
                   <SwipeableCreatorCards
                     selectedCategory={selectedFilter}
                     searchQuery={searchQuery}
@@ -333,6 +372,12 @@ const Index = () => {
                 </div>
               ) : discoveryMode === 'grid' ? (
                 <div className="mx-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filter creators..."
+                    className="mb-4"
+                  />
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -342,6 +387,12 @@ const Index = () => {
                 </div>
               ) : discoveryMode === 'schedule' ? (
                 <div className="mx-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filter creators..."
+                    className="mb-4"
+                  />
                   <ScheduleCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -358,6 +409,12 @@ const Index = () => {
                 </div>
               ) : (
                 <div className="mx-4">
+                  <IOSSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Filter creators..."
+                    className="mb-4"
+                  />
                   <OnlineCreatorsGrid 
                     selectedCategory={selectedFilter}
                     onCreatorSelect={handleCreatorSelect}
@@ -378,6 +435,12 @@ const Index = () => {
       case "following":
         return (
           <div className="px-4 pt-4 pb-20 space-y-6">
+            <IOSSearchBar
+              value={searchQuery}
+              onChange={setSearchQuery}
+              placeholder="Filter following content..."
+              className="mb-4"
+            />
             <FanLoyaltyProgram />
             <ActivityFeed />
           </div>
