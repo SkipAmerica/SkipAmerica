@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/app/providers/auth-provider'
 import { AuthForm } from './AuthForm'
 import { Loader2 } from 'lucide-react'
 

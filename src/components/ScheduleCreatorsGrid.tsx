@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Calendar, Phone, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
-import { useSearch } from '@/contexts/SearchContext';
+import { useSearch } from '@/app/providers/search-provider';
 
 interface Creator {
   id: string;

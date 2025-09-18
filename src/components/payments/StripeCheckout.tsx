@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Clock, DollarSign, User, Star } from 'lucide-react';

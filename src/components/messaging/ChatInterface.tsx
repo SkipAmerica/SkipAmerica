@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Send, Phone, Video, MoreVertical, Star } from 'lucide-react';

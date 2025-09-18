@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { 

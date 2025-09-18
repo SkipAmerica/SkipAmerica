@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, Heart, Star, Briefcase, Palette, Music, Camera, Gamepad2, Dumbbell, Utensils, BookOpen, Laptop, Mic, TrendingUp, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 
 interface InterestsSelectionProps {
   onComplete: () => void;

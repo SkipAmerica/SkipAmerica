@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/app/providers/auth-provider'
 import { Loader2, Mail, Lock, User, Users, Crown } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
 

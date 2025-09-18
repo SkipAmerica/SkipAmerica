@@ -3,9 +3,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Phone, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
-import { useSearch } from '@/contexts/SearchContext';
+import { useSearch } from '@/app/providers/search-provider';
 
 interface Creator {
   id: string;
@@ -38,7 +38,7 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, hideHead
   const { creators, loading, error } = useCreatorSearch({
     query: filters.query,
     categories: selectedCategory === 'all' ? [] : [selectedCategory],
-    availableOnly: filters.availableOnly
+    availableOnly: filters.filters?.isAvailable || false
   });
 
   // Filter for online creators only

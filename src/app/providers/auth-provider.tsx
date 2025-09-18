@@ -9,9 +9,10 @@ interface AuthContextType {
   session: Session | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, metadata?: Record<string, any>) => Promise<{ error: any }>
+  signUp: (email: string, password: string, fullName?: string, accountType?: 'fan' | 'creator' | 'agency' | 'industry_resource') => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
   resetPassword: (email: string) => Promise<{ error: any }>
+  resendConfirmation: (email: string) => Promise<{ error: any }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -76,7 +77,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { error }
   }
 
-  const signUp = async (email: string, password: string, metadata?: Record<string, any>) => {
+  const signUp = async (email: string, password: string, fullName?: string, accountType: 'fan' | 'creator' | 'agency' | 'industry_resource' = 'fan') => {
     const redirectUrl = `${window.location.origin}/`
     
     const { error } = await supabase.auth.signUp({
@@ -84,7 +85,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: metadata,
+        data: {
+          full_name: fullName,
+          account_type: accountType,
+        },
       },
     })
 
@@ -141,6 +145,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { error }
   }
 
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`
+      }
+    })
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error resending confirmation',
+        description: error.message,
+      })
+    } else {
+      toast({
+        title: 'Check your email',
+        description: 'We sent you a new confirmation link.',
+      })
+    }
+
+    return { error }
+  }
+
   const value: AuthContextType = {
     user,
     session,
@@ -149,6 +178,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signUp,
     signOut,
     resetPassword,
+    resendConfirmation,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

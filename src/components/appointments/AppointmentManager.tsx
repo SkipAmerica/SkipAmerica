@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, Clock, MessageCircle, X, CheckCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ReschedulingChat } from './ReschedulingChat';

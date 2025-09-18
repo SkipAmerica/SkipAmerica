@@ -5,7 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Star, TrendingUp } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { toast } from 'sonner';
 import { format, addDays, startOfDay, isAfter, isBefore, addMinutes } from 'date-fns';
 

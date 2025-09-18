@@ -11,7 +11,7 @@ import { Slider } from '@/components/ui/slider'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Textarea } from '@/components/ui/textarea'
 import { supabase } from '@/integrations/supabase/client'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuth } from '@/app/providers/auth-provider'
 import { toast } from 'sonner'
 
 interface Creator {

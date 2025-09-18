@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { Heart, Gift, Star, Coffee, Sparkles, Crown, Zap, MessageCircle } from 'lucide-react';
