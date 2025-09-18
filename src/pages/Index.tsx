@@ -202,7 +202,7 @@ const Index = () => {
                 />
               </div>
             ) : discoveryMode === 'grid' ? (
-              <div className="mx-4">
+              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
                 {/* Live Now Grid - Collapsible */}
                 <div className="mb-6">
                   <Collapsible open={liveNowOpen} onOpenChange={setLiveNowOpen}>
@@ -229,7 +229,7 @@ const Index = () => {
                 </div>
               </div>
             ) : (
-              <div className="mx-4">
+              <div className="mx-4 overflow-y-auto pb-20" style={{ height: `calc(100vh - ${headerHeight + 48}px)` }}>
                 {/* Schedule in Advance Grid */}
                 <div className="mb-6">
                   <Collapsible open={scheduleOpen} onOpenChange={setScheduleOpen}>
