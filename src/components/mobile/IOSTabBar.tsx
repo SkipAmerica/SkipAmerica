@@ -113,7 +113,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
                 "shadow-lg",
                 isLive 
                   ? "bg-destructive text-destructive-foreground scale-110" 
-                  : "bg-[#008B8B] text-white hover:scale-105"
+                  : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
               )}>
                 {isLive ? (
                   <span className="text-sm font-bold">End</span>
