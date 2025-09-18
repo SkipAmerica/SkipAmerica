@@ -169,7 +169,7 @@ const Index = () => {
             {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
             <div 
               className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
-              style={{ top: headerHeight }}
+              style={{ top: 0 }}
             >
               <DiscoveryModeToggle 
                 mode={discoveryMode}
@@ -280,7 +280,7 @@ const Index = () => {
             {/* Discovery Mode Toggle - Sticky with full-bleed wrapper */}
             <div 
               className="sticky z-30 w-[100dvw] ml-[calc(50%-50dvw)] mr-[calc(50%-50dvw)]"
-              style={{ top: headerHeight }}
+              style={{ top: 0 }}
             >
               <DiscoveryModeToggle 
                 mode={discoveryMode}
