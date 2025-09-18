@@ -58,11 +58,20 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'search'>('match');
+  const [discoveryMode, setDiscoveryMode] = useState<'browse' | 'match' | 'search'>('browse');
   const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
+  const [previousDiscoveryMode, setPreviousDiscoveryMode] = useState<'browse' | 'match'>('browse');
   
   const handleDiscoveryModeChange = (mode: 'browse' | 'match' | 'search') => {
     console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
+    
+    // Store previous mode before changing to search
+    if (mode === 'search' && discoveryMode !== 'search') {
+      if (discoveryMode === 'browse' || discoveryMode === 'match') {
+        setPreviousDiscoveryMode(discoveryMode);
+      }
+    }
+    
     setDiscoveryMode(mode);
   };
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -85,13 +94,26 @@ const Index = () => {
     return () => window.removeEventListener("resize", updateHeaderHeight);
   }, []);
   
-  // Ensure proper default when entering the Search tab
+  // Handle discovery mode changes based on active tab
   useEffect(() => {
+    console.log('Index - tab changed to:', activeTab, 'current discovery mode:', discoveryMode);
+    
     if (activeTab === "search" && discoveryMode !== "search") {
       console.log("Index - auto switching discovery mode to 'search' for Search tab");
+      // Store current mode before switching
+      if (discoveryMode === 'browse' || discoveryMode === 'match') {
+        setPreviousDiscoveryMode(discoveryMode);
+      }
       setDiscoveryMode("search");
+    } else if (activeTab === "discover" && discoveryMode === "search") {
+      console.log("Index - restoring previous discovery mode:", previousDiscoveryMode);
+      setDiscoveryMode(previousDiscoveryMode);
+    } else if (activeTab === "discover" && discoveryMode !== "browse" && discoveryMode !== "match") {
+      // Fallback to browse mode for discover tab
+      console.log("Index - defaulting to browse mode for discover tab");
+      setDiscoveryMode('browse');
     }
-  }, [activeTab]);  
+  }, [activeTab, discoveryMode, previousDiscoveryMode]);
   
   const { user } = useAuth();
   const { profile } = useProfile();
