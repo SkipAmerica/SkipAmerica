@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Home, Search, TrendingUp, Users, User } from 'lucide-react';
+import { Home, Hourglass, TrendingUp, Users, User } from 'lucide-react';
 
 interface IOSTabBarProps {
   activeTab: string;
@@ -20,7 +20,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing }: IOSTabBarPr
     { id: 'discover', label: 'Discover', icon: Home },
     { id: 'live', label: 'Live', icon: Users },
     { id: 'trending', label: 'Trending', icon: TrendingUp },
-    { id: 'advanced', label: 'Search', icon: Search },
+    { id: 'search', label: 'Search', icon: Hourglass },
   ];
 
   const tabs: TabItem[] = showFollowing 

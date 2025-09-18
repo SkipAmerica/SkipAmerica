@@ -252,8 +252,30 @@ const Index = () => {
               </div>
             )}
 
-            {/* Search and Filters - Moved below results */}
-            <div className="mx-4 pb-20">
+          </div>
+        );
+
+      case "live":
+        return (
+          <OnlineCreatorsGrid 
+            selectedCategory={selectedFilter}
+            onCreatorSelect={handleCreatorSelect}
+            searchQuery={searchQuery}
+          />
+        );
+
+      case "trending":
+        return (
+          <div className="px-4 pt-4 pb-20 space-y-6">
+            <SmartTrendingEngine />
+          </div>
+        );
+
+      case "search":
+        return (
+          <div className="pt-4 pb-20 space-y-4">
+            {/* Search and Filters */}
+            <div className="mx-4">
               {/* Dynamic Sort Options - Based on user's interests from sign-up */}
               <div className="mb-3">
                 <UserInterestFilters 
@@ -281,28 +303,22 @@ const Index = () => {
                 </div>
               </div>
             </div>
-          </div>
-        );
 
-      case "live":
-        return (
-          <OnlineCreatorsGrid 
-            selectedCategory={selectedFilter}
-            onCreatorSelect={handleCreatorSelect}
-            searchQuery={searchQuery}
-          />
-        );
-
-      case "trending":
-        return (
-          <div className="px-4 pt-4 pb-20 space-y-6">
-            <SmartTrendingEngine />
+            {/* Search Results Grid */}
+            <div className="mx-4">
+              <OnlineCreatorsGrid 
+                selectedCategory={selectedFilter}
+                onCreatorSelect={handleCreatorSelect}
+                searchQuery={searchQuery}
+                hideHeader={true}
+              />
+            </div>
           </div>
         );
 
       case "advanced":
         return (
-          <AdvancedCreatorSearch onBack={() => setActiveTab("discover")} />
+          <AdvancedCreatorSearch onBack={() => setActiveTab("search")} />
         );
 
       case "following":
