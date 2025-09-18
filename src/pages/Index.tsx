@@ -417,7 +417,7 @@ const Index = () => {
       >
         {/* Discovery Mode Toggle - Only for discovery tabs */}
         {showDiscoveryToggle && (
-          <div className="sticky top-0 z-30 bg-background border-b border-border">
+          <div className="sticky top-0 z-50 bg-background border-b border-border">
             <DiscoveryModeToggle 
               mode={discoveryMode}
               onModeChange={(mode) => {
