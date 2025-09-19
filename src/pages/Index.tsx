@@ -180,20 +180,40 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full flex flex-col relative">
-            {/* Separate Scrollable Containers for Each Discovery Mode */}
-            {discoveryMode === 'discover' && (
-              <div key="discover-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
+          <div className="h-full flex flex-col">
+            {/* Single scroll container with spacer + sticky FreezePane in flow */}
+            <div className="flex-1 overflow-y-auto pb-20">
+              {/* Spacer equals IG header height so FreezePane starts below it */}
+              <div style={{ height: `${headerHeight}px` }} />
+
+              <FreezePane
+                showDiscoveryToggle={showDiscoveryToggle}
+                discoveryMode={discoveryMode}
+                onDiscoveryModeChange={handleDiscoveryModeChange}
+                showBrowseSubTabs={discoveryMode === 'browse'}
+                browseMode={browseMode}
+                onBrowseModeChange={setBrowseMode}
+                searchValue={discoveryMode === 'browse' ? filters.query : ''}
+                onSearchChange={updateQuery}
+                searchPlaceholder="Filter creators..."
+                showInterestFilters={true}
+                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+                onFiltersChange={(newFilters) => {
+                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+                  updateSelectedCategory(newCategory)
+                }}
+              />
+
+              {/* Mode-specific content below the FreezePane */}
+              {discoveryMode === 'discover' && (
                 <div className="px-4 pt-2">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {discoveryMode === 'browse' && (
-              <div key="browse-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
+              )}
+
+              {discoveryMode === 'browse' && (
                 <div className="px-4 pt-2">
                   {browseMode === 'live' ? (
                     <OnlineCreatorsGrid 
@@ -209,11 +229,9 @@ const Index = () => {
                     />
                   )}
                 </div>
-              </div>
-            )}
-            
-            {discoveryMode === 'match' && (
-              <div key="match-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
+              )}
+
+              {discoveryMode === 'match' && (
                 <div className="px-4 pt-2">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
@@ -225,33 +243,7 @@ const Index = () => {
                     onCreatorBookmark={handleCreatorBookmark}
                   />
                 </div>
-              </div>
-            )}
-
-            {/* Freeze Pane positioned absolutely to slide freely */}
-            <div 
-              className="absolute left-0 right-0 z-50" 
-              style={{ top: `${headerHeight}px` }}
-            >
-              <FreezePane
-                showDiscoveryToggle={showDiscoveryToggle}
-                discoveryMode={discoveryMode}
-                onDiscoveryModeChange={handleDiscoveryModeChange}
-                showBrowseSubTabs={discoveryMode === 'browse'}
-                browseMode={browseMode}
-                onBrowseModeChange={setBrowseMode}
-                searchValue={discoveryMode === 'browse' ? filters.query : ''}
-                onSearchChange={updateQuery}
-                searchPlaceholder="Filter creators..."
-                showInterestFilters={true}
-                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-                onFiltersChange={(newFilters) => {
-                  // Convert array back to single category for existing logic
-                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all';
-                  updateSelectedCategory(newCategory);
-                }}
-                headerHeight={0}
-              />
+              )}
             </div>
           </div>
         );
