@@ -279,8 +279,8 @@ const Index = () => {
     <div className="min-h-screen bg-background relative">
       {/* Status Bar Overlay - prevents content from showing above DMT */}
       <div 
-        className="fixed top-0 left-0 right-0 z-[35] bg-gradient-to-b from-turquoise-600 to-turquoise-500"
-        style={{ height: 'env(safe-area-inset-top, 44px)' }}
+        className="pointer-events-none fixed top-0 left-0 right-0 z-[45] bg-gradient-to-b from-turquoise-600 to-turquoise-500"
+        style={{ height: 'var(--safe-area-top)' }}
       />
       
       <div
