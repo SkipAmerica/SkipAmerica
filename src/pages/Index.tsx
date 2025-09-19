@@ -180,28 +180,7 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full flex flex-col">
-            {/* Freeze Pane */}
-            <FreezePane
-              showDiscoveryToggle={showDiscoveryToggle}
-              discoveryMode={discoveryMode}
-              onDiscoveryModeChange={handleDiscoveryModeChange}
-              showBrowseSubTabs={discoveryMode === 'browse'}
-              browseMode={browseMode}
-              onBrowseModeChange={setBrowseMode}
-              searchValue={discoveryMode === 'browse' ? filters.query : ''}
-              onSearchChange={updateQuery}
-              searchPlaceholder="Filter creators..."
-              showInterestFilters={true}
-              selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-              onFiltersChange={(newFilters) => {
-                // Convert array back to single category for existing logic
-                const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all';
-                updateSelectedCategory(newCategory);
-              }}
-              headerHeight={0}
-            />
-            
+          <div className="h-full flex flex-col relative">
             {/* Separate Scrollable Containers for Each Discovery Mode */}
             {discoveryMode === 'discover' && (
               <div key="discover-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
@@ -248,6 +227,32 @@ const Index = () => {
                 </div>
               </div>
             )}
+
+            {/* Freeze Pane positioned absolutely to slide freely */}
+            <div 
+              className="absolute left-0 right-0 z-50" 
+              style={{ top: `${headerHeight}px` }}
+            >
+              <FreezePane
+                showDiscoveryToggle={showDiscoveryToggle}
+                discoveryMode={discoveryMode}
+                onDiscoveryModeChange={handleDiscoveryModeChange}
+                showBrowseSubTabs={discoveryMode === 'browse'}
+                browseMode={browseMode}
+                onBrowseModeChange={setBrowseMode}
+                searchValue={discoveryMode === 'browse' ? filters.query : ''}
+                onSearchChange={updateQuery}
+                searchPlaceholder="Filter creators..."
+                showInterestFilters={true}
+                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+                onFiltersChange={(newFilters) => {
+                  // Convert array back to single category for existing logic
+                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all';
+                  updateSelectedCategory(newCategory);
+                }}
+                headerHeight={0}
+              />
+            </div>
           </div>
         );
 
