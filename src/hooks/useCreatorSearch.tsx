@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/app/providers/auth-provider';
 
@@ -48,11 +48,29 @@ export function useCreatorSearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Prevent duplicate fetches with same inputs within a short window
+  const lastSignatureRef = useRef<string>('');
+  const lastFetchAtRef = useRef<number>(0);
+  const inFlightRef = useRef<boolean>(false);
+
   const searchCreators = useCallback(async () => {
     if (!user) {
       setCreators([]);
       return;
     }
+
+    // Build a stable signature for the current inputs
+    const signature = JSON.stringify({ query, categories, availableOnly, limit });
+    const now = Date.now();
+
+    // Skip if same inputs were fetched very recently or a request is in-flight
+    if (signature === lastSignatureRef.current && now - lastFetchAtRef.current < 4000) {
+      return;
+    }
+    if (inFlightRef.current) return;
+
+    inFlightRef.current = true;
+    lastSignatureRef.current = signature;
 
     setLoading(true);
     setError(null);
@@ -263,6 +281,8 @@ export function useCreatorSearch({
       console.error('Creator search error:', err);
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
+      lastFetchAtRef.current = Date.now();
     }
   }, [user, query, categories, availableOnly, limit]);
 

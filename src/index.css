@@ -416,7 +416,7 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: calc(var(--safe-area-top) + var(--ios-header-height));
+  top: var(--safe-area-top); /* Stick just below the status bar; header space is reserved by container padding */
   z-index: 50;
   contain: layout style;
   transform: translateZ(0);
@@ -431,15 +431,14 @@
 
 /* Legacy freeze pane for backwards compatibility */
 .freeze-pane-container {
-  /* Web browsers - always sticky positioning */
+  /* Always sticky positioning */
   position: sticky;
-  top: calc(var(--safe-area-top) + var(--ios-header-height));
+  top: var(--safe-area-top);
 }
 
 /* Mobile-specific overrides */
 @media screen and (max-width: 768px) {
   .freeze-pane-container {
-    /* Mobile will use JavaScript-controlled positioning */
     transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
