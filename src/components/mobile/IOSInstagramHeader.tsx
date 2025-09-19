@@ -24,7 +24,7 @@ export function IOSInstagramHeader({
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { isKeyboardVisible, getKeyboardAwareSafeTop } = useKeyboardAware();
+  const { isKeyboardVisible } = useKeyboardAware();
 
   const handleRecordVideo = () => {
     const input = document.createElement('input');
@@ -65,7 +65,7 @@ export function IOSInstagramHeader({
         className
       )}
       style={{ 
-        top: isKeyboardVisible ? getKeyboardAwareSafeTop() : undefined,
+        top: isKeyboardVisible ? 'var(--debug-safe-top)' : undefined,
         transform: 'translateZ(0)',
         willChange: isKeyboardVisible ? 'transform, top' : 'transform',
         WebkitBackfaceVisibility: 'hidden'

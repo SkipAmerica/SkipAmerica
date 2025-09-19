@@ -80,7 +80,7 @@ const Index = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isLive, toggleLiveStatus } = useLiveStatus();
-  const { isKeyboardVisible } = useKeyboardAware();
+  const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
 
   // Stabilize iOS safe area top across keyboard show/hide

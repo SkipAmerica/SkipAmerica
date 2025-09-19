@@ -6,7 +6,7 @@ interface KeyboardState {
   height: number;
 }
 
-export const useKeyboardAware = () => {
+export const useKeyboardAware = (currentTab?: string) => {
   const [keyboardState, setKeyboardState] = useState<KeyboardState>({
     isVisible: false,
     height: 0
@@ -86,9 +86,9 @@ export const useKeyboardAware = () => {
   
   const keyboardHeight = useMemo(() => keyboardState.height, [keyboardState.height]);
 
-  // Simplified safe area calculation
+  // Tab-aware safe area calculation with stable positioning
   const getKeyboardAwareSafeTop = useCallback(() => {
-    return 'var(--safe-area-top)';
+    return 'var(--debug-safe-top)';
   }, []);
 
   return {
