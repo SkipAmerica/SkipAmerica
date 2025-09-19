@@ -63,6 +63,8 @@ export function IOSInstagramHeader({
       !transparent && "bg-turquoise-light/15 backdrop-blur-md border-b border-border/50",
       className
     )}>
+      {/* Spacer above IG panel */}
+      <div className="h-[15px]" aria-hidden="true" />
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">
         <div className="flex items-center">
