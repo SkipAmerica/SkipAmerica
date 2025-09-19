@@ -62,7 +62,7 @@ export function SocialVerification() {
     try {
       const { data, error } = await supabase
         .from('social_accounts')
-        .select('*')
+        .select('id, platform, platform_username, platform_user_id, follower_count, verification_status, account_created_at, created_at, updated_at, metadata')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
