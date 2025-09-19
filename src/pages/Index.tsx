@@ -182,7 +182,13 @@ const Index = () => {
         return (
           <div className="h-full flex flex-col">
             {/* Single scroll container with spacer + sticky FreezePane in flow */}
-            <div className="flex-1 overflow-y-auto pb-20">
+            <div 
+              className="flex-1 overflow-y-auto pb-20 bg-background"
+              style={{ 
+                overscrollBehavior: 'none',
+                touchAction: 'pan-y'
+              }}
+            >
               {/* Spacer equals IG header height so FreezePane starts below it */}
               <div style={{ height: `${headerHeight}px` }} />
 
@@ -206,7 +212,7 @@ const Index = () => {
 
               {/* Mode-specific content below the FreezePane */}
               {discoveryMode === 'discover' && (
-                <div className="px-4 pt-3 min-h-[110vh]">
+                <div className="px-4 pt-3 min-h-[110vh] bg-background">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
                   </div>
@@ -214,7 +220,7 @@ const Index = () => {
               )}
 
               {discoveryMode === 'browse' && (
-                <div className="px-4 pt-2">
+                <div className="px-4 pt-2 bg-background">
                   {browseMode === 'live' ? (
                     <OnlineCreatorsGrid 
                       selectedCategory={filters.selectedCategory}
@@ -232,7 +238,7 @@ const Index = () => {
               )}
 
               {discoveryMode === 'match' && (
-                <div className="px-4 pt-3 min-h-[110vh]">
+                <div className="px-4 pt-3 min-h-[110vh] bg-background">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
                     onCreatorLike={handleCreatorLike}

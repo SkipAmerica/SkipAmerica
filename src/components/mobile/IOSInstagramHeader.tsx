@@ -52,13 +52,20 @@ export function IOSInstagramHeader({
   };
 
   return (
-    <div id="ig-header" className={cn(
-      "fixed top-0 left-0 right-0 z-40",
-      "flex flex-col",
-      "px-4 pt-safe-top pb-0",
-      !transparent && "bg-turquoise-light/15 backdrop-blur-md",
-      className
-    )}>
+    <div 
+      id="ig-header" 
+      className={cn(
+        "fixed top-0 left-0 right-0 z-40",
+        "flex flex-col",
+        "px-4 pt-safe-top pb-0",
+        !transparent && "bg-turquoise-light/15 backdrop-blur-md",
+        className
+      )}
+      style={{ 
+        overscrollBehavior: 'none',
+        touchAction: 'pan-x pan-down pinch-zoom'
+      }}
+    >
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">
         <div className="flex items-center">
