@@ -43,9 +43,9 @@ export const PrivacySettings = () => {
         .from('profile_privacy_settings')
         .select('*')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 

@@ -73,10 +73,22 @@ export function SmartTrendingEngine() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadTrendingCreators();
-  }, [selectedCategory]);
+    // Only load trending creators if user is authenticated
+    if (user) {
+      loadTrendingCreators();
+    } else {
+      setLoading(false);
+    }
+  }, [selectedCategory, user]);
 
   const loadTrendingCreators = async () => {
+    // Only authenticated users can view profiles now
+    if (!user) {
+      setTrendingCreators([]);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       let query = supabase
@@ -137,6 +149,10 @@ export function SmartTrendingEngine() {
       setTrendingCreators(creatorsWithTrends);
     } catch (error) {
       console.error('Error loading trending creators:', error);
+      // Handle authentication errors gracefully
+      if (error?.message?.includes('JWT') || error?.message?.includes('auth')) {
+        setTrendingCreators([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -230,9 +246,14 @@ export function SmartTrendingEngine() {
         <Card>
           <CardContent className="p-8 text-center">
             <TrendingUp className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-semibold mb-2">No trending creators found</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {!user ? 'Sign in to view trending creators' : 'No trending creators found'}
+            </h3>
             <p className="text-muted-foreground">
-              Check back later for the latest trending creators
+              {!user 
+                ? 'Please sign in to discover trending creators and their profiles'
+                : 'Check back later for the latest trending creators'
+              }
             </p>
           </CardContent>
         </Card>
