@@ -75,17 +75,6 @@ const Index = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<string | null>(null);
-  const [headerHeight, setHeaderHeight] = useState(0);
-
-  useEffect(() => {
-    const updateHeaderHeight = () => {
-      const el = document.getElementById("ig-header");
-      if (el) setHeaderHeight(el.getBoundingClientRect().height);
-    };
-    updateHeaderHeight();
-    window.addEventListener("resize", updateHeaderHeight);
-    return () => window.removeEventListener("resize", updateHeaderHeight);
-  }, []);
   
   
   const { user } = useAuth();
@@ -180,23 +169,17 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full flex flex-col">
-            {/* Single scroll container with spacer + sticky FreezePane in flow */}
+          <div className="h-full flex flex-col overflow-hidden">
+            {/* Content area with proper sticky flow */}
             <div 
-              className="flex-1 overflow-y-auto pb-20 bg-background"
+              className="flex-1 overflow-y-auto pb-20"
               style={{ 
                 overscrollBehavior: 'none',
                 touchAction: 'pan-y',
-                position: 'relative',
-                contain: 'layout paint',
-                transform: 'translateZ(0)',
-                willChange: 'transform',
                 WebkitOverflowScrolling: 'touch'
               }}
             >
-              {/* Spacer equals IG header height so FreezePane starts below it */}
-              <div style={{ height: `${headerHeight}px` }} />
-
+              {/* FreezePane sticks naturally after IG header */}
               <FreezePane
                 showDiscoveryToggle={showDiscoveryToggle}
                 discoveryMode={discoveryMode}
@@ -215,9 +198,9 @@ const Index = () => {
                 }}
               />
 
-              {/* Mode-specific content below the FreezePane */}
+              {/* Mode-specific content flows below FreezePane */}
               {discoveryMode === 'discover' && (
-                <div className="px-4 pt-3 min-h-[110vh] bg-background">
+                <div className="px-4 pt-3 min-h-screen bg-background">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
                   </div>
@@ -243,7 +226,7 @@ const Index = () => {
               )}
 
               {discoveryMode === 'match' && (
-                <div className="px-4 pt-3 min-h-[110vh] bg-background">
+                <div className="px-4 pt-3 min-h-screen bg-background">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
                     onCreatorLike={handleCreatorLike}
@@ -255,9 +238,6 @@ const Index = () => {
                   />
                 </div>
               )}
-
-              {/* Bottom spacer to guarantee scroll range */}
-              <div style={{ height: `${headerHeight}px` }} />
             </div>
           </div>
         );
@@ -265,8 +245,7 @@ const Index = () => {
       case "live":
         return (
           <div className="h-full flex flex-col overflow-hidden">
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4" style={{ paddingTop: `${headerHeight + 16}px` }}>
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
               <OnlineCreatorsGrid 
                 selectedCategory={filters.selectedCategory}
                 onCreatorSelect={handleCreatorSelect}
@@ -280,8 +259,7 @@ const Index = () => {
       case "search":
         return (
           <div className="h-full flex flex-col">
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4" style={{ paddingTop: `${headerHeight + 16}px` }}>
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
               <div className="flex justify-end mb-3">
                 <Button 
                   variant="ghost" 
@@ -308,8 +286,7 @@ const Index = () => {
       case "following":
         return (
           <div className="h-full flex flex-col">
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6" style={{ paddingTop: `${headerHeight + 16}px` }}>
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6">
               <FanLoyaltyProgram />
               <ActivityFeed />
             </div>
