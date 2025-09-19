@@ -3,12 +3,19 @@ import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/shared/api/client'
 import { queryKeys } from '@/shared/api/query-keys'
 import { handleSupabaseError } from '@/shared/api/errors'
+import { useAuth } from '@/app/providers/auth-provider'
 import type { CreatorSearchResult, DiscoveryFilters } from '../types'
 
 export function useCreatorSearch(filters: DiscoveryFilters) {
+  const { user } = useAuth()
+  
   return useQuery({
     queryKey: queryKeys.creators(filters),
     queryFn: async (): Promise<CreatorSearchResult[]> => {
+      // Only authenticated users can access creator data now
+      if (!user) {
+        return []
+      }
       let query = supabase
         .from('creators')
         .select(`

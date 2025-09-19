@@ -209,8 +209,17 @@ export function ScheduleCreatorsGrid({ selectedCategory, onCreatorSelect, hideHe
 
       {!loading && offlineCreators.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          <p>No creators available for scheduling in this category</p>
-          <p className="text-sm">Try selecting "All" or check other categories</p>
+          {!user ? (
+            <>
+              <p>Sign in to schedule with creators</p>
+              <p className="text-sm">Please sign in to browse and schedule appointments with creators</p>
+            </>
+          ) : (
+            <>
+              <p>No creators available for scheduling in this category</p>
+              <p className="text-sm">Try selecting "All" or check other categories</p>
+            </>
+          )}
         </div>
       )}
 

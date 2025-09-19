@@ -201,8 +201,17 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, hideHead
 
       {!loading && onlineCreators.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
-          <p>No creators online in this category right now</p>
-          <p className="text-sm">Try selecting "All" or check back later</p>
+          {!user ? (
+            <>
+              <p>Sign in to view online creators</p>
+              <p className="text-sm">Please sign in to discover creators who are currently live</p>
+            </>
+          ) : (
+            <>
+              <p>No creators online in this category right now</p>
+              <p className="text-sm">Try selecting "All" or check back later</p>
+            </>
+          )}
         </div>
       )}
 
