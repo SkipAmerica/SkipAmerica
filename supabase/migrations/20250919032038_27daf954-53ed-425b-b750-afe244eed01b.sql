@@ -1,0 +1,79 @@
+-- CRITICAL SECURITY FIX: Restrict access to social media tokens and business data
+-- This prevents unauthorized access to sensitive authentication tokens and business intelligence
+
+-- 1. Fix social_accounts table - restrict token access to account owners only
+DROP POLICY IF EXISTS "Everyone can view social accounts" ON public.social_accounts;
+DROP POLICY IF EXISTS "Public can view social accounts" ON public.social_accounts;
+
+-- Create secure policy for social accounts (tokens should only be visible to owners)
+CREATE POLICY "Users can view their own social accounts" 
+ON public.social_accounts 
+FOR SELECT 
+TO authenticated
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can manage their own social accounts" 
+ON public.social_accounts 
+FOR ALL 
+TO authenticated
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+
+-- 2. Fix ad_placements table - restrict to authenticated users and relevant parties only
+DROP POLICY IF EXISTS "Users can view ads targeted to them" ON public.ad_placements;
+DROP POLICY IF EXISTS "System can manage ad placements" ON public.ad_placements;
+
+CREATE POLICY "Users can view ads targeted to them" 
+ON public.ad_placements 
+FOR SELECT 
+TO authenticated
+USING (
+  target_user_id = auth.uid() OR 
+  target_creator_id = auth.uid() OR 
+  (target_user_id IS NULL AND target_creator_id IS NULL)
+);
+
+CREATE POLICY "System and sponsors can manage ad placements" 
+ON public.ad_placements 
+FOR ALL 
+TO authenticated
+USING (
+  auth.uid() = sponsor_id OR 
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.id = auth.uid() 
+    AND profiles.account_type = 'industry_resource'::account_type
+  )
+)
+WITH CHECK (
+  auth.uid() = sponsor_id OR 
+  EXISTS (
+    SELECT 1 FROM profiles 
+    WHERE profiles.id = auth.uid() 
+    AND profiles.account_type = 'industry_resource'::account_type
+  )
+);
+
+-- 3. Fix creator_call_pricing table - restrict to authenticated users
+DROP POLICY IF EXISTS "Public can view basic pricing info" ON public.creator_call_pricing;
+
+CREATE POLICY "Authenticated users can view active pricing" 
+ON public.creator_call_pricing 
+FOR SELECT 
+TO authenticated
+USING (is_active = true);
+
+-- 4. Fix mock_creators table - restrict to authenticated users only
+DROP POLICY IF EXISTS "Everyone can view mock creators" ON public.mock_creators;
+
+CREATE POLICY "Authenticated users can view mock creators" 
+ON public.mock_creators 
+FOR SELECT 
+TO authenticated
+USING (true);
+
+-- 5. Ensure all sensitive tables have RLS enabled
+ALTER TABLE public.social_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ad_placements ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.creator_call_pricing ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mock_creators ENABLE ROW LEVEL SECURITY;
