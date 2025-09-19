@@ -4,6 +4,7 @@ import { DiscoveryModeToggle } from '@/components/discovery/DiscoveryModeToggle'
 import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
 import { UserInterestFilters } from '@/components/UserInterestFilters';
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 
 type DiscoveryMode = 'discover' | 'browse' | 'match';
 type BrowseMode = 'live' | 'schedule';
@@ -48,13 +49,21 @@ export const FreezePane = ({
   onFiltersChange,
   className
 }: FreezePaneProps) => {
+  const { isKeyboardVisible, getKeyboardAwareSafeTop } = useKeyboardAware();
+
   return (
     <div 
       className={cn(
-        "sticky z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
+        "z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
+        isKeyboardVisible ? "fixed" : "sticky",
         className
       )}
-      style={{ top: 'var(--safe-area-top)' }}
+      style={{ 
+        top: getKeyboardAwareSafeTop(),
+        transform: 'translateZ(0)',
+        willChange: isKeyboardVisible ? 'transform, top' : 'auto',
+        WebkitBackfaceVisibility: 'hidden'
+      }}
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { MessageCircle, Heart, Menu, Phone } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
@@ -23,6 +24,7 @@ export function IOSInstagramHeader({
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const { isKeyboardVisible, getKeyboardAwareSafeTop } = useKeyboardAware();
 
   const handleRecordVideo = () => {
     const input = document.createElement('input');
@@ -55,15 +57,18 @@ export function IOSInstagramHeader({
     <div 
       id="ig-header" 
       className={cn(
-        "sticky top-0 z-60 w-full overflow-x-hidden overflow-y-visible",
+        "z-60 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pt-safe-top pb-0",
+        isKeyboardVisible ? "fixed" : "sticky top-0",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
       style={{ 
+        top: isKeyboardVisible ? getKeyboardAwareSafeTop() : undefined,
         transform: 'translateZ(0)',
-        willChange: 'transform'
+        willChange: isKeyboardVisible ? 'transform, top' : 'transform',
+        WebkitBackfaceVisibility: 'hidden'
       }}
     >
       {/* Top Row - Skip Logo */}

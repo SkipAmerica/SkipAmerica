@@ -46,6 +46,7 @@ import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
 import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
+import { useKeyboardAware } from "@/hooks/use-keyboard-aware";
 
 // Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
@@ -80,6 +81,7 @@ const Index = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isLive, toggleLiveStatus } = useLiveStatus();
+  const { isKeyboardVisible } = useKeyboardAware();
   const navigate = useNavigate();
 
   // Handle swipeable card actions
@@ -285,7 +287,13 @@ const Index = () => {
       
       <div
         className="relative h-screen overflow-y-auto overflow-x-hidden pb-[var(--ios-tab-bar-height)]"
-        style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+        style={{ 
+          overscrollBehavior: 'none', 
+          WebkitOverflowScrolling: 'touch', 
+          touchAction: 'pan-y',
+          transform: isKeyboardVisible ? 'translateZ(0)' : undefined,
+          willChange: isKeyboardVisible ? 'transform' : 'auto'
+        }}
       >
         {/* iOS Navigation Bar - Hide when in advanced tab */}
         {activeTab !== "advanced" && (
