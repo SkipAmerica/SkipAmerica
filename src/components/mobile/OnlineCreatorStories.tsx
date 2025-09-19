@@ -28,7 +28,11 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
 
   useEffect(() => {
     const fetchFollowedCreators = async () => {
-      if (!user?.email) return;
+      // Only authenticated users can access creator data now
+      if (!user?.email) {
+        setOnlineCreators([]);
+        return;
+      }
 
       try {
         // Get followed creators from mock_user_follows and mock_creators tables

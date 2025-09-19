@@ -16,6 +16,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useAuth } from '@/app/providers/auth-provider';
 
 interface CreatorContentItem {
   id: string;
@@ -45,6 +46,7 @@ const platformIcons = {
 };
 
 export function CreatorContent({ creatorId, showOnFeed = false }: CreatorContentProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState<CreatorContentItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
@@ -56,6 +58,13 @@ export function CreatorContent({ creatorId, showOnFeed = false }: CreatorContent
   const loadCreatorContent = async () => {
     try {
       setLoading(true);
+      
+      // Only authenticated users can access social accounts data now
+      if (!user) {
+        setContent([]);
+        setLoading(false);
+        return;
+      }
       
       const { data, error } = await supabase
         .from('creator_content')
@@ -172,7 +181,11 @@ export function CreatorContent({ creatorId, showOnFeed = false }: CreatorContent
     return (
       <Card>
         <CardContent className="p-6 text-center">
-          <p className="text-muted-foreground">No content available</p>
+          {!user ? (
+            <p className="text-muted-foreground">Sign in to view creator content</p>
+          ) : (
+            <p className="text-muted-foreground">No content available</p>
+          )}
         </CardContent>
       </Card>
     );
