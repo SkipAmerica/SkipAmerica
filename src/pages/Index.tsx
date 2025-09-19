@@ -169,58 +169,58 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full overflow-y-auto pb-20 bg-background"
+          <div className="pb-20 bg-background"
                style={{ 
                  overscrollBehavior: 'none',
                  touchAction: 'pan-y',
                  WebkitOverflowScrolling: 'touch'
                }}>
-            {/* Mode-specific content - content scrolls underneath sticky elements */}
-            {discoveryMode === 'discover' && (
-              <div className="px-4 pt-3 min-h-screen">
-                <div className="flex items-center justify-center h-64 text-muted-foreground">
-                  <p>Discover functionality coming soon...</p>
-                </div>
-              </div>
-            )}
+             {/* Mode-specific content - content scrolls underneath sticky elements */}
+             {discoveryMode === 'discover' && (
+               <div className="px-4 pt-3 min-h-screen">
+                 <div className="flex items-center justify-center h-64 text-muted-foreground">
+                   <p>Discover functionality coming soon...</p>
+                 </div>
+               </div>
+             )}
 
-            {discoveryMode === 'browse' && (
-              <div className="px-4 pt-2">
-                {browseMode === 'live' ? (
-                  <OnlineCreatorsGrid 
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorSelect={handleCreatorSelect}
-                    hideHeader={true}
-                  />
-                ) : (
-                  <ScheduleCreatorsGrid 
-                    selectedCategory={filters.selectedCategory}
-                    onCreatorSelect={handleCreatorSelect}
-                    hideHeader={true}
-                  />
-                )}
-              </div>
-            )}
+             {discoveryMode === 'browse' && (
+               <div className="px-4 pt-2">
+                 {browseMode === 'live' ? (
+                   <OnlineCreatorsGrid 
+                     selectedCategory={filters.selectedCategory}
+                     onCreatorSelect={handleCreatorSelect}
+                     hideHeader={true}
+                   />
+                 ) : (
+                   <ScheduleCreatorsGrid 
+                     selectedCategory={filters.selectedCategory}
+                     onCreatorSelect={handleCreatorSelect}
+                     hideHeader={true}
+                   />
+                 )}
+               </div>
+             )}
 
-            {discoveryMode === 'match' && (
-              <div className="px-4 pt-3 min-h-screen">
-                <SwipeableCreatorCards
-                  selectedCategory={filters.selectedCategory}
-                  onCreatorLike={handleCreatorLike}
-                  onCreatorPass={handleCreatorPass}
-                  onCreatorSuperLike={handleCreatorSuperLike}
-                  onCreatorMessage={handleCreatorMessage}
-                  onCreatorShare={handleCreatorShare}
-                  onCreatorBookmark={handleCreatorBookmark}
-                />
-              </div>
-            )}
-          </div>
+             {discoveryMode === 'match' && (
+               <div className="px-4 pt-3 min-h-screen">
+                 <SwipeableCreatorCards
+                   selectedCategory={filters.selectedCategory}
+                   onCreatorLike={handleCreatorLike}
+                   onCreatorPass={handleCreatorPass}
+                   onCreatorSuperLike={handleCreatorSuperLike}
+                   onCreatorMessage={handleCreatorMessage}
+                   onCreatorShare={handleCreatorShare}
+                   onCreatorBookmark={handleCreatorBookmark}
+                 />
+               </div>
+             )}
+           </div>
         );
 
       case "live":
         return (
-          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 bg-background">
+          <div className="pb-20 px-4 pt-4 bg-background">
             <OnlineCreatorsGrid 
               selectedCategory={filters.selectedCategory}
               onCreatorSelect={handleCreatorSelect}
@@ -232,7 +232,7 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 bg-background">
+          <div className="pb-20 px-4 pt-4 bg-background">
             <div className="flex justify-end mb-3">
               <Button 
                 variant="ghost" 
@@ -257,7 +257,7 @@ const Index = () => {
 
       case "following":
         return (
-          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 space-y-6 bg-background">
+          <div className="pb-20 px-4 pt-4 space-y-6 bg-background">
             <FanLoyaltyProgram />
             <ActivityFeed />
           </div>
@@ -277,38 +277,41 @@ const Index = () => {
   // Main iOS interface for signed in users
   return (
     <div className="min-h-screen bg-background relative">
-      {/* iOS Navigation Bar - Hide when in advanced tab */}
-      {activeTab !== "advanced" && (
-        <IOSInstagramHeader 
-          onMenuClick={() => setShowMenu(true)}
-          onCreatorSelect={(id) => setActiveTab("creator-profile")}
-        />
-      )}
+      <div
+        className="relative h-screen overflow-y-auto"
+        style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}
+      >
+        {/* iOS Navigation Bar - Hide when in advanced tab */}
+        {activeTab !== "advanced" && (
+          <IOSInstagramHeader 
+            onMenuClick={() => setShowMenu(true)}
+            onCreatorSelect={(id) => setActiveTab("creator-profile")}
+          />
+        )}
 
-      {/* FreezePane - Sticky below IG header, only for discover tab */}
-      {activeTab === "discover" && showDiscoveryToggle && (
-        <FreezePane
-          showDiscoveryToggle={showDiscoveryToggle}
-          discoveryMode={discoveryMode}
-          onDiscoveryModeChange={handleDiscoveryModeChange}
-          showBrowseSubTabs={discoveryMode === 'browse'}
-          browseMode={browseMode}
-          onBrowseModeChange={setBrowseMode}
-          searchValue={discoveryMode === 'browse' ? filters.query : ''}
-          onSearchChange={updateQuery}
-          searchPlaceholder="Filter creators..."
-          showInterestFilters={true}
-          selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-          onFiltersChange={(newFilters) => {
-            const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-            updateSelectedCategory(newCategory)
-          }}
-        />
-      )}
+        {/* FreezePane - Sticky below IG header, only for discover tab */}
+        {activeTab === "discover" && showDiscoveryToggle && (
+          <FreezePane
+            showDiscoveryToggle={showDiscoveryToggle}
+            discoveryMode={discoveryMode}
+            onDiscoveryModeChange={handleDiscoveryModeChange}
+            showBrowseSubTabs={discoveryMode === 'browse'}
+            browseMode={browseMode}
+            onBrowseModeChange={setBrowseMode}
+            searchValue={discoveryMode === 'browse' ? filters.query : ''}
+            onSearchChange={updateQuery}
+            searchPlaceholder="Filter creators..."
+            showInterestFilters={true}
+            selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+            onFiltersChange={(newFilters) => {
+              const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+              updateSelectedCategory(newCategory)
+            }}
+          />
+        )}
 
-      {/* Main Content - Scrollable area */}
-      <div className="flex flex-col h-screen">
-        <div className="flex-1 overflow-hidden">
+        {/* Main Content - Scrolls with header & freeze pane */}
+        <div className="pb-[var(--ios-tab-bar-height)]">
           {renderTabContent()}
         </div>
       </div>
