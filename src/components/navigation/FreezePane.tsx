@@ -58,18 +58,15 @@ export const FreezePane = ({
       )}
       style={{ top: `${headerHeight}px` }}
     >
-      {/* Teal background area above discovery toggle */}
-      <div className="bg-turquoise-light/15 backdrop-blur-sm">
-        {/* Discovery Mode Toggle */}
-        {showDiscoveryToggle && (
-          <div className="pt-3 pb-3 bg-background border-t border-border">
-            <DiscoveryModeToggle
-              mode={discoveryMode}
-              onModeChange={onDiscoveryModeChange}
-            />
-          </div>
-        )}
-      </div>
+      {/* Discovery Mode Toggle */}
+      {showDiscoveryToggle && (
+        <div className="bg-turquoise-light/15 backdrop-blur-sm border-t border-border">
+          <DiscoveryModeToggle
+            mode={discoveryMode}
+            onModeChange={onDiscoveryModeChange}
+          />
+        </div>
+      )}
       
       {/* Browse Sub Tabs */}
       {showBrowseSubTabs && (
