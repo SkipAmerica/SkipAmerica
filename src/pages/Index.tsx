@@ -280,7 +280,7 @@ const Index = () => {
       {/* Status Bar Overlay - prevents content from showing above DMT */}
       <div 
         className="pointer-events-none fixed top-0 left-0 right-0 z-[45] bg-gradient-to-b from-turquoise-600 to-turquoise-500"
-        style={{ height: 'var(--safe-area-top)' }}
+        style={{ height: 'env(safe-area-inset-top, 44px)' }}
       />
       
       <div
