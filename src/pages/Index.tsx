@@ -204,7 +204,7 @@ const Index = () => {
             
             {/* Separate Scrollable Containers for Each Discovery Mode */}
             {discoveryMode === 'discover' && (
-              <div key="discover-scroll" className="flex-1 overflow-y-auto pb-20">
+              <div key="discover-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
                 <div className="px-4 pt-2">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
@@ -214,7 +214,7 @@ const Index = () => {
             )}
             
             {discoveryMode === 'browse' && (
-              <div key="browse-scroll" className="flex-1 overflow-y-auto pb-20">
+              <div key="browse-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
                 <div className="px-4 pt-2">
                   {browseMode === 'live' ? (
                     <OnlineCreatorsGrid 
@@ -234,7 +234,7 @@ const Index = () => {
             )}
             
             {discoveryMode === 'match' && (
-              <div key="match-scroll" className="flex-1 overflow-y-auto pb-20">
+              <div key="match-scroll" className="flex-1 overflow-y-auto pb-20" style={{ paddingTop: `${headerHeight}px` }}>
                 <div className="px-4 pt-2">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
@@ -255,7 +255,7 @@ const Index = () => {
         return (
           <div className="h-full flex flex-col overflow-hidden">
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4" style={{ paddingTop: `${headerHeight + 16}px` }}>
               <OnlineCreatorsGrid 
                 selectedCategory={filters.selectedCategory}
                 onCreatorSelect={handleCreatorSelect}
@@ -270,7 +270,7 @@ const Index = () => {
         return (
           <div className="h-full flex flex-col">
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4" style={{ paddingTop: `${headerHeight + 16}px` }}>
               <div className="flex justify-end mb-3">
                 <Button 
                   variant="ghost" 
@@ -298,7 +298,7 @@ const Index = () => {
         return (
           <div className="h-full flex flex-col">
             {/* Content */}
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6">
+            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6" style={{ paddingTop: `${headerHeight + 16}px` }}>
               <FanLoyaltyProgram />
               <ActivityFeed />
             </div>
