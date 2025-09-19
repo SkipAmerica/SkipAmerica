@@ -180,7 +180,7 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
+          <div className="h-full flex flex-col">
             {/* Freeze Pane */}
             <FreezePane
               showDiscoveryToggle={showDiscoveryToggle}
@@ -253,7 +253,7 @@ const Index = () => {
 
       case "live":
         return (
-          <div className="h-full flex flex-col overflow-hidden" style={{ paddingTop: `${headerHeight}px` }}>
+          <div className="h-full flex flex-col overflow-hidden">
             {/* Content */}
             <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
               <OnlineCreatorsGrid 
@@ -268,7 +268,7 @@ const Index = () => {
 
       case "search":
         return (
-          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
+          <div className="h-full flex flex-col">
             {/* Content */}
             <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
               <div className="flex justify-end mb-3">
@@ -296,7 +296,7 @@ const Index = () => {
 
       case "following":
         return (
-          <div className="h-full flex flex-col" style={{ paddingTop: `${headerHeight}px` }}>
+          <div className="h-full flex flex-col">
             {/* Content */}
             <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6">
               <FanLoyaltyProgram />
