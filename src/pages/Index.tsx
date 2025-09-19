@@ -169,112 +169,84 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="h-full flex flex-col overflow-hidden">
-            {/* Content area with proper sticky flow */}
-            <div 
-              className="flex-1 overflow-y-auto pb-20"
-              style={{ 
-                overscrollBehavior: 'none',
-                touchAction: 'pan-y',
-                WebkitOverflowScrolling: 'touch'
-              }}
-            >
-              {/* FreezePane sticks naturally after IG header */}
-              <FreezePane
-                showDiscoveryToggle={showDiscoveryToggle}
-                discoveryMode={discoveryMode}
-                onDiscoveryModeChange={handleDiscoveryModeChange}
-                showBrowseSubTabs={discoveryMode === 'browse'}
-                browseMode={browseMode}
-                onBrowseModeChange={setBrowseMode}
-                searchValue={discoveryMode === 'browse' ? filters.query : ''}
-                onSearchChange={updateQuery}
-                searchPlaceholder="Filter creators..."
-                showInterestFilters={true}
-                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-                onFiltersChange={(newFilters) => {
-                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-                  updateSelectedCategory(newCategory)
-                }}
-              />
-
-              {/* Mode-specific content flows below FreezePane */}
-              {discoveryMode === 'discover' && (
-                <div className="px-4 pt-3 min-h-screen bg-background">
-                  <div className="flex items-center justify-center h-64 text-muted-foreground">
-                    <p>Discover functionality coming soon...</p>
-                  </div>
+          <div className="h-full overflow-y-auto pb-20 bg-background"
+               style={{ 
+                 overscrollBehavior: 'none',
+                 touchAction: 'pan-y',
+                 WebkitOverflowScrolling: 'touch'
+               }}>
+            {/* Mode-specific content - content scrolls underneath sticky elements */}
+            {discoveryMode === 'discover' && (
+              <div className="px-4 pt-3 min-h-screen">
+                <div className="flex items-center justify-center h-64 text-muted-foreground">
+                  <p>Discover functionality coming soon...</p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {discoveryMode === 'browse' && (
-                <div className="px-4 pt-2 bg-background">
-                  {browseMode === 'live' ? (
-                    <OnlineCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  ) : (
-                    <ScheduleCreatorsGrid 
-                      selectedCategory={filters.selectedCategory}
-                      onCreatorSelect={handleCreatorSelect}
-                      hideHeader={true}
-                    />
-                  )}
-                </div>
-              )}
-
-              {discoveryMode === 'match' && (
-                <div className="px-4 pt-3 min-h-screen bg-background">
-                  <SwipeableCreatorCards
+            {discoveryMode === 'browse' && (
+              <div className="px-4 pt-2">
+                {browseMode === 'live' ? (
+                  <OnlineCreatorsGrid 
                     selectedCategory={filters.selectedCategory}
-                    onCreatorLike={handleCreatorLike}
-                    onCreatorPass={handleCreatorPass}
-                    onCreatorSuperLike={handleCreatorSuperLike}
-                    onCreatorMessage={handleCreatorMessage}
-                    onCreatorShare={handleCreatorShare}
-                    onCreatorBookmark={handleCreatorBookmark}
+                    onCreatorSelect={handleCreatorSelect}
+                    hideHeader={true}
                   />
-                </div>
-              )}
-            </div>
+                ) : (
+                  <ScheduleCreatorsGrid 
+                    selectedCategory={filters.selectedCategory}
+                    onCreatorSelect={handleCreatorSelect}
+                    hideHeader={true}
+                  />
+                )}
+              </div>
+            )}
+
+            {discoveryMode === 'match' && (
+              <div className="px-4 pt-3 min-h-screen">
+                <SwipeableCreatorCards
+                  selectedCategory={filters.selectedCategory}
+                  onCreatorLike={handleCreatorLike}
+                  onCreatorPass={handleCreatorPass}
+                  onCreatorSuperLike={handleCreatorSuperLike}
+                  onCreatorMessage={handleCreatorMessage}
+                  onCreatorShare={handleCreatorShare}
+                  onCreatorBookmark={handleCreatorBookmark}
+                />
+              </div>
+            )}
           </div>
         );
 
       case "live":
         return (
-          <div className="h-full flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
-              <OnlineCreatorsGrid 
-                selectedCategory={filters.selectedCategory}
-                onCreatorSelect={handleCreatorSelect}
-                hideHeader={false}
-              />
-            </div>
+          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 bg-background">
+            <OnlineCreatorsGrid 
+              selectedCategory={filters.selectedCategory}
+              onCreatorSelect={handleCreatorSelect}
+              hideHeader={false}
+            />
           </div>
         );
 
 
       case "search":
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4">
-              <div className="flex justify-end mb-3">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setActiveTab("advanced")}
-                  className="text-primary font-medium px-0 h-auto underline hover:no-underline"
-                >
-                  Creator Matchmaker
-                </Button>
-              </div>
-              <CreatorSearch 
-                onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
-                onStartCall={(creator) => handleCreatorSelect(creator.id)}
-              />
+          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 bg-background">
+            <div className="flex justify-end mb-3">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setActiveTab("advanced")}
+                className="text-primary font-medium px-0 h-auto underline hover:no-underline"
+              >
+                Creator Matchmaker
+              </Button>
             </div>
+            <CreatorSearch 
+              onCreatorSelect={(creator) => handleCreatorSelect(creator.id)}
+              onStartCall={(creator) => handleCreatorSelect(creator.id)}
+            />
           </div>
         );
 
@@ -285,11 +257,9 @@ const Index = () => {
 
       case "following":
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 overflow-y-auto pb-20 px-4 pt-4 space-y-6">
-              <FanLoyaltyProgram />
-              <ActivityFeed />
-            </div>
+          <div className="h-full overflow-y-auto pb-20 px-4 pt-4 space-y-6 bg-background">
+            <FanLoyaltyProgram />
+            <ActivityFeed />
           </div>
         );
 
@@ -315,9 +285,29 @@ const Index = () => {
         />
       )}
 
-      {/* Main Content */}
+      {/* FreezePane - Sticky below IG header, only for discover tab */}
+      {activeTab === "discover" && showDiscoveryToggle && (
+        <FreezePane
+          showDiscoveryToggle={showDiscoveryToggle}
+          discoveryMode={discoveryMode}
+          onDiscoveryModeChange={handleDiscoveryModeChange}
+          showBrowseSubTabs={discoveryMode === 'browse'}
+          browseMode={browseMode}
+          onBrowseModeChange={setBrowseMode}
+          searchValue={discoveryMode === 'browse' ? filters.query : ''}
+          onSearchChange={updateQuery}
+          searchPlaceholder="Filter creators..."
+          showInterestFilters={true}
+          selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+          onFiltersChange={(newFilters) => {
+            const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+            updateSelectedCategory(newCategory)
+          }}
+        />
+      )}
+
+      {/* Main Content - Scrollable area */}
       <div className="flex flex-col h-screen">
-        {/* Tab Content - Scrollable area */}
         <div className="flex-1 overflow-hidden">
           {renderTabContent()}
         </div>
