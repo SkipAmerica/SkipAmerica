@@ -59,8 +59,8 @@ export function IOSInstagramHeader({
       className={cn(
         "z-60 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
-        "px-4 pt-safe-top pb-0",
-        isKeyboardVisible ? "fixed" : "sticky top-0",
+        "px-4 pb-0",
+        isKeyboardVisible ? "fixed" : "sticky top-0 pt-safe-top",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
