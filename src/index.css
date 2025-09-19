@@ -73,6 +73,11 @@
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Turquoise colors for branding */
+    --turquoise: 174 72% 56%;
+    --turquoise-dark: 180 100% 25%;
+    --turquoise-light: 174 72% 85%;
   }
 
   .dark {
@@ -111,6 +116,11 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Turquoise colors for branding (dark mode) */
+    --turquoise: 174 72% 56%;
+    --turquoise-dark: 180 100% 75%;
+    --turquoise-light: 174 72% 25%;
   }
 }
 

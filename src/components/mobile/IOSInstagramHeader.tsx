@@ -56,13 +56,13 @@ export function IOSInstagramHeader({
       "fixed top-0 left-0 right-0 z-40",
       "flex flex-col",
       "px-4 pt-safe-top pb-0",
-      !transparent && "bg-primary/5 backdrop-blur-md border-b border-border/50",
+      !transparent && "bg-turquoise-light/15 backdrop-blur-md border-b border-border/50",
       className
     )}>
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold tracking-tight text-primary">Skip</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">

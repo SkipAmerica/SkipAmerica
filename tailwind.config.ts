@@ -58,6 +58,11 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        turquoise: {
+          DEFAULT: "hsl(var(--turquoise))",
+          dark: "hsl(var(--turquoise-dark))",
+          light: "hsl(var(--turquoise-light))",
+        },
         skip: {
           orange: "hsl(var(--skip-orange))",
           black: "hsl(var(--skip-black))",
