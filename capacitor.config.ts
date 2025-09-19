@@ -17,13 +17,13 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'default',
-      backgroundColor: '#ffffff'
+      backgroundColor: '#F4FDFB'
     }
   },
   ios: {
     contentInset: 'automatic',
     scrollEnabled: true,
-    backgroundColor: '#ffffff'
+    backgroundColor: '#F4FDFB'
   }
 };
 
