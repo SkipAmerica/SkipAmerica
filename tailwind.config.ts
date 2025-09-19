@@ -156,14 +156,14 @@ export default {
         "slide-out-right": "slide-out-right 0.3s ease-out",
       },
       spacing: {
-        'safe-top': 'env(safe-area-inset-top, 48px)',
-        'safe-bottom': 'env(safe-area-inset-bottom, 34px)',
+        'safe-top': 'var(--debug-safe-top)',
+        'safe-bottom': 'var(--debug-safe-bottom)',
         'safe-left': 'env(safe-area-inset-left, 0px)',
         'safe-right': 'env(safe-area-inset-right, 0px)',
       },
       padding: {
-        'safe-top': 'env(safe-area-inset-top, 48px)',
-        'safe-bottom': 'env(safe-area-inset-bottom, 34px)',
+        'safe-top': 'var(--debug-safe-top)',
+        'safe-bottom': 'var(--debug-safe-bottom)',
         'safe-left': 'env(safe-area-inset-left, 0px)',
         'safe-right': 'env(safe-area-inset-right, 0px)',
       },
@@ -177,10 +177,10 @@ export default {
           '@apply transition-transform duration-200 hover:scale-105': {},
         },
         '.safe-area-inset-top': {
-          'padding-top': 'env(safe-area-inset-top, 48px)'
+          'padding-top': 'var(--debug-safe-top)'
         },
         '.safe-area-inset-bottom': {
-          'padding-bottom': 'env(safe-area-inset-bottom, 34px)'
+          'padding-bottom': 'var(--debug-safe-bottom)'
         },
         '.safe-area-inset-left': {
           'padding-left': 'env(safe-area-inset-left, 0px)'

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useProfile } from '@/hooks/useProfile';
+import { useSafeAreaDebug } from '@/hooks/use-safe-area-debug';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { MessageCircle, Heart, Menu, Phone } from 'lucide-react';
@@ -23,6 +24,9 @@ export function IOSInstagramHeader({
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
+  
+  // Initialize safe area debug system
+  useSafeAreaDebug();
 
   const handleRecordVideo = () => {
     const input = document.createElement('input');
