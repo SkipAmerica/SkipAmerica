@@ -412,3 +412,26 @@
 .user-interest-filters::-webkit-scrollbar {
   display: none;
 }
+
+/* Platform-aware FreezePane positioning */
+.freeze-pane-container {
+  /* Web browsers - always sticky positioning */
+  position: sticky;
+  top: var(--safe-area-top);
+}
+
+/* Mobile-specific overrides */
+@media screen and (max-width: 768px) {
+  .freeze-pane-container {
+    /* Mobile will use JavaScript-controlled positioning */
+    transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Smooth transitions for keyboard interactions */
+@media screen and (max-width: 768px) and (orientation: portrait) {
+  .freeze-pane-container {
+    /* Enhanced mobile portrait transitions */
+    transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1), position 0.1s ease;
+  }
+}

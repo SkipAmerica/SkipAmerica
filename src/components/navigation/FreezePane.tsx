@@ -49,20 +49,28 @@ export const FreezePane = ({
   onFiltersChange,
   className
 }: FreezePaneProps) => {
-  const { isKeyboardVisible, getKeyboardAwareSafeTop } = useKeyboardAware();
+  const { isKeyboardVisible, getKeyboardAwareSafeTop, keyboardState } = useKeyboardAware();
+
+  // Platform-aware positioning logic
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+
+  const shouldUseFixed = isMobile && isKeyboardVisible;
+  const position = shouldUseFixed ? 'fixed' : 'sticky';
 
   return (
     <div 
       className={cn(
-        "z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
-        isKeyboardVisible ? "fixed" : "sticky",
+        "z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border freeze-pane-container",
         className
       )}
       style={{ 
+        position,
         top: getKeyboardAwareSafeTop(),
         transform: 'translateZ(0)',
-        willChange: isKeyboardVisible ? 'transform, top' : 'auto',
-        WebkitBackfaceVisibility: 'hidden'
+        willChange: shouldUseFixed ? 'transform, top' : 'auto',
+        WebkitBackfaceVisibility: 'hidden',
+        transition: isMobile ? 'top 0.2s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
       }}
     >
       {/* Discovery Mode Toggle */}
