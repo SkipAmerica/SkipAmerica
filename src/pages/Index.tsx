@@ -311,7 +311,7 @@ const Index = () => {
         )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
-        <div>
+        <div className="relative z-45 bg-white">
           {renderTabContent()}
         </div>
       </div>
