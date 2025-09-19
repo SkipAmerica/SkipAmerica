@@ -55,7 +55,7 @@ export function IOSInstagramHeader({
     <div 
       id="ig-header" 
       className={cn(
-        "sticky top-0 z-40 w-full",
+        "sticky top-0 z-40 w-full overflow-x-hidden",
         "flex flex-col",
         "px-4 pt-safe-top pb-0",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",

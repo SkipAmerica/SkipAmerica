@@ -278,8 +278,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background relative">
       <div
-        className="relative h-screen overflow-y-auto"
-        style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch' }}
+        className="relative h-screen overflow-y-auto overflow-x-hidden pb-[var(--ios-tab-bar-height)]"
+        style={{ overscrollBehavior: 'none', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
       >
         {/* iOS Navigation Bar - Hide when in advanced tab */}
         {activeTab !== "advanced" && (
@@ -311,7 +311,7 @@ const Index = () => {
         )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
-        <div className="pb-[var(--ios-tab-bar-height)]">
+        <div>
           {renderTabContent()}
         </div>
       </div>
