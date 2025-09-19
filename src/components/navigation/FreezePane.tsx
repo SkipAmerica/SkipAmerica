@@ -57,12 +57,10 @@ export const FreezePane = ({
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (
-        <div className="bg-turquoise-light/15 backdrop-blur-sm border-t border-border">
-          <DiscoveryModeToggle
-            mode={discoveryMode}
-            onModeChange={onDiscoveryModeChange}
-          />
-        </div>
+        <DiscoveryModeToggle
+          mode={discoveryMode}
+          onModeChange={onDiscoveryModeChange}
+        />
       )}
       
       {/* Browse Sub Tabs */}
