@@ -136,11 +136,11 @@
 
 /* iOS-Specific Styles */
 :root {
-  /* iOS Safe Area Support */
-  --safe-area-top: env(safe-area-inset-top);
-  --safe-area-bottom: env(safe-area-inset-bottom);
-  --safe-area-left: env(safe-area-inset-left);
-  --safe-area-right: env(safe-area-inset-right);
+  /* iOS Safe Area Support with Fallbacks */
+  --safe-area-top: env(safe-area-inset-top, 48px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 34px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
   
   /* iOS Tab Bar Height */
   --ios-tab-bar-height: calc(49px + var(--safe-area-bottom));

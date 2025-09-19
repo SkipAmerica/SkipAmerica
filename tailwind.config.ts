@@ -156,16 +156,16 @@ export default {
         "slide-out-right": "slide-out-right 0.3s ease-out",
       },
       spacing: {
-        'safe-top': 'env(safe-area-inset-top)',
-        'safe-bottom': 'env(safe-area-inset-bottom)',
-        'safe-left': 'env(safe-area-inset-left)',
-        'safe-right': 'env(safe-area-inset-right)',
+        'safe-top': 'env(safe-area-inset-top, 48px)',
+        'safe-bottom': 'env(safe-area-inset-bottom, 34px)',
+        'safe-left': 'env(safe-area-inset-left, 0px)',
+        'safe-right': 'env(safe-area-inset-right, 0px)',
       },
       padding: {
-        'safe-top': 'env(safe-area-inset-top)',
-        'safe-bottom': 'env(safe-area-inset-bottom)',
-        'safe-left': 'env(safe-area-inset-left)',
-        'safe-right': 'env(safe-area-inset-right)',
+        'safe-top': 'env(safe-area-inset-top, 48px)',
+        'safe-bottom': 'env(safe-area-inset-bottom, 34px)',
+        'safe-left': 'env(safe-area-inset-left, 0px)',
+        'safe-right': 'env(safe-area-inset-right, 0px)',
       },
     },
   },
@@ -177,16 +177,16 @@ export default {
           '@apply transition-transform duration-200 hover:scale-105': {},
         },
         '.safe-area-inset-top': {
-          'padding-top': 'env(safe-area-inset-top)'
+          'padding-top': 'env(safe-area-inset-top, 48px)'
         },
         '.safe-area-inset-bottom': {
-          'padding-bottom': 'env(safe-area-inset-bottom)'
+          'padding-bottom': 'env(safe-area-inset-bottom, 34px)'
         },
         '.safe-area-inset-left': {
-          'padding-left': 'env(safe-area-inset-left)'
+          'padding-left': 'env(safe-area-inset-left, 0px)'
         },
         '.safe-area-inset-right': {
-          'padding-right': 'env(safe-area-inset-right)'
+          'padding-right': 'env(safe-area-inset-right, 0px)'
         },
       });
     }
