@@ -181,26 +181,26 @@
 
 /* iOS Safe Areas */
 .ios-safe-top {
-  padding-top: var(--debug-safe-top);
+  padding-top: var(--safe-area-top);
 }
 
 .ios-safe-bottom {
-  padding-bottom: var(--debug-safe-bottom);
+  padding-bottom: var(--safe-area-bottom);
 }
 
 .ios-safe-left {
-  padding-left: var(--debug-safe-left);
+  padding-left: var(--safe-area-left);
 }
 
 .ios-safe-right {
-  padding-right: var(--debug-safe-right);
+  padding-right: var(--safe-area-right);
 }
 
 .ios-safe-all {
-  padding-top: var(--debug-safe-top);
-  padding-bottom: var(--debug-safe-bottom);
-  padding-left: var(--debug-safe-left);
-  padding-right: var(--debug-safe-right);
+  padding-top: var(--safe-area-top);
+  padding-bottom: var(--safe-area-bottom);
+  padding-left: var(--safe-area-left);
+  padding-right: var(--safe-area-right);
 }
 
 /* iOS Tab Bar */

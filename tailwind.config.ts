@@ -156,14 +156,14 @@ export default {
         "slide-out-right": "slide-out-right 0.3s ease-out",
       },
       spacing: {
-        'safe-top': 'var(--debug-safe-top)',
-        'safe-bottom': 'var(--debug-safe-bottom)',
+        'safe-top': 'env(safe-area-inset-top, 0px)',
+        'safe-bottom': 'env(safe-area-inset-bottom, 0px)',
         'safe-left': 'env(safe-area-inset-left, 0px)',
         'safe-right': 'env(safe-area-inset-right, 0px)',
       },
       padding: {
-        'safe-top': 'var(--debug-safe-top)',
-        'safe-bottom': 'var(--debug-safe-bottom)',
+        'safe-top': 'env(safe-area-inset-top, 0px)',
+        'safe-bottom': 'env(safe-area-inset-bottom, 0px)',
         'safe-left': 'env(safe-area-inset-left, 0px)',
         'safe-right': 'env(safe-area-inset-right, 0px)',
       },

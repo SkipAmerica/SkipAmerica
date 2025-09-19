@@ -46,9 +46,9 @@ export function useSafeAreaDebug() {
         document.body.appendChild(indicator);
       }
     } else {
-      // Reset debug overrides to real safe areas
-      document.documentElement.style.setProperty('--debug-safe-top', 'var(--safe-area-top)');
-      document.documentElement.style.setProperty('--debug-safe-bottom', 'var(--safe-area-bottom)');
+      // No debug mode - remove any debug overrides to use native safe areas
+      document.documentElement.style.removeProperty('--debug-safe-top');
+      document.documentElement.style.removeProperty('--debug-safe-bottom');
       
       // Remove debug indicator
       const indicator = document.querySelector('.debug-safe-indicator');
