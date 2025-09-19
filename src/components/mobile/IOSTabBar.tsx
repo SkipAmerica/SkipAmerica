@@ -40,13 +40,23 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
     : [];
 
   return (
-    <div className={cn(
-      "ios-tab-bar",
-      "fixed bottom-0 left-0 right-0 z-50",
-      "bg-card/95 backdrop-blur-md",
-      "border-t border-border/50",
-      "pt-1 pb-2"
-    )}>
+    <div
+      className={cn(
+        "ios-tab-bar",
+        "fixed bottom-0 left-0 right-0 z-50",
+        "bg-card/95 backdrop-blur-md",
+        "border-t border-border/50",
+        "pt-1 pb-2"
+      )}
+      style={{
+        transform: 'translateZ(0)',
+        willChange: 'transform',
+        contain: 'layout paint',
+        backfaceVisibility: 'hidden',
+        WebkitBackfaceVisibility: 'hidden',
+        WebkitTransform: 'translateZ(0)'
+      }}
+    >
       {/* Creator Layout with 5 tabs */}
       {isCreator ? (
         <div className="flex items-center w-full">

@@ -187,7 +187,11 @@ const Index = () => {
               style={{ 
                 overscrollBehavior: 'none',
                 touchAction: 'pan-y',
-                position: 'relative'
+                position: 'relative',
+                contain: 'layout paint',
+                transform: 'translateZ(0)',
+                willChange: 'transform',
+                WebkitOverflowScrolling: 'touch'
               }}
             >
               {/* Spacer equals IG header height so FreezePane starts below it */}
