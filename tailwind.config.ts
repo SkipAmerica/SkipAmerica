@@ -176,18 +176,6 @@ export default {
         '.hover-scale': {
           '@apply transition-transform duration-200 hover:scale-105': {},
         },
-        '.safe-area-inset-top': {
-          'padding-top': 'var(--debug-safe-top)'
-        },
-        '.safe-area-inset-bottom': {
-          'padding-bottom': 'var(--debug-safe-bottom)'
-        },
-        '.safe-area-inset-left': {
-          'padding-left': 'env(safe-area-inset-left, 0px)'
-        },
-        '.safe-area-inset-right': {
-          'padding-right': 'env(safe-area-inset-right, 0px)'
-        },
       });
     }
   ],
