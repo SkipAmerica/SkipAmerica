@@ -62,8 +62,8 @@ export function IOSInstagramHeader({
         className
       )}
       style={{ 
-        overscrollBehavior: 'none',
-        touchAction: 'pan-x pan-down pinch-zoom'
+        transform: 'translateZ(0)',
+        willChange: 'transform'
       }}
     >
       {/* Top Row - Skip Logo */}

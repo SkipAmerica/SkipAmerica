@@ -186,7 +186,8 @@ const Index = () => {
               className="flex-1 overflow-y-auto pb-20 bg-background"
               style={{ 
                 overscrollBehavior: 'none',
-                touchAction: 'pan-y'
+                touchAction: 'pan-y',
+                position: 'relative'
               }}
             >
               {/* Spacer equals IG header height so FreezePane starts below it */}
