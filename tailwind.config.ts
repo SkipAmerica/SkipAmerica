@@ -150,6 +150,18 @@ export default {
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
       },
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      padding: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
     },
   },
   plugins: [
@@ -158,6 +170,18 @@ export default {
       addUtilities({
         '.hover-scale': {
           '@apply transition-transform duration-200 hover:scale-105': {},
+        },
+        '.safe-area-inset-top': {
+          'padding-top': 'env(safe-area-inset-top)'
+        },
+        '.safe-area-inset-bottom': {
+          'padding-bottom': 'env(safe-area-inset-bottom)'
+        },
+        '.safe-area-inset-left': {
+          'padding-left': 'env(safe-area-inset-left)'
+        },
+        '.safe-area-inset-right': {
+          'padding-right': 'env(safe-area-inset-right)'
         },
       });
     }

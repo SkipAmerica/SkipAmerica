@@ -14,7 +14,16 @@ const config: CapacitorConfig = {
     },
     Filesystem: {
       permissions: ['publicStorage']
+    },
+    StatusBar: {
+      style: 'default',
+      backgroundColor: '#ffffff'
     }
+  },
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true,
+    backgroundColor: '#ffffff'
   }
 };
 

@@ -33,7 +33,7 @@ export function IOSNavBar({
       "ios-nav-bar",
       "fixed top-0 left-0 right-0 z-40",
       "flex items-end",
-      "px-4 pb-2",
+      "px-4 pb-2 pt-safe-top",
       !transparent && "bg-background/95 backdrop-blur-md border-b border-border/50",
       className
     )}>
