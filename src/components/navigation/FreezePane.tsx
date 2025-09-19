@@ -56,7 +56,7 @@ export const FreezePane = ({
         "sticky z-50",
         className
       )}
-      style={{ top: `${headerHeight}px` }}
+      style={{ top: `var(--safe-area-top)` }}
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (

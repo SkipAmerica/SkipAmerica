@@ -90,7 +90,7 @@ export function IOSInstagramHeader({
       </div>
 
       {/* Bottom Row - User Profile + Online Creator Stories */}
-      <div className="flex items-center">
+      <div className="flex items-center pb-1.5">
         <div className="relative flex-shrink-0 flex flex-col items-center">
           <Avatar className="h-16 w-16 ring-2 ring-primary/20">
             <AvatarImage src={profile?.avatar_url} alt={profile?.full_name || 'Profile'} />
