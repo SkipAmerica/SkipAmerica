@@ -83,6 +83,14 @@ const Index = () => {
   const { isKeyboardVisible } = useKeyboardAware();
   const navigate = useNavigate();
 
+  // Stabilize iOS safe area top across keyboard show/hide
+  useEffect(() => {
+    const doc = document.documentElement;
+    const style = getComputedStyle(doc);
+    const top = style.getPropertyValue('--safe-area-top').trim() || '0px';
+    doc.style.setProperty('--debug-safe-top', top);
+  }, []);
+
   // Handle swipeable card actions
   const handleCreatorLike = (creatorId: string) => {
     console.log('Liked creator:', creatorId);
@@ -281,7 +289,7 @@ const Index = () => {
       {/* Status Bar Overlay - prevents content from showing above DMT */}
       <div 
         className="pointer-events-none fixed top-0 left-0 right-0 z-[100] bg-gradient-to-b from-turquoise-600 to-turquoise-500"
-        style={{ height: 'calc(var(--safe-area-top) + 1px)' }}
+        style={{ height: 'calc(var(--debug-safe-top) + 1px)' }}
       />
       
       <div
