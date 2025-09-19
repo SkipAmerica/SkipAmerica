@@ -60,12 +60,12 @@ export function IOSInstagramHeader({
         "z-60 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pt-safe-top pb-0",
-        isKeyboardVisible ? "fixed" : "sticky",
+        isKeyboardVisible ? "fixed" : "sticky top-0",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
       style={{ 
-        top: 'var(--safe-area-top)',
+        top: isKeyboardVisible ? getKeyboardAwareSafeTop() : undefined,
         transform: 'translateZ(0)',
         willChange: isKeyboardVisible ? 'transform, top' : 'transform',
         WebkitBackfaceVisibility: 'hidden'
