@@ -46,7 +46,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
         "fixed bottom-0 left-0 right-0 z-50",
         "bg-card/95 backdrop-blur-md",
         "border-t border-border/50",
-        "pt-1"
+        "pb-safe-bottom"
       )}
       style={{
         transform: 'translateZ(0)',
@@ -59,7 +59,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
     >
       {/* Creator Layout with 5 tabs */}
       {isCreator ? (
-        <div className="flex items-center w-full">
+        <div className="flex items-center w-full h-[49px]">
           {/* Left tabs */}
           <div className="flex flex-1 justify-around">
             {leftTabs.map((tab) => {
@@ -165,7 +165,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
         </div>
       ) : (
         /* Non-creator layout with 4 tabs */
-        <div className="flex items-center justify-around w-full">
+        <div className="flex items-center justify-around w-full h-[49px]">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
