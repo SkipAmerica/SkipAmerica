@@ -413,11 +413,27 @@
   display: none;
 }
 
-/* Platform-aware FreezePane positioning */
+/* Stable freeze pane positioning - CSS-only, no JS interference */
+.freeze-pane-stable {
+  position: sticky;
+  top: calc(var(--safe-area-top) + var(--ios-header-height));
+  z-index: 50;
+  contain: layout style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Prevent layout thrashing during mode changes */
+.freeze-pane-stable * {
+  contain: layout;
+}
+
+/* Legacy freeze pane for backwards compatibility */
 .freeze-pane-container {
   /* Web browsers - always sticky positioning */
   position: sticky;
-  top: var(--safe-area-top);
+  top: calc(var(--safe-area-top) + var(--ios-header-height));
 }
 
 /* Mobile-specific overrides */
@@ -425,13 +441,5 @@
   .freeze-pane-container {
     /* Mobile will use JavaScript-controlled positioning */
     transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-
-/* Smooth transitions for keyboard interactions */
-@media screen and (max-width: 768px) and (orientation: portrait) {
-  .freeze-pane-container {
-    /* Enhanced mobile portrait transitions */
-    transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1), position 0.1s ease;
   }
 }

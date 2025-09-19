@@ -65,7 +65,6 @@ const Index = () => {
   const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
   
   const handleDiscoveryModeChange = (mode: 'discover' | 'browse' | 'match') => {
-    console.log('Index - discovery mode changing from', discoveryMode, 'to', mode);
     setDiscoveryMode(mode);
   };
   const [showRatingModal, setShowRatingModal] = useState(false);

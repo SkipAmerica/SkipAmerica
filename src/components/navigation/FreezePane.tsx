@@ -4,7 +4,7 @@ import { DiscoveryModeToggle } from '@/components/discovery/DiscoveryModeToggle'
 import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
 import { UserInterestFilters } from '@/components/UserInterestFilters';
-import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
+import { isWebBrowser } from '@/shared/lib/platform';
 
 type DiscoveryMode = 'discover' | 'browse' | 'match';
 type BrowseMode = 'live' | 'schedule';
@@ -49,29 +49,12 @@ export const FreezePane = ({
   onFiltersChange,
   className
 }: FreezePaneProps) => {
-  const { isKeyboardVisible, getKeyboardAwareSafeTop, keyboardState } = useKeyboardAware();
-
-  // Platform-aware positioning logic
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-                   (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
-
-  const shouldUseFixed = isMobile && isKeyboardVisible;
-  const position = shouldUseFixed ? 'fixed' : 'sticky';
-
   return (
     <div 
       className={cn(
-        "z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border freeze-pane-container",
+        "freeze-pane-stable z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
         className
       )}
-      style={{ 
-        position,
-        top: getKeyboardAwareSafeTop(),
-        transform: 'translateZ(0)',
-        willChange: shouldUseFixed ? 'transform, top' : 'auto',
-        WebkitBackfaceVisibility: 'hidden',
-        transition: isMobile ? 'top 0.2s cubic-bezier(0.4, 0, 0.2, 1)' : 'none'
-      }}
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (
