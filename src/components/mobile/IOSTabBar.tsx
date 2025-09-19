@@ -46,7 +46,7 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
         "fixed bottom-0 left-0 right-0 z-50",
         "bg-card/95 backdrop-blur-md",
         "border-t border-border/50",
-        "pt-1 pb-safe-bottom"
+        "pt-1"
       )}
       style={{
         transform: 'translateZ(0)',

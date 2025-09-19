@@ -51,9 +51,10 @@ export const FreezePane = ({
   return (
     <div 
       className={cn(
-        "sticky top-0 z-50 pt-safe-top w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
+        "sticky z-50 w-full overflow-x-hidden bg-background/85 backdrop-blur-md border-b border-border",
         className
       )}
+      style={{ top: 'var(--safe-area-top)' }}
     >
       {/* Discovery Mode Toggle */}
       {showDiscoveryToggle && (

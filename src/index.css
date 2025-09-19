@@ -226,7 +226,6 @@
 /* iOS Tab Bar */
 .ios-tab-bar {
   height: var(--ios-tab-bar-height);
-  padding-bottom: var(--safe-area-bottom);
 }
 
 /* iOS Navigation */
