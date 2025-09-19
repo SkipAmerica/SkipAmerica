@@ -59,7 +59,7 @@ export const FreezePane = ({
         className
       )}
       style={{ 
-        top: getKeyboardAwareSafeTop(),
+        top: 'var(--safe-area-top)',
         transform: 'translateZ(0)',
         willChange: isKeyboardVisible ? 'transform, top' : 'auto',
         WebkitBackfaceVisibility: 'hidden'

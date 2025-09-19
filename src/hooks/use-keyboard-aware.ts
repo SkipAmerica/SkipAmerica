@@ -50,9 +50,6 @@ export function useKeyboardAware() {
 
   // Calculate keyboard-aware safe area
   const getKeyboardAwareSafeTop = () => {
-    // When the keyboard is visible, pin to the top of the visual viewport
-    if (keyboardState.isVisible) return '0px';
-    // Otherwise respect the safe area inset
     return 'var(--safe-area-top)';
   };
 
