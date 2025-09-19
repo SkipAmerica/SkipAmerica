@@ -206,7 +206,7 @@ const Index = () => {
 
               {/* Mode-specific content below the FreezePane */}
               {discoveryMode === 'discover' && (
-                <div className="px-4 pt-2">
+                <div className="px-4 pt-3 min-h-[110vh]">
                   <div className="flex items-center justify-center h-64 text-muted-foreground">
                     <p>Discover functionality coming soon...</p>
                   </div>
@@ -232,7 +232,7 @@ const Index = () => {
               )}
 
               {discoveryMode === 'match' && (
-                <div className="px-4 pt-2">
+                <div className="px-4 pt-3 min-h-[110vh]">
                   <SwipeableCreatorCards
                     selectedCategory={filters.selectedCategory}
                     onCreatorLike={handleCreatorLike}
@@ -244,6 +244,9 @@ const Index = () => {
                   />
                 </div>
               )}
+
+              {/* Bottom spacer to guarantee scroll range */}
+              <div style={{ height: `${headerHeight}px` }} />
             </div>
           </div>
         );

@@ -270,7 +270,7 @@ export const SwipeableCreatorCards = ({
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full touch-pan-y">
       {/* Action hints */}
       <div className="absolute top-4 left-0 right-0 z-20 flex justify-between px-6 pointer-events-none">
         <Badge 
