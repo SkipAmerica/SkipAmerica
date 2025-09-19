@@ -290,7 +290,6 @@ const Index = () => {
           overscrollBehavior: 'none', 
           WebkitOverflowScrolling: 'touch', 
           touchAction: 'pan-y',
-          paddingTop: 'var(--ios-nav-bar-height)',
           transform: isKeyboardVisible ? 'translateZ(0)' : undefined,
           willChange: isKeyboardVisible ? 'transform' : 'auto'
         }}
