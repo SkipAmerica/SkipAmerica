@@ -53,7 +53,7 @@ export const FreezePane = ({
   return (
     <div 
       className={cn(
-        "sticky z-50 bg-background/95 backdrop-blur-sm border-b border-border",
+        "sticky z-50 bg-turquoise-light/15 backdrop-blur-sm border-b border-border",
         className
       )}
       style={{ top: `${headerHeight}px` }}
