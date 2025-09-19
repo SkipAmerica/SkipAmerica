@@ -34,7 +34,7 @@ const IndustryResourceSetup = () => {
 
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, full_name, bio, avatar_url, account_type, is_verified, industry_specialization')
       .eq('id', user.id)
       .single()
 

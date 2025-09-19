@@ -7,8 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/app/providers/auth-provider'
-import { Loader2, Mail, Lock, User, Users, Crown } from 'lucide-react'
+import { Loader2, Mail, Lock, User, Users, Crown, Shield } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
+import { PasswordStrengthIndicator } from './PasswordStrengthIndicator'
 
 interface AuthFormProps {
   onSuccess?: () => void
@@ -305,9 +306,15 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                     value={signUpData.password}
                     onChange={(e) => setSignUpData(prev => ({ ...prev, password: e.target.value }))}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
+                {signUpData.password && (
+                  <PasswordStrengthIndicator 
+                    password={signUpData.password} 
+                    className="mt-2"
+                  />
+                )}
               </div>
               
               <div className="space-y-2">
@@ -322,7 +329,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                     value={signUpData.confirmPassword}
                     onChange={(e) => setSignUpData(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     required
-                    minLength={6}
+                    minLength={8}
                   />
                 </div>
               </div>

@@ -1586,6 +1586,42 @@ export type Database = {
           },
         ]
       }
+      profile_privacy_settings: {
+        Row: {
+          created_at: string | null
+          id: string
+          profile_visibility: string | null
+          show_avatar: boolean | null
+          show_bio: boolean | null
+          show_full_name: boolean | null
+          show_interests: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          profile_visibility?: string | null
+          show_avatar?: boolean | null
+          show_bio?: boolean | null
+          show_full_name?: boolean | null
+          show_interests?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          profile_visibility?: string | null
+          show_avatar?: boolean | null
+          show_bio?: boolean | null
+          show_full_name?: boolean | null
+          show_interests?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: Database["public"]["Enums"]["account_type"] | null

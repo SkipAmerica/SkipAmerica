@@ -38,7 +38,7 @@ const ProfileSettings = () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name, bio, avatar_url, account_type, is_verified, interests")
         .eq("id", user?.id)
         .single();
 

@@ -82,7 +82,7 @@ export function SmartTrendingEngine() {
       let query = supabase
         .from('profiles')
         .select(`
-          *,
+          id, full_name, bio, avatar_url, account_type, is_verified, interests,
           trend_metrics(
             trend_score,
             recent_bookings,

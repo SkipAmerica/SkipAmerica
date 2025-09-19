@@ -39,7 +39,7 @@ const UserStatusHeader = ({ onStatusToggle, isLive }: UserStatusHeaderProps) => 
     try {
       const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, full_name, bio, avatar_url, account_type, is_verified")
         .eq("id", user?.id)
         .single();
 
