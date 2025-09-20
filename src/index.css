@@ -172,12 +172,6 @@
   --ios-tab-bar-height: calc(49px + var(--debug-safe-bottom));
   --ios-nav-bar-height: calc(44px + var(--debug-safe-top));
   
-  /* Sticky positioning offsets for proper stacking */
-  --dmt-height: 48px;
-  --ig-header-height: 48px;
-  --dmt-offset: calc(var(--debug-safe-top) + var(--ig-header-height));
-  --ad-panel-offset: calc(var(--debug-safe-top) + var(--ig-header-height) + var(--dmt-height));
-  
   /* iOS Colors */
   --ios-system-blue: 207 100% 50%;
   --ios-system-gray: 142 12% 52%;

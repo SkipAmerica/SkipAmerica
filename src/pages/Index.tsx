@@ -27,7 +27,7 @@ import { UserInterestFilters } from "@/components/UserInterestFilters";
 import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
-import { DiscoveryModeToggle } from "@/features/discovery/components/discovery-mode-toggle";
+import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
 import { CreatorSearch } from "@/components/discovery/CreatorSearch";
 import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader";
 import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
