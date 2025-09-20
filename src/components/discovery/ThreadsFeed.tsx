@@ -157,7 +157,7 @@ export function ThreadsFeed() {
   }
 
   return (
-    <div className="pb-20">
+    <div className="pb-20" style={{ paddingTop: 'calc(var(--dmt-height, 96px) + 60px)' }}>
       <div className="space-y-0">
         {posts.map((post, index) => (
           <PostCard

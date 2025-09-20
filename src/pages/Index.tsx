@@ -92,6 +92,29 @@ const Index = () => {
     doc.style.setProperty('--debug-safe-top', top);
   }, []);
 
+  // Measure DMT height and set CSS custom property for AdPanel positioning
+  useEffect(() => {
+    const measureDMTHeight = () => {
+      const dmtElement = document.querySelector('[data-dmt-header]');
+      if (dmtElement) {
+        const height = dmtElement.getBoundingClientRect().height;
+        document.documentElement.style.setProperty('--dmt-height', `${height}px`);
+      }
+    };
+
+    // Initial measurement
+    measureDMTHeight();
+
+    // Re-measure on resize and mode changes
+    const resizeObserver = new ResizeObserver(measureDMTHeight);
+    const dmtElement = document.querySelector('[data-dmt-header]');
+    if (dmtElement) {
+      resizeObserver.observe(dmtElement);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [discoveryMode]); // Re-measure when discovery mode changes
+
   // Memoized event handlers to prevent unnecessary re-renders
   const handleCreatorLike = useCallback((creatorId: string) => {
     console.log('Liked creator:', creatorId);
@@ -308,7 +331,10 @@ const Index = () => {
 
         {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
         {activeTab === "discover" && showDiscoveryToggle && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
+          <div 
+            data-dmt-header
+            className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50"
+          >
             <DiscoveryModeToggle 
               mode={discoveryMode} 
               onModeChange={handleDiscoveryModeChange}
@@ -342,9 +368,9 @@ const Index = () => {
           </div>
         )}
 
-        {/* Ad Panel - Only show in discover mode, not in browse or match */}
+        {/* Ad Panel - Only show in discover mode, positioned below DMT */}
         {activeTab === "discover" && discoveryMode === 'discover' && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-40">
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px+var(--dmt-height,96px))] z-40">
             <AdPanel />
           </div>
         )}
