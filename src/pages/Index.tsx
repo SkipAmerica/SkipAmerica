@@ -188,7 +188,16 @@ const Index = () => {
                }}>
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
-                <ThreadsFeed />
+                <div>
+                  {/* DMT inline for discover mode - scrolls with content */}
+                  <div className="px-4 pt-4 pb-2">
+                    <DiscoveryModeToggle 
+                      mode={discoveryMode} 
+                      onModeChange={handleDiscoveryModeChange}
+                    />
+                  </div>
+                  <ThreadsFeed />
+                </div>
               )}
 
              {discoveryMode === 'browse' && (
@@ -306,8 +315,8 @@ const Index = () => {
           />
         )}
 
-        {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
-        {activeTab === "discover" && showDiscoveryToggle && (
+        {/* Sticky Header - Only for browse and match modes */}
+        {activeTab === "discover" && showDiscoveryToggle && (discoveryMode === 'browse' || discoveryMode === 'match') && (
           <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
             <DiscoveryModeToggle 
               mode={discoveryMode} 
