@@ -320,9 +320,6 @@ const Index = () => {
           />
         )}
 
-        {activeTab === "discover" && discoveryMode === 'discover' && (
-          <div aria-hidden className="h-12" />
-        )}
         {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
         {activeTab === "discover" && showDiscoveryToggle && (
           <div className={`sticky z-50 bg-background/95 backdrop-blur-sm border-b border-border/50 ${
