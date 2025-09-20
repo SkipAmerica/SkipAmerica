@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ export function MatchSearchBar({
 }: MatchSearchBarProps) {
   const [inputValue, setInputValue] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Parse initial value into keywords on mount
   useEffect(() => {
@@ -38,19 +39,16 @@ export function MatchSearchBar({
     }
   }, [keywords, inputValue, onChange, value]);
 
-  const handleInputChange = useCallback((newValue: string) => {
-    // Check if space was pressed (new value ends with space and input didn't)
-    if (newValue.endsWith(' ') && !inputValue.endsWith(' ')) {
-      const newKeyword = inputValue.trim();
-      if (newKeyword && !keywords.includes(newKeyword)) {
-        setKeywords(prev => [...prev, newKeyword]);
-        setInputValue('');
-      }
-      return;
+  // Auto-scroll to keep the input visible when keywords are added
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
     }
-    
+  }, [keywords]);
+
+  const handleInputChange = useCallback((newValue: string) => {
     setInputValue(newValue);
-  }, [inputValue, keywords]);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Backspace' && inputValue === '' && keywords.length > 0) {
@@ -88,7 +86,7 @@ export function MatchSearchBar({
             />
             
             {/* Scrollable Keywords Container */}
-            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap">
+            <div ref={scrollContainerRef} className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap">
               {keywords.map((keyword, index) => (
                 <Badge 
                   key={`${keyword}-${index}`}
