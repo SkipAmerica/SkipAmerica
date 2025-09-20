@@ -189,7 +189,7 @@ const Index = () => {
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <div className="px-4 pt-2">
-                  <ThreadsFeed />
+                  <ThreadsFeed scrollRootId="app-scroll" />
                 </div>
               )}
 
@@ -293,6 +293,7 @@ const Index = () => {
       />
       
       <div
+        id="app-scroll"
         className="relative h-screen overflow-y-auto overflow-x-hidden pb-[var(--ios-tab-bar-height)]"
         style={{ 
           overscrollBehavior: 'none', 

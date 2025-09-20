@@ -1,7 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
-import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
-import { useDebouncedSearch } from '@/shared/hooks/use-debounced-search'
 import { PostCard } from './PostCard'
 import { LoadingSpinner } from '@/shared/ui'
 
@@ -26,7 +24,7 @@ interface ThreadPost {
   platform?: string
 }
 
-export function ThreadsFeed() {
+export function ThreadsFeed({ scrollRootId }: { scrollRootId?: string }) {
   const [posts, setPosts] = useState<ThreadPost[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
@@ -101,28 +99,40 @@ export function ThreadsFeed() {
   }, [])
 
   const loadMoreRef = useRef<HTMLDivElement>(null)
-  // Update the ref for intersection observer
+  const autoFillCount = useRef(0)
+
   useEffect(() => {
-    if (loadMoreRef.current) {
-      // Use our own ref with the intersection observer
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && hasMore && !loading) {
-            const nextPage = page + 1
-            setPage(nextPage)
-            fetchPosts(nextPage)
-          }
-        },
-        { threshold: 0.1, rootMargin: '100px' }
-      )
+    const target = loadMoreRef.current
+    if (!target) return
 
-      if (loadMoreRef.current) {
-        observer.observe(loadMoreRef.current)
-      }
+    const rootElement = scrollRootId ? document.getElementById(scrollRootId) : null
 
-      return () => observer.disconnect()
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading) {
+          const nextPage = page + 1
+          setPage(nextPage)
+          fetchPosts(nextPage)
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px', root: rootElement }
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [hasMore, loading, page, fetchPosts, scrollRootId])
+
+  useEffect(() => {
+    if (!scrollRootId) return
+    const root = document.getElementById(scrollRootId)
+    if (!root) return
+    if (!loading && hasMore && root.scrollHeight <= root.clientHeight + 50 && autoFillCount.current < 3) {
+      const nextPage = page + 1
+      setPage(nextPage)
+      autoFillCount.current += 1
+      fetchPosts(nextPage)
     }
-  }, [hasMore, loading, page, fetchPosts])
+  }, [loading, hasMore, page, scrollRootId, fetchPosts])
 
   // Initial load
   useEffect(() => {
