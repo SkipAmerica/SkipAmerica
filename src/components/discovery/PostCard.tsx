@@ -122,7 +122,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
     >
       <div className="flex">
         {/* Profile Column */}
-        <div className="bg-turquoise-light/15 backdrop-blur-md border-r-2 border-b-2 border-turquoise-dark p-3 flex-shrink-0">
+        <div className="bg-turquoise-light/15 backdrop-blur-md p-3 flex-shrink-0">
           <Avatar className="h-10 w-10">
             <AvatarImage src={post.creator.avatar_url} alt={post.creator.full_name} />
             <AvatarFallback>
