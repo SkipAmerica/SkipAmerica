@@ -308,32 +308,40 @@ const Index = () => {
           />
         )}
 
-        {/* FreezePane - Sticky below IG header, only for discover tab */}
+        {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
         {activeTab === "discover" && showDiscoveryToggle && (
-          <>
-            <FreezePane
-              showDiscoveryToggle={showDiscoveryToggle}
-              searchValue={discoveryMode === 'browse' ? filters.query : ''}
-              onSearchChange={updateQuery}
-              searchPlaceholder="Filter creators..."
-              showInterestFilters={true}
-              selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-              onFiltersChange={(newFilters) => {
-                const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-                updateSelectedCategory(newCategory)
-              }}
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
+            <DiscoveryModeToggle 
+              mode={discoveryMode} 
+              onModeChange={handleDiscoveryModeChange}
             />
             
-            {/* Match Search Bar - Only show in match mode */}
-            {discoveryMode === 'match' && (
-              <div className="sticky top-[calc(var(--debug-safe-top)+48px+52px)] z-50">
-                <MatchSearchBar
-                  value={filters.query}
-                  onChange={updateQuery}
-                />
-              </div>
+            {/* Show FreezePane content only for browse mode */}
+            {discoveryMode === 'browse' && (
+              <FreezePane
+                showDiscoveryToggle={false}
+                searchValue={filters.query}
+                onSearchChange={updateQuery}
+                searchPlaceholder="Filter creators..."
+                showInterestFilters={true}
+                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+                onFiltersChange={(newFilters) => {
+                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+                  updateSelectedCategory(newCategory)
+                }}
+                className="border-t-0"
+              />
             )}
-          </>
+            
+            {/* Show MatchSearchBar flush with toggle for match mode */}
+            {discoveryMode === 'match' && (
+              <MatchSearchBar
+                value={filters.query}
+                onChange={updateQuery}
+                className="border-t-0"
+              />
+            )}
+          </div>
         )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
