@@ -10,6 +10,7 @@ interface DiscoveryContextType {
   setDiscoveryMode: (mode: DiscoveryMode) => void
   setBrowseMode: (mode: BrowseMode) => void
   handleDiscoveryModeChange: (mode: DiscoveryMode) => void
+  resetToInitialState: () => void
 }
 
 const DiscoveryContext = createContext<DiscoveryContextType | undefined>(undefined)
@@ -27,12 +28,19 @@ export function DiscoveryProvider({ children }: DiscoveryProviderProps) {
     setDiscoveryMode(mode)
   }, [discoveryMode])
 
+  const resetToInitialState = useCallback(() => {
+    console.log('DiscoveryProvider - resetting to initial state')
+    setDiscoveryMode('discover')
+    setBrowseMode('live')
+  }, [])
+
   const value: DiscoveryContextType = {
     discoveryMode,
     browseMode,
     setDiscoveryMode,
     setBrowseMode,
     handleDiscoveryModeChange,
+    resetToInitialState,
   }
 
   return (

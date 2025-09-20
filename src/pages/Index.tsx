@@ -69,7 +69,8 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState("discover");
   
   // Use discovery context instead of local state
-  const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange } = useDiscovery();
+  const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange, resetToInitialState } = useDiscovery();
+  const [threadsFeedKey, setThreadsFeedKey] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   
@@ -133,6 +134,16 @@ const Index = () => {
     setActiveCall(null);
   }, []);
 
+  // Handle discover tab refresh
+  const handleDiscoverTabClick = useCallback(() => {
+    if (activeTab === "discover") {
+      // If already on discover tab, refresh content
+      resetToInitialState();
+      setThreadsFeedKey(prev => prev + 1);
+    }
+    setActiveTab("discover");
+  }, [activeTab, resetToInitialState]);
+
   // Show CallFlow if call is active
   if (activeCall) {
     const creator = mockCreators.find(c => c.id === activeCall);
@@ -190,7 +201,7 @@ const Index = () => {
                }}>
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
-                <ThreadsFeed />
+                <ThreadsFeed key={threadsFeedKey} />
               )}
 
              {discoveryMode === 'browse' && (
@@ -365,7 +376,13 @@ const Index = () => {
       {/* iOS Tab Bar */}
       <IOSTabBar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(tab) => {
+          if (tab === "discover") {
+            handleDiscoverTabClick();
+          } else {
+            setActiveTab(tab);
+          }
+        }}
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
