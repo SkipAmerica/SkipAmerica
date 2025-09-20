@@ -322,7 +322,11 @@ const Index = () => {
 
         {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
         {activeTab === "discover" && showDiscoveryToggle && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
+          <div className={`sticky z-50 bg-background/95 backdrop-blur-sm border-b border-border/50 ${
+            discoveryMode === 'discover' 
+              ? 'top-[var(--debug-safe-top)]' 
+              : 'top-[calc(var(--debug-safe-top)+48px)]'
+          }`}>
             <DiscoveryModeToggle 
               mode={discoveryMode} 
               onModeChange={handleDiscoveryModeChange}
