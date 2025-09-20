@@ -53,7 +53,7 @@ serve(async (req) => {
     if (query && query.trim()) {
       const searchTerm = query.trim().toLowerCase();
       
-      // Search across ALL text fields in creators table
+      // Search across text fields (excluding enums which don't support ilike)
       supabaseQuery = supabaseQuery.or(
         `full_name.ilike.%${searchTerm}%,` +
         `headline.ilike.%${searchTerm}%,` +
@@ -61,8 +61,6 @@ serve(async (req) => {
         `long_bio.ilike.%${searchTerm}%,` +
         `location_country.ilike.%${searchTerm}%,` +
         `location_city.ilike.%${searchTerm}%,` +
-        `celebrity_tier.ilike.%${searchTerm}%,` +
-        `verification_status.ilike.%${searchTerm}%,` +
         `categories.cs.{${searchTerm}},` +
         `political_tags.cs.{${searchTerm}},` +
         `languages.cs.{${searchTerm}},` +
