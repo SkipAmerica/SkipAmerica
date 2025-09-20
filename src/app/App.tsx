@@ -1,7 +1,7 @@
 // Main app component using new architecture
 import { useEffect } from 'react'
 import { Capacitor } from '@capacitor/core'
-import { Keyboard } from '@capacitor/keyboard'
+import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { AppProviders } from './providers'
 import { AppRouter } from './router'
 import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
@@ -11,6 +11,7 @@ function App() {
   useEffect(() => {
     if (Capacitor.getPlatform() === 'ios') {
       Keyboard.setAccessoryBarVisible({ isVisible: false })
+      Keyboard.setResizeMode({ mode: KeyboardResize.None })
       Keyboard.setScroll({ isDisabled: true })
     }
   }, [])
