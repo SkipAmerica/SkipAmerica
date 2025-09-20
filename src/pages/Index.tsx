@@ -362,7 +362,7 @@ const Index = () => {
 
         {/* Ad Panel - Only show in discover mode, not in browse or match */}
         {activeTab === "discover" && discoveryMode === 'discover' && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+96px)] z-40">
+          <div className="mt-12 sticky top-[calc(var(--debug-safe-top)+48px)] z-40">
             <AdPanel />
           </div>
         )}
