@@ -10,6 +10,10 @@ import adPremium from '@/assets/ads/ad-premium.jpg';
 
 interface AdPanelProps {
   className?: string;
+  variant?: 'default' | 'compact' | 'large';
+  background?: 'gray' | 'white' | 'transparent';
+  showBorder?: boolean;
+  borderColor?: 'gray' | 'muted';
 }
 
 interface AdCardProps {
@@ -68,7 +72,13 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
   );
 };
 
-export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
+export const AdPanel: React.FC<AdPanelProps> = ({ 
+  className,
+  variant = 'default',
+  background = 'gray',
+  showBorder = true,
+  borderColor = 'gray'
+}) => {
   const { getAdsByPosition, trackImpression, trackClick, loading, error } = useAdManager();
   
   const positions = getAdsByPosition();
@@ -78,14 +88,43 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
     return null;
   }
 
+  const getVariantClasses = () => {
+    switch (variant) {
+      case 'compact':
+        return 'py-1';
+      case 'large':
+        return 'py-3';
+      default:
+        return 'py-2';
+    }
+  };
+
+  const getBackgroundClasses = () => {
+    switch (background) {
+      case 'white':
+        return 'bg-white';
+      case 'transparent':
+        return 'bg-transparent';
+      default:
+        return 'bg-gray-50';
+    }
+  };
+
+  const getBorderClasses = () => {
+    if (!showBorder) return '';
+    return borderColor === 'muted' ? 'border-b border-muted' : 'border-b border-gray-400';
+  };
+
   return (
     <div 
       className={cn(
-        "w-full bg-gray-50 border-b border-gray-400",
+        "w-full",
+        getBackgroundClasses(),
+        getBorderClasses(),
         className
       )}
     >
-      <div className="px-4 py-2">
+      <div className={cn("px-4", getVariantClasses())}>
         <div className="grid grid-cols-3 gap-3">
           {/* Left Ad */}
           <div className="flex justify-center">

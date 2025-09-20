@@ -345,8 +345,8 @@ const Index = () => {
           </div>
         )}
 
-        {/* Ad Panel - Positioned flush with sticky header for discovery tab */}
-        {activeTab === "discover" && (
+        {/* Ad Panel - Only show in discover mode, not in browse or match */}
+        {activeTab === "discover" && discoveryMode === 'discover' && (
           <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-40">
             <AdPanel />
           </div>
