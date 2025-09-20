@@ -60,14 +60,13 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "z-60 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
-        isKeyboardVisible ? "fixed" : "sticky top-0 pt-safe-top",
+        "sticky top-0 ios-safe-top",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
       style={{ 
-        top: isKeyboardVisible ? 'var(--debug-safe-top)' : undefined,
         transform: 'translateZ(0)',
-        willChange: isKeyboardVisible ? 'transform, top' : 'transform',
+        willChange: 'transform',
         WebkitBackfaceVisibility: 'hidden'
       }}
     >

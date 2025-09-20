@@ -416,7 +416,7 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: var(--debug-safe-top); /* Stick just below the status bar; header space is reserved by container padding */
+  top: var(--ios-nav-bar-height); /* Stick just below the header */
   z-index: 50;
   contain: layout style;
   transform: translateZ(0);

@@ -18,6 +18,9 @@ const config: CapacitorConfig = {
     StatusBar: {
       style: 'default',
       backgroundColor: '#F4FDFB'
+    },
+    Keyboard: {
+      resize: 'none'
     }
   },
   ios: {
