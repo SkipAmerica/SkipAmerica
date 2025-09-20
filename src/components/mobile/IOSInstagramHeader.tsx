@@ -62,14 +62,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "z-20 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
-        "sticky",
+        "sticky top-0 ios-safe-top",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
-      style={{ 
-        top: 'var(--debug-safe-top)',
-        '--ig-header-height': '120px'
-      } as React.CSSProperties & { '--ig-header-height': string }}
     >
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">

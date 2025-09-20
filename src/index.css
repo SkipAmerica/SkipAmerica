@@ -416,7 +416,7 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: calc(var(--debug-safe-top) + var(--ig-header-height, 120px)); /* Pin below IG header */
+  top: var(--debug-safe-top); /* Pin to status bar */
   z-index: 50;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
