@@ -416,10 +416,8 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: var(--freeze-pane-offset, var(--ios-nav-bar-height)); /* Stick just below the header (adjustable) */
+  top: var(--debug-safe-top); /* Pin to status bar */
   z-index: 50;
-  contain: layout style;
-  transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }

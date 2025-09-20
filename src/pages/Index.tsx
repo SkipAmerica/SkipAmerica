@@ -296,9 +296,7 @@ const Index = () => {
         style={{ 
           overscrollBehavior: 'none', 
           WebkitOverflowScrolling: 'touch', 
-          touchAction: 'pan-y',
-          transform: isKeyboardVisible ? 'translateZ(0)' : undefined,
-          willChange: isKeyboardVisible ? 'transform' : 'auto'
+          touchAction: 'pan-y'
         }}
       >
         {/* iOS Navigation Bar - Hide when in advanced tab */}

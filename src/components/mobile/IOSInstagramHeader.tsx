@@ -28,19 +28,6 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
 
   const headerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const updateOffset = () => {
-      const height = headerRef.current?.offsetHeight ?? 0;
-      document.documentElement.style.setProperty('--freeze-pane-offset', `${height}px`);
-    };
-    updateOffset();
-    window.addEventListener('resize', updateOffset);
-    return () => {
-      window.removeEventListener('resize', updateOffset);
-      document.documentElement.style.removeProperty('--freeze-pane-offset');
-    };
-  }, [isKeyboardVisible]);
-
   const handleRecordVideo = () => {
     const input = document.createElement('input');
     input.type = 'file';
@@ -72,7 +59,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
     <div 
       id="ig-header" ref={headerRef} 
       className={cn(
-        "z-60 w-full overflow-x-hidden overflow-y-visible",
+        "z-20 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
         "sticky top-0 ios-safe-top",
