@@ -416,7 +416,7 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: var(--debug-safe-top); /* Pin to status bar */
+  top: calc(var(--debug-safe-top) - 2px); /* Nudge up to eliminate tiny gap */
   z-index: 50;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
