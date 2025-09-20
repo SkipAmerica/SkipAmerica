@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { DiscoveryModeToggle } from '@/components/discovery/DiscoveryModeToggle';
+import { DiscoveryModeToggle } from '@/features/discovery/components/discovery-mode-toggle';
 import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
 import { UserInterestFilters } from '@/components/UserInterestFilters';

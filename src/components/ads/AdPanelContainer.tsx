@@ -14,37 +14,36 @@ export const AdPanelContainer: React.FC<AdPanelContainerProps> = ({
   children,
   position = 'sticky',
   placement = 'top',
-  stickyOffset = 'calc(var(--debug-safe-top) + 48px + 48px)', // Account for DMT height
+  stickyOffset = 'var(--ad-panel-offset)',
   zIndex = 40,
   className
 }) => {
-  const getPositionClasses = () => {
+  const getPositionStyles = () => {
+    const baseStyles: React.CSSProperties = { zIndex };
+    
     switch (position) {
       case 'sticky':
         return placement === 'top' 
-          ? `sticky top-[${stickyOffset}]`
+          ? { ...baseStyles, position: 'sticky' as const, top: `var(--ad-panel-offset)` }
           : placement === 'bottom'
-          ? 'sticky bottom-0'
-          : 'relative';
+          ? { ...baseStyles, position: 'sticky' as const, bottom: 0 }
+          : { ...baseStyles, position: 'relative' as const };
       case 'fixed':
         return placement === 'top'
-          ? `fixed top-[${stickyOffset}] left-0 right-0`
+          ? { ...baseStyles, position: 'fixed' as const, top: `var(--ad-panel-offset)`, left: 0, right: 0 }
           : placement === 'bottom'
-          ? 'fixed bottom-0 left-0 right-0'
-          : 'relative';
+          ? { ...baseStyles, position: 'fixed' as const, bottom: 0, left: 0, right: 0 }
+          : { ...baseStyles, position: 'relative' as const };
       case 'static':
       default:
-        return 'relative';
+        return { ...baseStyles, position: 'relative' as const };
     }
   };
 
   return (
     <div 
-      className={cn(
-        getPositionClasses(),
-        `z-[${zIndex}]`,
-        className
-      )}
+      className={cn(className)}
+      style={getPositionStyles()}
     >
       {children}
     </div>
