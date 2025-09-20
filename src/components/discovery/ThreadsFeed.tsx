@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/integrations/supabase/client'
 import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
 import { useDebouncedSearch } from '@/shared/hooks/use-debounced-search'
 import { PostCard } from './PostCard'
@@ -133,6 +133,25 @@ export function ThreadsFeed() {
     return (
       <div className="flex items-center justify-center h-64">
         <LoadingSpinner />
+      </div>
+    )
+  }
+
+  // Show empty state when no data is available
+  if (!loading && posts.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center px-6">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+          <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v1M7 4V3a1 1 0 011-1m0 0h8m-8 0V2m8 2v1m0-1V2" />
+          </svg>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold">Welcome to Discover</h3>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Creator content will appear here. This is where you'll discover amazing posts from your favorite creators.
+          </p>
+        </div>
       </div>
     )
   }

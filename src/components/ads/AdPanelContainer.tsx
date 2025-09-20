@@ -14,7 +14,7 @@ export const AdPanelContainer: React.FC<AdPanelContainerProps> = ({
   children,
   position = 'sticky',
   placement = 'top',
-  stickyOffset = 'calc(var(--debug-safe-top) + 48px)',
+  stickyOffset = 'calc(var(--debug-safe-top) + 48px + 48px)', // Account for DMT height
   zIndex = 40,
   className
 }) => {
