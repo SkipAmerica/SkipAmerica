@@ -31,6 +31,24 @@ serve(async (req) => {
       `)
       .eq('is_suppressed', false);
 
+    // Also get mock creators for testing/demo purposes
+    const { data: mockCreators } = await supabase
+      .from('mock_creators')
+      .select(`
+        id,
+        full_name,
+        avatar_url,
+        bio,
+        categories:category,
+        is_online,
+        rating,
+        ratings_count,
+        call_rate,
+        account_type,
+        created_at,
+        interests
+      `);
+
     // Apply comprehensive text search across ALL applicable fields
     if (query && query.trim()) {
       const searchTerm = query.trim().toLowerCase();
@@ -180,8 +198,32 @@ serve(async (req) => {
       }
     }
 
-    // Combine all results
-    const allCreators = [...(creators || []), ...additionalCreators];
+    // Combine all results including mock creators (transformed to match creators structure)
+    const transformedMockCreators = (mockCreators || []).map(mock => ({
+      id: mock.id,
+      full_name: mock.full_name,
+      avatar_url: mock.avatar_url,
+      bio: mock.bio,
+      headline: mock.bio?.substring(0, 100),
+      categories: mock.categories ? [mock.categories] : [],
+      is_online: mock.is_online, // Preserve the actual online status
+      rating: mock.rating || 4.8,
+      ratings_count: mock.ratings_count || 100,
+      base_rate_min: mock.call_rate || 150,
+      base_rate_max: mock.call_rate || 150,
+      account_type: mock.account_type || 'creator',
+      created_at: mock.created_at,
+      celebrity_tier: 'Rising',
+      verification_status: 'verified',
+      total_followers: 10000,
+      avg_engagement_rate: 0.05,
+      available_for_booking: true,
+      is_suppressed: false,
+      location_city: 'Brooklyn',
+      location_country: 'USA'
+    }));
+
+    const allCreators = [...(creators || []), ...additionalCreators, ...transformedMockCreators];
 
     // Enhanced relevance scoring based on ALL search matches
     const scoredCreators = allCreators.map(creator => {

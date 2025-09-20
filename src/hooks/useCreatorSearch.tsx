@@ -245,11 +245,14 @@ export function useCreatorSearch({
       
       // Transform the data to match our expected Creator interface
       const transformedCreators: Creator[] = searchResults.map((creator: any, index: number) => {
-        // Use consistent deterministic values based on creator ID to avoid random changes
+        // Use actual isOnline from database if available, otherwise calculate consistently
+        const hasActualOnlineStatus = creator.hasOwnProperty('is_online');
         const idHash = creator.id ? parseInt(creator.id.replace(/-/g, '').slice(0, 8), 16) : index;
-        const isOnline = (idHash % 3) === 0; // Consistent online status
-        const ratingsCount = 150 + (idHash % 800); // Consistent ratings count
-        const rating = 4.2 + ((idHash % 8) / 10); // Consistent rating between 4.2-4.9
+        const isOnline = hasActualOnlineStatus ? !!creator.is_online : (idHash % 3) === 0;
+        
+        // Use actual ratings if available, otherwise calculate consistently
+        const ratingsCount = creator.ratings_count || (150 + (idHash % 800));
+        const rating = creator.rating || (4.2 + ((idHash % 8) / 10));
         
         return {
           id: creator.id,
