@@ -14,13 +14,15 @@ interface IOSInstagramHeaderProps {
   className?: string;
   onMenuClick?: () => void;
   onCreatorSelect?: (creatorId: string) => void;
+  sticky?: boolean;
 }
 
 export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({ 
   transparent = false,
   className,
   onMenuClick,
-  onCreatorSelect
+  onCreatorSelect,
+  sticky = true,
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -55,6 +57,8 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
     input.click();
   };
 
+  const positionClasses = sticky ? "sticky top-0 ios-safe-top" : "relative";
+
   return (
     <div 
       id="ig-header" ref={headerRef} 
@@ -62,7 +66,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "z-20 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
-        "sticky top-0 ios-safe-top",
+        positionClasses,
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
