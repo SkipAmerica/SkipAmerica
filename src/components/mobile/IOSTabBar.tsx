@@ -18,7 +18,7 @@ interface TabItem {
   badge?: number;
 }
 
-export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, onToggleLive }: IOSTabBarProps) {
+export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, onToggleLive }: IOSTabBarProps) {
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
@@ -209,4 +209,4 @@ export function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, is
       )}
     </div>
   );
-}
+});

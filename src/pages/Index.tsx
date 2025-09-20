@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, S
 import { useAuth } from "@/app/providers/auth-provider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
+import { useDiscovery } from "@/app/providers/discovery-provider";
 import { useLiveStatus } from "@/hooks/useLiveStatus";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
@@ -61,12 +62,9 @@ const mockCreators = [
 const Index = () => {
   console.log('Index page is rendering...');
   const [activeTab, setActiveTab] = useState("discover");
-  const [discoveryMode, setDiscoveryMode] = useState<'discover' | 'browse' | 'match'>('discover');
-  const [browseMode, setBrowseMode] = useState<'live' | 'schedule'>('live');
   
-  const handleDiscoveryModeChange = (mode: 'discover' | 'browse' | 'match') => {
-    setDiscoveryMode(mode);
-  };
+  // Use discovery context instead of local state
+  const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange } = useDiscovery();
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   
@@ -91,44 +89,44 @@ const Index = () => {
     doc.style.setProperty('--debug-safe-top', top);
   }, []);
 
-  // Handle swipeable card actions
-  const handleCreatorLike = (creatorId: string) => {
+  // Memoized event handlers to prevent unnecessary re-renders
+  const handleCreatorLike = useCallback((creatorId: string) => {
     console.log('Liked creator:', creatorId);
     // TODO: Implement AI algorithm fine-tuning for likes
-  };
+  }, []);
 
-  const handleCreatorPass = (creatorId: string) => {
+  const handleCreatorPass = useCallback((creatorId: string) => {
     // TODO: Implement AI algorithm fine-tuning for passes
-  };
+  }, []);
 
-  const handleCreatorSuperLike = (creatorId: string) => {
+  const handleCreatorSuperLike = useCallback((creatorId: string) => {
     console.log('Super liked creator:', creatorId);
     // TODO: Implement AI algorithm fine-tuning for super likes
-  };
+  }, []);
 
-  const handleCreatorMessage = (creatorId: string) => {
+  const handleCreatorMessage = useCallback((creatorId: string) => {
     console.log('Messaging creator:', creatorId);
     // TODO: Open messaging interface
-  };
+  }, []);
 
-  const handleCreatorShare = (creatorId: string) => {
+  const handleCreatorShare = useCallback((creatorId: string) => {
     console.log('Sharing creator:', creatorId);
     // TODO: Implement sharing functionality
-  };
+  }, []);
 
-  const handleCreatorBookmark = (creatorId: string) => {
+  const handleCreatorBookmark = useCallback((creatorId: string) => {
     console.log('Bookmarked creator:', creatorId);
     // TODO: Implement bookmark functionality
-  };
+  }, []);
 
   // Handle video call
-  const handleCreatorSelect = (creatorId: string) => {
+  const handleCreatorSelect = useCallback((creatorId: string) => {
     setActiveCall(creatorId);
-  };
+  }, []);
 
-  const handleEndCall = () => {
+  const handleEndCall = useCallback(() => {
     setActiveCall(null);
-  };
+  }, []);
 
   // Show CallFlow if call is active
   if (activeCall) {
@@ -174,7 +172,8 @@ const Index = () => {
   // Check if current tab should show discovery toggle
   const showDiscoveryToggle = activeTab === "discover";
 
-  const renderTabContent = () => {
+  // Memoize expensive tab content rendering to prevent unnecessary re-renders
+  const renderTabContent = useMemo(() => {
     switch (activeTab) {
       case "discover":
         return (
@@ -275,7 +274,7 @@ const Index = () => {
       default:
         return null;
     }
-  };
+  }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, filters.query, handleCreatorSelect, handleCreatorLike, handleCreatorPass, handleCreatorSuperLike, handleCreatorMessage, handleCreatorShare, handleCreatorBookmark]);
 
   // Redirect non-logged in users to auth page
   if (!user) {
@@ -314,11 +313,6 @@ const Index = () => {
         {activeTab === "discover" && showDiscoveryToggle && (
           <FreezePane
             showDiscoveryToggle={showDiscoveryToggle}
-            discoveryMode={discoveryMode}
-            onDiscoveryModeChange={handleDiscoveryModeChange}
-            showBrowseSubTabs={discoveryMode === 'browse'}
-            browseMode={browseMode}
-            onBrowseModeChange={setBrowseMode}
             searchValue={discoveryMode === 'browse' ? filters.query : ''}
             onSearchChange={updateQuery}
             searchPlaceholder="Filter creators..."
@@ -333,7 +327,7 @@ const Index = () => {
 
         {/* Main Content - Scrolls with header & freeze pane */}
         <div className="relative z-40 bg-white">
-          {renderTabContent()}
+          {renderTabContent}
         </div>
       </div>
 

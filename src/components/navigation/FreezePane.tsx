@@ -5,6 +5,7 @@ import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
 import { UserInterestFilters } from '@/components/UserInterestFilters';
 import { isWebBrowser } from '@/shared/lib/platform';
+import { useDiscovery } from '@/app/providers/discovery-provider';
 
 type DiscoveryMode = 'discover' | 'browse' | 'match';
 type BrowseMode = 'live' | 'schedule';
@@ -12,13 +13,6 @@ type BrowseMode = 'live' | 'schedule';
 interface FreezePaneProps {
   // Discovery Mode Toggle
   showDiscoveryToggle: boolean;
-  discoveryMode: DiscoveryMode;
-  onDiscoveryModeChange: (mode: DiscoveryMode) => void;
-  
-  // Browse Sub Tabs
-  showBrowseSubTabs: boolean;
-  browseMode: BrowseMode;
-  onBrowseModeChange: (mode: BrowseMode) => void;
   
   // Search Bar
   searchValue: string;
@@ -34,13 +28,8 @@ interface FreezePaneProps {
   className?: string;
 }
 
-export const FreezePane = ({
+export const FreezePane = React.memo(function FreezePane({
   showDiscoveryToggle,
-  discoveryMode,
-  onDiscoveryModeChange,
-  showBrowseSubTabs,
-  browseMode,
-  onBrowseModeChange,
   searchValue,
   onSearchChange,
   searchPlaceholder = "Search creators...",
@@ -48,7 +37,9 @@ export const FreezePane = ({
   selectedFilters,
   onFiltersChange,
   className
-}: FreezePaneProps) => {
+}: FreezePaneProps) {
+  const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange } = useDiscovery();
+  const showBrowseSubTabs = discoveryMode === 'browse';
   return (
     <div 
       className={cn(
@@ -60,7 +51,7 @@ export const FreezePane = ({
       {showDiscoveryToggle && (
         <DiscoveryModeToggle
           mode={discoveryMode}
-          onModeChange={onDiscoveryModeChange}
+          onModeChange={handleDiscoveryModeChange}
         />
       )}
       
@@ -69,7 +60,7 @@ export const FreezePane = ({
         <div className="px-4 pt-2">
           <BrowseSubTabs 
             mode={browseMode}
-            onModeChange={onBrowseModeChange}
+            onModeChange={setBrowseMode}
           />
         </div>
       )}
@@ -95,4 +86,4 @@ export const FreezePane = ({
       )}
     </div>
   );
-};
+});

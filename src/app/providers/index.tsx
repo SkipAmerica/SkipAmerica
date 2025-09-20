@@ -5,6 +5,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from './auth-provider'
 import { SearchProvider } from './search-provider'
+import { DiscoveryProvider } from './discovery-provider'
 import { config } from '@/shared/config'
 
 const queryClient = new QueryClient({
@@ -33,11 +34,13 @@ export function AppProviders({ children }: AppProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <SearchProvider>
-          <TooltipProvider>
-            {children}
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
+          <DiscoveryProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </DiscoveryProvider>
         </SearchProvider>
       </AuthProvider>
       {config.isDevelopment && (

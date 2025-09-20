@@ -16,7 +16,7 @@ interface IOSInstagramHeaderProps {
   onCreatorSelect?: (creatorId: string) => void;
 }
 
-export function IOSInstagramHeader({ 
+export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({ 
   transparent = false,
   className,
   onMenuClick,
@@ -135,4 +135,4 @@ export function IOSInstagramHeader({
       </div>
     </div>
   );
-}
+});
