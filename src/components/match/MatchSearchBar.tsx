@@ -81,28 +81,30 @@ export function MatchSearchBar({
       <div className="px-4 py-2">
         <div className="relative">
           {/* Keywords and Input Container */}
-          <div className="min-h-[44px] bg-muted/50 rounded-xl px-3 py-2 flex items-center gap-2 flex-wrap">
+          <div className="min-h-[44px] bg-muted/50 px-3 py-2 flex items-center gap-2">
             <Search 
               size={16} 
               className="text-muted-foreground flex-shrink-0" 
             />
             
-            {/* Keyword chips */}
-            {keywords.map((keyword, index) => (
-              <Badge 
-                key={`${keyword}-${index}`}
-                variant="secondary" 
-                className="bg-primary text-primary-foreground hover:bg-primary/80 flex items-center gap-1 px-2 py-1"
-              >
-                <span className="text-sm">{keyword}</span>
-                <button
-                  onClick={() => removeKeyword(keyword)}
-                  className="ml-1 hover:bg-black/10 rounded-full p-0.5 flex-shrink-0"
+            {/* Scrollable Keywords Container */}
+            <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide flex-nowrap">
+              {keywords.map((keyword, index) => (
+                <Badge 
+                  key={`${keyword}-${index}`}
+                  variant="secondary" 
+                  className="bg-[#F4FDFB] text-turquoise hover:bg-[#F4FDFB]/80 flex items-center gap-1 px-2 py-1 flex-shrink-0"
                 >
-                  <X size={12} />
-                </button>
-              </Badge>
-            ))}
+                  <span className="text-sm whitespace-nowrap">{keyword}</span>
+                  <button
+                    onClick={() => removeKeyword(keyword)}
+                    className="ml-1 hover:bg-black/10 p-0.5 flex-shrink-0"
+                  >
+                    <X size={12} />
+                  </button>
+                </Badge>
+              ))}
+            </div>
             
             {/* Input field */}
             <Input
@@ -120,7 +122,7 @@ export function MatchSearchBar({
               variant="ghost"
               size="icon"
               onClick={clearAll}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 rounded-full hover:bg-muted"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 hover:bg-muted"
             >
               <X size={14} />
             </Button>
