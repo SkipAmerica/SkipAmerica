@@ -11,6 +11,7 @@ import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
+  sticky?: boolean;
   className?: string;
   onMenuClick?: () => void;
   onCreatorSelect?: (creatorId: string) => void;
@@ -18,6 +19,7 @@ interface IOSInstagramHeaderProps {
 
 export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({ 
   transparent = false,
+  sticky = true,
   className,
   onMenuClick,
   onCreatorSelect
@@ -62,7 +64,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "z-20 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
-        "sticky top-0 ios-safe-top",
+        sticky && "sticky top-0 ios-safe-top",
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
