@@ -189,7 +189,7 @@ const Index = () => {
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <div className="px-4 pt-2">
-                  <div className="flex flex-col items-center justify-center h-64 space-y-4 text-center">
+                  <div className="flex flex-col items-center justify-center min-h-[150vh] space-y-4 text-center">
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
                       <svg className="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V3a1 1 0 011 1v1M7 4V3a1 1 0 011-1m0 0h8m-8 0V2m8 2v1m0-1V2" />
@@ -320,6 +320,9 @@ const Index = () => {
           />
         )}
 
+        {activeTab === "discover" && discoveryMode === 'discover' && (
+          <div aria-hidden className="h-12" />
+        )}
         {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
         {activeTab === "discover" && showDiscoveryToggle && (
           <div className={`sticky z-50 bg-background/95 backdrop-blur-sm border-b border-border/50 ${
