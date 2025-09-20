@@ -18,6 +18,7 @@ import { CallFlow } from "@/components/call/CallFlow";
 import OnlineCreators from "@/components/OnlineCreators";
 import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
+import { cn } from "@/shared/lib/utils";
 import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
 import { EventCountdown } from "@/components/events/EventCountdown";
 import { AdBanner } from "@/components/ads/AdBanner";
@@ -364,7 +365,12 @@ const Index = () => {
         )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
-        <div className="relative z-10 bg-white">
+        <div className={cn(
+          "relative z-10 bg-white",
+          activeTab === "discover" && discoveryMode === 'discover' 
+            ? "-mt-[calc(48px+96px)]" 
+            : "-mt-[48px]"
+        )}>
           {renderTabContent}
         </div>
       </div>
