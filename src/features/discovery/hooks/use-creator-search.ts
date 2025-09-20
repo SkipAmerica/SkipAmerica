@@ -1,6 +1,6 @@
 // Consolidated creator search hook
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '@/shared/api/client'
+import { supabase } from '@/integrations/supabase/client'
 import { queryKeys } from '@/shared/api/query-keys'
 import { handleSupabaseError } from '@/shared/api/errors'
 import { useAuth } from '@/app/providers/auth-provider'
