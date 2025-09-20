@@ -10,7 +10,7 @@ export interface AdData {
   buttonText: string;
   isActive: boolean;
   position: 'left' | 'center' | 'right';
-  adType: 'creator' | 'event' | 'premium' | 'general';
+  adType: 'creator' | 'event' | 'premium' | 'general' | 'brand' | 'platform';
   createdAt: Date;
   updatedAt: Date;
   impressions?: number;
@@ -29,13 +29,13 @@ export function useAdManager() {
       // Default mock ads with generated images
       {
         id: '1',
-        title: 'Connect with Top Creators',
-        description: 'Discover and book calls with industry-leading creators and experts.',
-        imageUrl: '/src/assets/ads/ad-creators.jpg',
-        buttonText: 'Explore Creators',
+        title: 'Just Do It',
+        description: 'Nike - Premium athletic wear and performance gear.',
+        imageUrl: '/src/assets/ads/ad-nike.jpg',
+        buttonText: 'Shop Nike',
         isActive: true,
         position: 'left',
-        adType: 'creator',
+        adType: 'brand',
         createdAt: new Date(),
         updatedAt: new Date(),
         impressions: 1250,
@@ -43,13 +43,13 @@ export function useAdManager() {
       },
       {
         id: '2', 
-        title: 'Join Live Events',
-        description: 'Participate in exclusive virtual conferences and workshops.',
-        imageUrl: '/src/assets/ads/ad-events.jpg',
-        buttonText: 'View Events',
+        title: 'Join Top Creators',
+        description: 'Connect with industry-leading creators on our platform.',
+        imageUrl: '/src/assets/ads/ad-platform.jpg',
+        buttonText: 'Get Started',
         isActive: true,
         position: 'center',
-        adType: 'event',
+        adType: 'platform',
         createdAt: new Date(),
         updatedAt: new Date(),
         impressions: 980,

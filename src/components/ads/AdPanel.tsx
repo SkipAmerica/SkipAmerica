@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import adCreators from '@/assets/ads/ad-creators.jpg';
 import adEvents from '@/assets/ads/ad-events.jpg';
 import adPremium from '@/assets/ads/ad-premium.jpg';
+import adNike from '@/assets/ads/ad-nike.jpg';
+import adPlatform from '@/assets/ads/ad-platform.jpg';
 
 interface AdPanelProps {
   className?: string;
@@ -33,11 +35,11 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
     
     // Handle different ad types
     switch (ad.adType) {
-      case 'creator':
-        toast.success('Exploring top creators...');
+      case 'brand':
+        toast.success('Exploring Nike products...');
         break;
-      case 'event':
-        toast.success('Loading upcoming events...');
+      case 'platform':
+        toast.success('Join our creator platform...');
         break;
       case 'premium':
         toast.success('Showing premium features...');
@@ -52,6 +54,8 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
     if (imageUrl.includes('ad-creators')) return adCreators;
     if (imageUrl.includes('ad-events')) return adEvents;
     if (imageUrl.includes('ad-premium')) return adPremium;
+    if (imageUrl.includes('ad-nike')) return adNike;
+    if (imageUrl.includes('ad-platform')) return adPlatform;
     return imageUrl;
   };
 
