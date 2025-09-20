@@ -32,6 +32,7 @@ import { CreatorSearch } from "@/components/discovery/CreatorSearch";
 import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader";
 import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import { FreezePane } from "@/components/navigation/FreezePane";
+import { MatchSearchBar } from "@/components/match/MatchSearchBar";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -309,18 +310,30 @@ const Index = () => {
 
         {/* FreezePane - Sticky below IG header, only for discover tab */}
         {activeTab === "discover" && showDiscoveryToggle && (
-          <FreezePane
-            showDiscoveryToggle={showDiscoveryToggle}
-            searchValue={discoveryMode === 'browse' ? filters.query : ''}
-            onSearchChange={updateQuery}
-            searchPlaceholder="Filter creators..."
-            showInterestFilters={true}
-            selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-            onFiltersChange={(newFilters) => {
-              const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-              updateSelectedCategory(newCategory)
-            }}
-          />
+          <>
+            <FreezePane
+              showDiscoveryToggle={showDiscoveryToggle}
+              searchValue={discoveryMode === 'browse' ? filters.query : ''}
+              onSearchChange={updateQuery}
+              searchPlaceholder="Filter creators..."
+              showInterestFilters={true}
+              selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+              onFiltersChange={(newFilters) => {
+                const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+                updateSelectedCategory(newCategory)
+              }}
+            />
+            
+            {/* Match Search Bar - Only show in match mode */}
+            {discoveryMode === 'match' && (
+              <div className="sticky top-[calc(var(--debug-safe-top)+48px+52px)] z-50">
+                <MatchSearchBar
+                  value={filters.query}
+                  onChange={updateQuery}
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
