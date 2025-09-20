@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/app/providers/auth-provider';
@@ -25,6 +25,21 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isKeyboardVisible } = useKeyboardAware();
+
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateOffset = () => {
+      const height = headerRef.current?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty('--freeze-pane-offset', `${height}px`);
+    };
+    updateOffset();
+    window.addEventListener('resize', updateOffset);
+    return () => {
+      window.removeEventListener('resize', updateOffset);
+      document.documentElement.style.removeProperty('--freeze-pane-offset');
+    };
+  }, [isKeyboardVisible]);
 
   const handleRecordVideo = () => {
     const input = document.createElement('input');
@@ -55,7 +70,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
 
   return (
     <div 
-      id="ig-header" 
+      id="ig-header" ref={headerRef} 
       className={cn(
         "z-60 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
@@ -64,11 +79,6 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         !transparent && "bg-turquoise-light/15 backdrop-blur-md",
         className
       )}
-      style={{ 
-        transform: 'translateZ(0)',
-        willChange: 'transform',
-        WebkitBackfaceVisibility: 'hidden'
-      }}
     >
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-11 mb-2">
