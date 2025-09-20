@@ -65,18 +65,20 @@ export const FreezePane = React.memo(function FreezePane({
         </div>
       )}
       
-      {/* Search Bar */}
-      <div className="pb-1">
-        <IOSSearchBar
-          value={searchValue}
-          onChange={onSearchChange}
-          placeholder={searchPlaceholder}
-          fullWidth
-        />
-      </div>
+      {/* Search Bar - Only show in browse mode */}
+      {discoveryMode === 'browse' && (
+        <div className="pb-1">
+          <IOSSearchBar
+            value={searchValue}
+            onChange={onSearchChange}
+            placeholder={searchPlaceholder}
+            fullWidth
+          />
+        </div>
+      )}
       
-      {/* Interest Filters */}
-      {showInterestFilters && (
+      {/* Interest Filters - Only show in browse mode */}
+      {showInterestFilters && discoveryMode === 'browse' && (
         <div className="px-4 pb-1">
           <UserInterestFilters 
             selectedFilters={selectedFilters}
