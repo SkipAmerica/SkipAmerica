@@ -33,6 +33,7 @@ import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader"
 import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import { FreezePane } from "@/components/navigation/FreezePane";
 import { MatchSearchBar } from "@/components/match/MatchSearchBar";
+import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
@@ -343,6 +344,9 @@ const Index = () => {
             )}
           </div>
         )}
+
+        {/* Ad Panel - Positioned below sticky header for discovery tab */}
+        {activeTab === "discover" && <AdPanel />}
 
         {/* Main Content - Scrolls with header & freeze pane */}
         <div className="relative z-10 bg-white">
