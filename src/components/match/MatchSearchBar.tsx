@@ -93,12 +93,12 @@ export function MatchSearchBar({
                 <Badge 
                   key={`${keyword}-${index}`}
                   variant="secondary" 
-                  className="bg-[#F4FDFB] text-turquoise hover:bg-[#F4FDFB]/80 flex items-center gap-1 px-2 py-1 flex-shrink-0"
+                  className="bg-[#F4FDFB] text-[#0099FF] hover:bg-[#F4FDFB]/80 flex items-center gap-1 px-2 py-1 flex-shrink-0 border border-[#0099FF]"
                 >
                   <span className="text-sm whitespace-nowrap">{keyword}</span>
                   <button
                     onClick={() => removeKeyword(keyword)}
-                    className="ml-1 hover:bg-black/10 p-0.5 flex-shrink-0"
+                    className="ml-1 hover:bg-black/10 p-0.5 flex-shrink-0 text-[#0099FF]"
                   >
                     <X size={12} />
                   </button>
