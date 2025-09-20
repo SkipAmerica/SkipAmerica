@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useKeywordSummarizer } from '@/hooks/useKeywordSummarizer';
 
 interface MatchSearchBarProps {
   value: string;
@@ -22,7 +21,6 @@ export function MatchSearchBar({
   const [inputValue, setInputValue] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { summary, loading: summaryLoading, error: summaryError } = useKeywordSummarizer(keywords);
 
   // Parse initial value into keywords on mount
   useEffect(() => {
@@ -129,14 +127,10 @@ export function MatchSearchBar({
           )}
         </div>
         
-        {/* AI Summary indicator */}
+        {/* Keyword count indicator */}
         {keywords.length > 0 && (
-          <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-            {summaryLoading && <Loader2 size={12} className="animate-spin" />}
-            {summary || `${keywords.length} keyword${keywords.length !== 1 ? 's' : ''} active`}
-            {summaryError && !summary && (
-              <span className="text-red-500 text-xs">• Summary unavailable</span>
-            )}
+          <div className="mt-2 text-xs text-muted-foreground">
+            {keywords.length} keyword{keywords.length !== 1 ? 's' : ''} active
           </div>
         )}
       </div>
