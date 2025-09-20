@@ -416,10 +416,22 @@
 /* Stable freeze pane positioning - CSS-only, no JS interference */
 .freeze-pane-stable {
   position: sticky;
-  top: calc(var(--debug-safe-top) - 2px); /* Nudge up to eliminate tiny gap */
+  top: calc(var(--debug-safe-top) - 4px); /* Nudge up aggressively to eliminate hairline */
   z-index: 50;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+}
+
+/* Bleed element above freeze pane for seamless overlap */
+.freeze-pane-stable::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-turquoise);
+  z-index: -1;
 }
 
 /* Prevent layout thrashing during mode changes */
