@@ -112,106 +112,105 @@ export function PostCard({ post, isLast }: PostCardProps) {
     <div
       ref={cardRef}
       className={cn(
-        "border-b border-border bg-background transition-colors hover:bg-muted/50",
+        "border-b border-border bg-background transition-colors hover:bg-muted/50 font-instagram",
         !isLast && "border-b"
       )}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
+      style={{ WebkitFontSmoothing: 'antialiased' }}
     >
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-3">
+      <div className="flex">
+        {/* Profile Column */}
+        <div className="bg-turquoise-light/15 backdrop-blur-md border-r-2 border-b-2 border-turquoise-dark p-3 flex-shrink-0">
           <Avatar className="h-10 w-10">
             <AvatarImage src={post.creator.avatar_url} alt={post.creator.full_name} />
             <AvatarFallback>
               {post.creator.full_name?.charAt(0).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm truncate">
-                {post.creator.full_name}
-              </h3>
-              <span className="text-muted-foreground text-xs">
-                {formatTime(post.published_at || post.created_at)}
-              </span>
-            </div>
-            {post.platform && (
-              <p className="text-muted-foreground text-xs capitalize">
-                via {post.platform}
+        </div>
+
+        {/* Content Column */}
+        <div className="flex-1 p-4">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="font-semibold text-sm truncate">
+              {post.creator.full_name}
+            </h3>
+            <span className="text-muted-foreground text-xs font-normal">
+              {formatTime(post.published_at || post.created_at)}
+            </span>
+          </div>
+
+          {/* Content */}
+          <div className="space-y-3">
+            {post.title && (
+              <h4 className="font-normal text-sm text-foreground leading-relaxed">
+                {post.title}
+              </h4>
+            )}
+            
+            {post.description && (
+              <p className="text-foreground text-sm font-normal leading-relaxed">
+                {post.description}
               </p>
             )}
+
+            {/* Media */}
+            {post.media_url && (
+              <div className="rounded-lg overflow-hidden">
+                {post.content_type.startsWith('image') ? (
+                  <img
+                    src={post.media_url}
+                    alt={post.title || 'Post image'}
+                    className="w-full h-auto max-h-96 object-cover"
+                  />
+                ) : post.content_type.startsWith('video') ? (
+                  <video
+                    src={post.media_url}
+                    poster={post.thumbnail_url}
+                    controls
+                    className="w-full h-auto max-h-96"
+                  />
+                ) : null}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Content */}
-        <div className="space-y-3">
-          {post.title && (
-            <h4 className="font-medium text-foreground leading-relaxed">
-              {post.title}
-            </h4>
-          )}
-          
-          {post.description && (
-            <p className="text-foreground leading-relaxed">
-              {post.description}
-            </p>
-          )}
+          {/* Actions */}
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+            <div className="flex items-center gap-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                className={cn(
+                  "gap-2 px-0 hover:bg-transparent",
+                  isLiked && "text-red-500"
+                )}
+              >
+                <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
+                <span className="text-xs font-medium">{formatCount(likeCount)}</span>
+              </Button>
 
-          {/* Media */}
-          {post.media_url && (
-            <div className="rounded-lg overflow-hidden">
-              {post.content_type.startsWith('image') ? (
-                <img
-                  src={post.media_url}
-                  alt={post.title || 'Post image'}
-                  className="w-full h-auto max-h-96 object-cover"
-                />
-              ) : post.content_type.startsWith('video') ? (
-                <video
-                  src={post.media_url}
-                  poster={post.thumbnail_url}
-                  controls
-                  className="w-full h-auto max-h-96"
-                />
-              ) : null}
+              <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs font-medium">{formatCount(post.comment_count)}</span>
+              </Button>
+
+              <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
+                <Repeat2 className="h-4 w-4" />
+              </Button>
+
+              <Button variant="ghost" size="sm" className="px-0 hover:bg-transparent">
+                <Share className="h-4 w-4" />
+              </Button>
             </div>
-          )}
-        </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-          <div className="flex items-center gap-6">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
-              className={cn(
-                "gap-2 px-0 hover:bg-transparent",
-                isLiked && "text-red-500"
-              )}
-            >
-              <Heart className={cn("h-4 w-4", isLiked && "fill-current")} />
-              <span className="text-xs">{formatCount(likeCount)}</span>
-            </Button>
-
-            <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
-              <MessageCircle className="h-4 w-4" />
-              <span className="text-xs">{formatCount(post.comment_count)}</span>
-            </Button>
-
-            <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
-              <Repeat2 className="h-4 w-4" />
-            </Button>
-
-            <Button variant="ghost" size="sm" className="px-0 hover:bg-transparent">
-              <Share className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <div className="text-xs text-muted-foreground">
-            {formatCount(post.view_count)} views
+            <div className="text-xs text-muted-foreground font-normal">
+              {formatCount(post.view_count)} views
+            </div>
           </div>
         </div>
       </div>

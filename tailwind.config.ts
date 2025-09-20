@@ -68,6 +68,9 @@ export default {
           black: "hsl(var(--skip-black))",
         },
       },
+      fontFamily: {
+        'instagram': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+      },
       backgroundImage: {
         'gradient-primary': 'var(--gradient-primary)',
         'gradient-secondary': 'var(--gradient-secondary)',
