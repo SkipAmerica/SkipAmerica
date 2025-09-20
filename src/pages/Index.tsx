@@ -33,6 +33,7 @@ import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader"
 import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import { FreezePane } from "@/components/navigation/FreezePane";
 import { MatchSearchBar } from "@/components/match/MatchSearchBar";
+import { ThreadsFeed } from "@/components/discovery/ThreadsFeed";
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
 
@@ -185,14 +186,10 @@ const Index = () => {
                  touchAction: 'pan-y',
                  WebkitOverflowScrolling: 'touch'
                }}>
-             {/* Mode-specific content - content scrolls underneath sticky elements */}
-             {discoveryMode === 'discover' && (
-               <div className="px-4 pt-3 min-h-screen">
-                 <div className="flex items-center justify-center h-64 text-muted-foreground">
-                   <p>Discover functionality coming soon...</p>
-                 </div>
-               </div>
-             )}
+              {/* Mode-specific content - content scrolls underneath sticky elements */}
+              {discoveryMode === 'discover' && (
+                <ThreadsFeed />
+              )}
 
              {discoveryMode === 'browse' && (
                <div className="px-4 pt-2">
