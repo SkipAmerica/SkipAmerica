@@ -345,8 +345,12 @@ const Index = () => {
           </div>
         )}
 
-        {/* Ad Panel - Positioned below sticky header for discovery tab */}
-        {activeTab === "discover" && <AdPanel />}
+        {/* Ad Panel - Positioned flush with sticky header for discovery tab */}
+        {activeTab === "discover" && (
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px+60px)] z-40">
+            <AdPanel />
+          </div>
+        )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
         <div className="relative z-10 bg-white">

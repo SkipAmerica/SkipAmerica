@@ -1,8 +1,5 @@
 import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ExternalLink, TrendingUp } from 'lucide-react';
 import { useAdManager, AdData } from '@/hooks/useAdManager';
 import { toast } from 'sonner';
 
@@ -55,51 +52,19 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
   };
 
   return (
-    <Card className="group relative overflow-hidden bg-white hover:shadow-lg transition-all duration-300 transform hover:scale-[1.02] cursor-pointer border-0 shadow-sm">
-      <div className="relative h-32 overflow-hidden">
+    <div 
+      className="group relative overflow-hidden cursor-pointer"
+      onClick={handleClick}
+    >
+      <div className="relative h-20 w-full overflow-hidden rounded-lg">
         <img
           src={getImageSrc(ad.imageUrl)}
           alt={ad.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-lg"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        
-        {/* Ad Type Badge */}
-        <div className="absolute top-2 right-2">
-          <div className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-xs font-medium text-primary flex items-center gap-1">
-            <TrendingUp size={10} />
-            {ad.adType}
-          </div>
-        </div>
       </div>
-      
-      <div className="p-3">
-        <h3 className="font-semibold text-sm text-foreground mb-1 line-clamp-1">
-          {ad.title}
-        </h3>
-        <p className="text-xs text-muted-foreground mb-3 line-clamp-2 leading-relaxed">
-          {ad.description}
-        </p>
-        
-        <Button
-          onClick={handleClick}
-          size="sm"
-          className="w-full h-8 text-xs bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-        >
-          {ad.buttonText}
-          <ExternalLink size={12} className="ml-1" />
-        </Button>
-        
-        {/* Analytics Badge */}
-        {(ad.impressions || ad.clicks) && (
-          <div className="flex justify-between mt-2 text-xs text-muted-foreground">
-            <span>{ad.impressions || 0} views</span>
-            <span>{ad.clicks || 0} clicks</span>
-          </div>
-        )}
-      </div>
-    </Card>
+    </div>
   );
 };
 
@@ -116,11 +81,11 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
   return (
     <div 
       className={cn(
-        "sticky top-[calc(var(--debug-safe-top)+48px+60px)] z-40 w-full bg-white border-b border-border/20 shadow-sm",
+        "w-full bg-white",
         className
       )}
     >
-      <div className="px-4 py-3">
+      <div className="px-4 py-2">
         <div className="grid grid-cols-3 gap-3">
           {/* Left Ad */}
           <div className="flex justify-center">
@@ -131,8 +96,8 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
                 onClick={trackClick}
               />
             ) : (
-              <div className="w-full h-32 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad Space</span>
+              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">Ad</span>
               </div>
             )}
           </div>
@@ -146,8 +111,8 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
                 onClick={trackClick}
               />
             ) : (
-              <div className="w-full h-32 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad Space</span>
+              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">Ad</span>
               </div>
             )}
           </div>
@@ -161,8 +126,8 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
                 onClick={trackClick}
               />
             ) : (
-              <div className="w-full h-32 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad Space</span>
+              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
+                <span className="text-xs text-muted-foreground">Ad</span>
               </div>
             )}
           </div>
