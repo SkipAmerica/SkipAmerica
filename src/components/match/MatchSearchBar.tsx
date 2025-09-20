@@ -93,7 +93,7 @@ export function MatchSearchBar({
                 <Badge 
                   key={`${keyword}-${index}`}
                   variant="secondary" 
-                  className="bg-[#F4FDFB] text-[#0099FF] hover:bg-[#F4FDFB]/80 flex items-center gap-1 px-2 py-1 flex-shrink-0 border border-[#0099FF]"
+                  className="bg-[#F4FDFB] text-[#0099FF] hover:bg-[#F4FDFB]/80 flex items-center gap-1 px-2 py-1 flex-shrink-0 border border-[#0099FF] rounded-none"
                 >
                   <span className="text-sm whitespace-nowrap">{keyword}</span>
                   <button
