@@ -17,8 +17,8 @@ function App() {
       
       // Configure iOS status bar
       StatusBar.setOverlaysWebView({ overlay: false })
-      StatusBar.setBackgroundColor({ color: "#38d9a9" }) // turquoise color
-      StatusBar.setStyle({ style: Style.Light }) // Light so icons are white on teal
+      StatusBar.setBackgroundColor({ color: "#F4FDFB" })
+      StatusBar.setStyle({ style: Style.Dark }) // Dark so icons are visible on light background
     }
   }, [])
 
