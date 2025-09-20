@@ -134,15 +134,22 @@ const Index = () => {
     setActiveCall(null);
   }, []);
 
-  // Handle discover tab refresh
+  // Handle discover tab refresh - always works, even when already on discover tab
   const handleDiscoverTabClick = useCallback(() => {
-    if (activeTab === "discover") {
-      // If already on discover tab, refresh content
-      resetToInitialState();
-      setThreadsFeedKey(prev => prev + 1);
+    // Always refresh content and scroll to top
+    resetToInitialState();
+    setThreadsFeedKey(prev => prev + 1);
+    
+    // Scroll to top
+    const scrollContainer = document.querySelector('[data-scroll-container]');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    
     setActiveTab("discover");
-  }, [activeTab, resetToInitialState]);
+  }, [resetToInitialState]);
 
   // Show CallFlow if call is active
   if (activeCall) {
@@ -304,6 +311,7 @@ const Index = () => {
       />
       
       <div
+        data-scroll-container
         className="relative h-screen overflow-y-auto overflow-x-hidden pb-[var(--ios-tab-bar-height)]"
         style={{ 
           overscrollBehavior: 'none', 
