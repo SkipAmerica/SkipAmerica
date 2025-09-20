@@ -20,38 +20,21 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
     onModeChange(newMode);
   };
 
-  // Calculate the sliding indicator position
-  const getSlidePosition = () => {
-    switch (mode) {
-      case 'discover': return '0%';
-      case 'browse': return '33.333%';
-      case 'match': return '66.666%';
-      default: return '0%';
-    }
-  };
-
   return (
     <div
       style={style}
       className={cn(
-        "relative flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-none border-b border-border h-12",
+        "flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-none border-b border-border h-12",
         className
       )}
     >
-      {/* Sliding background indicator */}
-      <div 
-        className="absolute top-0 left-0 h-full w-1/3 bg-primary transition-transform duration-300 ease-out z-0"
-        style={{
-          transform: `translateX(${getSlidePosition()})`
-        }}
-      />
       <Button
-        variant="ghost"
+        variant={mode === 'discover' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('discover')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-colors duration-300 relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 z-10",
-          mode === 'discover' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'discover' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Search className="h-4 w-4" />
@@ -59,12 +42,12 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       </Button>
       
       <Button
-        variant="ghost"
+        variant={mode === 'browse' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('browse')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-colors duration-300 relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 z-10",
-          mode === 'browse' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'browse' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Grid3X3 className="h-4 w-4" />
@@ -72,12 +55,12 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       </Button>
       
       <Button
-        variant="ghost"
+        variant={mode === 'match' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('match')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-colors duration-300 relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 z-10",
-          mode === 'match' ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Heart className="h-4 w-4" />
