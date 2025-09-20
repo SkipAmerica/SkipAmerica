@@ -92,7 +92,6 @@ const Index = () => {
     doc.style.setProperty('--debug-safe-top', top);
   }, []);
 
-
   // Memoized event handlers to prevent unnecessary re-renders
   const handleCreatorLike = useCallback((creatorId: string) => {
     console.log('Liked creator:', creatorId);
@@ -299,58 +298,56 @@ const Index = () => {
           touchAction: 'pan-y'
         }}
       >
-        {/* Unified Sticky Header */}
-        <div className="sticky top-0 z-50">
-          {/* iOS Navigation Bar - Hide when in advanced tab */}
-          {activeTab !== "advanced" && (
-            <IOSInstagramHeader 
-              sticky={false}
-              onMenuClick={() => setShowMenu(true)}
-              onCreatorSelect={(id) => setActiveTab("creator-profile")}
+        {/* iOS Navigation Bar - Hide when in advanced tab */}
+        {activeTab !== "advanced" && (
+          <IOSInstagramHeader 
+            onMenuClick={() => setShowMenu(true)}
+            onCreatorSelect={(id) => setActiveTab("creator-profile")}
+          />
+        )}
+
+        {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
+        {activeTab === "discover" && showDiscoveryToggle && (
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
+            <DiscoveryModeToggle 
+              mode={discoveryMode} 
+              onModeChange={handleDiscoveryModeChange}
             />
-          )}
-
-          {/* Discovery Mode Toggle and Conditional Content */}
-          {activeTab === "discover" && showDiscoveryToggle && (
-            <div className="bg-background/95 backdrop-blur-sm border-b border-border/50">
-              <DiscoveryModeToggle 
-                mode={discoveryMode} 
-                onModeChange={handleDiscoveryModeChange}
+            
+            {/* Show FreezePane content only for browse mode */}
+            {discoveryMode === 'browse' && (
+              <FreezePane
+                showDiscoveryToggle={false}
+                searchValue={filters.query}
+                onSearchChange={updateQuery}
+                searchPlaceholder="Filter creators..."
+                showInterestFilters={true}
+                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
+                onFiltersChange={(newFilters) => {
+                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
+                  updateSelectedCategory(newCategory)
+                }}
+                className="border-t-0"
               />
-              
-              {/* Show FreezePane content only for browse mode */}
-              {discoveryMode === 'browse' && (
-                <FreezePane
-                  showDiscoveryToggle={false}
-                  searchValue={filters.query}
-                  onSearchChange={updateQuery}
-                  searchPlaceholder="Filter creators..."
-                  showInterestFilters={true}
-                  selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-                  onFiltersChange={(newFilters) => {
-                    const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-                    updateSelectedCategory(newCategory)
-                  }}
-                  className="border-t-0"
-                />
-              )}
-              
-              {/* Show MatchSearchBar flush with toggle for match mode */}
-              {discoveryMode === 'match' && (
-                <MatchSearchBar
-                  value={filters.query}
-                  onChange={updateQuery}
-                  className="border-t-0"
-                />
-              )}
-            </div>
-          )}
+            )}
+            
+            {/* Show MatchSearchBar flush with toggle for match mode */}
+            {discoveryMode === 'match' && (
+              <MatchSearchBar
+                value={filters.query}
+                onChange={updateQuery}
+                className="border-t-0"
+              />
+            )}
+          </div>
+        )}
 
-          {/* Ad Panel - Only show in discover mode */}
-          {activeTab === "discover" && discoveryMode === 'discover' && (
+        {/* Ad Panel - Only show in discover mode, not in browse or match */}
+        {activeTab === "discover" && discoveryMode === 'discover' && (
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-40">
             <AdPanel />
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
         <div className="relative z-10 bg-white">
