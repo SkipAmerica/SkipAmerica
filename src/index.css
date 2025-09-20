@@ -78,6 +78,7 @@
     --turquoise: 174 72% 56%;
     --turquoise-dark: 180 100% 25%;
     --turquoise-light: 174 72% 85%;
+    --turquoise-extra-light: 174 20% 95%;
   }
 
   .dark {
@@ -121,6 +122,7 @@
     --turquoise: 174 72% 56%;
     --turquoise-dark: 180 100% 75%;
     --turquoise-light: 174 72% 25%;
+    --turquoise-extra-light: 174 20% 15%;
   }
 }
 
