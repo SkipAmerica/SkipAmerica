@@ -347,7 +347,7 @@ const Index = () => {
 
         {/* Ad Panel - Positioned flush with sticky header for discovery tab */}
         {activeTab === "discover" && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px+60px)] z-40">
+          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-40">
             <AdPanel />
           </div>
         )}

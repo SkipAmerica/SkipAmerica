@@ -81,7 +81,7 @@ export const AdPanel: React.FC<AdPanelProps> = ({ className }) => {
   return (
     <div 
       className={cn(
-        "w-full bg-white",
+        "w-full bg-gray-50 border-b border-gray-400",
         className
       )}
     >
