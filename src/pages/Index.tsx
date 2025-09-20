@@ -188,7 +188,9 @@ const Index = () => {
                }}>
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
-                <ThreadsFeed />
+                <div className="px-4 pt-2">
+                  <ThreadsFeed />
+                </div>
               )}
 
              {discoveryMode === 'browse' && (

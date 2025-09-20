@@ -157,7 +157,7 @@ export function ThreadsFeed() {
   }
 
   return (
-    <div className="pb-20">
+    <div>
       <div className="space-y-0">
         {posts.map((post, index) => (
           <PostCard
