@@ -53,8 +53,11 @@
     --skip-orange: 16 100% 60%;
     --skip-black: 0 0% 5%;
     
-    /* Animations */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Animations */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Post Creator Specific */
+  --post-creator-backdrop: hsl(0 0% 0% / 0.6);
 
     --radius: 1rem;
 
