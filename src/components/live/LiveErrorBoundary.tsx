@@ -1,4 +1,4 @@
-import { Component, ReactNode } from 'react'
+import { Component, ReactNode, ErrorInfo } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
@@ -23,8 +23,14 @@ export class LiveErrorBoundary extends Component<Props, State> {
     return { hasError: true, error }
   }
 
-  componentDidCatch(error: Error, errorInfo: any) {
-    console.error('Live system error:', error, errorInfo)
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Import normalizeError dynamically to avoid circular deps
+    import('@/shared/errors/normalizeError').then(({ normalizeError }) => {
+      const normalized = normalizeError(error, {
+        componentStack: errorInfo.componentStack
+      });
+      console.error('Live system error:', normalized);
+    });
   }
 
   handleReset = () => {

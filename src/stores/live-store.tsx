@@ -236,10 +236,19 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
   
   const handleDispatch = useCallback((event: LiveEvent) => {
     const oldState = state.state
+    const newState = transition(oldState, event)
+    
+    // Log state transition
+    if ((window as any).__LIVE_DEBUG) {
+      console.info('[LIVE] %s –%s–> %s', oldState, event.type, newState, { 
+        payload: event,
+        timestamp: new Date().toISOString()
+      });
+    }
+    
     dispatch({ type: 'DISPATCH_EVENT', event })
     
     // Handle runtime lifecycle
-    const newState = transition(oldState, event)
     if (newState === 'LIVE' && oldState !== 'LIVE') {
       startRuntime()
     } else if (newState === 'OFFLINE' && oldState !== 'OFFLINE') {
@@ -252,62 +261,242 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
+    
+    // Log state transition
+    if ((window as any).__LIVE_DEBUG) {
+      console.info('[LIVE] %s –%s–> %s', state.state, 'GO_LIVE', 'STARTING', { userId: user.id });
+    }
+    
     handleDispatch({ type: 'GO_LIVE' })
     
     try {
-      const now = new Date().toISOString()
-      const { data: session, error } = await supabase
-        .from('live_sessions')
-        .insert({
-          creator_id: user.id,
-          started_at: now
-        })
-        .select()
-        .single()
+      // Step 1: Request permissions (iOS/mobile)
+      try {
+        if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+          console.info('[LIVE][START] Requesting permissions...');
+          await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+          console.info('[LIVE][START] Permissions granted');
+        }
+      } catch (permissionError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(permissionError, {
+          step: 'request_permissions',
+          state: state.state,
+          event: 'GO_LIVE'
+        });
+        console.error('[LIVE][START_FAILED]', normalized);
+        
+        toast({
+          title: "Camera/Microphone Access Required",
+          description: "Please allow camera and microphone access to go live",
+          variant: "destructive"
+        });
+        
+        handleDispatch({ type: 'START_FAILED' });
+        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+        return;
+      }
+
+      // Step 2: WebRTC initialization (placeholder)
+      try {
+        console.info('[LIVE][START] Initializing WebRTC...');
+        // WebRTC setup would go here
+        console.info('[LIVE][START] WebRTC initialized');
+      } catch (webrtcError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(webrtcError, {
+          step: 'webrtc_init',
+          state: state.state,
+          event: 'GO_LIVE'
+        });
+        console.error('[LIVE][START_FAILED]', normalized);
+        
+        toast({
+          title: "Connection Failed",
+          description: normalized.message || "Failed to initialize video connection",
+          variant: "destructive"
+        });
+        
+        handleDispatch({ type: 'START_FAILED' });
+        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+        return;
+      }
+
+      // Step 3: Create live session in API
+      try {
+        console.info('[LIVE][START] Creating live session...');
+        const now = new Date().toISOString()
+        const { data: session, error } = await supabase
+          .from('live_sessions')
+          .insert({
+            creator_id: user.id,
+            started_at: now
+          })
+          .select()
+          .single()
+        
+        if (error) throw error
+        
+        console.info('[LIVE][START] Live session created:', session.id);
+        dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
+      } catch (apiError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(apiError, {
+          step: 'start_session_api',
+          state: state.state,
+          event: 'GO_LIVE',
+          userId: user.id
+        });
+        console.error('[LIVE][START_FAILED]', normalized);
+        
+        toast({
+          title: "Failed to go live",
+          description: normalized.message || "Database error occurred",
+          variant: "destructive"
+        });
+        
+        handleDispatch({ type: 'START_FAILED' });
+        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+        return;
+      }
+
+      // Step 4: Start runtime services
+      try {
+        console.info('[LIVE][START] Starting runtime services...');
+        // Runtime is started in handleDispatch side effect
+        console.info('[LIVE][START] Runtime services started');
+      } catch (runtimeError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(runtimeError, {
+          step: 'start_runtime',
+          state: state.state,
+          event: 'GO_LIVE'
+        });
+        console.error('[LIVE][START_FAILED]', normalized);
+        
+        toast({
+          title: "Service Startup Failed",
+          description: normalized.message || "Failed to start live services",
+          variant: "destructive"
+        });
+        
+        handleDispatch({ type: 'START_FAILED' });
+        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+        return;
+      }
+
+      // Success!
+      if ((window as any).__LIVE_DEBUG) {
+        console.info('[LIVE] %s –%s–> %s', 'STARTING', 'LIVE_STARTED', 'LIVE', { sessionId: state.sessionId });
+      }
       
-      if (error) throw error
-      
-      dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
       handleDispatch({ type: 'LIVE_STARTED' })
       
     } catch (error: any) {
       if (error.name === 'AbortError') return
       
-      console.error('Error going live:', error)
+      // Catch-all error handler
+      const { normalizeError } = await import('@/shared/errors/normalizeError');
+      const normalized = normalizeError(error, {
+        step: 'unknown',
+        state: state.state,
+        event: 'GO_LIVE',
+        userId: user.id
+      });
+      console.error('[LIVE][START_FAILED]', normalized);
+      
       handleDispatch({ type: 'START_FAILED' })
       
       toast({
         title: "Failed to go live",
-        description: error.message || "Please try again",
+        description: normalized.message || "Please try again",
         variant: "destructive"
       })
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
     }
-  }, [user, state.state, state.inFlight.start, handleDispatch, toast])
+  }, [user, state.state, state.inFlight.start, state.sessionId, handleDispatch, toast])
   
   const endLive = useCallback(async () => {
     if (!user || !canEndLive(state.state) || state.inFlight.end || !state.sessionId) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'end', controller })
+    
+    // Log state transition
+    if ((window as any).__LIVE_DEBUG) {
+      console.info('[LIVE] %s –%s–> %s', state.state, 'END_LIVE', 'ENDING', { sessionId: state.sessionId });
+    }
+    
     handleDispatch({ type: 'END_LIVE' })
     
     try {
-      const now = new Date().toISOString()
-      const sessionDuration = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 60000) : 0
-      
-      const { error } = await supabase
-        .from('live_sessions')
-        .update({
-          ended_at: now,
-          calls_taken: state.callsTaken,
-          total_earnings_cents: state.totalEarningsCents,
-          session_duration_minutes: sessionDuration
-        })
-        .eq('id', state.sessionId)
-      
-      if (error) throw error
+      // Step 1: Stop runtime services
+      try {
+        console.info('[LIVE][END] Stopping runtime services...');
+        // Runtime disposal happens in handleDispatch side effect
+        console.info('[LIVE][END] Runtime services stopped');
+      } catch (runtimeError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(runtimeError, {
+          step: 'stop_runtime',
+          state: state.state,
+          event: 'END_LIVE',
+          sessionId: state.sessionId
+        });
+        console.error('[LIVE][END_FAILED]', normalized);
+        // Continue with end process even if runtime cleanup fails
+      }
+
+      // Step 2: Update live session in API
+      try {
+        console.info('[LIVE][END] Updating live session...');
+        const now = new Date().toISOString()
+        const sessionDuration = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 60000) : 0
+        
+        const { error } = await supabase
+          .from('live_sessions')
+          .update({
+            ended_at: now,
+            calls_taken: state.callsTaken,
+            total_earnings_cents: state.totalEarningsCents,
+            session_duration_minutes: sessionDuration
+          })
+          .eq('id', state.sessionId)
+        
+        if (error) throw error
+        
+        console.info('[LIVE][END] Live session updated');
+      } catch (apiError) {
+        const { normalizeError } = await import('@/shared/errors/normalizeError');
+        const normalized = normalizeError(apiError, {
+          step: 'end_session_api',
+          state: state.state,
+          event: 'END_LIVE',
+          sessionId: state.sessionId,
+          callsTaken: state.callsTaken,
+          totalEarningsCents: state.totalEarningsCents
+        });
+        console.error('[LIVE][END_FAILED]', normalized);
+        
+        toast({
+          title: "Failed to end live session",
+          description: normalized.message || "Database update failed",
+          variant: "destructive"
+        });
+        
+        handleDispatch({ type: 'END_FAILED' });
+        dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' });
+        return;
+      }
+
+      // Success!
+      if ((window as any).__LIVE_DEBUG) {
+        console.info('[LIVE] %s –%s–> %s', 'ENDING', 'LIVE_ENDED', 'OFFLINE', { 
+          callsTaken: state.callsTaken,
+          earnings: state.totalEarningsCents 
+        });
+      }
       
       handleDispatch({ type: 'LIVE_ENDED' })
       
@@ -319,12 +508,21 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       if (error.name === 'AbortError') return
       
-      console.error('Error ending live:', error)
+      // Catch-all error handler
+      const { normalizeError } = await import('@/shared/errors/normalizeError');
+      const normalized = normalizeError(error, {
+        step: 'unknown',
+        state: state.state,
+        event: 'END_LIVE',
+        sessionId: state.sessionId
+      });
+      console.error('[LIVE][END_FAILED]', normalized);
+      
       handleDispatch({ type: 'END_FAILED' })
       
       toast({
         title: "Failed to end live session",
-        description: error.message || "Please try again",
+        description: normalized.message || "Please try again",
         variant: "destructive"
       })
     } finally {

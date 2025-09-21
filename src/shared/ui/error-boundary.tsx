@@ -23,7 +23,13 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    // Import normalizeError dynamically to avoid circular deps
+    import('@/shared/errors/normalizeError').then(({ normalizeError }) => {
+      const normalized = normalizeError(error, {
+        componentStack: errorInfo.componentStack
+      });
+      console.error('ErrorBoundary caught an error:', normalized);
+    });
   }
 
   private handleReset = () => {
