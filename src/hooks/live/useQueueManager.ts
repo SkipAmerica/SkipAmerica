@@ -1,104 +1,89 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
+/**
+ * Queue manager - now integrates with centralized store
+ */
+
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
-import { useToast } from '@/components/ui/use-toast'
+import { useToast } from '@/hooks/use-toast'
 import { useDebounce } from '@/shared/hooks/use-debounce'
+import { useLiveStore } from '@/stores/live-store'
 
 interface QueueManagerState {
-  queueCount: number
-  hapticsEnabled: boolean
-  lastHapticTime?: number
-  hapticsSuppressedUntil?: number
   error?: string
-}
-
-interface QueueEntry {
-  id: string
-  creator_id: string
-  fan_id: string
-  status: 'waiting' | 'in_call' | 'completed' | 'cancelled'
-  created_at: string
+  isConnected: boolean
 }
 
 export function useQueueManager(isLive: boolean) {
   const { user } = useAuth()
   const { toast } = useToast()
-  const [queueState, setQueueState] = useState<QueueManagerState>({
-    queueCount: 0,
-    hapticsEnabled: true
-  })
-  
-  const channelRef = useRef<any>(null)
+  const store = useLiveStore()
+  const channelRef = useRef<any>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
-  const debouncedQueueCount = useDebounce(queueState.queueCount, 100)
+  
+  const [state, setState] = useState<QueueManagerState>({
+    isConnected: false
+  })
 
-  // Subscribe to real-time queue updates with error handling
+  // Real-time subscription for queue changes
   useEffect(() => {
-    if (!user || !isLive) {
-      setQueueState(prev => ({ ...prev, queueCount: 0, error: undefined }))
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
-      }
-      return
-    }
+    if (!isLive || !user) return
 
-    const setupChannel = () => {
-      const channel = supabase
-        .channel(`live-queue-updates-${user.id}`, {
-          config: { 
-            presence: { key: user.id },
-            broadcast: { self: true }
+    const channel = supabase
+      .channel('queue-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${user.id}`
+        },
+        (payload) => {
+          store.updateQueueCount(store.queueCount + 1)
+          store.triggerHaptic()
+          
+          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+          
+          // Check for overload (>3 joins in 10s) - simplified version
+          if (store.queueCount > 2) {
+            toast({
+              title: "Multiple joins",
+              description: "Queue is heating up — haptics paused",
+              duration: 3000
+            })
           }
-        })
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'call_queue',
-            filter: `creator_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('Queue join:', payload)
-            incrementQueue()
-          }
-        )
-        .on(
-          'postgres_changes',
-          {
-            event: 'DELETE',
-            schema: 'public',
-            table: 'call_queue',
-            filter: `creator_id=eq.${user.id}`
-          },
-          (payload) => {
-            console.log('Queue leave:', payload)
-            setQueueState(prev => ({
-              ...prev,
-              queueCount: Math.max(0, prev.queueCount - 1),
-              error: undefined
-            }))
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            setQueueState(prev => ({ ...prev, error: undefined }))
-            console.log('Real-time queue updates connected')
-          } else if (status === 'CHANNEL_ERROR') {
-            setQueueState(prev => ({ 
-              ...prev, 
-              error: 'Real-time connection failed' 
-            }))
-            // Retry after 5 seconds
-            retryTimeoutRef.current = setTimeout(setupChannel, 5000)
-          }
-        })
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${user.id}`
+        },
+        () => {
+          store.updateQueueCount(Math.max(0, store.queueCount - 1))
+          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+        }
+      )
+      .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
+        console.error('Queue subscription error:', error)
+        setState(prev => ({ ...prev, error: 'Connection lost', isConnected: false }))
+        
+        // Retry subscription after delay
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current)
+        }
+        retryTimeoutRef.current = setTimeout(() => {
+          channel.subscribe()
+        }, 5000)
+      })
+      .subscribe()
 
-      channelRef.current = channel
-    }
-
-    setupChannel()
+    channelRef.current = channel
+    setState(prev => ({ ...prev, isConnected: true }))
 
     return () => {
       if (channelRef.current) {
@@ -107,15 +92,20 @@ export function useQueueManager(isLive: boolean) {
       }
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
+        retryTimeoutRef.current = undefined
       }
+      setState(prev => ({ ...prev, isConnected: false }))
     }
-  }, [user, isLive]) // Removed queueCount dependency to fix race condition
+  }, [isLive, user, toast, store])
 
-  // Initial queue count fetch when going live with retry logic
+  // Fetch initial queue count
   useEffect(() => {
-    if (!user || !isLive) return
+    if (!isLive || !user) return
 
-    const fetchQueueCount = async (retryCount = 0) => {
+    let retryCount = 0
+    const maxRetries = 3
+
+    const fetchCount = async () => {
       try {
         const { count, error } = await supabase
           .from('call_queue')
@@ -125,70 +115,46 @@ export function useQueueManager(isLive: boolean) {
 
         if (error) throw error
 
-        if (count !== null) {
-          setQueueState(prev => ({ 
-            ...prev, 
-            queueCount: count,
-            error: undefined 
-          }))
-        }
-      } catch (error) {
+        store.updateQueueCount(count || 0)
+        setState(prev => ({ ...prev, error: undefined }))
+      } catch (error: any) {
         console.error('Error fetching queue count:', error)
         
-        if (retryCount < 3) {
-          setTimeout(() => fetchQueueCount(retryCount + 1), 2000)
+        if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(fetchCount, 2000 * retryCount)
         } else {
-          setQueueState(prev => ({ 
-            ...prev, 
-            error: 'Failed to load queue count' 
-          }))
+          setState(prev => ({ ...prev, error: 'Failed to load queue' }))
         }
       }
     }
 
-    fetchQueueCount()
-  }, [user, isLive])
+    fetchCount()
+  }, [isLive, user, store])
+
+  // Debounce the queue count to prevent UI jitter
+  const debouncedQueueCount = useDebounce(store.queueCount, 300)
 
   const updateQueueCount = useCallback((count: number) => {
-    setQueueState(prev => ({ ...prev, queueCount: count }))
-  }, [])
+    store.updateQueueCount(count)
+  }, [store])
 
   const incrementQueue = useCallback(() => {
-    setQueueState(prev => {
-      const now = Date.now()
-      const shouldTriggerHaptic = prev.hapticsEnabled && 
-        (!prev.lastHapticTime || now - prev.lastHapticTime > 5000) &&
-        (!prev.hapticsSuppressedUntil || now > prev.hapticsSuppressedUntil)
-
-      if (shouldTriggerHaptic && typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
-        navigator.vibrate(50) // Light haptic feedback
-      }
-
-      const newCount = prev.queueCount + 1
-      
-      // Show heating up toast for multiple joins using functional closure
-      if (newCount > 3) {
-        toast({
-          title: "Multiple joins — queue is heating up.",
-          duration: 3000,
-          className: "fixed bottom-20 left-4 right-4 z-50"
-        })
-      }
-
-      return {
-        ...prev,
-        queueCount: newCount,
-        lastHapticTime: shouldTriggerHaptic ? now : prev.lastHapticTime,
-        error: undefined
-      }
+    store.updateQueueCount(store.queueCount + 1)
+    
+    // Show toast for multiple joins
+    toast({
+      title: "Someone joined your queue!",
+      description: "A new fan is waiting to connect with you",
+      duration: 2000
     })
-  }, [toast]) // Removed queueState dependency to prevent stale closures
+  }, [toast, store])
 
   return {
     queueCount: debouncedQueueCount,
     updateQueueCount,
     incrementQueue,
-    error: queueState.error,
-    isConnected: !queueState.error
+    error: state.error,
+    isConnected: state.isConnected
   }
 }

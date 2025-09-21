@@ -50,6 +50,7 @@ import { IOSNavBar } from "@/components/mobile/IOSNavBar";
 import { IOSInstagramHeader } from "@/components/mobile/IOSInstagramHeader";
 import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
 import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
+import { LiveControlBar } from "@/components/live/LiveControlBar";
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useKeyboardAware } from "@/hooks/use-keyboard-aware";
@@ -386,6 +387,9 @@ const Index = () => {
       {profile?.account_type === 'creator' && (
         <CreatorPostPrompt isVisible={!isKeyboardVisible} />
       )}
+
+      {/* Live Control Bar - Shows when live */}
+      <LiveControlBar />
 
       {/* iOS Tab Bar */}
       <IOSTabBar

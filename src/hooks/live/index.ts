@@ -1,48 +1,48 @@
+import { useLiveStore } from '@/stores/live-store'
 import { useLiveSession } from './useLiveSession'
 import { useQueueManager } from './useQueueManager'
 
 /**
  * Composed hook that provides all live functionality
- * This replaces the old useLiveStatus hook with a cleaner, focused approach
+ * Now uses centralized store as single source of truth
  */
 export function useLive() {
-  const session = useLiveSession()
-  const queue = useQueueManager(session.isLive)
-
+  const store = useLiveStore()
+  
   return {
-    // Session state
-    isLive: session.isLive,
-    state: session.state,
-    startedAt: session.startedAt,
-    callsTaken: session.callsTaken,
-    totalEarningsCents: session.totalEarningsCents,
-    rightDisplayMode: session.rightDisplayMode,
-    elapsedTime: session.elapsedTime,
-    earningsDisplay: session.earningsDisplay,
-    isTransitioning: session.isTransitioning,
+    // Core state from store
+    isLive: store.isLive,
+    state: store.state,
+    startedAt: store.startedAt,
+    callsTaken: store.callsTaken,
+    totalEarningsCents: store.totalEarningsCents,
+    rightDisplayMode: store.showEarnings ? 'earnings' : 'time',
+    elapsedTime: store.elapsedTime,
+    earningsDisplay: store.earningsDisplay,
+    isTransitioning: store.isTransitioning,
     
-    // Error states
-    sessionError: session.error,
-    queueError: queue.error,
-    hasErrors: !!(session.error || queue.error),
+    // Button states
+    canGoLive: store.canGoLive,
+    canEndLive: store.canEndLive,
     
     // Queue state
-    queueCount: queue.queueCount,
-    isQueueConnected: queue.isConnected,
+    queueCount: store.queueCount,
     
-    // Session actions
-    goLive: session.goLive,
-    endLive: session.endLive,
-    toggleRightDisplay: session.toggleRightDisplay,
-    incrementCall: session.incrementCall,
+    // Error states (simplified)
+    hasErrors: false, // Errors handled internally by store
     
-    // Queue actions
-    updateQueueCount: queue.updateQueueCount,
-    incrementQueue: queue.incrementQueue
+    // Actions
+    goLive: store.goLive,
+    endLive: store.endLive,
+    toggleRightDisplay: store.toggleEarningsDisplay,
+    incrementCall: store.incrementCall,
+    updateQueueCount: store.updateQueueCount,
+    incrementQueue: () => store.updateQueueCount(store.queueCount + 1)
   }
 }
 
-// Re-export the focused hooks for direct use if needed
+// Re-export for compatibility
 export { useLiveSession } from './useLiveSession'
 export { useQueueManager } from './useQueueManager'
-export type { LiveState } from './useLiveSession'
+export { useLiveStore } from '@/stores/live-store'
+export type { LiveState } from './use-live-state-machine'
