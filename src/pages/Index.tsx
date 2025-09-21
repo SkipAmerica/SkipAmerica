@@ -200,7 +200,7 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="pb-20 bg-background"
+          <div className="pb-0 bg-background"
                style={{ 
                  overscrollBehavior: 'none',
                  touchAction: 'pan-y',
