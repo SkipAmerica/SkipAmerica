@@ -1,4 +1,4 @@
-// Root provider that wraps all other providers
+// Root provider that wraps all other providers - Live Mode Integration
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
