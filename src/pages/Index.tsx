@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
 import { useDiscovery } from "@/app/providers/discovery-provider";
 import { useLiveStatus } from "@/hooks/useLiveStatus";
+import { useLive } from '@/app/providers/live-provider';
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -84,7 +85,7 @@ const Index = () => {
   
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { isLive, toggleLiveStatus } = useLiveStatus();
+  const { isLive, goLive } = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
 
@@ -400,7 +401,7 @@ const Index = () => {
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
-        onToggleLive={toggleLiveStatus}
+        onToggleLive={goLive}
       />
 
       {/* User Menu Action Sheet */}

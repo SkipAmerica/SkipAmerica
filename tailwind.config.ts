@@ -68,6 +68,9 @@ export default {
           orange: "hsl(var(--skip-orange))",
           black: "hsl(var(--skip-black))",
         },
+        live: {
+          DEFAULT: "hsl(var(--live-color))",
+        },
       },
       fontFamily: {
         'instagram': ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],

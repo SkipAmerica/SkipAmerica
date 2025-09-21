@@ -385,6 +385,36 @@ export type Database = {
           },
         ]
       }
+      call_queue: {
+        Row: {
+          created_at: string
+          creator_id: string
+          estimated_wait_minutes: number | null
+          fan_id: string
+          id: string
+          joined_at: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          estimated_wait_minutes?: number | null
+          fan_id: string
+          id?: string
+          joined_at?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          estimated_wait_minutes?: number | null
+          fan_id?: string
+          id?: string
+          joined_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       collaborative_events: {
         Row: {
           created_at: string
@@ -1139,6 +1169,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      live_sessions: {
+        Row: {
+          calls_taken: number
+          created_at: string
+          creator_id: string
+          ended_at: string | null
+          id: string
+          queue_peak_count: number
+          session_duration_minutes: number | null
+          started_at: string
+          total_earnings_cents: number
+          updated_at: string
+        }
+        Insert: {
+          calls_taken?: number
+          created_at?: string
+          creator_id: string
+          ended_at?: string | null
+          id?: string
+          queue_peak_count?: number
+          session_duration_minutes?: number | null
+          started_at?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          calls_taken?: number
+          created_at?: string
+          creator_id?: string
+          ended_at?: string | null
+          id?: string
+          queue_peak_count?: number
+          session_duration_minutes?: number | null
+          started_at?: string
+          total_earnings_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {

@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from './auth-provider'
 import { SearchProvider } from './search-provider'
 import { DiscoveryProvider } from './discovery-provider'
+import { LiveProvider } from './live-provider'
 import { config } from '@/shared/config'
 
 const queryClient = new QueryClient({
@@ -33,15 +34,17 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <SearchProvider>
-          <DiscoveryProvider>
-            <TooltipProvider>
-              {children}
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
-          </DiscoveryProvider>
-        </SearchProvider>
+        <LiveProvider>
+          <SearchProvider>
+            <DiscoveryProvider>
+              <TooltipProvider>
+                {children}
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </DiscoveryProvider>
+          </SearchProvider>
+        </LiveProvider>
       </AuthProvider>
       {config.isDevelopment && (
         <div>

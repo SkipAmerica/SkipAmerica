@@ -7,6 +7,8 @@ import { AppProviders } from './providers'
 import { AppRouter } from './router'
 import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
 import { IOSAppShell } from '@/components/mobile/IOSAppShell'
+import { LiveControlBar } from '@/components/live/LiveControlBar'
+import { useLive } from '@/app/providers/live-provider'
 
 function App() {
   useEffect(() => {
@@ -25,10 +27,21 @@ function App() {
   return (
     <AppProviders>
       <IOSAppShell>
-        <AppRouter />
-        <PWAInstallPrompt />
+        <AppContent />
       </IOSAppShell>
     </AppProviders>
+  )
+}
+
+function AppContent() {
+  const { isLive } = useLive()
+
+  return (
+    <div className={isLive ? 'pb-14' : ''}>
+      <AppRouter />
+      <PWAInstallPrompt />
+      {isLive && <LiveControlBar />}
+    </div>
   )
 }
 
