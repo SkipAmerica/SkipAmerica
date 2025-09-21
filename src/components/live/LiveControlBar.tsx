@@ -25,15 +25,14 @@ export function LiveControlBar() {
 
   return (
     <>
-      <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
-        <div className="bg-[hsl(var(--live-color))] rounded-t-2xl shadow-lg h-14 flex items-center">
+      <div className="fixed bottom-[calc(49px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
+        <div className="bg-[hsl(var(--live-color))] rounded-t-2xl shadow-lg h-10 flex items-center">
           {/* Left: Queue Button (25%) */}
           <div className="flex-[0.25] flex justify-center">
             <Button
-              variant="ghost"
               size="sm"
               onClick={handleQueueClick}
-              className="flex items-center gap-2 text-white hover:bg-white/10 px-3 py-2 h-auto"
+              className="flex items-center gap-2 text-white bg-cyan-500/20 hover:bg-cyan-500/30 px-3 py-2 h-auto"
             >
               <Users className="w-4 h-4" />
               <span className="font-medium">{queueCount}</span>
