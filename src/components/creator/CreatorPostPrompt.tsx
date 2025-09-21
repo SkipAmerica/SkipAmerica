@@ -71,7 +71,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           }}
           aria-label="Record video"
         >
-          <Camera className="w-6 h-6 text-turquoise" />
+          <Camera className="w-8 h-8 text-turquoise" />
         </button>
 
         {/* Post Button */}
@@ -90,7 +90,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           }}
           aria-label="Create post"
         >
-          <Plus className="w-6 h-6 text-turquoise" />
+          <Plus className="w-8 h-8 text-turquoise" />
         </button>
       </div>
 
