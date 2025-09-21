@@ -16,6 +16,7 @@ const prompts = [
 
 export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPromptProps) => {
   const [currentPrompt, setCurrentPrompt] = useState('')
+  const [inputValue, setInputValue] = useState('')
 
   useEffect(() => {
     // Select a random prompt on component mount
@@ -23,9 +24,21 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     setCurrentPrompt(prompts[randomIndex])
   }, [])
 
-  const handlePromptClick = () => {
-    console.log('Creator wants to post:', currentPrompt)
-    // TODO: Navigate to post creation or open post modal
+  const handleInputSubmit = () => {
+    if (inputValue.trim()) {
+      console.log('Creator wants to post:', inputValue)
+      // TODO: Navigate to post creation or open post modal
+      setInputValue('')
+      // Rotate to next prompt
+      const randomIndex = Math.floor(Math.random() * prompts.length)
+      setCurrentPrompt(prompts[randomIndex])
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleInputSubmit()
+    }
   }
 
   const handleMediaUpload = () => {
@@ -51,12 +64,14 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
       <div className="bg-background/95 backdrop-blur-md border border-border rounded-2xl shadow-lg">
         <div className="flex items-center gap-3 p-3">
           {/* Text Input Area */}
-          <button
-            onClick={handlePromptClick}
-            className="flex-1 text-left px-4 py-3 text-muted-foreground bg-muted/50 rounded-xl border border-transparent hover:border-border transition-colors"
-          >
-            {currentPrompt}
-          </button>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={currentPrompt}
+            className="flex-1 px-4 py-3 text-foreground bg-muted/50 rounded-xl border border-transparent hover:border-border focus:border-border focus:outline-none transition-colors placeholder:text-muted-foreground"
+          />
           
           {/* Action Icons */}
           <div className="flex items-center gap-2">
