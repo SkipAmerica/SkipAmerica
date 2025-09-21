@@ -153,17 +153,22 @@ export function PostCard({ post, isLast }: PostCardProps) {
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm truncate">
-                {post.creator.full_name}
-              </h3>
+              <div className="flex items-center gap-1">
+                <h3 className="font-semibold text-sm truncate">
+                  {post.creator.full_name}
+                </h3>
+                {post.creator.industry && (
+                  <>
+                    <span className="text-gray-500 text-sm font-normal">|</span>
+                    <span className="text-sm font-normal text-gray-500 truncate">
+                      {post.creator.industry}
+                    </span>
+                  </>
+                )}
+              </div>
               {post.creator.title && (
                 <p className="text-sm font-normal text-foreground truncate">
                   {post.creator.title}
-                </p>
-              )}
-              {post.creator.industry && (
-                <p className="text-sm font-normal text-gray-500 truncate">
-                  {post.creator.industry}
                 </p>
               )}
             </div>
