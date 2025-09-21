@@ -19,6 +19,7 @@ interface ThreadPost {
     full_name: string
     avatar_url?: string
     username?: string
+    isLive?: boolean
   }
   platform?: string
 }
@@ -40,7 +41,8 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'kaion-wesley',
       full_name: 'Kaion Wesley',
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      username: 'kaionwesley'
+      username: 'kaionwesley',
+      isLive: true
     },
     platform: 'threads'
   },
@@ -78,7 +80,8 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'sarah-johnson',
       full_name: 'Sarah Johnson',
       avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      username: 'sarahjohnson'
+      username: 'sarahjohnson',
+      isLive: true
     },
     platform: 'threads'
   },

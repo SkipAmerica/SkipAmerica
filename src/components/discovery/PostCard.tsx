@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Repeat2, Share, ChevronLeft } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar } from 'lucide-react'
 import { CreatorHistoryCarousel } from './CreatorHistoryCarousel'
+import { LiveAvatar } from './LiveAvatar'
+import { LiveActionButton } from './LiveActionButton'
 import { cn } from '@/lib/utils'
 
 interface ThreadPost {
@@ -22,6 +23,7 @@ interface ThreadPost {
     full_name: string
     avatar_url?: string
     username?: string
+    isLive?: boolean
   }
   platform?: string
 }
@@ -71,6 +73,16 @@ export function PostCard({ post, isLast }: PostCardProps) {
     setIsLiked(!isLiked)
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
   }, [isLiked])
+
+  const handleJoinLive = useCallback(() => {
+    console.log('Joining live session for creator:', post.creator.id)
+    // TODO: Implement live session joining logic
+  }, [post.creator.id])
+
+  const handleBookAppointment = useCallback(() => {
+    console.log('Booking appointment with creator:', post.creator.id)
+    // TODO: Implement appointment booking logic
+  }, [post.creator.id])
 
   const formatCount = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
@@ -123,12 +135,12 @@ export function PostCard({ post, isLast }: PostCardProps) {
       <div className="flex">
         {/* Profile Column */}
         <div className="bg-turquoise-light/15 backdrop-blur-md p-3 flex-shrink-0">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={post.creator.avatar_url} alt={post.creator.full_name} />
-            <AvatarFallback>
-              {post.creator.full_name?.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <LiveAvatar
+            src={post.creator.avatar_url}
+            alt={post.creator.full_name}
+            fallback={post.creator.full_name?.charAt(0).toUpperCase() || '?'}
+            isLive={post.creator.isLive}
+          />
         </div>
 
         {/* Content Column */}
@@ -181,6 +193,22 @@ export function PostCard({ post, isLast }: PostCardProps) {
           {/* Actions */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
             <div className="flex items-center gap-6">
+              {/* Live and Booking Actions */}
+              <div className="flex items-center gap-3 mr-2">
+                {post.creator.isLive && (
+                  <LiveActionButton
+                    icon={Video}
+                    color="green"
+                    onPress={handleJoinLive}
+                  />
+                )}
+                <LiveActionButton
+                  icon={Calendar}
+                  color="blue"
+                  onPress={handleBookAppointment}
+                />
+              </div>
+
               <Button
                 variant="ghost"
                 size="sm"
