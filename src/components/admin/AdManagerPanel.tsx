@@ -27,7 +27,6 @@ export const AdManagerPanel: React.FC<AdManagerPanelProps> = ({ onClose }) => {
       imageUrl: '',
       buttonText: 'Learn More',
       isActive: true,
-      position: 'left',
       adType: 'general'
     });
     setShowForm(true);
@@ -137,24 +136,7 @@ export const AdManagerPanel: React.FC<AdManagerPanelProps> = ({ onClose }) => {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="position">Position</Label>
-                <Select 
-                  value={editingAd.position || 'left'} 
-                  onValueChange={(value) => updateEditingAd('position', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="left">Left</SelectItem>
-                    <SelectItem value="center">Center</SelectItem>
-                    <SelectItem value="right">Right</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="adType">Ad Type</Label>
                 <Select 
@@ -169,6 +151,8 @@ export const AdManagerPanel: React.FC<AdManagerPanelProps> = ({ onClose }) => {
                     <SelectItem value="event">Event</SelectItem>
                     <SelectItem value="premium">Premium</SelectItem>
                     <SelectItem value="general">General</SelectItem>
+                    <SelectItem value="brand">Brand</SelectItem>
+                    <SelectItem value="platform">Platform</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -227,9 +211,6 @@ export const AdManagerPanel: React.FC<AdManagerPanelProps> = ({ onClose }) => {
                         <h4 className="font-semibold">{ad.title}</h4>
                         <Badge variant={ad.isActive ? 'default' : 'secondary'}>
                           {ad.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Badge variant="outline" className="capitalize">
-                          {ad.position}
                         </Badge>
                         <Badge variant="outline" className="capitalize">
                           {ad.adType}

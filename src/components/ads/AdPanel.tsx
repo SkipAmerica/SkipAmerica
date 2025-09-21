@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useAdManager, AdData } from '@/hooks/useAdManager';
 import { toast } from 'sonner';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 // Import the generated ad images
 import adCreators from '@/assets/ads/ad-creators.jpg';
@@ -44,6 +45,12 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
       case 'premium':
         toast.success('Showing premium features...');
         break;
+      case 'event':
+        toast.success('Joining live event...');
+        break;
+      case 'creator':
+        toast.success('Connecting with creator...');
+        break;
       default:
         toast.success('Opening link...');
     }
@@ -83,10 +90,10 @@ export const AdPanel: React.FC<AdPanelProps> = ({
   showBorder = true,
   borderColor = 'gray'
 }) => {
-  const { getAdsByPosition, trackImpression, trackClick, loading, error } = useAdManager();
+  const { getActiveAds, trackImpression, trackClick, loading, error } = useAdManager();
   
-  const positions = getAdsByPosition();
-  const hasAds = positions.left || positions.center || positions.right;
+  const activeAds = getActiveAds();
+  const hasAds = activeAds.length > 0;
 
   if (loading || error || !hasAds) {
     return null;
@@ -129,52 +136,26 @@ export const AdPanel: React.FC<AdPanelProps> = ({
       )}
     >
       <div className={cn("px-4", getVariantClasses())}>
-        <div className="grid grid-cols-3 gap-3">
-          {/* Left Ad */}
-          <div className="flex justify-center">
-            {positions.left ? (
-              <AdCard
-                ad={positions.left}
-                onImpression={trackImpression}
-                onClick={trackClick}
-              />
-            ) : (
-              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Center Ad */}
-          <div className="flex justify-center">
-            {positions.center ? (
-              <AdCard
-                ad={positions.center}
-                onImpression={trackImpression}
-                onClick={trackClick}
-              />
-            ) : (
-              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Right Ad */}
-          <div className="flex justify-center">
-            {positions.right ? (
-              <AdCard
-                ad={positions.right}
-                onImpression={trackImpression}
-                onClick={trackClick}
-              />
-            ) : (
-              <div className="w-full h-20 bg-muted/30 rounded-lg flex items-center justify-center">
-                <span className="text-xs text-muted-foreground">Ad</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <Carousel
+          opts={{
+            align: "start",
+            dragFree: false,
+            containScroll: "trimSnaps",
+          }}
+          className="w-full"
+        >
+          <CarouselContent className="-ml-3">
+            {activeAds.map((ad) => (
+              <CarouselItem key={ad.id} className="basis-1/3 pl-3">
+                <AdCard
+                  ad={ad}
+                  onImpression={trackImpression}
+                  onClick={trackClick}
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+        </Carousel>
       </div>
     </div>
   );
