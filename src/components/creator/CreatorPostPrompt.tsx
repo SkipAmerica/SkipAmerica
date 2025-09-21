@@ -59,7 +59,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         <button
           onClick={handleCameraClick}
           className={cn(
-            "w-25 h-25 bg-white rounded-full shadow-2xl",
+            "w-15 h-15 bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
@@ -78,7 +78,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         <button
           onClick={handleCircleClick}
           className={cn(
-            "w-25 h-25 bg-white rounded-full shadow-2xl",
+            "w-15 h-15 bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
