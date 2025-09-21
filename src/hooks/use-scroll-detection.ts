@@ -22,11 +22,13 @@ export function useScrollDetection(options: UseScrollDetectionOptions = {}) {
       }
       lastScrollTime.current = now
 
-      const currentScrollY = window.scrollY
-      setScrollY(currentScrollY)
+      // Find the scroll container
+      const scrollContainer = document.querySelector('[data-scroll-container]') as HTMLElement
+      const currentScrollY = scrollContainer ? scrollContainer.scrollTop : window.scrollY
       
       // Only trigger scrolling state if we've moved past the threshold
       if (Math.abs(currentScrollY - scrollY) > threshold) {
+        setScrollY(currentScrollY)
         setIsScrolling(true)
         
         // Clear existing timeout
@@ -41,10 +43,14 @@ export function useScrollDetection(options: UseScrollDetectionOptions = {}) {
       }
     }
 
-    window.addEventListener('scroll', handleScroll, { passive: true })
+    // Find the scroll container or fallback to window
+    const scrollContainer = document.querySelector('[data-scroll-container]') as HTMLElement
+    const target = scrollContainer || window
+    
+    target.addEventListener('scroll', handleScroll, { passive: true })
     
     return () => {
-      window.removeEventListener('scroll', handleScroll)
+      target.removeEventListener('scroll', handleScroll)
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current)
       }

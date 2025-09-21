@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Camera } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useScrollDetection } from '@/hooks/use-scroll-detection'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
@@ -35,6 +35,11 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     setIsExpanded(true)
   }
 
+  const handleCameraClick = () => {
+    // Placeholder for video recording functionality
+    console.log('Camera clicked - video recording will be implemented')
+  }
+
   const handleExpandedClose = () => {
     setIsExpanded(false)
     // Rotate to next prompt
@@ -48,24 +53,44 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
 
   return (
     <>
-      {/* Circular Post Button */}
-      <button
-        onClick={handleCircleClick}
-        className={cn(
-          "fixed bottom-[calc(65px+env(safe-area-inset-bottom))] right-4 z-40",
-          "w-15 h-15 bg-white rounded-full shadow-lg",
-          "flex items-center justify-center",
-          "transition-all duration-300 ease-in-out",
-          "hover:scale-105 active:scale-95",
-          className
-        )}
-        style={{
-          opacity: getOpacity(),
-        }}
-        aria-label="Create post"
-      >
-        <Plus className="w-6 h-6 text-orange-500" />
-      </button>
+      {/* Button Container */}
+      <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col gap-4">
+        {/* Camera Button */}
+        <button
+          onClick={handleCameraClick}
+          className={cn(
+            "w-25 h-25 bg-white rounded-full shadow-lg",
+            "flex items-center justify-center",
+            "transition-all duration-300 ease-in-out",
+            "hover:scale-105 active:scale-95",
+            className
+          )}
+          style={{
+            opacity: getOpacity(),
+          }}
+          aria-label="Record video"
+        >
+          <Camera className="w-8 h-8 text-orange-500" />
+        </button>
+
+        {/* Post Button */}
+        <button
+          onClick={handleCircleClick}
+          className={cn(
+            "w-25 h-25 bg-white rounded-full shadow-lg",
+            "flex items-center justify-center",
+            "transition-all duration-300 ease-in-out",
+            "hover:scale-105 active:scale-95",
+            className
+          )}
+          style={{
+            opacity: getOpacity(),
+          }}
+          aria-label="Create post"
+        >
+          <Plus className="w-8 h-8 text-orange-500" />
+        </button>
+      </div>
 
       {/* Expanded Post Creator */}
       <ExpandedPostCreator
