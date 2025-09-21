@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast'
 import { LiveErrorBoundary } from './LiveErrorBoundary'
 
 function LiveControlBarContent() {
+  // Always call all hooks unconditionally at the top level
   const { 
     isLive, 
     state, 
@@ -38,12 +39,7 @@ function LiveControlBarContent() {
     setTimeout(() => setIsToggling(false), 200)
   }, [isToggling, toggleRightDisplay])
   
-  // Don't render when offline
-  if (!isLive && state === 'OFFLINE') {
-    return null
-  }
-
-  // Add body class for live state
+  // Add body class for live state - always call useEffect
   React.useEffect(() => {
     if (state !== 'OFFLINE') {
       document.body.classList.add('live-active')
@@ -55,6 +51,14 @@ function LiveControlBarContent() {
       document.body.classList.remove('live-active')
     }
   }, [state])
+  
+  // Compute render condition after all hooks
+  const shouldRender = isLive || state !== 'OFFLINE'
+  
+  // Don't render when offline - moved after all hooks
+  if (!shouldRender) {
+    return null
+  }
   
   return (
     <>
