@@ -42,6 +42,19 @@ function LiveControlBarContent() {
   if (!isLive && state === 'OFFLINE') {
     return null
   }
+
+  // Add body class for live state
+  React.useEffect(() => {
+    if (state !== 'OFFLINE') {
+      document.body.classList.add('live-active')
+    } else {
+      document.body.classList.remove('live-active')
+    }
+    
+    return () => {
+      document.body.classList.remove('live-active')
+    }
+  }, [state])
   
   return (
     <>

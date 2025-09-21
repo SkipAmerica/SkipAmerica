@@ -58,6 +58,9 @@
   /* Animations */
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   
+  /* Live Control Bar */
+  --live-control-bar-height: 56px;
+  
   /* Post Creator Specific */
   --post-creator-backdrop: hsl(0 0% 0% / 0.6);
 
@@ -451,6 +454,42 @@
   /* Always sticky positioning */
   position: sticky;
   top: var(--debug-safe-top);
+}
+
+/* Live Control Bar Animations */
+@keyframes slide-up-from-bottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-down-to-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+.live-control-bar-enter {
+  animation: slide-up-from-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.live-control-bar-exit {
+  animation: slide-down-to-bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Live state body padding adjustment */
+body.live-active {
+  padding-bottom: var(--live-control-bar-height);
 }
 
 /* Mobile-specific overrides */

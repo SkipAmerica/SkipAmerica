@@ -54,8 +54,8 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
       <div className={cn(
         "fixed left-4 z-40 flex flex-col gap-4 transition-all duration-300 ease-in-out",
         isLive 
-          ? "bottom-[calc(89px+env(safe-area-inset-bottom))]" // 49px tab + 40px LSB
-          : "bottom-[calc(65px+env(safe-area-inset-bottom))]"  // Normal position
+          ? "bottom-[calc(var(--ios-tab-bar-height)+var(--live-control-bar-height)+8px)]" 
+          : "bottom-[calc(var(--ios-tab-bar-height)+16px)]"
       )}>
         {/* Post Button */}
         <button
