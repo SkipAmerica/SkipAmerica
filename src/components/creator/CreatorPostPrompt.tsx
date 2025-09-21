@@ -62,7 +62,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           )}
           style={{
             opacity: getOpacity(),
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 8px 12px -2px rgba(0, 0, 0, 0.3)',
           }}
           aria-label="Create post"
         >
