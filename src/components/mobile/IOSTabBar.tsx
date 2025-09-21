@@ -118,7 +118,6 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
             <button
               type="button"
               disabled={!!isTransitioning}
-              onPointerDown={handleCenterAction}
               onClick={handleCenterAction}
               className={cn(
                 "ios-touchable",
