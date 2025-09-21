@@ -87,7 +87,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 
-      if (queueError) throw queueError
+      if (queueError) {
+        const wrappedError = new Error(`Failed to fetch queue entries: ${queueError.message}`)
+        wrappedError.name = 'DatabaseError'
+        ;(wrappedError as any).code = queueError.code
+        throw wrappedError
+      }
 
       // Then get profiles for each fan_id
       let enrichedEntries: QueueEntry[] = []
@@ -157,7 +162,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         .update({ status: 'in_call' })
         .eq('id', queueEntry.id)
 
-      if (error) throw error
+      if (error) {
+        const wrappedError = new Error(`Failed to start call: ${error.message}`)
+        wrappedError.name = 'DatabaseError'
+        ;(wrappedError as any).code = error.code
+        throw wrappedError
+      }
 
       // Remove from local state
       setState(prev => ({

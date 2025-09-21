@@ -1,0 +1,14 @@
+{
+  "appId": "com.lovable.app",
+  "appName": "Lovable App",
+  "bundledWebRuntime": false,
+  "npmClient": "npm",
+  "webDir": "dist",
+  "plugins": {},
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}

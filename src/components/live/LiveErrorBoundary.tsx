@@ -24,12 +24,12 @@ export class LiveErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Import normalizeError dynamically to avoid circular deps
-    import('@/shared/errors/normalizeError').then(({ normalizeError }) => {
+    // Import error utils dynamically to avoid circular deps
+    import('@/shared/errors/err-utils').then(({ normalizeError, safeStringify }) => {
       const normalized = normalizeError(error, {
         componentStack: errorInfo.componentStack
       });
-      console.error('Live system error:', normalized);
+      console.error('[LiveErrorBoundary]', safeStringify(normalized));
     });
   }
 

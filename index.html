@@ -22,6 +22,12 @@
 
   <body>
     <div id="root"></div>
+    <script>
+      // Enable debug logging in Capacitor iOS debug builds
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        window.__SKIP_DEBUG__ = true;
+      }
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

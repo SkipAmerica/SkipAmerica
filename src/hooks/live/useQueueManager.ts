@@ -113,7 +113,12 @@ export function useQueueManager(isLive: boolean) {
           .eq('creator_id', user.id)
           .eq('status', 'waiting')
 
-        if (error) throw error
+        if (error) {
+          const wrappedError = new Error(`Failed to fetch queue count: ${error.message}`)
+          wrappedError.name = 'DatabaseError'
+          ;(wrappedError as any).code = error.code
+          throw wrappedError
+        }
 
         store.updateQueueCount(count || 0)
         setState(prev => ({ ...prev, error: undefined }))

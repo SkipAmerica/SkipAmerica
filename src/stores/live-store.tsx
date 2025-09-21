@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { transition, LiveState, LiveEvent, canGoLive, canEndLive } from '@/hooks/live/use-live-state-machine'
+import { normalizeError, safeStringify } from '@/shared/errors/err-utils'
+import { requestWithDetail } from '@/shared/errors/network-helper'
 
 interface LiveStoreState {
   // Core state machine
@@ -238,12 +240,17 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     const oldState = state.state
     const newState = transition(oldState, event)
     
-    // Log state transition
+    // Log state transition with immutable snapshot
     if ((window as any).__LIVE_DEBUG) {
-      console.info('[LIVE] %s –%s–> %s', oldState, event.type, newState, { 
+      const transitionLog = {
+        from: oldState,
+        event: event.type,
+        to: newState,
         payload: event,
-        timestamp: new Date().toISOString()
-      });
+        timestamp: new Date().toISOString(),
+        mode: import.meta.env.MODE
+      }
+      console.info(`[LIVE] ${oldState} –${event.type}–> ${newState}`, safeStringify(transitionLog))
     }
     
     dispatch({ type: 'DISPATCH_EVENT', event })
@@ -262,9 +269,17 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
-    // Log state transition
+    // Log state transition with immutable snapshot
     if ((window as any).__LIVE_DEBUG) {
-      console.info('[LIVE] %s –%s–> %s', state.state, 'GO_LIVE', 'STARTING', { userId: user.id });
+      const startLog = {
+        from: state.state,
+        event: 'GO_LIVE',
+        to: 'STARTING',
+        userId: user.id,
+        timestamp: new Date().toISOString(),
+        mode: import.meta.env.MODE
+      }
+      console.info(`[LIVE] ${state.state} –GO_LIVE–> STARTING`, safeStringify(startLog))
     }
     
     handleDispatch({ type: 'GO_LIVE' })
@@ -278,17 +293,17 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
           console.info('[LIVE][START] Permissions granted');
         }
       } catch (permissionError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(permissionError, {
           step: 'request_permissions',
           state: state.state,
-          event: 'GO_LIVE'
+          event: 'GO_LIVE',
+          userId: user.id
         });
-        console.error('[LIVE][START_FAILED]', normalized);
+        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
         
         toast({
           title: "Camera/Microphone Access Required",
-          description: "Please allow camera and microphone access to go live",
+          description: normalized.message || "Please allow camera and microphone access to go live",
           variant: "destructive"
         });
         
@@ -303,13 +318,13 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         // WebRTC setup would go here
         console.info('[LIVE][START] WebRTC initialized');
       } catch (webrtcError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(webrtcError, {
           step: 'webrtc_init',
           state: state.state,
-          event: 'GO_LIVE'
+          event: 'GO_LIVE',
+          userId: user.id
         });
-        console.error('[LIVE][START_FAILED]', normalized);
+        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
         
         toast({
           title: "Connection Failed",
@@ -335,19 +350,23 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
           .select()
           .single()
         
-        if (error) throw error
+        if (error) {
+          const wrappedError = new Error(`Failed to create live session: ${error.message}`)
+          wrappedError.name = 'DatabaseError'
+          ;(wrappedError as any).code = error.code
+          throw wrappedError
+        }
         
         console.info('[LIVE][START] Live session created:', session.id);
         dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
       } catch (apiError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(apiError, {
           step: 'start_session_api',
           state: state.state,
           event: 'GO_LIVE',
           userId: user.id
         });
-        console.error('[LIVE][START_FAILED]', normalized);
+        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
         
         toast({
           title: "Failed to go live",
@@ -366,13 +385,13 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         // Runtime is started in handleDispatch side effect
         console.info('[LIVE][START] Runtime services started');
       } catch (runtimeError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(runtimeError, {
           step: 'start_runtime',
           state: state.state,
-          event: 'GO_LIVE'
+          event: 'GO_LIVE',
+          userId: user.id
         });
-        console.error('[LIVE][START_FAILED]', normalized);
+        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
         
         toast({
           title: "Service Startup Failed",
@@ -387,7 +406,15 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
 
       // Success!
       if ((window as any).__LIVE_DEBUG) {
-        console.info('[LIVE] %s –%s–> %s', 'STARTING', 'LIVE_STARTED', 'LIVE', { sessionId: state.sessionId });
+        const successLog = {
+          from: 'STARTING',
+          event: 'LIVE_STARTED',
+          to: 'LIVE',
+          sessionId: state.sessionId,
+          timestamp: new Date().toISOString(),
+          mode: import.meta.env.MODE
+        }
+        console.info(`[LIVE] STARTING –LIVE_STARTED–> LIVE`, safeStringify(successLog))
       }
       
       handleDispatch({ type: 'LIVE_STARTED' })
@@ -396,20 +423,19 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       if (error.name === 'AbortError') return
       
       // Catch-all error handler
-      const { normalizeError } = await import('@/shared/errors/normalizeError');
       const normalized = normalizeError(error, {
         step: 'unknown',
         state: state.state,
         event: 'GO_LIVE',
         userId: user.id
       });
-      console.error('[LIVE][START_FAILED]', normalized);
+      console.error('[LIVE][START_FAILED]', safeStringify(normalized));
       
       handleDispatch({ type: 'START_FAILED' })
       
       toast({
         title: "Failed to go live",
-        description: normalized.message || "Please try again",
+        description: normalized.message || "Something went wrong starting your live session.",
         variant: "destructive"
       })
     } finally {
@@ -423,9 +449,17 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'end', controller })
     
-    // Log state transition
+    // Log state transition with immutable snapshot
     if ((window as any).__LIVE_DEBUG) {
-      console.info('[LIVE] %s –%s–> %s', state.state, 'END_LIVE', 'ENDING', { sessionId: state.sessionId });
+      const endLog = {
+        from: state.state,
+        event: 'END_LIVE',
+        to: 'ENDING',
+        sessionId: state.sessionId,
+        timestamp: new Date().toISOString(),
+        mode: import.meta.env.MODE
+      }
+      console.info(`[LIVE] ${state.state} –END_LIVE–> ENDING`, safeStringify(endLog))
     }
     
     handleDispatch({ type: 'END_LIVE' })
@@ -437,14 +471,14 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         // Runtime disposal happens in handleDispatch side effect
         console.info('[LIVE][END] Runtime services stopped');
       } catch (runtimeError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(runtimeError, {
           step: 'stop_runtime',
           state: state.state,
           event: 'END_LIVE',
-          sessionId: state.sessionId
+          sessionId: state.sessionId,
+          userId: user.id
         });
-        console.error('[LIVE][END_FAILED]', normalized);
+        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
         // Continue with end process even if runtime cleanup fails
       }
 
@@ -464,20 +498,25 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
           })
           .eq('id', state.sessionId)
         
-        if (error) throw error
+        if (error) {
+          const wrappedError = new Error(`Failed to end live session: ${error.message}`)
+          wrappedError.name = 'DatabaseError'
+          ;(wrappedError as any).code = error.code
+          throw wrappedError
+        }
         
         console.info('[LIVE][END] Live session updated');
       } catch (apiError) {
-        const { normalizeError } = await import('@/shared/errors/normalizeError');
         const normalized = normalizeError(apiError, {
           step: 'end_session_api',
           state: state.state,
           event: 'END_LIVE',
           sessionId: state.sessionId,
           callsTaken: state.callsTaken,
-          totalEarningsCents: state.totalEarningsCents
+          totalEarningsCents: state.totalEarningsCents,
+          userId: user.id
         });
-        console.error('[LIVE][END_FAILED]', normalized);
+        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
         
         toast({
           title: "Failed to end live session",
@@ -492,10 +531,16 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
 
       // Success!
       if ((window as any).__LIVE_DEBUG) {
-        console.info('[LIVE] %s –%s–> %s', 'ENDING', 'LIVE_ENDED', 'OFFLINE', { 
+        const successLog = {
+          from: 'ENDING',
+          event: 'LIVE_ENDED',
+          to: 'OFFLINE',
           callsTaken: state.callsTaken,
-          earnings: state.totalEarningsCents 
-        });
+          earnings: state.totalEarningsCents,
+          timestamp: new Date().toISOString(),
+          mode: import.meta.env.MODE
+        }
+        console.info(`[LIVE] ENDING –LIVE_ENDED–> OFFLINE`, safeStringify(successLog))
       }
       
       handleDispatch({ type: 'LIVE_ENDED' })
@@ -509,20 +554,20 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       if (error.name === 'AbortError') return
       
       // Catch-all error handler
-      const { normalizeError } = await import('@/shared/errors/normalizeError');
       const normalized = normalizeError(error, {
         step: 'unknown',
         state: state.state,
         event: 'END_LIVE',
-        sessionId: state.sessionId
+        sessionId: state.sessionId,
+        userId: user.id
       });
-      console.error('[LIVE][END_FAILED]', normalized);
+      console.error('[LIVE][END_FAILED]', safeStringify(normalized));
       
       handleDispatch({ type: 'END_FAILED' })
       
       toast({
         title: "Failed to end live session",
-        description: normalized.message || "Please try again",
+        description: normalized.message || "Something went wrong ending your live session.",
         variant: "destructive"
       })
     } finally {
@@ -595,7 +640,9 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
 export function useLiveStore() {
   const context = useContext(LiveStoreContext)
   if (!context) {
-    throw new Error('useLiveStore must be used within a LiveStoreProvider')
+    const error = new Error('useLiveStore must be used within a LiveStoreProvider')
+    error.name = 'ContextError'
+    throw error
   }
   return context
 }
