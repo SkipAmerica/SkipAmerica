@@ -68,8 +68,7 @@ const AdCard: React.FC<AdCardProps> = ({ ad, onImpression, onClick }) => {
 
   return (
     <div 
-      className="group relative overflow-hidden cursor-pointer"
-      onClick={handleClick}
+      className="group relative overflow-hidden pointer-events-none"
     >
       <div className="relative h-20 w-full overflow-hidden rounded-lg">
         <img
