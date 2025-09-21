@@ -85,7 +85,7 @@ const Index = () => {
   
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { isLive, goLive } = useLive();
+  const { isLive, goLive, endLive } = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
 
@@ -401,7 +401,8 @@ const Index = () => {
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
-        onToggleLive={goLive}
+        onGoLive={goLive}
+        onEndLive={endLive}
       />
 
       {/* User Menu Action Sheet */}
