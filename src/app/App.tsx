@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { Keyboard, KeyboardResize } from '@capacitor/keyboard'
 import { StatusBar, Style } from '@capacitor/status-bar'
+import { cn } from '@/lib/utils'
 import { AppProviders } from './providers'
 import { AppRouter } from './router'
 import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
@@ -37,10 +38,18 @@ function AppContent() {
   const { isLive } = useLive()
 
   return (
-    <div className={isLive ? 'pb-14' : ''}>
+    <div 
+      className={cn(
+        "transition-all duration-300 ease-in-out",
+        isLive ? 'pb-[40px]' : ''  // LSB height for content padding
+      )}
+      style={{
+        '--lsb-height': isLive ? '40px' : '0px'
+      } as React.CSSProperties}
+    >
       <AppRouter />
       <PWAInstallPrompt />
-      {isLive && <LiveControlBar />}
+      <LiveControlBar />
     </div>
   )
 }

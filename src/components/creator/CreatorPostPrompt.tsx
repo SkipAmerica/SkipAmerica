@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useScrollDetection } from '@/hooks/use-scroll-detection'
+import { useLive } from '@/app/providers/live-provider'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
 
 interface CreatorPostPromptProps {
@@ -24,6 +25,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
   })
   const [isExpanded, setIsExpanded] = useState(false)
   const { isScrolling } = useScrollDetection()
+  const { isLive } = useLive()
 
   // Calculate opacity based on scroll state
   const getOpacity = () => {
@@ -49,7 +51,12 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
   return (
     <>
       {/* Button Container */}
-      <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] left-4 z-40 flex flex-col gap-4">
+      <div className={cn(
+        "fixed left-4 z-40 flex flex-col gap-4 transition-all duration-300 ease-in-out",
+        isLive 
+          ? "bottom-[calc(89px+env(safe-area-inset-bottom))]" // 49px tab + 40px LSB
+          : "bottom-[calc(65px+env(safe-area-inset-bottom))]"  // Normal position
+      )}>
         {/* Post Button */}
         <button
           onClick={handleCircleClick}

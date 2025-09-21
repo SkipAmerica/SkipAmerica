@@ -7,7 +7,9 @@ import { cn } from '@/lib/utils'
 
 export function LiveControlBar() {
   const [showQueue, setShowQueue] = useState(false)
+  const [isToggling, setIsToggling] = useState(false)
   const { 
+    isLive,
     queueCount, 
     rightDisplayMode, 
     elapsedTime, 
@@ -19,14 +21,25 @@ export function LiveControlBar() {
     setShowQueue(true)
   }
 
-  const handleRightDisplayToggle = () => {
-    toggleRightDisplay()
+  const handleRightDisplayToggle = async () => {
+    setIsToggling(true)
+    // Brief delay for smooth crossfade
+    setTimeout(() => {
+      toggleRightDisplay()
+      setIsToggling(false)
+    }, 75)
   }
 
   return (
     <>
-      <div className="fixed bottom-[calc(49px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4">
-        <div className="bg-[hsl(var(--live-color))] rounded-t-2xl shadow-lg h-10 flex items-center">
+      <div className={cn(
+        "fixed bottom-[calc(49px+env(safe-area-inset-bottom))] left-0 right-0 z-40 px-4",
+        "transition-all duration-300 ease-in-out transform-gpu will-change-transform",
+        isLive 
+          ? "translate-y-0 opacity-100" 
+          : "translate-y-full opacity-0 pointer-events-none"
+      )}>
+        <div className="bg-[hsl(var(--live-color))] rounded-t-2xl shadow-2xl h-10 flex items-center contain-layout">
           {/* Left: Queue Button (25%) */}
           <div className="flex-[0.25] flex justify-center">
             <Button
@@ -62,19 +75,22 @@ export function LiveControlBar() {
               variant="ghost"
               size="sm"
               onClick={handleRightDisplayToggle}
-              className="flex items-center gap-1 text-white hover:bg-white/10 px-3 py-2 h-auto min-w-0"
+              className="flex items-center gap-1 text-white hover:bg-white/10 px-3 py-2 h-auto min-w-0 relative"
             >
-              {rightDisplayMode === 'time' ? (
-                <>
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium text-xs truncate">{elapsedTime}</span>
-                </>
-              ) : (
-                <>
-                  <DollarSign className="w-4 h-4 flex-shrink-0" />
-                  <span className="font-medium text-xs truncate">{earningsDisplay}</span>
-                </>
-              )}
+              <div className={cn(
+                "flex items-center gap-1 absolute inset-0 justify-center transition-opacity duration-150",
+                rightDisplayMode === 'time' && !isToggling ? "opacity-100" : "opacity-0"
+              )}>
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium text-xs truncate">{elapsedTime}</span>
+              </div>
+              <div className={cn(
+                "flex items-center gap-1 absolute inset-0 justify-center transition-opacity duration-150",
+                rightDisplayMode === 'earnings' && !isToggling ? "opacity-100" : "opacity-0"
+              )}>
+                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                <span className="font-medium text-xs truncate">{earningsDisplay}</span>
+              </div>
             </Button>
           </div>
         </div>
