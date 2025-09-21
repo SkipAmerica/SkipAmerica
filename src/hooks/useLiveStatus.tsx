@@ -30,6 +30,7 @@ export const useLiveStatus = () => {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const lastToggleAtRef = useRef<number>(0)
   const toggleLockRef = useRef<boolean>(false)
+  const preventAutoStartUntilRef = useRef<number>(0)
  
   // Calculate elapsed time
   const getElapsedTime = useCallback(() => {
@@ -59,8 +60,8 @@ export const useLiveStatus = () => {
     if (!user) return
 
     const nowMs = Date.now()
-    if (toggleLockRef.current || isTransitioning || liveStatus.isLive || nowMs - lastToggleAtRef.current < 400) {
-      console.log('[live] goLive ignored (locked/transitioning/already live/cooldown)')
+    if (toggleLockRef.current || isTransitioning || liveStatus.isLive || nowMs - lastToggleAtRef.current < 800 || nowMs < preventAutoStartUntilRef.current) {
+      console.log('[live] goLive ignored (locked/transitioning/already live/cooldown/suppressed)')
       return
     }
     toggleLockRef.current = true
@@ -108,7 +109,7 @@ export const useLiveStatus = () => {
       setTimeout(() => {
         toggleLockRef.current = false
         setIsTransitioning(false)
-      }, 350)
+      }, 700)
       console.log('[live] goLive end')
     }
 
@@ -124,12 +125,13 @@ export const useLiveStatus = () => {
     if (!user || !liveStatus.isLive) return
 
     const nowMs = Date.now()
-    if (toggleLockRef.current || isTransitioning || nowMs - lastToggleAtRef.current < 400) {
+    if (toggleLockRef.current || isTransitioning || nowMs - lastToggleAtRef.current < 800) {
       console.log('[live] endLive ignored (locked/transitioning/cooldown)')
       return
     }
     toggleLockRef.current = true
     lastToggleAtRef.current = nowMs
+    preventAutoStartUntilRef.current = nowMs + 2000
     setIsTransitioning(true)
     console.log('[live] endLive start')
 
@@ -169,7 +171,7 @@ export const useLiveStatus = () => {
       setTimeout(() => {
         toggleLockRef.current = false
         setIsTransitioning(false)
-      }, 350)
+      }, 700)
       console.log('[live] endLive end')
     }
   }, [user, liveStatus, setLiveStatus, isTransitioning])
