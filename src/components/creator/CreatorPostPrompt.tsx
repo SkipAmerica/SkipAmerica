@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useScrollDetection } from '@/hooks/use-scroll-detection'
-import { useLive } from '@/app/providers/live-provider'
+import { useLive } from '@/hooks/live'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
 
 interface CreatorPostPromptProps {

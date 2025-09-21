@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Users, Clock, DollarSign } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useLive } from '@/app/providers/live-provider'
+import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer'
 import { cn } from '@/lib/utils'
 

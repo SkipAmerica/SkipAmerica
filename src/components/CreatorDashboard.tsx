@@ -20,7 +20,7 @@ import { DynamicPricingEngine } from "@/components/pricing/DynamicPricingEngine"
 import { CreatorPlaylists } from "@/components/curation/CreatorPlaylists";
 import { ReferralSystem } from "@/components/referrals/ReferralSystem";
 import { useAuth } from "@/app/providers/auth-provider";
-import { useLive } from "@/app/providers/live-provider";
+import { useLive } from '@/hooks/live';
 import { DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone, Music, TrendingUp, ChevronRight, MoreHorizontal } from "lucide-react";
 
 interface CreatorDashboardProps {

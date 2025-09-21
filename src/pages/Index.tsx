@@ -8,7 +8,7 @@ import { useAuth } from "@/app/providers/auth-provider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
 import { useDiscovery } from "@/app/providers/discovery-provider";
-import { useLive } from '@/app/providers/live-provider';
+import { useLive } from '@/hooks/live';
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -401,8 +401,8 @@ const Index = () => {
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
         isTransitioning={isTransitioning}
-        onGoLive={() => {}}
-        onEndLive={() => {}}
+        onGoLive={goLive}
+        onEndLive={endLive}
       />
 
       {/* User Menu Action Sheet */}

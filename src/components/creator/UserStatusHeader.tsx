@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/providers/auth-provider";
-import { useLive } from "@/app/providers/live-provider";
+import { useLive } from '@/hooks/live';
 
 import { supabase } from "@/integrations/supabase/client";
 import { DollarSign, Users, Clock, Circle } from "lucide-react";

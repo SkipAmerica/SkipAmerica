@@ -1,4 +1,4 @@
-// Root provider that wraps all other providers - Live Mode Integration
+// Root provider that wraps all other providers
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
@@ -6,7 +6,6 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from './auth-provider'
 import { SearchProvider } from './search-provider'
 import { DiscoveryProvider } from './discovery-provider'
-import { LiveProvider } from './live-provider'
 import { config } from '@/shared/config'
 
 const queryClient = new QueryClient({
@@ -34,17 +33,15 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LiveProvider>
-          <SearchProvider>
-            <DiscoveryProvider>
-              <TooltipProvider>
-                {children}
-                <Toaster />
-                <Sonner />
-              </TooltipProvider>
-            </DiscoveryProvider>
-          </SearchProvider>
-        </LiveProvider>
+        <SearchProvider>
+          <DiscoveryProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </DiscoveryProvider>
+        </SearchProvider>
       </AuthProvider>
       {config.isDevelopment && (
         <div>
