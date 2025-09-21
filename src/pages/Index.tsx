@@ -53,6 +53,7 @@ import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActio
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useKeyboardAware } from "@/hooks/use-keyboard-aware";
+import { CreatorPostPrompt } from "@/components/creator/CreatorPostPrompt";
 
 // Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
@@ -380,6 +381,11 @@ const Index = () => {
           {renderTabContent}
         </div>
       </div>
+
+      {/* Creator Post Prompt - Only show for creators */}
+      {profile?.account_type === 'creator' && (
+        <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+      )}
 
       {/* iOS Tab Bar */}
       <IOSTabBar
