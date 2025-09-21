@@ -49,7 +49,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
   return (
     <>
       {/* Button Container */}
-      <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col gap-4">
+      <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] left-4 z-40 flex flex-col gap-4">
         {/* Post Button */}
         <button
           onClick={handleCircleClick}
