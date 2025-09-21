@@ -113,7 +113,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
       ref={cardRef}
       className={cn(
         "border-b border-border bg-background transition-colors hover:bg-muted/50 font-instagram",
-        !isLast && "border-b"
+        isLast && "border-b-0"
       )}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
