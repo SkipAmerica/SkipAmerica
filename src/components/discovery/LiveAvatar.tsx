@@ -17,7 +17,10 @@ export function LiveAvatar({ src, alt, fallback, isLive, className }: LiveAvatar
         <AvatarFallback>{fallback}</AvatarFallback>
       </Avatar>
       {isLive && (
-        <div className="absolute -inset-0.5 rounded-full border-2 border-green-500 animate-pulse" />
+        <>
+          <div className="absolute -inset-0.5 rounded-full border-2 border-green-500" />
+          <div className="absolute -inset-0.5 rounded-full border-2 border-green-500 animate-ping" />
+        </>
       )}
     </div>
   )

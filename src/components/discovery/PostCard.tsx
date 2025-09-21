@@ -124,7 +124,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
     <div
       ref={cardRef}
       className={cn(
-        "border-b border-border bg-background transition-colors hover:bg-muted/50 font-instagram",
+        "border-b border-border bg-background transition-colors hover:bg-muted/50 font-instagram relative overflow-hidden",
         isLast && "border-b-0"
       )}
       onTouchStart={handleTouchStart}
@@ -132,7 +132,10 @@ export function PostCard({ post, isLast }: PostCardProps) {
       onTouchEnd={handleTouchEnd}
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
-      <div className="flex">
+      {post.creator.isLive && (
+        <div className="absolute inset-0 bg-green-500/5 animate-pulse pointer-events-none" />
+      )}
+      <div className="flex relative z-10">
         {/* Profile Column */}
         <div className="bg-turquoise-light/15 backdrop-blur-md p-3 flex-shrink-0">
           <LiveAvatar
