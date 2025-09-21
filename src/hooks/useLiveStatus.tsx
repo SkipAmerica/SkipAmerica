@@ -56,30 +56,42 @@ export const useLiveStatus = () => {
 
     const now = new Date().toISOString()
     
-    // Create live session in database
-    const { data: session, error } = await supabase
-      .from('live_sessions')
-      .insert({
-        creator_id: user.id,
-        started_at: now
-      })
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error creating live session:', error)
-      return
-    }
-
+    // Set UI state to live immediately for better UX
     setLiveStatus(prev => ({
       ...prev,
       isLive: true,
       startedAt: now,
-      sessionId: session.id,
       callsTaken: 0,
       totalEarningsCents: 0,
       queueCount: 0
     }))
+    
+    // Try to create live session in database
+    try {
+      const { data: session, error } = await supabase
+        .from('live_sessions')
+        .insert({
+          creator_id: user.id,
+          started_at: now
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating live session:', error)
+        // Don't reset UI state - let user continue with local session
+        return
+      }
+
+      // Update with session ID if database operation succeeded
+      setLiveStatus(prev => ({
+        ...prev,
+        sessionId: session.id
+      }))
+    } catch (error) {
+      console.error('Error creating live session:', error)
+      // Don't reset UI state - let user continue with local session
+    }
 
     // Announce to screen readers
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
@@ -90,29 +102,41 @@ export const useLiveStatus = () => {
   }, [user, setLiveStatus])
 
   const endLive = useCallback(async () => {
-    if (!user || !liveStatus.sessionId) return
+    if (!user || !liveStatus.isLive) return
 
     const now = new Date().toISOString()
     const startTime = liveStatus.startedAt ? new Date(liveStatus.startedAt) : new Date()
     const sessionDuration = Math.floor((new Date(now).getTime() - startTime.getTime()) / 60000)
 
-    // Update live session in database
-    await supabase
-      .from('live_sessions')
-      .update({
-        ended_at: now,
-        calls_taken: liveStatus.callsTaken,
-        total_earnings_cents: liveStatus.totalEarningsCents,
-        queue_peak_count: liveStatus.queueCount,
-        session_duration_minutes: sessionDuration
-      })
-      .eq('id', liveStatus.sessionId)
-
+    // Always reset UI state first, regardless of database operations
     setLiveStatus(prev => ({
       ...prev,
       isLive: false,
-      sessionId: undefined
+      sessionId: undefined,
+      startedAt: undefined,
+      callsTaken: 0,
+      totalEarningsCents: 0,
+      queueCount: 0
     }))
+
+    // Try to update database, but don't block UI state reset
+    try {
+      if (liveStatus.sessionId) {
+        await supabase
+          .from('live_sessions')
+          .update({
+            ended_at: now,
+            calls_taken: liveStatus.callsTaken,
+            total_earnings_cents: liveStatus.totalEarningsCents,
+            queue_peak_count: liveStatus.queueCount,
+            session_duration_minutes: sessionDuration
+          })
+          .eq('id', liveStatus.sessionId)
+      }
+    } catch (error) {
+      console.error('Error ending live session in database:', error)
+      // UI state is already reset, so this won't block the user
+    }
   }, [user, liveStatus, setLiveStatus])
 
   const toggleRightDisplay = useCallback(() => {
