@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/providers/auth-provider";
+import { useLive } from "@/app/providers/live-provider";
 import { LiveStatusToggle } from './LiveStatusToggle';
 import { supabase } from "@/integrations/supabase/client";
 import { DollarSign, Users, Clock, Circle } from "lucide-react";
@@ -15,12 +16,12 @@ interface UserStats {
 }
 
 interface UserStatusHeaderProps {
-  onStatusToggle: (status: boolean) => void;
-  isLive: boolean;
+  className?: string;
 }
 
-const UserStatusHeader = ({ onStatusToggle, isLive }: UserStatusHeaderProps) => {
+const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
   const { user } = useAuth();
+  const { isLive } = useLive();
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({
     totalEarnings: 0,
@@ -73,13 +74,8 @@ const UserStatusHeader = ({ onStatusToggle, isLive }: UserStatusHeaderProps) => 
     setStats(prev => ({ ...prev, onlineStatus: isLive }));
   }, [isLive]);
 
-  const handleStatusToggle = () => {
-    const newStatus = !isLive;
-    onStatusToggle(newStatus);
-  };
-
   return (
-    <div className="ios-status-bar">
+    <div className={`ios-status-bar ${className || ''}`}>
       <div className="flex items-center justify-between w-full px-4 py-3">
         {/* Left side - Status and Stats */}
         <div className="flex items-center space-x-3">

@@ -20,6 +20,7 @@ import { DynamicPricingEngine } from "@/components/pricing/DynamicPricingEngine"
 import { CreatorPlaylists } from "@/components/curation/CreatorPlaylists";
 import { ReferralSystem } from "@/components/referrals/ReferralSystem";
 import { useAuth } from "@/app/providers/auth-provider";
+import { useLive } from "@/app/providers/live-provider";
 import { DollarSign, Users, Clock, Shield, Settings, FolderOpen, Sliders, User, Link2, Calendar, CalendarDays, Megaphone, Music, TrendingUp, ChevronRight, MoreHorizontal } from "lucide-react";
 
 interface CreatorDashboardProps {
@@ -28,11 +29,11 @@ interface CreatorDashboardProps {
 
 const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
   const [pricePer5Min, setPricePer5Min] = useState("25.00");
-  const [isLive, setIsLive] = useState(false);
   const [blockedWords, setBlockedWords] = useState("spam, inappropriate, rude");
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showMoreSheet, setShowMoreSheet] = useState(false);
   const { user } = useAuth();
+  const { isLive } = useLive();
 
   const mainSections = [
     { id: 'dashboard', title: 'Dashboard', icon: DollarSign },
@@ -66,7 +67,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
         }}
       />
       
-      <UserStatusHeader onStatusToggle={setIsLive} isLive={isLive} />
+      <UserStatusHeader />
 
       <div className="ios-content">
         {/* Main Section Navigation */}
@@ -190,13 +191,9 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                         <div className="text-sm text-ios-secondary mb-4">
                           Accepting calls at ${pricePer5Min}/5min
                         </div>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setIsLive(false)}
-                          className="ios-button"
-                        >
-                          Go Offline
-                        </Button>
+                        <div className="text-sm text-ios-secondary">
+                          Use the toggle in the header to go offline
+                        </div>
                       </div>
                     ) : (
                       <div>
@@ -204,12 +201,9 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                         <div className="text-sm text-ios-secondary mb-4">
                           Start accepting video call requests
                         </div>
-                        <Button 
-                          className="ios-button-primary" 
-                          onClick={() => setIsLive(true)}
-                        >
-                          Go Live
-                        </Button>
+                        <div className="text-sm text-ios-secondary">
+                          Use the toggle in the header to go live
+                        </div>
                       </div>
                     )}
                   </div>
