@@ -59,7 +59,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         <button
           onClick={handleCameraClick}
           className={cn(
-            "w-25 h-25 bg-white rounded-full shadow-lg",
+            "w-25 h-25 bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
@@ -67,17 +67,18 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           )}
           style={{
             opacity: getOpacity(),
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           }}
           aria-label="Record video"
         >
-          <Camera className="w-8 h-8 text-orange-500" />
+          <Camera className="w-5 h-5 text-orange-500" />
         </button>
 
         {/* Post Button */}
         <button
           onClick={handleCircleClick}
           className={cn(
-            "w-25 h-25 bg-white rounded-full shadow-lg",
+            "w-25 h-25 bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
@@ -85,10 +86,11 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           )}
           style={{
             opacity: getOpacity(),
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
           }}
           aria-label="Create post"
         >
-          <Plus className="w-8 h-8 text-orange-500" />
+          <Plus className="w-5 h-5 text-orange-500" />
         </button>
       </div>
 

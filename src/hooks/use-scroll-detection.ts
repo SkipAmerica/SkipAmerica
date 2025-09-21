@@ -55,7 +55,7 @@ export function useScrollDetection(options: UseScrollDetectionOptions = {}) {
         clearTimeout(scrollTimeoutRef.current)
       }
     }
-  }, [threshold, throttleMs, scrollY])
+  }, [threshold, throttleMs])
 
   return {
     isScrolling,
