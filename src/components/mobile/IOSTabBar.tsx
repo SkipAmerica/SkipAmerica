@@ -21,6 +21,19 @@ interface TabItem {
 }
 
 export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isTransitioning, onGoLive, onEndLive }: IOSTabBarProps) {
+  const busyRef = React.useRef(false);
+  const handleCenterAction = React.useCallback((e: React.MouseEvent<HTMLButtonElement> | React.PointerEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busyRef.current || isTransitioning) return;
+    busyRef.current = true;
+    setTimeout(() => { busyRef.current = false; }, 450);
+    if (isLive) {
+      onEndLive?.();
+    } else {
+      onGoLive?.();
+    }
+  }, [isTransitioning, isLive, onGoLive, onEndLive]);
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
@@ -105,16 +118,8 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
             <button
               type="button"
               disabled={!!isTransitioning}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (isTransitioning) return;
-                if (isLive) {
-                  onEndLive?.();
-                } else {
-                  onGoLive?.();
-                }
-              }}
+              onPointerDown={handleCenterAction}
+              onClick={handleCenterAction}
               className={cn(
                 "ios-touchable",
                 "flex flex-col items-center justify-center",

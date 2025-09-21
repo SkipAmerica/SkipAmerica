@@ -29,7 +29,8 @@ export const useLiveStatus = () => {
 
   const [isTransitioning, setIsTransitioning] = useState(false)
   const lastToggleAtRef = useRef<number>(0)
-
+  const toggleLockRef = useRef<boolean>(false)
+ 
   // Calculate elapsed time
   const getElapsedTime = useCallback(() => {
     if (!liveStatus.startedAt) return '00:00'
@@ -58,11 +59,12 @@ export const useLiveStatus = () => {
     if (!user) return
 
     const nowMs = Date.now()
-    if (isTransitioning || liveStatus.isLive || nowMs - lastToggleAtRef.current < 400) {
-      console.log('[live] goLive ignored (transitioning/already live/cooldown)')
+    if (toggleLockRef.current || isTransitioning || liveStatus.isLive || nowMs - lastToggleAtRef.current < 400) {
+      console.log('[live] goLive ignored (locked/transitioning/already live/cooldown)')
       return
     }
-
+    toggleLockRef.current = true
+    lastToggleAtRef.current = nowMs
     setIsTransitioning(true)
     console.log('[live] goLive start')
 
@@ -103,8 +105,10 @@ export const useLiveStatus = () => {
       console.error('Error creating live session:', error)
       // Don't reset UI state - let user continue with local session
     } finally {
-      lastToggleAtRef.current = Date.now()
-      setTimeout(() => setIsTransitioning(false), 300)
+      setTimeout(() => {
+        toggleLockRef.current = false
+        setIsTransitioning(false)
+      }, 350)
       console.log('[live] goLive end')
     }
 
@@ -120,11 +124,12 @@ export const useLiveStatus = () => {
     if (!user || !liveStatus.isLive) return
 
     const nowMs = Date.now()
-    if (isTransitioning || nowMs - lastToggleAtRef.current < 400) {
-      console.log('[live] endLive ignored (transitioning/cooldown)')
+    if (toggleLockRef.current || isTransitioning || nowMs - lastToggleAtRef.current < 400) {
+      console.log('[live] endLive ignored (locked/transitioning/cooldown)')
       return
     }
-
+    toggleLockRef.current = true
+    lastToggleAtRef.current = nowMs
     setIsTransitioning(true)
     console.log('[live] endLive start')
 
@@ -161,8 +166,10 @@ export const useLiveStatus = () => {
       console.error('Error ending live session in database:', error)
       // UI state is already reset, so this won't block the user
     } finally {
-      lastToggleAtRef.current = Date.now()
-      setTimeout(() => setIsTransitioning(false), 300)
+      setTimeout(() => {
+        toggleLockRef.current = false
+        setIsTransitioning(false)
+      }, 350)
       console.log('[live] endLive end')
     }
   }, [user, liveStatus, setLiveStatus, isTransitioning])
