@@ -401,8 +401,8 @@ const Index = () => {
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
         isTransitioning={isTransitioning}
-        onGoLive={goLive}
-        onEndLive={endLive}
+        onGoLive={() => {}}
+        onEndLive={() => {}}
       />
 
       {/* User Menu Action Sheet */}
