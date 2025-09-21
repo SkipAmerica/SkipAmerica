@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Camera } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { useScrollDetection } from '@/hooks/use-scroll-detection'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
@@ -35,11 +35,6 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     setIsExpanded(true)
   }
 
-  const handleCameraClick = () => {
-    // Placeholder for video recording functionality
-    console.log('Camera clicked - video recording will be implemented')
-  }
-
   const handleExpandedClose = () => {
     setIsExpanded(false)
     // Rotate to next prompt
@@ -55,30 +50,11 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     <>
       {/* Button Container */}
       <div className="fixed bottom-[calc(65px+env(safe-area-inset-bottom))] right-4 z-40 flex flex-col gap-4">
-        {/* Camera Button */}
-        <button
-          onClick={handleCameraClick}
-          className={cn(
-            "w-15 h-15 bg-cyan-500 rounded-full shadow-2xl",
-            "flex items-center justify-center",
-            "transition-all duration-300 ease-in-out",
-            "hover:scale-105 active:scale-95",
-            className
-          )}
-          style={{
-            opacity: getOpacity(),
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          }}
-          aria-label="Record video"
-        >
-          <Camera className="w-8 h-8 text-white" />
-        </button>
-
         {/* Post Button */}
         <button
           onClick={handleCircleClick}
           className={cn(
-            "w-15 h-15 bg-cyan-500 rounded-full shadow-2xl",
+            "w-20 h-20 bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
@@ -90,7 +66,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           }}
           aria-label="Create post"
         >
-          <Plus className="w-8 h-8 text-white" />
+          <Plus className="w-10 h-10 text-cyan-500" />
         </button>
       </div>
 
