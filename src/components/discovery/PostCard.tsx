@@ -157,18 +157,18 @@ export function PostCard({ post, isLast }: PostCardProps) {
                 <h3 className="font-semibold text-sm truncate">
                   {post.creator.full_name}
                 </h3>
-                {post.creator.industry && (
+                {post.creator.title && (
                   <>
                     <span className="text-gray-500 text-sm font-normal">|</span>
-                    <span className="text-sm font-normal text-gray-500 truncate">
-                      {post.creator.industry}
+                    <span className="text-sm font-normal text-foreground truncate">
+                      {post.creator.title}
                     </span>
                   </>
                 )}
               </div>
-              {post.creator.title && (
-                <p className="text-sm font-normal text-foreground truncate">
-                  {post.creator.title}
+              {post.creator.industry && (
+                <p className="text-sm font-normal text-gray-500 truncate">
+                  {post.creator.industry}
                 </p>
               )}
             </div>
