@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
+import { useAsyncAction } from '@/shared/hooks/use-async-action'
 
 export type LiveState = 'OFFLINE' | 'GOING_LIVE' | 'LIVE' | 'ENDING_LIVE'
 
@@ -24,57 +25,101 @@ export function useLiveSession() {
   })
 
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const transitionTimeoutRef = useRef<NodeJS.Timeout>()
+  const elapsedTimeIntervalRef = useRef<NodeJS.Timeout>()
+  
+  const { 
+    execute: executeGoLive, 
+    loading: goingLive, 
+    error: goLiveError 
+  } = useAsyncAction(async () => {
+    if (!user) throw new Error('User not authenticated')
+    
+    const now = new Date().toISOString()
+    const { data: session, error } = await supabase
+      .from('live_sessions')
+      .insert({
+        creator_id: user.id,
+        started_at: now
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return { session, startTime: now }
+  })
+
+  const { 
+    execute: executeEndLive, 
+    loading: endingLive, 
+    error: endLiveError 
+  } = useAsyncAction(async () => {
+    if (!user || !sessionData.sessionId) return
+    
+    const now = new Date().toISOString()
+    const startTime = sessionData.startedAt ? new Date(sessionData.startedAt) : new Date()
+    const sessionDuration = Math.floor((new Date(now).getTime() - startTime.getTime()) / 60000)
+
+    const { error } = await supabase
+      .from('live_sessions')
+      .update({
+        ended_at: now,
+        calls_taken: sessionData.callsTaken,
+        total_earnings_cents: sessionData.totalEarningsCents,
+        session_duration_minutes: sessionDuration
+      })
+      .eq('id', sessionData.sessionId)
+
+    if (error) throw error
+  })
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current)
+      }
+      if (elapsedTimeIntervalRef.current) {
+        clearInterval(elapsedTimeIntervalRef.current)
+      }
+    }
+  }, [])
 
   const goLive = useCallback(async () => {
     if (!user || sessionData.state !== 'OFFLINE') return
 
     setSessionData(prev => ({ ...prev, state: 'GOING_LIVE' }))
     setIsTransitioning(true)
-
-    const now = new Date().toISOString()
     
-    // Update UI state immediately
-    setSessionData(prev => ({
-      ...prev,
-      state: 'LIVE',
-      startedAt: now,
-      callsTaken: 0,
-      totalEarningsCents: 0
-    }))
-    
-    // Create database session
     try {
-      const { data: session, error } = await supabase
-        .from('live_sessions')
-        .insert({
-          creator_id: user.id,
-          started_at: now
-        })
-        .select()
-        .single()
+      const { session, startTime } = await executeGoLive()
+      
+      // Update UI state with database session
+      setSessionData(prev => ({
+        ...prev,
+        state: 'LIVE',
+        startedAt: startTime,
+        sessionId: session.id,
+        callsTaken: 0,
+        totalEarningsCents: 0
+      }))
 
-      if (!error && session) {
-        setSessionData(prev => ({
-          ...prev,
-          sessionId: session.id
-        }))
+      // Accessibility announcement
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance('Live mode on')
+        utterance.volume = 0
+        window.speechSynthesis.speak(utterance)
       }
     } catch (error) {
-      console.error('Error creating live session:', error)
-      // Continue with local session
+      console.error('Error going live:', error)
+      // Fallback to offline state
+      setSessionData(prev => ({ ...prev, state: 'OFFLINE' }))
     } finally {
-      setTimeout(() => {
+      transitionTimeoutRef.current = setTimeout(() => {
         setIsTransitioning(false)
       }, 700)
     }
-
-    // Accessibility announcement
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance('Live mode on')
-      utterance.volume = 0
-      window.speechSynthesis.speak(utterance)
-    }
-  }, [user, sessionData.state, setSessionData])
+  }, [user, sessionData.state, setSessionData, executeGoLive])
 
   const endLive = useCallback(async () => {
     if (!user || sessionData.state !== 'LIVE') return
@@ -82,11 +127,10 @@ export function useLiveSession() {
     setSessionData(prev => ({ ...prev, state: 'ENDING_LIVE' }))
     setIsTransitioning(true)
 
-    const now = new Date().toISOString()
-    const startTime = sessionData.startedAt ? new Date(sessionData.startedAt) : new Date()
-    const sessionDuration = Math.floor((new Date(now).getTime() - startTime.getTime()) / 60000)
-
     // Update UI state immediately
+    const currentCalls = sessionData.callsTaken
+    const currentEarnings = sessionData.totalEarningsCents
+    
     setSessionData(prev => ({
       ...prev,
       state: 'OFFLINE',
@@ -96,27 +140,18 @@ export function useLiveSession() {
       totalEarningsCents: 0
     }))
 
-    // Update database
+    // Update database in background
     try {
-      if (sessionData.sessionId) {
-        await supabase
-          .from('live_sessions')
-          .update({
-            ended_at: now,
-            calls_taken: sessionData.callsTaken,
-            total_earnings_cents: sessionData.totalEarningsCents,
-            session_duration_minutes: sessionDuration
-          })
-          .eq('id', sessionData.sessionId)
-      }
+      await executeEndLive()
     } catch (error) {
       console.error('Error ending live session:', error)
+      // Could implement retry logic here
     } finally {
-      setTimeout(() => {
+      transitionTimeoutRef.current = setTimeout(() => {
         setIsTransitioning(false)
       }, 700)
     }
-  }, [user, sessionData, setSessionData])
+  }, [user, sessionData, setSessionData, executeEndLive])
 
   const toggleRightDisplay = useCallback(() => {
     setSessionData(prev => ({
@@ -166,7 +201,10 @@ export function useLiveSession() {
     callsTaken: sessionData.callsTaken,
     totalEarningsCents: sessionData.totalEarningsCents,
     rightDisplayMode: sessionData.rightDisplayMode,
-    isTransitioning,
+    isTransitioning: isTransitioning || goingLive || endingLive,
+    
+    // Error states
+    error: goLiveError || endLiveError,
     
     // Computed
     elapsedTime: getElapsedTime(),

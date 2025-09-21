@@ -21,8 +21,14 @@ export function useLive() {
     earningsDisplay: session.earningsDisplay,
     isTransitioning: session.isTransitioning,
     
+    // Error states
+    sessionError: session.error,
+    queueError: queue.error,
+    hasErrors: !!(session.error || queue.error),
+    
     // Queue state
     queueCount: queue.queueCount,
+    isQueueConnected: queue.isConnected,
     
     // Session actions
     goLive: session.goLive,
