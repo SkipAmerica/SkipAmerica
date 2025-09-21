@@ -24,6 +24,8 @@ interface ThreadPost {
     avatar_url?: string
     username?: string
     isLive?: boolean
+    title?: string
+    industry?: string
   }
   platform?: string
 }
@@ -149,11 +151,23 @@ export function PostCard({ post, isLast }: PostCardProps) {
         {/* Content Column */}
         <div className="flex-1 p-4">
           {/* Header */}
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="font-semibold text-sm truncate">
-              {post.creator.full_name}
-            </h3>
-            <span className="text-muted-foreground text-xs font-normal">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm truncate">
+                {post.creator.full_name}
+              </h3>
+              {post.creator.title && (
+                <p className="text-sm font-normal text-foreground truncate">
+                  {post.creator.title}
+                </p>
+              )}
+              {post.creator.industry && (
+                <p className="text-sm font-normal text-gray-500 truncate">
+                  {post.creator.industry}
+                </p>
+              )}
+            </div>
+            <span className="text-muted-foreground text-xs font-normal flex-shrink-0 ml-2">
               {formatTime(post.published_at || post.created_at)}
             </span>
           </div>

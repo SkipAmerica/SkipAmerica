@@ -20,6 +20,8 @@ interface ThreadPost {
     avatar_url?: string
     username?: string
     isLive?: boolean
+    title?: string
+    industry?: string
   }
   platform?: string
 }
@@ -42,7 +44,9 @@ const mockThreadsPosts: ThreadPost[] = [
       full_name: 'Kaion Wesley',
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       username: 'kaionwesley',
-      isLive: true
+      isLive: true,
+      title: 'Content Creator & Comedian',
+      industry: 'Entertainment'
     },
     platform: 'threads'
   },
@@ -61,7 +65,9 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'eutopus-viral',
       full_name: 'Eutopus Viral',
       avatar_url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      username: 'eutopus.viral'
+      username: 'eutopus.viral',
+      title: 'News Reporter & Journalist',
+      industry: 'Media & News'
     },
     platform: 'threads'
   },
@@ -81,7 +87,9 @@ const mockThreadsPosts: ThreadPost[] = [
       full_name: 'Sarah Johnson',
       avatar_url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
       username: 'sarahjohnson',
-      isLive: true
+      isLive: true,
+      title: 'Fitness Coach & Personal Trainer',
+      industry: 'Health & Wellness'
     },
     platform: 'threads'
   },
@@ -101,7 +109,9 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'mike-chen',
       full_name: 'Mike Chen',
       avatar_url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      username: 'mikechen'
+      username: 'mikechen',
+      title: 'Tech Reviewer & YouTuber',
+      industry: 'Technology'
     },
     platform: 'threads'
   },
@@ -120,7 +130,9 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'emma-rodriguez',
       full_name: 'Emma Rodriguez',
       avatar_url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
-      username: 'emmaRodriguez'
+      username: 'emmaRodriguez',
+      title: 'Chef & Food Blogger',
+      industry: 'Food & Culinary'
     },
     platform: 'threads'
   },
@@ -137,7 +149,9 @@ const mockThreadsPosts: ThreadPost[] = [
       id: 'kaion-wesley',
       full_name: 'Kaion Wesley',
       avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      username: 'kaionwesley'
+      username: 'kaionwesley',
+      title: 'Content Creator & Comedian',
+      industry: 'Entertainment'
     },
     platform: 'threads'
   }
