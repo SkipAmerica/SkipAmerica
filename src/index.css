@@ -40,6 +40,7 @@
     /* Status Colors */
     --online: 142 70% 45%;
     --live-color: 120 84% 55%;
+    --live-color-fallback: #22c55e; /* Fallback for live color */
 
     /* Creator Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
