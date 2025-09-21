@@ -54,7 +54,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         <button
           onClick={handleCircleClick}
           className={cn(
-            "w-16 h-16 bg-white rounded-full shadow-2xl",
+            "w-[50px] h-[50px] bg-white rounded-full shadow-2xl",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
@@ -66,7 +66,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
           }}
           aria-label="Create post"
         >
-          <Plus className="w-8 h-8 text-cyan-500" />
+          <Plus className="w-6 h-6 text-cyan-500" />
         </button>
       </div>
 
