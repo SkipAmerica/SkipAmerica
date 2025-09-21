@@ -8,6 +8,7 @@ interface IOSTabBarProps {
   showFollowing?: boolean;
   isCreator?: boolean;
   isLive?: boolean;
+  isTransitioning?: boolean;
   onGoLive?: () => void;
   onEndLive?: () => void;
 }
@@ -19,7 +20,7 @@ interface TabItem {
   badge?: number;
 }
 
-export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, onGoLive, onEndLive }: IOSTabBarProps) {
+export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isTransitioning, onGoLive, onEndLive }: IOSTabBarProps) {
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
@@ -102,7 +103,12 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
           {/* Center Go Live button */}
           <div className="flex-shrink-0 px-2">
             <button
-              onClick={() => {
+              type="button"
+              disabled={!!isTransitioning}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isTransitioning) return;
                 if (isLive) {
                   onEndLive?.();
                 } else {
@@ -112,8 +118,10 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
               className={cn(
                 "ios-touchable",
                 "flex flex-col items-center justify-center",
-                "transition-all duration-200"
+                "transition-all duration-200",
+                "disabled:opacity-60 disabled:pointer-events-none"
               )}
+              aria-disabled={!!isTransitioning}
             >
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center",

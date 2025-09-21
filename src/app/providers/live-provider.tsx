@@ -13,6 +13,7 @@ interface LiveContextType {
   rightDisplayMode: 'time' | 'earnings'
   elapsedTime: string
   earningsDisplay: string
+  isTransitioning: boolean
   goLive: () => Promise<void>
   endLive: () => Promise<void>
   toggleRightDisplay: () => void

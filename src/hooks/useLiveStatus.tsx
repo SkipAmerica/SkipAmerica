@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useLocalStorage } from '@/shared/hooks/use-local-storage'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
@@ -27,6 +27,9 @@ export const useLiveStatus = () => {
     hapticsEnabled: true
   })
 
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const lastToggleAtRef = useRef<number>(0)
+
   // Calculate elapsed time
   const getElapsedTime = useCallback(() => {
     if (!liveStatus.startedAt) return '00:00'
@@ -54,6 +57,15 @@ export const useLiveStatus = () => {
   const goLive = useCallback(async () => {
     if (!user) return
 
+    const nowMs = Date.now()
+    if (isTransitioning || liveStatus.isLive || nowMs - lastToggleAtRef.current < 400) {
+      console.log('[live] goLive ignored (transitioning/already live/cooldown)')
+      return
+    }
+
+    setIsTransitioning(true)
+    console.log('[live] goLive start')
+
     const now = new Date().toISOString()
     
     // Set UI state to live immediately for better UX
@@ -80,17 +92,20 @@ export const useLiveStatus = () => {
       if (error) {
         console.error('Error creating live session:', error)
         // Don't reset UI state - let user continue with local session
-        return
+      } else {
+        // Update with session ID if database operation succeeded
+        setLiveStatus(prev => ({
+          ...prev,
+          sessionId: session.id
+        }))
       }
-
-      // Update with session ID if database operation succeeded
-      setLiveStatus(prev => ({
-        ...prev,
-        sessionId: session.id
-      }))
     } catch (error) {
       console.error('Error creating live session:', error)
       // Don't reset UI state - let user continue with local session
+    } finally {
+      lastToggleAtRef.current = Date.now()
+      setTimeout(() => setIsTransitioning(false), 300)
+      console.log('[live] goLive end')
     }
 
     // Announce to screen readers
@@ -99,10 +114,19 @@ export const useLiveStatus = () => {
       utterance.volume = 0
       window.speechSynthesis.speak(utterance)
     }
-  }, [user, setLiveStatus])
+  }, [user, setLiveStatus, isTransitioning, liveStatus])
 
   const endLive = useCallback(async () => {
     if (!user || !liveStatus.isLive) return
+
+    const nowMs = Date.now()
+    if (isTransitioning || nowMs - lastToggleAtRef.current < 400) {
+      console.log('[live] endLive ignored (transitioning/cooldown)')
+      return
+    }
+
+    setIsTransitioning(true)
+    console.log('[live] endLive start')
 
     const now = new Date().toISOString()
     const startTime = liveStatus.startedAt ? new Date(liveStatus.startedAt) : new Date()
@@ -136,8 +160,12 @@ export const useLiveStatus = () => {
     } catch (error) {
       console.error('Error ending live session in database:', error)
       // UI state is already reset, so this won't block the user
+    } finally {
+      lastToggleAtRef.current = Date.now()
+      setTimeout(() => setIsTransitioning(false), 300)
+      console.log('[live] endLive end')
     }
-  }, [user, liveStatus, setLiveStatus])
+  }, [user, liveStatus, setLiveStatus, isTransitioning])
 
   const toggleRightDisplay = useCallback(() => {
     setLiveStatus(prev => ({
@@ -199,6 +227,7 @@ export const useLiveStatus = () => {
     sessionId: liveStatus.sessionId,
     elapsedTime: getElapsedTime(),
     earningsDisplay: getEarningsDisplay(),
+    isTransitioning,
     goLive,
     endLive,
     toggleRightDisplay,

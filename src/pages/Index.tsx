@@ -85,7 +85,7 @@ const Index = () => {
   
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { isLive, goLive, endLive } = useLive();
+  const { isLive, goLive, endLive, isTransitioning } = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
 
@@ -401,6 +401,7 @@ const Index = () => {
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
+        isTransitioning={isTransitioning}
         onGoLive={goLive}
         onEndLive={endLive}
       />
