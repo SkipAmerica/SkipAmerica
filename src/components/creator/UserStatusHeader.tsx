@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/app/providers/auth-provider";
 import { useLive } from "@/app/providers/live-provider";
-import { LiveStatusToggle } from './LiveStatusToggle';
+
 import { supabase } from "@/integrations/supabase/client";
 import { DollarSign, Users, Clock, Circle } from "lucide-react";
 
@@ -77,10 +77,8 @@ const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
   return (
     <div className={`ios-status-bar ${className || ''}`}>
       <div className="flex items-center justify-between w-full px-4 py-3">
-        {/* Left side - Status and Stats */}
+        {/* Left side - Stats */}
         <div className="flex items-center space-x-3">
-          <LiveStatusToggle className={`ios-status-toggle ${isLive ? "ios-live-button" : "ios-offline-button"}`} />
-          
           {/* Condensed Stats for mobile */}
           <div className="flex items-center space-x-4 text-xs text-ios-secondary">
             <div className="flex items-center space-x-1">

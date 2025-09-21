@@ -192,7 +192,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                           Accepting calls at ${pricePer5Min}/5min
                         </div>
                         <div className="text-sm text-ios-secondary">
-                          Use the toggle in the header to go offline
+                          Use the End Live button in the bottom navigation
                         </div>
                       </div>
                     ) : (
@@ -202,7 +202,7 @@ const CreatorDashboard = ({ onBack }: CreatorDashboardProps) => {
                           Start accepting video call requests
                         </div>
                         <div className="text-sm text-ios-secondary">
-                          Use the toggle in the header to go live
+                          Use the Go Live button in the bottom navigation
                         </div>
                       </div>
                     )}
