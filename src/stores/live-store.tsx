@@ -179,8 +179,10 @@ interface LiveStoreProviderProps {
 }
 
 export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
+  console.log('[LiveStoreProvider] Rendering...')
   const [state, dispatch] = useReducer(reducer, initialState)
   const { user } = useAuth()
+  console.log('[LiveStoreProvider] User from auth:', user?.id || 'no user')
 
   const handleDispatch = useCallback((event: LiveEvent) => {
     console.info(`[LIVE][STATE] ${state.state} + ${event.type}`)
@@ -452,6 +454,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     triggerHaptic
   }
 
+  console.log('[LiveStoreProvider] Providing context value, state:', state.state)
+  
   return (
     <LiveStoreContext.Provider value={contextValue}>
       {children}
@@ -460,8 +464,11 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 }
 
 export function useLiveStore(): LiveStoreContextValue {
+  console.log('[useLiveStore] Called...')
   const context = useContext(LiveStoreContext)
+  console.log('[useLiveStore] Context:', context ? 'found' : 'null')
   if (!context) {
+    console.error('[useLiveStore] Context is null! Provider not found in component tree.')
     throw new Error('useLiveStore must be used within a LiveStoreProvider')
   }
   return context
