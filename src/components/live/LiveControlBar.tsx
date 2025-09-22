@@ -15,6 +15,7 @@ function LiveControlBarContent() {
   // Always call all hooks unconditionally at the top level
   const { 
     isLive, 
+    isDiscoverable,
     state, 
     queueCount, 
     elapsedTime, 
@@ -53,7 +54,7 @@ function LiveControlBarContent() {
   }, [state])
   
   // Compute render condition after all hooks
-  const shouldRender = isLive || state !== 'OFFLINE'
+  const shouldRender = isLive || isDiscoverable
   
   // Don't render when offline - moved after all hooks
   if (!shouldRender) {
@@ -64,12 +65,19 @@ function LiveControlBarContent() {
     <>
       <div 
         className={cn(
-          "fixed bottom-[49px] left-0 right-0 z-40",
+          "fixed bottom-[49px] left-0 right-0 z-30", // z-30 to be under Bottom Nav (z-50)
           "h-14 bg-card/95 backdrop-blur-md border-t border-border/30",
           "flex items-center justify-between px-4 shadow-lg",
-          "transform transition-transform duration-300 ease-in-out",
-          state === 'OFFLINE' ? "translate-y-full" : "translate-y-0"
+          "transition-all duration-300 ease-out",
+          "transform will-change-transform", // Hardware acceleration
+          shouldRender ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
         )}
+        style={{
+          transform: shouldRender ? 'translateY(0)' : 'translateY(100%)',
+          transitionProperty: 'transform, opacity',
+          transitionDuration: '300ms',
+          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
+        }}
         role="toolbar"
         aria-label="Live session controls"
       >

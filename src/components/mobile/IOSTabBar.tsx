@@ -38,7 +38,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
-    { id: 'live', label: 'Live', icon: Users },
+    { id: 'live', label: 'Discoverable', icon: Users },
   ];
 
   const rightTabs: TabItem[] = [

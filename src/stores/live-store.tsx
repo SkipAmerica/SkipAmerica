@@ -160,6 +160,8 @@ export interface LiveStoreContextValue {
   // Actions
   dispatch: (event: LiveEvent) => void
   goLive: () => Promise<void>
+  goDiscoverable: () => Promise<void>
+  goUndiscoverable: () => Promise<void>
   toggleDiscoverable: () => void
   confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
   startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
@@ -189,6 +191,22 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   useEffect(() => {
     ensureMediaSubscriptions()
   }, [])
+
+  // GO DISCOVERABLE: just set availability (no media)
+  const goDiscoverable = useCallback(async () => {
+    if (!user || state.state !== 'OFFLINE' || state.inFlight.start) return
+    
+    console.log('[LiveStore] Going discoverable...')
+    handleDispatch({ type: 'GO_LIVE' }) // -> DISCOVERABLE
+  }, [user, state.state, state.inFlight.start, handleDispatch])
+
+  // GO UNDISCOVERABLE: return to offline 
+  const goUndiscoverable = useCallback(async () => {
+    if (!user || state.state !== 'DISCOVERABLE' || state.inFlight.end) return
+    
+    console.log('[LiveStore] Going offline from discoverable...')
+    handleDispatch({ type: 'SESSION_ENDED' }) // -> OFFLINE
+  }, [user, state.state, state.inFlight.end, handleDispatch])
 
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
@@ -362,13 +380,17 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   }, [])
 
   const toggleDiscoverable = useCallback(() => {
-    if (state.inFlight.start || state.inFlight.end || isTransitioning(state.state)) return;
-    if (state.state === 'OFFLINE') {
-      goLive();
-    } else if (state.state === 'DISCOVERABLE') {
-      endLive();
+    console.log('[LiveStore] Toggle discoverable clicked, current state:', state.state)
+    if (state.inFlight.start || state.inFlight.end || isTransitioning(state.state)) {
+      console.log('[LiveStore] Toggle blocked - transitioning or in flight')
+      return
     }
-  }, [state.state, state.inFlight.start, state.inFlight.end, goLive, endLive])
+    if (state.state === 'OFFLINE') {
+      goDiscoverable()
+    } else if (state.state === 'DISCOVERABLE') {
+      goUndiscoverable()
+    }
+  }, [state.state, state.inFlight.start, state.inFlight.end, goDiscoverable, goUndiscoverable])
 
   // Computed values
   const elapsedTime = useMemo(() => {
@@ -392,7 +414,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   const contextValue: LiveStoreContextValue = {
     // State
     isLive: state.state === 'SESSION_ACTIVE',
-    isDiscoverable: state.state === 'DISCOVERABLE',
+    isDiscoverable: ['DISCOVERABLE', 'SESSION_PREP', 'SESSION_JOINING'].includes(state.state),
     state: state.state,
     startedAt: state.startedAt,
     sessionId: state.sessionId,
@@ -410,6 +432,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     // Actions
     dispatch: handleDispatch,
     goLive,
+    goDiscoverable,
+    goUndiscoverable,
     toggleDiscoverable,
     confirmJoin,
     startNext,
