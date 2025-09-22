@@ -10,8 +10,6 @@ interface IOSTabBarProps {
   isLive?: boolean;
   isDiscoverable?: boolean;
   isTransitioning?: boolean;
-  countdownActive?: boolean;
-  countdownValue?: number;
   onToggleDiscoverable?: () => void;
   onEndCall?: () => void;
 }
@@ -23,7 +21,7 @@ interface TabItem {
   badge?: number;
 }
 
-export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isDiscoverable, isTransitioning, countdownActive, countdownValue, onToggleDiscoverable, onEndCall }: IOSTabBarProps) {
+export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isDiscoverable, isTransitioning, onToggleDiscoverable, onEndCall }: IOSTabBarProps) {
   const busyRef = React.useRef(false);
   const handleCenterAction = React.useCallback((e: React.MouseEvent<HTMLButtonElement> | React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -34,9 +32,9 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
     if (activeTab === 'call') return;
     
     busyRef.current = true;
-    setTimeout(() => { busyRef.current = false; }, countdownActive ? 100 : 450);
+    setTimeout(() => { busyRef.current = false; }, 450);
     onToggleDiscoverable?.();
-  }, [isTransitioning, activeTab, countdownActive, onToggleDiscoverable]);
+  }, [isTransitioning, activeTab, onToggleDiscoverable]);
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
@@ -120,7 +118,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
           <div className="flex-shrink-0 px-2">
             <button
               type="button"
-              disabled={!!isTransitioning && !countdownActive}
+              disabled={!!isTransitioning}
               onClick={handleCenterAction}
               className={cn(
                 "ios-touchable",
@@ -129,7 +127,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                 "disabled:opacity-60 disabled:pointer-events-none",
                 isLive && "cursor-default"
               )}
-              aria-disabled={!!isTransitioning && !countdownActive}
+              aria-disabled={!!isTransitioning}
             >
               <div className={cn(
                 "w-10 h-10 rounded-full flex items-center justify-center relative",
@@ -137,19 +135,11 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                 "shadow-lg",
                 isLive 
                   ? "bg-muted text-muted-foreground cursor-default" 
-                  : countdownActive
-                    ? "bg-green-500 text-white"
-                    : isDiscoverable
-                      ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
+                  : isDiscoverable
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
               )}>
-                {countdownActive && countdownValue ? (
-                  <span className="text-sm font-bold animate-scale-in">
-                    {countdownValue}
-                  </span>
-                ) : (
-                  <Sparkles size={16} />
-                )}
+                <Sparkles size={16} />
               </div>
             </button>
           </div>

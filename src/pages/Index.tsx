@@ -20,7 +20,7 @@ import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
 import { cn } from "@/shared/lib/utils";
 import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
-import { EventCountdown } from "@/components/events/EventCountdown";
+import DiscoverabilityModal from "@/components/DiscoverabilityModal";
 import { AdBanner } from "@/components/ads/AdBanner";
 import { ThreadsFeed } from "@/components/discovery/ThreadsFeed";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
@@ -94,9 +94,9 @@ const Index = () => {
   const isLive = live?.isLive || false;
   const isDiscoverable = live?.isDiscoverable || false;
   const isTransitioning = live?.isTransitioning || false;
-  const countdownActive = live?.countdownActive || false;
-  const countdownValue = live?.countdownValue || 0;
   const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
+  const showDiscoverabilityModal = live?.showDiscoverabilityModal || false;
+  const setDiscoverabilityModal = live?.setDiscoverabilityModal || (() => {});
   const endLive = live?.endLive || (() => {});
 
   // Stabilize iOS safe area top across keyboard show/hide
@@ -416,8 +416,6 @@ const Index = () => {
           isLive={isLive}
           isDiscoverable={isDiscoverable}
           isTransitioning={isTransitioning}
-          countdownActive={countdownActive}
-          countdownValue={countdownValue}
           onToggleDiscoverable={toggleDiscoverable}
           onEndCall={endLive}
         />
@@ -505,6 +503,12 @@ const Index = () => {
           />
         </IOSModal>
       )}
+
+      {/* Discoverability Modal */}
+      <DiscoverabilityModal
+        open={showDiscoverabilityModal}
+        onClose={() => setDiscoverabilityModal(false)}
+      />
     </div>
   );
 };

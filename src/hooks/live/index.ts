@@ -45,9 +45,8 @@ export function useLive() {
     discoverableStartedAt: store.discoverableStartedAt,
     accumulatedDiscoverableTime: store.accumulatedDiscoverableTime,
     
-    // Countdown fields
-    countdownActive: store.countdownActive,
-    countdownValue: store.countdownValue,
+    // Modal fields
+    showDiscoverabilityModal: store.showDiscoverabilityModal,
     
     // Store reference for LiveControlBar
     store,
@@ -58,6 +57,7 @@ export function useLive() {
     // Actions
     goLive: store.goLive,
     toggleDiscoverable: store.toggleDiscoverable,
+    setDiscoverabilityModal: store.setDiscoverabilityModal,
     endLive: store.endLive,
     confirmJoin: store.confirmJoin,
     toggleRightDisplay: store.toggleEarningsDisplay,

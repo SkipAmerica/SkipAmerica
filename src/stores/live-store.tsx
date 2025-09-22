@@ -33,10 +33,8 @@ export interface LiveStoreState {
   sessionEarningsCents: number
   sessionStartedAt: number | null // ms since epoch when session began
   sessionElapsed: number // accumulated ms for THIS session
-  // Countdown state
-  countdownActive: boolean
-  countdownValue: number // 3, 2, 1, 0
-  countdownTimerId: number | null
+  // Discoverability modal state
+  showDiscoverabilityModal: boolean
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -55,10 +53,7 @@ export type Action =
   | { type: 'START_DISCOVERABLE_TIMER' }
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
-  | { type: 'START_COUNTDOWN' }
-  | { type: 'COUNTDOWN_TICK'; value: number }
-  | { type: 'COUNTDOWN_COMPLETE' }
-  | { type: 'CANCEL_COUNTDOWN' }
+  | { type: 'SET_DISCOVERABILITY_MODAL'; open: boolean }
 
 // Helper to determine discoverable posture
 const inDiscoverablePosture = (state: string) =>
@@ -86,10 +81,8 @@ const initialState: LiveStoreState = {
   sessionEarningsCents: 0,
   sessionStartedAt: null,
   sessionElapsed: 0,
-  // Countdown state
-  countdownActive: false,
-  countdownValue: 0,
-  countdownTimerId: null,
+  // Discoverability modal state
+  showDiscoverabilityModal: false,
   inFlight: {
     start: null,
     end: null
@@ -238,36 +231,10 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         accumulatedDiscoverableTime: 0
       }
     
-    case 'START_COUNTDOWN':
+    case 'SET_DISCOVERABILITY_MODAL':
       return {
         ...state,
-        countdownActive: true,
-        countdownValue: 3
-      }
-    
-    case 'COUNTDOWN_TICK':
-      return {
-        ...state,
-        countdownValue: action.value
-      }
-    
-    case 'COUNTDOWN_COMPLETE':
-      return {
-        ...state,
-        countdownActive: false,
-        countdownValue: 0,
-        countdownTimerId: null
-      }
-    
-    case 'CANCEL_COUNTDOWN':
-      if (state.countdownTimerId) {
-        clearInterval(state.countdownTimerId)
-      }
-      return {
-        ...state,
-        countdownActive: false,
-        countdownValue: 0,
-        countdownTimerId: null
+        showDiscoverabilityModal: action.open
       }
     
     default:
@@ -306,9 +273,8 @@ export interface LiveStoreContextValue {
   // Timer fields
   discoverableStartedAt: number | null
   accumulatedDiscoverableTime: number
-  // Countdown fields
-  countdownActive: boolean
-  countdownValue: number
+  // Modal fields
+  showDiscoverabilityModal: boolean
   
   // Actions
   dispatch: (event: LiveEvent) => void
@@ -323,6 +289,7 @@ export interface LiveStoreContextValue {
   incrementCall: (earnings: number) => void
   updateQueueCount: (count: number) => void
   triggerHaptic: () => void
+  setDiscoverabilityModal: (open: boolean) => void
 }
 
 const LiveStoreContext = createContext<LiveStoreContextValue | null>(null)
@@ -543,16 +510,23 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'TRIGGER_HAPTIC', payload: { heavy } })
   }, [])
 
+  const triggerDiscoverabilityHaptics = useCallback(async () => {
+    try {
+      const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+      await Haptics.impact({ style: ImpactStyle.Heavy })
+    } catch {
+      // silently ignore on web/unsupported
+    }
+  }, [])
+
+  const setDiscoverabilityModal = useCallback((open: boolean) => {
+    dispatch({ type: 'SET_DISCOVERABILITY_MODAL', open })
+  }, [])
+
   const toggleDiscoverable = useCallback(async () => {
     if (__discToggleInFlight) return;
 
     const st = state.state;
-
-    // If countdown is active, cancel it
-    if (state.countdownActive) {
-      dispatch({ type: 'CANCEL_COUNTDOWN' });
-      return;
-    }
 
     // Ignore toggles while transitional states are in progress to prevent races
     if (st === 'TEARDOWN') {
@@ -561,29 +535,11 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     }
 
     if (st === 'OFFLINE') {
-      // Start countdown instead of going discoverable immediately
-      dispatch({ type: 'START_COUNTDOWN' });
-      
-      // Start countdown timer
-      let countdownValue = 3;
-      const timerId = setInterval(() => {
-        dispatch({ type: 'TRIGGER_HAPTIC' }); // Haptic on each tick
-        
-        if (countdownValue <= 1) {
-          clearInterval(timerId);
-          dispatch({ type: 'COUNTDOWN_COMPLETE' });
-          // Heavy haptic for final activation
-          dispatch({ type: 'TRIGGER_HAPTIC', payload: { heavy: true } });
-          // Now actually go discoverable
-          goDiscoverable();
-        } else {
-          countdownValue--;
-          dispatch({ type: 'COUNTDOWN_TICK', value: countdownValue });
-        }
-      }, 1000);
-      
-      // Store timer ID in a way that doesn't require state update
-      (state as any).countdownTimerId = timerId;
+      // Trigger haptics and show modal when going discoverable
+      await triggerDiscoverabilityHaptics();
+      setDiscoverabilityModal(true);
+      // Go discoverable immediately
+      goDiscoverable();
       return;
     }
 
@@ -594,7 +550,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 
     // In an active call, center toggle is not responsible for ending; do nothing.
     console.info('[DISCOVERABLE][no-op] state:', st);
-  }, [state.state, state.countdownActive, goDiscoverable, goUndiscoverable, dispatch])
+  }, [state.state, goDiscoverable, goUndiscoverable, triggerDiscoverabilityHaptics, setDiscoverabilityModal])
 
   // Computed values
   const elapsedTime = useMemo(() => {
@@ -645,9 +601,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     // Timer fields
     discoverableStartedAt: state.discoverableStartedAt,
     accumulatedDiscoverableTime: state.accumulatedDiscoverableTime,
-    // Countdown fields
-    countdownActive: state.countdownActive,
-    countdownValue: state.countdownValue,
+    // Modal fields
+    showDiscoverabilityModal: state.showDiscoverabilityModal,
     
     // Actions
     dispatch: handleDispatch,
@@ -661,7 +616,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     toggleEarningsDisplay,
     incrementCall,
     updateQueueCount,
-    triggerHaptic
+    triggerHaptic,
+    setDiscoverabilityModal
   }
   
   return (
