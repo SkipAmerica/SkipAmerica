@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* [3] POSITIONING RULES - Root defaults */
+:root {
+  --bottom-nav-h: 0px;     /* set by global metrics publisher */
+  --dsb-h: 56px;           /* updated by DSB, has fallback */
+  --dsb-visible: 0;        /* set by global metrics publisher, "1" when visible */
+}
+
 /* Creator Economy Design System - FaceTime for Creators */
 @layer base {
   :root {
@@ -563,6 +570,21 @@ body.live-active {
 
 .lsb-inner:active {
   cursor: grabbing;
+}
+
+/* [3] CPB (creator panel bar) root - elevated positioning */
+#cpb-root {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 60; /* always above DSB and Bottom Nav */
+  bottom: calc(
+    var(--bottom-nav-h, 0px) 
+    + (var(--dsb-visible, 0) * var(--dsb-h, 0px))
+    + 12px
+    + env(safe-area-inset-bottom, 0px)
+  );
+  transition: bottom 200ms ease;
 }
 
 /* Removed .lsb-inner--visible since visibility is now controlled at shell level */

@@ -152,19 +152,14 @@ const LiveControlBarContent: React.FC = () => {
     }
   }, [shouldShowLSB]);
 
-  // Publish CSS variables for CPB positioning
+  // [2] DSB COLLAPSED HEIGHT VARIABLE 
   useEffect(() => {
-    const shell = shellRef.current;
-    const isLSBVisible = shouldShowLSB;
-    
-    // Set DSB visibility for CPB positioning (0 or 1)
-    document.documentElement.style.setProperty('--dsb-visible', isLSBVisible ? '1' : '0');
-    
-    // Update DSB height variable
-    if (shell && shell.offsetHeight > 0) {
-      document.documentElement.style.setProperty('--dsb-h', `${shell.offsetHeight}px`);
-    }
-  }, [shouldShowLSB]);
+    const root = document.documentElement;
+    const collapsedEl = document.querySelector("#dsb-root .lsb-inner"); 
+    if (!collapsedEl) return;
+    const h = Math.round(collapsedEl.getBoundingClientRect().height || 0);
+    root.style.setProperty("--dsb-h", (h || 56) + "px"); // fallback 56px if 0
+  }, [shouldShowLSB, counterMode]); // dependencies that affect collapsed height
 
   // ResizeObserver to keep --dsb-h current
   useEffect(() => {

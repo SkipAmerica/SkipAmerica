@@ -107,6 +107,36 @@ const Index = () => {
     doc.style.setProperty('--debug-safe-top', top);
   }, []);
 
+  // [1] GLOBAL METRICS PUBLISHER - Bottom Nav Height
+  useEffect(() => {
+    const root = document.documentElement;
+    const nav = document.getElementById("bottom-nav-root");
+    if (!nav) return;
+
+    const apply = () => {
+      const navH = Math.round(nav.getBoundingClientRect().height || 0);
+      root.style.setProperty("--bottom-nav-h", navH + "px");
+    };
+
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(nav);
+    window.addEventListener("resize", apply);
+    window.addEventListener("orientationchange", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      window.removeEventListener("orientationchange", apply);
+    };
+  }, []);
+
+  // [1.3] GLOBAL METRICS PUBLISHER - DSB Visibility
+  const dsbVisible = isDiscoverable && !isLive;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--dsb-visible", dsbVisible ? "1" : "0");
+  }, [dsbVisible]);
+
   // Memoized event handlers to prevent unnecessary re-renders
   const handleCreatorLike = useCallback((creatorId: string) => {
     console.log('Liked creator:', creatorId);
@@ -395,30 +425,36 @@ const Index = () => {
 
       {/* Creator Post Prompt - Only show for creators */}
       {profile?.account_type === 'creator' && (
-        <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+        <div id="cpb-root">
+          <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+        </div>
       )}
 
       {/* Live Control Bar - Shows when live */}
-      <LiveControlBar />
+      <div id="dsb-root">
+        <LiveControlBar />
+      </div>
 
       {/* iOS Tab Bar */}
-        <IOSTabBar 
-          activeTab={activeTab} 
-          onTabChange={(tab) => {
-            if (tab === "discover") {
-              handleDiscoverTabClick();
-            } else {
-              setActiveTab(tab);
-            }
-          }}
-          showFollowing={!!user}
-          isCreator={profile?.account_type === 'creator'}
-          isLive={isLive}
-          isDiscoverable={isDiscoverable}
-          isTransitioning={isTransitioning}
-          onToggleDiscoverable={toggleDiscoverable}
-          onEndCall={endLive}
-        />
+      <div id="bottom-nav-root">
+          <IOSTabBar 
+            activeTab={activeTab} 
+            onTabChange={(tab) => {
+              if (tab === "discover") {
+                handleDiscoverTabClick();
+              } else {
+                setActiveTab(tab);
+              }
+            }}
+            showFollowing={!!user}
+            isCreator={profile?.account_type === 'creator'}
+            isLive={isLive}
+            isDiscoverable={isDiscoverable}
+            isTransitioning={isTransitioning}
+            onToggleDiscoverable={toggleDiscoverable}
+            onEndCall={endLive}
+          />
+        </div>
 
       {/* User Menu Action Sheet */}
       <IOSActionSheet
