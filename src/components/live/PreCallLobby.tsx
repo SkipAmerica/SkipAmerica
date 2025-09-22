@@ -81,7 +81,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     }
   }
 
-  const initMedia = async () => {
+  async function initMedia() {
     setError(null)
     setPhase('initializing-media')
     setIsAudioOnlyMode(false)
@@ -98,63 +98,38 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         video: hasCam ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
       }
 
-      // Step 3: request media
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
-        attachLocalPreview(stream)
-        setPhase('ready')
-        return
-      } catch (videoError: any) {
-        // Fallback: try audio-only if video fails with device issues
-        if ((videoError.name === 'NotReadableError' || videoError.name === 'OverconstrainedError') && hasMic) {
-          console.warn('[PreCallLobby] Video failed, trying audio-only fallback:', videoError.message)
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-            setIsAudioOnlyMode(true)
-            setIsVideoEnabled(false)
-            setPhase('ready')
-            return
-          } catch (audioError: any) {
-            // If audio also fails, throw the original video error
-            throw videoError
-          }
-        }
-        throw videoError
-      }
+      // Step 3: request
+      const stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
+      attachLocalPreview(stream) // your existing preview hookup
+      setPhase('ready')
+      return
     } catch (e: any) {
       const { name, message } = e || {}
-      // Granular error mapping
+      
+      // Fallback: If video fails with DEVICE_IN_USE or NotReadableError but audio is likely available
+      if ((name === 'NotReadableError' || name === 'OverconstrainedError') && e.constraint !== 'audio') {
+        try {
+          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          setIsAudioOnlyMode(true)
+          setIsVideoEnabled(false)
+          setPhase('ready')
+          return
+        } catch (audioError) {
+          // If audio also fails, continue with original error handling
+        }
+      }
+      
+      // Granular mapping
       if (name === 'NotAllowedError' || name === 'SecurityError') {
-        setError({
-          code: 'PERMISSION_DENIED',
-          message: 'Camera/Microphone permission denied.',
-          hint: 'Enable permissions in Settings and retry.'
-        })
+        setError({ code: 'PERMISSION_DENIED', message: 'Camera/Microphone permission denied.', hint: 'Enable permissions in Settings and retry.' })
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-        setError({
-          code: 'DEVICE_UNAVAILABLE',
-          message: 'No usable camera or microphone found.',
-          hint: 'Check connections or select a different device.'
-        })
+        setError({ code: 'DEVICE_UNAVAILABLE', message: 'No usable camera or microphone found.', hint: 'Check connections or select a different device.' })
       } else if (name === 'NotReadableError') {
-        setError({
-          code: 'DEVICE_IN_USE',
-          message: 'Camera or microphone is already in use by another app.',
-          hint: 'Close other apps using the camera/mic and retry.'
-        })
+        setError({ code: 'DEVICE_IN_USE', message: 'Camera or microphone is already in use by another app.', hint: 'Close other apps using the camera/mic and retry.' })
       } else if (name === 'AbortError') {
-        setError({
-          code: 'ABORTED',
-          message: 'Device access was interrupted.',
-          hint: 'Retry. If this persists, restart the app.'
-        })
+        setError({ code: 'ABORTED', message: 'Device access was interrupted.', hint: 'Retry. If this persists, restart the app.' })
       } else {
-        setError({
-          code: 'UNKNOWN',
-          message: 'Could not start preview.',
-          hint: message || 'Retry or check device settings.'
-        })
+        setError({ code: 'UNKNOWN', message: 'Could not start preview.', hint: (message || 'Retry or check device settings.') })
       }
       setPhase('error')
     }
@@ -174,46 +149,11 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     initMedia()
   }, [])
 
-  // Attach stream to video element
+  // Attach stream to video element (simplified - no polling)
   useEffect(() => {
-    const video = videoRef.current
-    if (!video || !isVideoEnabled || isInitializing) return
-
-    const attachStream = () => {
-      const stream = mediaManager.getLocalStream()
-      console.log('[PreCallLobby] Attempting to attach stream:', !!stream, 'to video element')
-      if (stream && video.srcObject !== stream) {
-        video.srcObject = stream
-        video.muted = true
-        video.autoplay = true
-        console.log('[PreCallLobby] Stream attached successfully')
-        const playPromise = video.play?.()
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise.catch(() => {})
-        }
-      }
-    }
-
-    // Initial attach
-    attachStream()
-
-    // Watch for stream changes
-    const interval = setInterval(attachStream, 500)
-
-    return () => {
-      clearInterval(interval)
-      
-      // Clean up video element
-      try {
-        video.pause()
-        video.srcObject = null
-        video.removeAttribute('src')
-        video.load()
-      } catch (err) {
-        console.warn('[PreCallLobby] Failed to cleanup video:', err)
-      }
-    }
-  }, [isVideoEnabled, isInitializing])
+    // Only set isInitializing to false when phase changes
+    setIsInitializing(phase !== 'initializing-media' && phase !== 'requesting-permissions')
+  }, [phase])
 
   // Audio level monitoring
   useEffect(() => {
