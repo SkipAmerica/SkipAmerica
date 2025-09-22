@@ -108,8 +108,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       if (!selectedVideoDevice && videoDevices.length > 0) {
         setSelectedVideoDevice(videoDevices[0].deviceId)
       }
+
+      let stream: MediaStream | null = null
       
-      // Use MediaOrchestrator for media initialization  
+      // First attempt: Use preferred constraints
       const audioConstraints = audioDevices.length > 0 ? { 
         deviceId: selectedAudioDevice || audioDevices[0]?.deviceId,
         echoCancellation: true, 
@@ -123,20 +125,78 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         width: { ideal: 1280 }, 
         height: { ideal: 720 } 
       } : isVideoEnabled
-      
-      const stream = await orchestrateInit({
-        targetState: 'SESSION_PREP',
-        previewOnly: true,
-        audio: isMicEnabled ? audioConstraints : false,
-        video: videoConstraints
-      })
-      
-      // Track successful initialization
-      const hasAudio = stream.getAudioTracks().length > 0
-      const hasVideo = stream.getVideoTracks().length > 0
-      trackEvent('creator_precall_media_initialized', { audio: hasAudio, video: hasVideo })
-      
-      setPhase('ready')
+
+      try {
+        stream = await orchestrateInit({
+          targetState: 'SESSION_PREP',
+          previewOnly: true,
+          audio: isMicEnabled ? audioConstraints : false,
+          video: videoConstraints
+        })
+      } catch (error) {
+        console.warn('[PreCallLobby] Primary attempt failed, trying fallbacks:', error)
+        
+        // Fallback 1: Remove facingMode if it was causing issues
+        if (isVideoEnabled && videoConstraints && typeof videoConstraints === 'object' && 'facingMode' in videoConstraints) {
+          try {
+            const fallbackVideoConstraints = {
+              deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
+              width: { ideal: 1280 }, 
+              height: { ideal: 720 }
+            }
+            
+            stream = await orchestrateInit({
+              targetState: 'SESSION_PREP',
+              previewOnly: true,
+              audio: isMicEnabled ? audioConstraints : false,
+              video: fallbackVideoConstraints
+            })
+          } catch (fallbackError) {
+            console.warn('[PreCallLobby] Fallback 1 failed, trying basic video:', fallbackError)
+            
+            // Fallback 2: Use basic video constraints
+            try {
+              stream = await orchestrateInit({
+                targetState: 'SESSION_PREP',
+                previewOnly: true,
+                audio: isMicEnabled ? audioConstraints : false,
+                video: isVideoEnabled
+              })
+            } catch (basicError) {
+              console.warn('[PreCallLobby] Basic video failed, trying audio-only:', basicError)
+              
+              // Fallback 3: Audio-only if video completely fails
+              if (isMicEnabled) {
+                stream = await orchestrateInit({
+                  targetState: 'SESSION_PREP',
+                  previewOnly: true,
+                  audio: audioConstraints,
+                  video: false
+                })
+                setIsAudioOnlyMode(true)
+                setIsVideoEnabled(false)
+              } else {
+                throw basicError
+              }
+            }
+          }
+        } else {
+          throw error
+        }
+      }
+
+      if (stream) {
+        // Track successful initialization
+        const hasAudio = stream.getAudioTracks().length > 0
+        const hasVideo = stream.getVideoTracks().length > 0
+        trackEvent('creator_precall_media_initialized', { 
+          audio: hasAudio, 
+          video: hasVideo,
+          audioOnly: isAudioOnlyMode 
+        })
+        
+        setPhase('ready')
+      }
     } catch (e: any) {
       const { code, name, message } = e || {}
       
@@ -146,34 +206,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         name: name || 'UNKNOWN', 
         message 
       })
-      
-      // Try audio-only fallback for some errors
-      if ((code === 'HARDWARE_ERROR' || name === 'NotReadableError') && isVideoEnabled) {
-        try {
-          console.log('[PreCallLobby] Trying audio-only fallback...')
-          const fallbackAudioConstraints = availableDevices.audio.length > 0 ? { 
-            deviceId: selectedAudioDevice || availableDevices.audio[0]?.deviceId,
-            echoCancellation: true, 
-            noiseSuppression: true, 
-            autoGainControl: true 
-          } : true
-          
-          await orchestrateInit({
-            targetState: 'SESSION_PREP',
-            previewOnly: true,
-            audio: isMicEnabled ? fallbackAudioConstraints : false,
-            video: false
-          })
-          
-          setIsAudioOnlyMode(true)
-          setIsVideoEnabled(false)
-          trackEvent('creator_precall_media_initialized', { audio: true, video: false })
-          setPhase('ready')
-          return
-        } catch (audioError) {
-          console.warn('[PreCallLobby] Audio-only fallback also failed:', audioError)
-        }
-      }
       
       // Handle errors with MediaOrchestrator error routing
       routeMediaError(e)
@@ -214,6 +246,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     document.documentElement.classList.add('precall-open')
     return () => {
       document.documentElement.classList.remove('precall-open')
+      // Clear the auto-preview flag on unmount
+      ;(window as any).__allowAutoPreview = false
       cleanupMedia().catch(console.warn)
     }
   }, [])
@@ -406,6 +440,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   const startPreviewWithGesture = () => {
+    // Allow auto-preview for this session
+    ;(window as any).__allowAutoPreview = true
     setPhase('requesting-permissions')
     trackEvent('creator_precall_permissions_requested')
     initMedia()
