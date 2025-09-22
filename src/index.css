@@ -510,7 +510,8 @@ body.live-active {
 .dsb-shell {
   position: fixed;
   left: 0;
-  bottom: var(--ios-tab-bar-height);
+  bottom: 0;
+  margin-bottom: var(--ios-tab-bar-height);
   width: 100%;
   pointer-events: none;
   z-index: var(--z-dsb);
