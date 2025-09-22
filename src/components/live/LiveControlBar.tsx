@@ -19,6 +19,7 @@ const LiveControlBarContent: React.FC = () => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
   const shellRef = useRef<HTMLDivElement>(null);
+  const rafIdRef = useRef<number | null>(null);
 
   const live = useLive();
   
@@ -27,6 +28,9 @@ const LiveControlBarContent: React.FC = () => {
   const isDiscoverable = live?.isDiscoverable || false;
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
+  
+  // Compute discoverable posture using same predicate as store
+  const isInDiscoverablePosture = state === 'DISCOVERABLE' || state === 'SESSION_PREP' || state === 'SESSION_JOINING';
 
   const handleQueueClick = useCallback(() => {
     if (queueCount > 0) {
@@ -69,8 +73,8 @@ const LiveControlBarContent: React.FC = () => {
     const shell = shellRef.current;
     const isLSBVisible = shouldShowLSB;
     
-    // Set visibility variable
-    document.documentElement.style.setProperty('--lsb-visible', isLSBVisible ? '1' : '0');
+    // Set visibility variable - use discoverable posture for immediate response
+    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
     
     // Set height variable
     if (shell && shell.offsetHeight > 0) {
@@ -114,27 +118,44 @@ const LiveControlBarContent: React.FC = () => {
     }
   }, [shouldShowLSB, isVisible]);
 
-  // Real-time timer updates
+  // Real-time timer updates - only when in discoverable posture
   useEffect(() => {
-    if (!isDiscoverable) return;
+    // Cancel any existing RAF loop
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    
+    // Start RAF loop only when in discoverable posture
+    if (!isInDiscoverablePosture) return;
     
     const animate = () => {
       setCurrentTime(Date.now());
-      if (isDiscoverable) {
-        requestAnimationFrame(animate);
+      // Only continue if still in discoverable posture
+      if (isInDiscoverablePosture) {
+        rafIdRef.current = requestAnimationFrame(animate);
+      } else {
+        rafIdRef.current = null;
       }
     };
     
-    const frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [isDiscoverable]);
+    rafIdRef.current = requestAnimationFrame(animate);
+    
+    // Cleanup function
+    return () => {
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      }
+    };
+  }, [isInDiscoverablePosture]);
 
   // Calculate real-time elapsed time
   const discoverableStartedAt = live?.discoverableStartedAt || null;
   const accumulatedTime = live?.accumulatedDiscoverableTime || 0;
   
   const realTimeElapsed = useMemo(() => {
-    if (isDiscoverable && discoverableStartedAt) {
+    if (isInDiscoverablePosture && discoverableStartedAt) {
       const totalMs = accumulatedTime + (currentTime - discoverableStartedAt);
       const minutes = Math.floor(totalMs / 60000);
       const seconds = Math.floor((totalMs % 60000) / 1000);
@@ -145,7 +166,7 @@ const LiveControlBarContent: React.FC = () => {
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     return '00:00';
-  }, [isDiscoverable, discoverableStartedAt, accumulatedTime, currentTime]);
+  }, [isInDiscoverablePosture, discoverableStartedAt, accumulatedTime, currentTime]);
 
   // Calculate counter display based on mode
   const { counterText, counterSubtext, counterIcon } = useMemo(() => {

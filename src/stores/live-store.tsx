@@ -46,6 +46,10 @@ export type Action =
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
 
+// Helper to determine discoverable posture
+const inDiscoverablePosture = (state: string) =>
+  state === 'DISCOVERABLE' || state === 'SESSION_PREP' || state === 'SESSION_JOINING';
+
 const getTodayKey = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD format
 
 const initialState: LiveStoreState = {
@@ -71,30 +75,33 @@ const initialState: LiveStoreState = {
 function reducer(state: LiveStoreState, action: Action): LiveStoreState {
   switch (action.type) {
     case 'STATE_TRANSITION': {
-      const newState = transition(state.state, action.event)
-      let updates: Partial<LiveStoreState> = { state: newState }
+      const prevState = state.state;
+      const nextState = transition(prevState, action.event);
+      let updates: Partial<LiveStoreState> = { state: nextState };
       
-      // Define discoverable postures
-      const discoverableStates = ['DISCOVERABLE', 'SESSION_PREP', 'SESSION_JOINING']
-      const wasDiscoverable = discoverableStates.includes(state.state)
-      const isNowDiscoverable = discoverableStates.includes(newState)
+      // Centralized posture check for ALL state transitions
+      const wasInDiscoverablePosture = inDiscoverablePosture(prevState);
+      const isNowInDiscoverablePosture = inDiscoverablePosture(nextState);
       
-      // Handle timer logic based on discoverable posture changes
-      if (!wasDiscoverable && isNowDiscoverable) {
-        // Entering discoverable posture - start timer if not already started
-        if (!state.discoverableStartedAt) {
-          updates.discoverableStartedAt = Date.now()
-        }
-      } else if (wasDiscoverable && !isNowDiscoverable) {
-        // Leaving discoverable posture (to ANY non-discoverable state) - accumulate time
+      // Handle timer accumulation on exit from discoverable posture
+      if (wasInDiscoverablePosture && !isNowInDiscoverablePosture) {
+        // Exiting discoverable posture - accumulate time and stop timer
         if (state.discoverableStartedAt) {
           updates.accumulatedDiscoverableTime = state.accumulatedDiscoverableTime + 
-            (Date.now() - state.discoverableStartedAt)
-          updates.discoverableStartedAt = null
+            (Date.now() - state.discoverableStartedAt);
+          updates.discoverableStartedAt = null;
         }
       }
       
-      return { ...state, ...updates }
+      // Handle timer start on entry to discoverable posture  
+      if (!wasInDiscoverablePosture && isNowInDiscoverablePosture) {
+        // Entering discoverable posture - start timer if not already started
+        if (!state.discoverableStartedAt) {
+          updates.discoverableStartedAt = Date.now();
+        }
+      }
+      
+      return { ...state, ...updates };
     }
     
     case 'SET_SESSION_DATA':
