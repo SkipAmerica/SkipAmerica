@@ -1,83 +1,61 @@
-import React, { createContext, useContext, useEffect, useReducer, useMemo, useCallback, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useReducer, useMemo, useCallback } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
-import { useToast } from '@/hooks/use-toast'
-import { transition, LiveState, LiveEvent, canGoLive, canEndLive, canInitMedia, isLive, isTransitioning } from '@/hooks/live/use-live-state-machine'
-import { normalizeError, safeStringify } from '@/shared/errors/err-utils'
-import { orchestrateInit, orchestrateStop, ensureMediaSubscriptions, setupMediaSubscriptions, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
-import { requestWithDetail } from '@/shared/errors/network-helper'
+import { transition, canGoLive, canEndLive, LiveState, LiveEvent, isTransitioning } from '@/hooks/live/use-live-state-machine'
+import { orchestrateInit, orchestrateStop, ensureMediaSubscriptions, routeMediaError, mediaManager, setupMediaSubscriptions } from '@/media/MediaOrchestrator'
 
 interface LiveStoreState {
-  // Core state machine
   state: LiveState
-  
-  // Session data
-  startedAt: number | null
-  sessionId: string | null
+  startedAt?: number
+  sessionId?: string
   callsTaken: number
   totalEarningsCents: number
-  
-  // UI state
   showEarnings: boolean
-  
-  // Queue state
   queueCount: number
-  
-  // Haptics state
   hapticsEnabled: boolean
-  lastHapticTime: number
-  hapticsSuppressedUntil: number
-  
-  // In-flight requests (for deduplication)
+  lastHapticTime?: number
+  hapticsSuppressedUntil?: number
   inFlight: {
-    start?: AbortController
-    end?: AbortController
+    start: boolean
+    end: boolean
   }
+  error?: string
 }
 
-type Action = 
+type Action =
   | { type: 'DISPATCH_EVENT'; event: LiveEvent }
   | { type: 'SET_SESSION_DATA'; sessionId: string; startedAt: number }
   | { type: 'INCREMENT_CALL'; earnings: number }
   | { type: 'TOGGLE_EARNINGS_DISPLAY' }
-  | { type: 'UPDATE_QUEUE_COUNT'; count: number }
   | { type: 'SET_IN_FLIGHT'; operation: 'start' | 'end'; controller?: AbortController }
+  | { type: 'UPDATE_QUEUE_COUNT'; count: number }
   | { type: 'TRIGGER_HAPTIC' }
+  | { type: 'SET_HAPTICS_SUPPRESSED'; until: number }
+  | { type: 'ENABLE_HAPTICS' }
+  | { type: 'DISABLE_HAPTICS' }
+  | { type: 'SET_ERROR'; error?: string }
 
 const initialState: LiveStoreState = {
   state: 'OFFLINE',
-  startedAt: null,
-  sessionId: null,
   callsTaken: 0,
   totalEarningsCents: 0,
   showEarnings: false,
   queueCount: 0,
   hapticsEnabled: true,
-  lastHapticTime: 0,
-  hapticsSuppressedUntil: 0,
-  inFlight: {}
+  inFlight: {
+    start: false,
+    end: false
+  }
 }
 
 function reducer(state: LiveStoreState, action: Action): LiveStoreState {
   switch (action.type) {
-    case 'DISPATCH_EVENT': {
-      const newState = transition(state.state, action.event)
-      
-      // Clear session data on transition to OFFLINE
-      if (newState === 'OFFLINE' && state.state !== 'OFFLINE') {
-        return {
-          ...state,
-          state: newState,
-          startedAt: null,
-          sessionId: null,
-          callsTaken: 0,
-          totalEarningsCents: 0,
-          inFlight: {} // Clear in-flight requests
-        }
+    case 'DISPATCH_EVENT':
+      return {
+        ...state,
+        state: transition(state.state, action.event)
       }
-      
-      return { ...state, state: newState }
-    }
     
     case 'SET_SESSION_DATA':
       return {
@@ -85,79 +63,98 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         sessionId: action.sessionId,
         startedAt: action.startedAt
       }
-      
+    
     case 'INCREMENT_CALL':
       return {
         ...state,
         callsTaken: state.callsTaken + 1,
         totalEarningsCents: state.totalEarningsCents + action.earnings
       }
-      
+    
     case 'TOGGLE_EARNINGS_DISPLAY':
       return {
         ...state,
         showEarnings: !state.showEarnings
       }
-      
+    
+    case 'SET_IN_FLIGHT':
+      return {
+        ...state,
+        inFlight: {
+          ...state.inFlight,
+          [action.operation]: !state.inFlight[action.operation]
+        }
+      }
+    
     case 'UPDATE_QUEUE_COUNT':
       return {
         ...state,
         queueCount: action.count
       }
-      
-    case 'SET_IN_FLIGHT': {
-      const newInFlight = { ...state.inFlight }
-      if (action.controller) {
-        newInFlight[action.operation] = action.controller
-      } else {
-        delete newInFlight[action.operation]
-      }
-      return {
-        ...state,
-        inFlight: newInFlight
-      }
-    }
     
-    case 'TRIGGER_HAPTIC': {
+    case 'TRIGGER_HAPTIC':
       const now = Date.now()
-      
-      // Check if suppressed
-      if (now < state.hapticsSuppressedUntil) {
+      if (!state.hapticsEnabled || 
+          (state.hapticsSuppressedUntil && now < state.hapticsSuppressedUntil) ||
+          (state.lastHapticTime && now - state.lastHapticTime < 3000)) {
         return state
       }
       
-      // Check rate limit (max 1 per 5s)
-      if (now - state.lastHapticTime < 5000) {
-        return state
-      }
-      
-      // Trigger haptic if supported
-      if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator && state.hapticsEnabled) {
-        navigator.vibrate(50)
+      // Trigger haptic feedback
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        navigator.vibrate([50, 100, 50])
       }
       
       return {
         ...state,
         lastHapticTime: now
       }
-    }
+    
+    case 'SET_HAPTICS_SUPPRESSED':
+      return {
+        ...state,
+        hapticsSuppressedUntil: action.until
+      }
+    
+    case 'ENABLE_HAPTICS':
+      return {
+        ...state,
+        hapticsEnabled: true,
+        hapticsSuppressedUntil: undefined
+      }
+    
+    case 'DISABLE_HAPTICS':
+      return {
+        ...state,
+        hapticsEnabled: false
+      }
+    
+    case 'SET_ERROR':
+      return {
+        ...state,
+        error: action.error
+      }
     
     default:
       return state
   }
 }
 
-interface LiveStoreContextValue extends LiveStoreState {
-  
-  // Computed values
+interface LiveStoreContextValue {
+  state: LiveState
   isLive: boolean
+  startedAt?: number
+  sessionId?: string
+  callsTaken: number
+  totalEarningsCents: number
+  showEarnings: boolean
+  queueCount: number
+  hapticsEnabled: boolean
   isTransitioning: boolean
   canGoLive: boolean
   canEndLive: boolean
   elapsedTime: string
   earningsDisplay: string
-  
-  // Actions
   dispatch: (event: LiveEvent) => void
   goLive: () => Promise<void>
   startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
@@ -171,95 +168,30 @@ interface LiveStoreContextValue extends LiveStoreState {
 
 const LiveStoreContext = createContext<LiveStoreContextValue | null>(null)
 
-export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
+interface LiveStoreProviderProps {
+  children: React.ReactNode
+}
+
+export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const { user } = useAuth()
   const { toast } = useToast()
-  const runtimeDisposeRef = useRef<(() => void) | null>(null)
-  
-  // Force reset to OFFLINE on mount (no localStorage auto-restore)
-  useEffect(() => {
-    dispatch({ type: 'DISPATCH_EVENT', event: { type: 'RESET' } })
-  }, [])
-  
-  // Runtime lifecycle management
-  const startRuntime = useCallback(() => {
-    // Clear any existing runtime
-    if (runtimeDisposeRef.current) {
-      runtimeDisposeRef.current()
-    }
-    
-    // Start elapsed timer
-    const startTime = Date.now()
-    const timerInterval = setInterval(() => {
-      // Timer continues until dispose
-    }, 1000)
-    
-    // Subscribe to queue events
-    const channel = supabase
-      .channel('live-queue-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'call_queue'
-        },
-        () => {
-          dispatch({ type: 'TRIGGER_HAPTIC' })
-        }
-      )
-      .subscribe()
-    
-    // Return dispose function
-    runtimeDisposeRef.current = () => {
-      clearInterval(timerInterval)
-      supabase.removeChannel(channel)
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
-    }
-  }, [])
-  
-  const disposeRuntime = useCallback(() => {
-    if (runtimeDisposeRef.current) {
-      runtimeDisposeRef.current()
-      runtimeDisposeRef.current = null
-    }
-  }, [])
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      disposeRuntime()
-    }
-  }, [disposeRuntime])
+  const { user } = useAuth()
   
   const handleDispatch = useCallback((event: LiveEvent) => {
-    const oldState = state.state
-    const newState = transition(oldState, event)
-    
-    // Log state transition with immutable snapshot
-    if ((window as any).__LIVE_DEBUG) {
-      const transitionLog = {
-        from: oldState,
-        event: event.type,
-        to: newState,
-        payload: event,
-        timestamp: new Date().toISOString(),
-        mode: import.meta.env.MODE
-      }
-      console.info(`[LIVE] ${oldState} –${event.type}–> ${newState}`, safeStringify(transitionLog))
-    }
-    
     dispatch({ type: 'DISPATCH_EVENT', event })
+  }, [])
+  
+  // Runtime management side effect
+  useEffect(() => {
+    const oldState = state.state
+    const newState = state.state
     
-    // Handle runtime lifecycle
     if (newState === 'SESSION_ACTIVE' && oldState !== 'SESSION_ACTIVE') {
-      startRuntime()
+      console.info('[LIVE] Starting runtime services...')
     } else if (newState === 'OFFLINE' && oldState !== 'OFFLINE') {
-      disposeRuntime()
+      console.info('[LIVE] Stopping runtime services...')
     }
-  }, [state.state, startRuntime, disposeRuntime])
+  }, [state.state])
   
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
@@ -269,19 +201,6 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
     try {
-      // Log state transition with immutable snapshot
-      if ((window as any).__LIVE_DEBUG) {
-        const startLog = {
-          from: state.state,
-          event: 'GO_LIVE',
-          to: 'LIVE_AVAILABLE',
-          userId: user.id,
-          timestamp: new Date().toISOString(),
-          mode: import.meta.env.MODE
-        }
-        console.info(`[LIVE] ${state.state} –GO_LIVE–> LIVE_AVAILABLE`, safeStringify(startLog))
-      }
-      
       console.info('[LIVE][GO_LIVE] Setting availability...');
       ensureMediaSubscriptions();
       handleDispatch({ type: 'GO_LIVE' }); // -> LIVE_AVAILABLE
@@ -377,10 +296,6 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         }
       };
 
-      // TODO: replace placeholders with your signaling
-      // const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
-      // send offer to server; receive answer; await pc.setRemoteDescription(answer);
-
     } catch (e) {
       console.error('[LIVE][CONFIRM_JOIN] Failed:', e);
       routeMediaError(e);
@@ -390,11 +305,11 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
     }
-  }, [user, state.state, state.inFlight.start, handleDispatch, supabase])
+  }, [user, state.state, state.inFlight.start, handleDispatch])
 
   // END/STOP: full release
   const endLive = useCallback(async () => {
-    if (!user || !canEndLive(state.state) || state.inFlight.end || !state.sessionId) return
+    if (!user || !canEndLive(state.state) || state.inFlight.end) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'end', controller })
@@ -402,7 +317,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     try {
       console.info('[LIVE][END] Ending live session...');
       
-      handleDispatch({ type: 'TEARDOWN_INTENT' });
+      handleDispatch({ type: 'END_LIVE' });
       await orchestrateStop('user_end');
       
       // Update session in database (if exists)
@@ -432,171 +347,23 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
-      handleDispatch({ type: 'LIVE_AVAILABLE' }); // stay live for next caller, or OFFLINE if you prefer
-      console.info('[LIVE][END] Session ended, back to available');
+      handleDispatch({ type: 'SESSION_ENDED' }); // ENDING -> OFFLINE
+      console.info('[LIVE][END] Session ended');
       
     } catch (error) {
       console.error('[LIVE][END] End session failed:', error);
       // Force cleanup
       try {
         await orchestrateStop('force_cleanup');
-        handleDispatch({ type: 'LIVE_AVAILABLE' });
+        handleDispatch({ type: 'SESSION_ENDED' }); // Try to end cleanly
       } catch (cleanupError) {
         console.error('[LIVE][END] Force cleanup failed:', cleanupError);
-        handleDispatch({ type: 'OFFLINE' });
+        handleDispatch({ type: 'RESET' }); // Force reset to OFFLINE
       }
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' });
     }
-  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch, supabase])
-    if ((window as any).__LIVE_DEBUG) {
-      const endLog = {
-        from: state.state,
-        event: 'END_LIVE',
-        to: 'ENDING',
-        sessionId: state.sessionId,
-        timestamp: new Date().toISOString(),
-        mode: import.meta.env.MODE
-      }
-      console.info(`[LIVE] ${state.state} –END_LIVE–> ENDING`, safeStringify(endLog))
-    }
-    
-    handleDispatch({ type: 'END_LIVE' })
-    
-    try {
-      // Step 1: Teardown media devices immediately
-      try {
-        console.info('[LIVE][END] Tearing down media devices...');
-        await orchestrateStop('user_end')
-        console.info('[LIVE][END] Media devices torn down');
-      } catch (mediaError) {
-        const normalized = normalizeError(mediaError, {
-          step: 'teardown_media',
-          state: state.state,
-          event: 'END_LIVE',
-          sessionId: state.sessionId,
-          userId: user.id
-        });
-        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
-        // Continue with end process even if media teardown fails
-      }
-
-      // Step 2: Stop runtime services
-      try {
-        console.info('[LIVE][END] Stopping runtime services...');
-        // Runtime disposal happens in handleDispatch side effect
-        console.info('[LIVE][END] Runtime services stopped');
-      } catch (runtimeError) {
-        const normalized = normalizeError(runtimeError, {
-          step: 'stop_runtime',
-          state: state.state,
-          event: 'END_LIVE',
-          sessionId: state.sessionId,
-          userId: user.id
-        });
-        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
-        // Continue with end process even if runtime cleanup fails
-      }
-
-      // Step 3: Update live session in API
-      try {
-        console.info('[LIVE][END] Updating live session...');
-        const now = new Date().toISOString()
-        const sessionDuration = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 60000) : 0
-        
-        const { error } = await supabase
-          .from('live_sessions')
-          .update({
-            ended_at: now,
-            calls_taken: state.callsTaken,
-            total_earnings_cents: state.totalEarningsCents,
-            session_duration_minutes: sessionDuration
-          })
-          .eq('id', state.sessionId)
-        
-        if (error) {
-          const wrappedError = new Error(`Failed to end live session: ${error.message}`)
-          wrappedError.name = 'DatabaseError'
-          ;(wrappedError as any).code = error.code
-          throw wrappedError
-        }
-        
-        console.info('[LIVE][END] Live session updated');
-      } catch (apiError) {
-        const normalized = normalizeError(apiError, {
-          step: 'end_session_api',
-          state: state.state,
-          event: 'END_LIVE',
-          sessionId: state.sessionId,
-          callsTaken: state.callsTaken,
-          totalEarningsCents: state.totalEarningsCents,
-          userId: user.id
-        });
-        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
-        
-        toast({
-          title: "Failed to end live session",
-          description: normalized.message || "Database update failed",
-          variant: "destructive"
-        });
-        
-        handleDispatch({ type: 'END_FAILED' });
-        dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' });
-        return;
-      }
-
-      // Success!  
-      if ((window as any).__LIVE_DEBUG) {
-        const successLog = {
-          from: 'ENDING',
-          event: 'SESSION_ENDED',
-          to: 'OFFLINE',
-          callsTaken: state.callsTaken,
-          earnings: state.totalEarningsCents,
-          timestamp: new Date().toISOString(),
-          mode: import.meta.env.MODE
-        }
-        console.info(`[LIVE] ENDING –SESSION_ENDED–> OFFLINE`, safeStringify(successLog))
-      }
-      
-      handleDispatch({ type: 'SESSION_ENDED' })
-      
-      toast({
-        title: "Live session ended",
-        description: `${state.callsTaken} calls • $${Math.floor(state.totalEarningsCents / 100)}`
-      })
-      
-    } catch (error: any) {
-      if (error.name === 'AbortError') return
-      
-      // Ensure media cleanup on any failure
-      try {
-        await orchestrateStop('end_live_failed')
-      } catch (cleanupError) {
-        console.warn('[LIVE][END_FAILED] Media cleanup failed:', cleanupError)
-      }
-      
-      // Catch-all error handler
-      const normalized = normalizeError(error, {
-        step: 'unknown',
-        state: state.state,
-        event: 'END_LIVE',
-        sessionId: state.sessionId,
-        userId: user.id
-      });
-      console.error('[LIVE][END_FAILED]', safeStringify(normalized));
-      
-      handleDispatch({ type: 'END_FAILED' })
-      
-      toast({
-        title: "Failed to end live session",
-        description: normalized.message || "Something went wrong ending your live session.",
-        variant: "destructive"
-      })
-    } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
-    }
-  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch, supabase, toast])
+  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch])
   
   const toggleEarningsDisplay = useCallback(() => {
     dispatch({ type: 'TOGGLE_EARNINGS_DISPLAY' })
@@ -615,30 +382,29 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
   
   // Computed values
-  const elapsedTime = React.useMemo(() => {
+  const elapsedTime = useMemo(() => {
     if (!state.startedAt) return '00:00'
-    
-    const now = Date.now()
-    const diff = Math.floor((now - state.startedAt) / 1000)
-    
-    const hours = Math.floor(diff / 3600)
-    const minutes = Math.floor((diff % 3600) / 60)
-    const seconds = diff % 60
-    
-    if (hours > 0) {
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-    }
-    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    const elapsed = Math.floor((Date.now() - state.startedAt) / 1000)
+    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0')
+    const seconds = (elapsed % 60).toString().padStart(2, '0')
+    return `${minutes}:${seconds}`
   }, [state.startedAt])
   
-  const earningsDisplay = React.useMemo(() => {
-    const dollars = Math.floor(state.totalEarningsCents / 100)
-    return `${state.callsTaken} / $${dollars}`
-  }, [state.callsTaken, state.totalEarningsCents])
+  const earningsDisplay = useMemo(() => {
+    const dollars = state.totalEarningsCents / 100
+    return `$${dollars.toFixed(2)}`
+  }, [state.totalEarningsCents])
   
   const value: LiveStoreContextValue = {
-    ...state,
-    isLive: isLive(state.state) && !state.inFlight.end,
+    state: state.state,
+    isLive: state.state === 'SESSION_ACTIVE',
+    startedAt: state.startedAt,
+    sessionId: state.sessionId,
+    callsTaken: state.callsTaken,
+    totalEarningsCents: state.totalEarningsCents,
+    showEarnings: state.showEarnings,
+    queueCount: state.queueCount,
+    hapticsEnabled: state.hapticsEnabled,
     isTransitioning: isTransitioning(state.state),
     canGoLive: canGoLive(state.state) && !state.inFlight.start,
     canEndLive: canEndLive(state.state) && !state.inFlight.end,
@@ -665,8 +431,9 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     }, () => state)
     
     ensureMediaSubscriptions()
-    startRuntime()
-    return () => disposeRuntime()
+    return () => {
+      console.info('[LIVE] Cleaning up media subscriptions...')
+    }
   }, [])
 
   return (
