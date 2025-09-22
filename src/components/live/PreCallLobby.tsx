@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
 import { useLive } from '@/hooks/live'
+
+type PreflightPhase = 'idle' | 'requesting-permissions' | 'initializing-media' | 'ready' | 'error'
 
 // TODO: Replace with actual config/store source
 const DEV_CANNOT_SAY_LIST = [
@@ -30,6 +32,11 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [rulesConfirmed, setRulesConfirmed] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
   const [networkStatus, setNetworkStatus] = useState<'checking' | 'ok' | 'degraded'>('checking')
+  
+  // Preflight state machine
+  const [phase, setPhase] = useState<PreflightPhase>('idle')
+  const [error, setError] = useState<{code: string; message: string; hint?: string} | null>(null)
+  const [showErrorDetails, setShowErrorDetails] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -68,8 +75,11 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   // Initialize media on mount
   useEffect(() => {
+    setPhase('requesting-permissions')
+    
     const initializeMedia = async () => {
       try {
+        setPhase('initializing-media')
         if (!mediaManager.hasLocalStream()) {
           await mediaManager.start({
             video: isVideoEnabled,
@@ -78,8 +88,16 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             targetState: 'SESSION_PREP'
           })
         }
+        setPhase('ready')
+        setError(null)
       } catch (error) {
         console.warn('[PreCallLobby] Failed to initialize media:', error)
+        setPhase('error')
+        setError({
+          code: 'MEDIA_INIT_FAILED',
+          message: 'Failed to access camera or microphone',
+          hint: 'Please check your browser permissions and make sure no other apps are using your camera or microphone.'
+        })
       } finally {
         setIsInitializing(false)
       }
@@ -257,6 +275,33 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     }
   }
 
+  const retryPreflight = async () => {
+    setPhase('requesting-permissions')
+    setError(null)
+    setShowErrorDetails(false)
+    
+    try {
+      setPhase('initializing-media')
+      await mediaManager.stop('retry')
+      await mediaManager.start({
+        video: isVideoEnabled,
+        audio: isMicEnabled,
+        previewOnly: true,
+        targetState: 'SESSION_PREP'
+      })
+      setPhase('ready')
+      setError(null)
+    } catch (error) {
+      console.warn('[PreCallLobby] Retry failed:', error)
+      setPhase('error')
+      setError({
+        code: 'MEDIA_INIT_FAILED',
+        message: 'Failed to access camera or microphone',
+        hint: 'Please check your browser permissions and make sure no other apps are using your camera or microphone.'
+      })
+    }
+  }
+
   return (
     <div 
       className="fixed inset-0 z-[9999] bg-background flex flex-col safe-area-insets overflow-hidden"
@@ -277,6 +322,75 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             <span className="font-medium">Back to Lobby</span>
           </Button>
         </div>
+      </div>
+
+      {/* Preflight Status Bar */}
+      <div className="flex-shrink-0 bg-background border-b">
+        {phase === 'error' ? (
+          <div className="bg-destructive/10 border-destructive/20 border-b">
+            <div className="p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-destructive" />
+                  <span className="text-sm font-medium text-destructive">{error?.message}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={retryPreflight}
+                    className="h-7 px-3 text-xs"
+                  >
+                    Try again
+                  </Button>
+                  {error?.hint && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowErrorDetails(!showErrorDetails)}
+                      className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                    >
+                      <span className="mr-1">Details</span>
+                      {showErrorDetails ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {showErrorDetails && error?.hint && (
+                <div className="text-xs text-destructive/80 bg-destructive/5 p-2 rounded">
+                  {error.hint}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {phase === 'requesting-permissions' && (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
+                  <span>Requesting camera & mic…</span>
+                </>
+              )}
+              {phase === 'initializing-media' && (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
+                  <span>Starting preview…</span>
+                </>
+              )}
+              {phase === 'ready' && (
+                <>
+                  <div className="h-2 w-2 rounded-full bg-primary"></div>
+                  <span>Preview ready</span>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Header */}
