@@ -7,7 +7,6 @@ import { transition, canGoLive, canEndLive, LiveState, LiveEvent, isTransitionin
 import { ensureMediaSubscriptions, orchestrateInit, orchestrateStop, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
 import { useAuth } from '@/app/providers/auth-provider'
 import { supabase } from '@/integrations/supabase/client'
-import { Haptics, ImpactStyle } from '@capacitor/haptics'
 
 /* Prevent double-taps/races on discoverable toggle */
 let __discToggleInFlight = false;
@@ -203,14 +202,17 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
     
     case 'TRIGGER_HAPTIC':
       if (state.hapticsEnabled) {
-        try {
-          const impactStyle = action.payload?.heavy ? ImpactStyle.Heavy : ImpactStyle.Medium
-          Haptics.impact({ style: impactStyle }).catch(() => {
-            // Silently fail if haptics not available
-          })
-        } catch (error) {
-          console.warn('[Haptic] Haptic feedback not supported:', error)
+        const triggerHapticFeedback = async (heavy?: boolean) => {
+          try {
+            const { Haptics, ImpactStyle } = await import('@capacitor/haptics')
+            const style = heavy ? ImpactStyle.Heavy : ImpactStyle.Medium
+            await Haptics.impact({ style })
+          } catch (error) {
+            console.warn('[Haptic] Haptic feedback not supported:', error)
+          }
         }
+        
+        triggerHapticFeedback(action.payload?.heavy)
       }
       return state
     
