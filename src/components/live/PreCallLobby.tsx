@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
-import { mediaManager } from '@/media/MediaOrchestrator'
+import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
+import { ReportDialog } from '@/components/safety/ReportDialog'
 
 // TODO: Replace with actual config/store source
 const DEV_CANNOT_SAY_LIST = [
@@ -100,6 +101,18 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     }
   }
 
+  const handleBackToLobby = useCallback(async () => {
+    try {
+      // Release all media resources before going back
+      await orchestrateStop('user_back_to_lobby')
+    } catch (error) {
+      console.warn('[PreCallLobby] Failed to stop media:', error)
+    } finally {
+      // Always call onBack even if media stop fails
+      onBack?.()
+    }
+  }, [onBack])
+
   const toggleMic = async () => {
     try {
       const newMicState = !isMicEnabled
@@ -132,7 +145,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={onBack}
+            onClick={handleBackToLobby}
             className="flex items-center gap-2 hover:bg-muted"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -146,6 +159,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         <h1 id="precall-header" className="text-xl font-semibold text-center">
           Pre-Call Lobby
         </h1>
+        <p className="text-sm text-muted-foreground text-center mt-2 max-w-2xl mx-auto">
+          This is your private space to observe the user before the call begins. The user cannot see or hear you yet. 
+          Use this time to review your 'cannot-say' rules, adjust your mic and camera, and make sure you feel safe before starting.
+        </p>
       </header>
 
       {/* Body - Scrollable */}
@@ -219,6 +236,21 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             >
               {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
             </Button>
+
+            <ReportDialog
+              reportedUserId="participant_id" // TODO: Replace with actual participant ID
+              reportedUserName="Participant" // TODO: Replace with actual participant name
+              trigger={
+                <Button
+                  size="lg"
+                  variant="destructive"
+                  aria-label="Report user"
+                  className="h-12 w-12 rounded-full p-0 bg-red-600 hover:bg-red-700"
+                >
+                  <Flag className="h-5 w-5" />
+                </Button>
+              }
+            />
           </div>
 
           {/* Quick Words Section */}
@@ -270,7 +302,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                 size="lg"
                 variant="outline"
                 className="w-full"
-                onClick={onBack}
+                onClick={handleBackToLobby}
               >
                 Cancel
               </Button>
