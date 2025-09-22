@@ -228,7 +228,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" aria-hidden="true" />
-              Queue ({state.entries.length})
+              Creator Lobby ({state.entries.length})
             </div>
             <div className="flex items-center gap-2">
               {state.isConnected ? (
