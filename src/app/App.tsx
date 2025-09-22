@@ -1,5 +1,5 @@
 // Main app component using new architecture
-import { useEffect } from 'react'
+import React from 'react'
 import { cn } from '@/lib/utils'
 import { AppProviders } from './providers'
 import { AppRouter } from './router'
@@ -9,7 +9,7 @@ import { LiveControlBar } from '@/components/live/LiveControlBar'
 import { useLive } from '@/hooks/live'
 
 function App() {
-  useEffect(() => {
+  React.useEffect(() => {
     const initializeCapacitor = async () => {
       try {
         const { Capacitor } = await import('@capacitor/core')
