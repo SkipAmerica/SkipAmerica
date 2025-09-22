@@ -511,7 +511,8 @@ body.live-active {
 
 .lsb-inner {
   height: 3.5rem; /* h-14 */
-  background: #16a34a; /* green-600 */
+  background: #22c55e; /* green-500 - brighter energetic green */
+  color: white; /* White text */
   backdrop-filter: blur(12px);
   border-top: 1px solid hsl(var(--border) / 0.3);
   border-top-left-radius: 16px;

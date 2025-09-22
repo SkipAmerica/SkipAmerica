@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -6,12 +6,18 @@ import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
+type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
+
 const LiveControlBarContent: React.FC = () => {
   // Always call all hooks unconditionally at the top level
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [counterMode, setCounterMode] = useState<CounterMode>(() => {
+    return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
+  });
   const shellRef = useRef<HTMLDivElement>(null);
 
   const live = useLive();
@@ -21,10 +27,6 @@ const LiveControlBarContent: React.FC = () => {
   const isDiscoverable = live?.isDiscoverable || false;
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
-  const elapsedTime = live?.elapsedTime || '00:00';
-  const earningsDisplay = live?.earningsDisplay || '0 / $0';
-  const rightDisplayMode = live?.rightDisplayMode || 'time';
-  const toggleRightDisplay = live?.toggleRightDisplay || (() => {});
 
   const handleQueueClick = useCallback(() => {
     if (queueCount > 0) {
@@ -32,14 +34,19 @@ const LiveControlBarContent: React.FC = () => {
     }
   }, [queueCount]);
 
-  const handleRightDisplayToggle = useCallback(() => {
+  const handleCounterClick = useCallback(() => {
     if (animatingToggle) return;
     
     setAnimatingToggle(true);
     setTimeout(() => setAnimatingToggle(false), 300);
     
-    toggleRightDisplay();
-  }, [animatingToggle, toggleRightDisplay]);
+    // Cycle through modes: SESSION_EARNINGS -> TODAY_EARNINGS -> SESSION_DURATION -> repeat
+    const nextMode = counterMode === 'SESSION_EARNINGS' ? 'TODAY_EARNINGS' :
+                     counterMode === 'TODAY_EARNINGS' ? 'SESSION_DURATION' : 'SESSION_EARNINGS';
+    
+    setCounterMode(nextMode);
+    localStorage.setItem('lsb-counter-mode', nextMode);
+  }, [animatingToggle, counterMode]);
 
   // Add body class for live state
   useEffect(() => {
@@ -106,6 +113,74 @@ const LiveControlBarContent: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [shouldShowLSB, isVisible]);
+
+  // Real-time timer updates
+  useEffect(() => {
+    if (!isDiscoverable) return;
+    
+    const animate = () => {
+      setCurrentTime(Date.now());
+      if (isDiscoverable) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    const frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [isDiscoverable]);
+
+  // Calculate real-time elapsed time
+  const discoverableStartedAt = live?.discoverableStartedAt || null;
+  const accumulatedTime = live?.accumulatedDiscoverableTime || 0;
+  
+  const realTimeElapsed = useMemo(() => {
+    if (isDiscoverable && discoverableStartedAt) {
+      const totalMs = accumulatedTime + (currentTime - discoverableStartedAt);
+      const minutes = Math.floor(totalMs / 60000);
+      const seconds = Math.floor((totalMs % 60000) / 1000);
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    } else if (accumulatedTime > 0) {
+      const minutes = Math.floor(accumulatedTime / 60000);
+      const seconds = Math.floor((accumulatedTime % 60000) / 1000);
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return '00:00';
+  }, [isDiscoverable, discoverableStartedAt, accumulatedTime, currentTime]);
+
+  // Calculate counter display based on mode
+  const { counterText, counterSubtext, counterIcon } = useMemo(() => {
+    const sessionCalls = live?.callsTaken || 0;
+    const sessionEarnings = live?.totalEarningsCents || 0;
+    const todayCalls = live?.todayCalls || 0;
+    const todayEarnings = live?.todayEarningsCents || 0;
+
+    switch (counterMode) {
+      case 'SESSION_EARNINGS':
+        return {
+          counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
+          counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
+          counterIcon: DollarSign
+        };
+      case 'TODAY_EARNINGS':
+        return {
+          counterText: `$${(todayEarnings / 100).toFixed(2)}`,
+          counterSubtext: `${todayCalls} call${todayCalls !== 1 ? 's' : ''} today`,
+          counterIcon: DollarSign
+        };
+      case 'SESSION_DURATION':
+        return {
+          counterText: realTimeElapsed,
+          counterSubtext: 'this session',
+          counterIcon: Clock
+        };
+      default:
+        return {
+          counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
+          counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
+          counterIcon: DollarSign
+        };
+    }
+  }, [counterMode, live?.callsTaken, live?.totalEarningsCents, live?.todayCalls, live?.todayEarningsCents, realTimeElapsed]);
   
   return (
     <>
@@ -126,7 +201,7 @@ const LiveControlBarContent: React.FC = () => {
             onClick={handleQueueClick}
             disabled={queueCount === 0}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 h-auto",
+              "flex items-center gap-2 px-3 py-2 h-auto text-white",
               "disabled:opacity-50"
             )}
           >
@@ -137,36 +212,30 @@ const LiveControlBarContent: React.FC = () => {
           {/* Center - Live Status */}
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-cyan-600">Discoverable</span>
+            <span className="text-sm font-medium text-white">Discoverable</span>
           </div>
 
-          {/* Right - Time/Earnings Display */}
+          {/* Right - Counter Display */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleRightDisplayToggle}
+            onClick={handleCounterClick}
             disabled={animatingToggle}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 h-auto min-w-0",
+              "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white",
               "transition-all duration-200",
               animatingToggle && "scale-95"
             )}
           >
-            {rightDisplayMode === 'earnings' ? (
-              <>
-                <DollarSign size={16} />
-                <span className="text-sm font-medium tabular-nums">
-                  {earningsDisplay}
-                </span>
-              </>
-            ) : (
-              <>
-                <Clock size={16} />
-                <span className="text-sm font-medium tabular-nums">
-                  {elapsedTime}
-                </span>
-              </>
-            )}
+            <div className="flex items-center gap-1">
+              {React.createElement(counterIcon, { size: 14 })}
+              <span className="text-xs font-bold tabular-nums">
+                {counterText}
+              </span>
+            </div>
+            <span className="text-xs opacity-90">
+              {counterSubtext}
+            </span>
           </Button>
         </div>
       </div>

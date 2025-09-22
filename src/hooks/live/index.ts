@@ -29,6 +29,18 @@ export function useLive() {
     // Queue state
     queueCount: store.queueCount,
     
+    // Daily counters
+    todayKey: store.todayKey,
+    todayEarningsCents: store.todayEarningsCents,
+    todayCalls: store.todayCalls,
+    
+    // Timer fields
+    discoverableStartedAt: store.discoverableStartedAt,
+    accumulatedDiscoverableTime: store.accumulatedDiscoverableTime,
+    
+    // Store reference for LiveControlBar
+    store,
+    
     // Error states (simplified)
     hasErrors: false, // Errors handled internally by store
     

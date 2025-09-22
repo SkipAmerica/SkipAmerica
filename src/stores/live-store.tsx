@@ -23,6 +23,10 @@ export interface LiveStoreState {
   hapticsEnabled: boolean
   discoverableStartedAt: number | null // Timer tracking
   accumulatedDiscoverableTime: number // Persistent across sessions
+  // Daily counters
+  todayKey: string // YYYY-MM-DD local date
+  todayEarningsCents: number
+  todayCalls: number
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -42,6 +46,8 @@ export type Action =
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
 
+const getTodayKey = () => new Date().toLocaleDateString('en-CA') // YYYY-MM-DD format
+
 const initialState: LiveStoreState = {
   state: 'OFFLINE',
   sessionId: null,
@@ -53,6 +59,9 @@ const initialState: LiveStoreState = {
   hapticsEnabled: true,
   discoverableStartedAt: null,
   accumulatedDiscoverableTime: 0,
+  todayKey: getTodayKey(),
+  todayEarningsCents: 0,
+  todayCalls: 0,
   inFlight: {
     start: null,
     end: null
@@ -95,12 +104,26 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         startedAt: action.startedAt
       }
     
-    case 'INCREMENT_CALL':
-      return {
-        ...state,
-        callsTaken: state.callsTaken + 1,
-        totalEarningsCents: state.totalEarningsCents + action.earnings
+    case 'INCREMENT_CALL': {
+      // Check for day rollover
+      const currentTodayKey = getTodayKey()
+      let newState = { ...state }
+      
+      if (currentTodayKey !== state.todayKey) {
+        // Day has rolled over - reset daily counters
+        newState.todayKey = currentTodayKey
+        newState.todayEarningsCents = 0
+        newState.todayCalls = 0
       }
+      
+      return {
+        ...newState,
+        callsTaken: state.callsTaken + 1,
+        totalEarningsCents: state.totalEarningsCents + action.earnings,
+        todayEarningsCents: newState.todayEarningsCents + action.earnings,
+        todayCalls: newState.todayCalls + 1
+      }
+    }
     
     case 'UPDATE_QUEUE_COUNT':
       return { ...state, queueCount: action.count }
@@ -166,6 +189,13 @@ export interface LiveStoreContextValue {
   canEndLive: boolean
   elapsedTime: string
   earningsDisplay: string
+  // Daily counters
+  todayKey: string
+  todayEarningsCents: number
+  todayCalls: number
+  // Timer fields
+  discoverableStartedAt: number | null
+  accumulatedDiscoverableTime: number
   
   // Actions
   dispatch: (event: LiveEvent) => void
@@ -459,6 +489,13 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     canEndLive: canEndLive(state.state) && !state.inFlight.end,
     elapsedTime,
     earningsDisplay,
+    // Daily counters
+    todayKey: state.todayKey,
+    todayEarningsCents: state.todayEarningsCents,
+    todayCalls: state.todayCalls,
+    // Timer fields
+    discoverableStartedAt: state.discoverableStartedAt,
+    accumulatedDiscoverableTime: state.accumulatedDiscoverableTime,
     
     // Actions
     dispatch: handleDispatch,
