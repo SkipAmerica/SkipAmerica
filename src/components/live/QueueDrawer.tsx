@@ -221,10 +221,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
-        className="h-[60vh] rounded-t-2xl"
+        className="h-[60vh] rounded-t-2xl flex flex-col"
         aria-describedby="queue-description"
       >
-        <SheetHeader className="pb-4">
+        <SheetHeader className="pb-4 flex-shrink-0">
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" aria-hidden="true" />
@@ -243,7 +243,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           </p>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {/* Error State */}
           {state.error && (
             <Alert variant="destructive" className="mb-4">
