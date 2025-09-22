@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,6 +7,7 @@ import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
+import { useLive } from '@/hooks/live'
 
 // TODO: Replace with actual config/store source
 const DEV_CANNOT_SAY_LIST = [
@@ -26,11 +27,14 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
+  const [rulesConfirmed, setRulesConfirmed] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
   const [newItemText, setNewItemText] = useState('')
 
+  const { confirmJoin } = useLive()
+  const videoRef = useRef<HTMLVideoElement>(null)
   const cannotSayList = editableList // Use editable list instead of static list
 
   // Editing functions
@@ -79,6 +83,45 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     initializeMedia()
   }, [])
 
+  // Attach stream to video element
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !isVideoEnabled) return
+
+    const attachStream = () => {
+      const stream = mediaManager.getLocalStream()
+      if (stream && video.srcObject !== stream) {
+        video.srcObject = stream
+        video.muted = true
+        video.autoplay = true
+        const playPromise = video.play?.()
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.catch(() => {})
+        }
+      }
+    }
+
+    // Initial attach
+    attachStream()
+
+    // Watch for stream changes
+    const interval = setInterval(attachStream, 500)
+
+    return () => {
+      clearInterval(interval)
+      
+      // Clean up video element
+      try {
+        video.pause()
+        video.srcObject = null
+        video.removeAttribute('src')
+        video.load()
+      } catch (err) {
+        console.warn('[PreCallLobby] Failed to cleanup video:', err)
+      }
+    }
+  }, [isVideoEnabled])
+
   // Handle video toggle
   const toggleVideo = async () => {
     try {
@@ -112,6 +155,21 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       onBack?.()
     }
   }, [onBack])
+
+  const handleEnterCall = useCallback(async () => {
+    try {
+      // Use existing join flow to transition to SESSION_JOINING then LIVE
+      if (videoRef.current) {
+        confirmJoin(videoRef.current)
+      }
+    } catch (error) {
+      console.error('[PreCallLobby] Failed to enter call:', error)
+    }
+  }, [confirmJoin])
+
+  const handleConfirmRules = useCallback(() => {
+    setRulesConfirmed(true)
+  }, [])
 
   const toggleMic = async () => {
     try {
@@ -175,7 +233,18 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
               <h2 className="text-sm font-medium mb-2">Your Camera</h2>
               <Card className="flex-1 min-h-[200px] overflow-hidden">
                 {isVideoEnabled && !isInitializing ? (
-                  <MediaPreview className="w-full h-full" />
+                  <video
+                    ref={videoRef}
+                    className="w-full h-full object-cover"
+                    muted
+                    autoPlay
+                    playsInline
+                    style={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover' 
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
                     <div className="text-center text-muted-foreground">
@@ -292,12 +361,23 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             
             {/* Action Buttons */}
             <div className="space-y-2">
-              <Button
-                size="lg"
-                className="w-full"
-              >
-                Confirm Rules
-              </Button>
+              {!rulesConfirmed ? (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleConfirmRules}
+                >
+                  Confirm Rules
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleEnterCall}
+                >
+                  Enter Call
+                </Button>
+              )}
               <Button
                 size="lg"
                 variant="outline"
