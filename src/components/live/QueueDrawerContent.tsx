@@ -101,7 +101,7 @@ export const QueueDrawerContent: React.FC<QueueDrawerContentProps> = ({ queueCou
               size="sm"
               variant="secondary"
               onClick={() => handleStartCall(entry.id, entry.name)}
-              className="bg-white/20 hover:bg-white/30 text-white border-0"
+              className="bg-white/20 hover:bg-white/30 text-white border-0 text-xs px-2 py-1"
             >
               Call
             </Button>

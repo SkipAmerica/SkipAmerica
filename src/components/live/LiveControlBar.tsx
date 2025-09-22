@@ -69,6 +69,32 @@ const LiveControlBarContent: React.FC = () => {
     }
   }, []);
 
+  // Set up height measurements and CSS variables
+  useEffect(() => {
+    const dsbEl = document.getElementById("dsb-root");
+    const bottomNavEl = document.getElementById("bottom-nav-root");
+    
+    if (!dsbEl || !bottomNavEl || typeof ResizeObserver === 'undefined') return;
+    
+    const updateHeights = () => {
+      const bottomNavHeight = bottomNavEl.offsetHeight;
+      const dsbHeight = dsbEl.offsetHeight;
+      
+      document.documentElement.style.setProperty('--bottom-nav-h', `${bottomNavHeight}px`);
+      document.documentElement.style.setProperty('--dsb-h', `${dsbHeight}px`);
+    };
+    
+    // Initial measurement
+    updateHeights();
+    
+    // Observe both elements
+    const observer = new ResizeObserver(updateHeights);
+    observer.observe(dsbEl);
+    observer.observe(bottomNavEl);
+    
+    return () => observer.disconnect();
+  }, []);
+
   // Add body class for live state
   useEffect(() => {
     if (state === 'SESSION_ACTIVE') {
@@ -117,6 +143,14 @@ const LiveControlBarContent: React.FC = () => {
   
   // Show LSB when discoverable but not in active call
   const shouldShowLSB = isDiscoverable && !isLive;
+
+  // Set data-visible attribute based on discoverable state
+  useEffect(() => {
+    const el = document.getElementById("dsb-root");
+    if (el) {
+      el.setAttribute("data-visible", shouldShowLSB ? "true" : "false");
+    }
+  }, [shouldShowLSB]);
 
   // Publish CSS variables for FAB positioning
   useEffect(() => {

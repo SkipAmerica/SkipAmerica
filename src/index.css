@@ -503,10 +503,13 @@ body.live-active {
 .lsb-shell {
   position: fixed;
   left: 0;
-  bottom: var(--ios-tab-bar-height);
+  right: 0;
+  bottom: var(--bottom-nav-h, 0px);
   width: 100%;
   pointer-events: none;
   z-index: 50; /* Above bottom nav (z-40), below CPB (z-60) */
+  transition: transform 220ms ease;
+  will-change: transform;
 }
 
 /* Pre-hydration: DSB must be invisible, non-interactive, and behind bottom nav */
@@ -527,6 +530,15 @@ body.live-active {
 
 .lsb-shell--hydrated {
   transition: opacity 0.2s ease-out;
+}
+
+/* DSB visibility states */
+#dsb-root[data-visible="false"] {
+  transform: translateY(100%);
+}
+
+#dsb-root[data-visible="true"] {
+  transform: translateY(0);
 }
 
 .lsb-inner {
@@ -564,13 +576,13 @@ body.live-active {
 .queue-drawer {
   position: fixed;
   left: 0;
-  bottom: var(--ios-tab-bar-height);
+  bottom: var(--bottom-nav-h, 0px);
   width: 100%;
-  background: #16a34a; /* Darker green for drawer */
+  background: hsl(var(--primary) / 0.9); /* Darker green for drawer */
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   z-index: 49; /* Just below DSB handle */
-  max-height: calc(100vh - var(--ios-tab-bar-height) - var(--debug-safe-top) - 3.5rem);
+  max-height: calc(100vh - var(--bottom-nav-h, 0px) - var(--debug-safe-top, 20px) - 3.5rem);
   overflow-y: auto;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
