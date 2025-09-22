@@ -46,6 +46,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [showDeviceHelper, setShowDeviceHelper] = useState(false)
+  const [needsUserGesture, setNeedsUserGesture] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -101,9 +102,13 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       video.muted = true
       video.autoplay = true
       console.log('[PreCallLobby] Stream attached successfully to preview')
+      
+      // iOS-safe play promise handling
       const playPromise = video.play?.()
       if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch(() => {})
+        playPromise.catch((err) => {
+          console.warn('[PreCallLobby] Video play failed (expected on iOS without gesture):', err)
+        })
       }
     }
   }
@@ -148,8 +153,28 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         } : false
       }
 
-      // Step 3: request
-      const stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
+      // Step 3: request with iOS/Safari fallback handling
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
+      } catch (facingModeError: any) {
+        // iOS/Safari fallback: retry without facingMode if it failed
+        if (facingModeError.name === 'OverconstrainedError' && baseConstraints.video && typeof baseConstraints.video === 'object') {
+          console.warn('[PreCallLobby] facingMode failed, retrying without it')
+          const fallbackConstraints = {
+            ...baseConstraints,
+            video: {
+              deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            }
+          }
+          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints)
+        } else {
+          throw facingModeError
+        }
+      }
+      
       attachLocalPreview(stream)
       
       // Track successful initialization
@@ -233,9 +258,18 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   // Initialize media on mount
   useEffect(() => {
-    setPhase('requesting-permissions')
-    trackEvent('creator_precall_permissions_requested')
-    initMedia()
+    // Check if we need user gesture for autoplay (common on iOS/Safari)
+    const needsGesture = /iPhone|iPad|iPod|Safari/.test(navigator.userAgent) && 
+                        !/(CriOS|FxiOS|EdgiOS)/.test(navigator.userAgent)
+    
+    if (needsGesture) {
+      setNeedsUserGesture(true)
+      setPhase('idle')
+    } else {
+      setPhase('requesting-permissions')
+      trackEvent('creator_precall_permissions_requested')
+      initMedia()
+    }
   }, [])
 
   // Attach stream to video element (simplified - no polling)
@@ -412,6 +446,13 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     initMedia()
   }
 
+  const startPreviewWithGesture = () => {
+    setNeedsUserGesture(false)
+    setPhase('requesting-permissions')
+    trackEvent('creator_precall_permissions_requested')
+    initMedia()
+  }
+
   return (
     <div 
       className="fixed inset-0 z-[9999] bg-background flex flex-col safe-area-insets overflow-hidden"
@@ -551,6 +592,20 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
           </div>
         )}
       </div>
+
+      {/* Start Preview Button (iOS/Safari user gesture requirement) */}
+      {needsUserGesture && phase === 'idle' && (
+        <div className="flex-shrink-0 bg-background border-b p-3">
+          <div className="flex items-center justify-center">
+            <Button onClick={startPreviewWithGesture} className="px-6">
+              Start Preview
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-2">
+            Tap to enable camera and microphone access
+          </p>
+        </div>
+      )}
 
       {/* Header */}
       <header className="flex-shrink-0 p-4 border-b">
