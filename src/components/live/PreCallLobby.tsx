@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager } from '@/media/MediaOrchestrator'
 
@@ -17,10 +17,11 @@ const DEV_CANNOT_SAY_LIST = [
 ]
 
 interface PreCallLobbyProps {
+  onBack?: () => void
   // Future: add activeInvite, device controls, etc.
 }
 
-export function PreCallLobby({}: PreCallLobbyProps) {
+export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
@@ -125,6 +126,21 @@ export function PreCallLobby({}: PreCallLobbyProps) {
       aria-labelledby="precall-header"
       aria-modal="true"
     >
+      {/* Back to Lobby Freeze Pane */}
+      <div className="flex-shrink-0 bg-background/95 backdrop-blur-md border-b sticky top-0 z-50">
+        <div className="flex items-center p-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onBack}
+            className="flex items-center gap-2 hover:bg-muted"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span className="font-medium">Back to Lobby</span>
+          </Button>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="flex-shrink-0 p-4 border-b">
         <h1 id="precall-header" className="text-xl font-semibold text-center">
@@ -254,6 +270,7 @@ export function PreCallLobby({}: PreCallLobbyProps) {
                 size="lg"
                 variant="outline"
                 className="w-full"
+                onClick={onBack}
               >
                 Cancel
               </Button>
