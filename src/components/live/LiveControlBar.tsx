@@ -4,7 +4,6 @@ import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer';
-import { QueueDrawerContent } from './QueueDrawerContent';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
@@ -19,14 +18,8 @@ const LiveControlBarContent: React.FC = () => {
   const [counterMode, setCounterMode] = useState<CounterMode>(() => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [isQueueOpen, setIsQueueOpen] = useState(false);
-  const [dragY, setDragY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
-  const startDragY = useRef(0);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const live = useLive();
   
@@ -41,9 +34,9 @@ const LiveControlBarContent: React.FC = () => {
 
   const handleQueueClick = useCallback(() => {
     if (queueCount > 0) {
-      setIsQueueOpen(!isQueueOpen);
+      setShowQueueDrawer(true);
     }
-  }, [queueCount, isQueueOpen]);
+  }, [queueCount]);
 
   const handleCounterClick = useCallback(() => {
     if (animatingToggle) return;
@@ -59,42 +52,6 @@ const LiveControlBarContent: React.FC = () => {
     localStorage.setItem('lsb-counter-mode', nextMode);
   }, [animatingToggle, counterMode]);
 
-  // Hydration effect - prevent flash
-  useEffect(() => {
-    setIsHydrated(true);
-    const el = document.getElementById("dsb-root");
-    if (el) {
-      el.setAttribute("data-hydrated", "true");
-      el.classList.remove("dsb-prehydrate");
-    }
-  }, []);
-
-  // Set up height measurements and CSS variables
-  useEffect(() => {
-    const dsbEl = document.getElementById("dsb-root");
-    const bottomNavEl = document.getElementById("bottom-nav-root");
-    
-    if (!dsbEl || !bottomNavEl || typeof ResizeObserver === 'undefined') return;
-    
-    const updateHeights = () => {
-      const bottomNavHeight = bottomNavEl.offsetHeight;
-      const dsbHeight = dsbEl.offsetHeight;
-      
-      document.documentElement.style.setProperty('--bottom-nav-h', `${bottomNavHeight}px`);
-      document.documentElement.style.setProperty('--dsb-h', `${dsbHeight}px`);
-    };
-    
-    // Initial measurement
-    updateHeights();
-    
-    // Observe both elements
-    const observer = new ResizeObserver(updateHeights);
-    observer.observe(dsbEl);
-    observer.observe(bottomNavEl);
-    
-    return () => observer.disconnect();
-  }, []);
-
   // Add body class for live state
   useEffect(() => {
     if (state === 'SESSION_ACTIVE') {
@@ -107,61 +64,25 @@ const LiveControlBarContent: React.FC = () => {
       document.body.classList.remove('live-active');
     };
   }, [state])
-
-  // Drag handlers
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (!panelRef.current) return;
-    
-    setIsDragging(true);
-    startDragY.current = e.clientY;
-    panelRef.current.setPointerCapture(e.pointerId);
-    e.preventDefault();
-  }, []);
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    
-    const deltaY = startDragY.current - e.clientY; // Positive when dragging up
-    setDragY(Math.max(0, deltaY)); // Only allow upward drag
-  }, [isDragging]);
-
-  const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    if (!isDragging) return;
-    
-    setIsDragging(false);
-    const threshold = 50; // pixels
-    
-    if (dragY > threshold) {
-      setIsQueueOpen(true);
-    } else {
-      setIsQueueOpen(false);
-    }
-    
-    setDragY(0);
-    panelRef.current?.releasePointerCapture(e.pointerId);
-  }, [isDragging, dragY]);
   
   // Show LSB when discoverable but not in active call
   const shouldShowLSB = isDiscoverable && !isLive;
 
-  // Set data-visible attribute based on discoverable state
+  // Publish CSS variables for FAB positioning
   useEffect(() => {
-    const el = document.getElementById("dsb-root");
-    if (el) {
-      el.setAttribute("data-visible", shouldShowLSB ? "true" : "false");
+    const shell = shellRef.current;
+    const isLSBVisible = shouldShowLSB;
+    
+    // Set visibility variable - use discoverable posture for immediate response
+    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
+    
+    // Set height variable
+    if (shell && shell.offsetHeight > 0) {
+      document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
     }
   }, [shouldShowLSB]);
 
-  // [2] DSB COLLAPSED HEIGHT VARIABLE 
-  useEffect(() => {
-    const root = document.documentElement;
-    const collapsedEl = document.querySelector("#dsb-root .lsb-inner"); 
-    if (!collapsedEl) return;
-    const h = Math.round(collapsedEl.getBoundingClientRect().height || 0);
-    root.style.setProperty("--dsb-h", (h || 56) + "px"); // fallback 56px if 0
-  }, [shouldShowLSB, counterMode]); // dependencies that affect collapsed height
-
-  // ResizeObserver to keep --dsb-h current
+  // ResizeObserver to keep --lsb-height current
   useEffect(() => {
     const shell = shellRef.current;
     if (!shell || typeof ResizeObserver === 'undefined') return;
@@ -169,7 +90,7 @@ const LiveControlBarContent: React.FC = () => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.target === shell && entry.contentRect.height > 0) {
-          document.documentElement.style.setProperty('--dsb-h', `${entry.contentRect.height}px`);
+          document.documentElement.style.setProperty('--lsb-height', `${entry.contentRect.height}px`);
         }
       }
     });
@@ -284,33 +205,15 @@ const LiveControlBarContent: React.FC = () => {
   
   return (
     <>
-      {/* DSB Shell - Always mounted for animation */}
-      <div 
-        id="dsb-root"
-        ref={shellRef} 
-        className={cn(
-          "lsb-shell",
-          "dsb-prehydrate",
-          isHydrated && "lsb-shell--hydrated"
-        )}
-        data-hydrated="false"
-      >
+      {/* LSB Shell - Always mounted for animation */}
+      <div ref={shellRef} className="lsb-shell">
         <div 
-          ref={panelRef}
           className={cn(
             "lsb-inner",
             (isVisible && shouldShowLSB) && "lsb-inner--visible"
           )}
           role="toolbar"
           aria-label="Live session controls"
-          aria-controls="queue-drawer"
-          aria-expanded={isQueueOpen}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          style={{
-            transform: isDragging ? `translateY(${-dragY}px)` : undefined
-          }}
         >
           {/* Left - Queue button */}
           <Button
@@ -356,23 +259,9 @@ const LiveControlBarContent: React.FC = () => {
             </span>
           </Button>
         </div>
-        
-        {/* Queue Drawer */}
-        <div 
-          id="queue-drawer"
-          className={cn(
-            "queue-drawer",
-            isQueueOpen && "queue-drawer--open"
-          )}
-          role="dialog"
-          aria-expanded={isQueueOpen}
-          aria-label="Queue drawer"
-        >
-          <div className="queue-drawer__content">
-            <QueueDrawerContent queueCount={queueCount} />
-          </div>
-        </div>
       </div>
+      
+      <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
     </>
   )
 }

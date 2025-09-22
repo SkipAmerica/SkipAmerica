@@ -2,13 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* [3] POSITIONING RULES - Root defaults */
-:root {
-  --bottom-nav-h: 0px;     /* set by global metrics publisher */
-  --dsb-h: 56px;           /* updated by DSB, has fallback */
-  --dsb-visible: 0;        /* set by global metrics publisher, "1" when visible */
-}
-
 /* Creator Economy Design System - FaceTime for Creators */
 @layer base {
   :root {
@@ -506,46 +499,14 @@ body.live-active {
   }
 }
 
-/* DSB (Discoverable Status Bar) Animation Classes */
+/* LSB Animation Classes */
 .lsb-shell {
   position: fixed;
   left: 0;
-  right: 0;
-  bottom: var(--bottom-nav-h, 0px);
+  bottom: var(--ios-tab-bar-height);
   width: 100%;
   pointer-events: none;
-  z-index: 50; /* Above bottom nav (z-40), below CPB (z-60) */
-  transition: transform 220ms ease;
-  will-change: transform;
-}
-
-/* Pre-hydration: DSB must be invisible, non-interactive, and behind bottom nav */
-.dsb-prehydrate {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  /* keep it below nav regardless of existing z-index */
-  z-index: 0 !important;
-}
-
-/* Post-hydration: restore visibility; actual stacking handled by existing classes */
-#dsb-root[data-hydrated="true"] {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-.lsb-shell--hydrated {
-  transition: opacity 0.2s ease-out;
-}
-
-/* DSB visibility states */
-#dsb-root[data-visible="false"] {
-  transform: translateY(100%);
-}
-
-#dsb-root[data-visible="true"] {
-  transform: translateY(0);
+  z-index: 40; /* Under bottom nav (z-50) */
 }
 
 .lsb-inner {
@@ -563,107 +524,13 @@ body.live-active {
   gap: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: auto;
-  cursor: grab;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-.lsb-inner:active {
-  cursor: grabbing;
-}
-
-/* [3] CPB (creator panel bar) root - elevated positioning */
-#cpb-root {
-  position: fixed;
-  left: 0;
-  right: 0;
-  z-index: 60; /* always above DSB and Bottom Nav */
-  bottom: calc(
-    var(--bottom-nav-h, 0px) 
-    + (var(--dsb-visible, 0) * var(--dsb-h, 0px))
-    + 12px
-    + env(safe-area-inset-bottom, 0px)
-  );
-  transition: bottom 200ms ease;
-}
-
-/* Removed .lsb-inner--visible since visibility is now controlled at shell level */
-
-/* Queue Drawer Styles */
-.queue-drawer {
-  position: fixed;
-  left: 0;
-  bottom: var(--bottom-nav-h, 0px);
-  width: 100%;
-  background: hsl(var(--primary) / 0.9); /* Darker green for drawer */
-  border-top-left-radius: 16px;
-  border-top-right-radius: 16px;
-  z-index: 49; /* Just below DSB handle */
-  max-height: calc(100vh - var(--bottom-nav-h, 0px) - var(--debug-safe-top, 20px) - 3.5rem);
-  overflow-y: auto;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 220ms ease-out;
   will-change: transform;
+  transform: translateY(100%);
 }
 
-.queue-drawer--open {
-  transform: translateY(-3.5rem); /* Slide up to just below DSB handle */
-}
-
-.queue-drawer__content {
-  padding: 1rem;
-  min-height: 200px;
-}
-
-.queue-drawer__item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  margin-bottom: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  transition: background-color 0.2s ease;
-}
-
-.queue-drawer__item:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.queue-drawer__avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #22c55e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.queue-drawer__info {
-  flex: 1;
-  min-width: 0;
-}
-
-.queue-drawer__name {
-  font-weight: 600;
-  color: white;
-  margin-bottom: 2px;
-  font-size: 14px;
-}
-
-.queue-drawer__topic {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.lsb-inner--visible {
+  transform: translateY(0);
 }
 
 /* Ensure buttons inside LSB stay square */
