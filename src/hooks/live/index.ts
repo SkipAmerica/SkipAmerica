@@ -70,5 +70,6 @@ export function useLive() {
 // Re-export for compatibility
 export { useLiveSession } from './useLiveSession'
 export { useQueueManager } from './useQueueManager'
+export { useDragHandler } from './useDragHandler'
 export { useLiveStore } from '@/stores/live-store'
 export type { LiveState } from './use-live-state-machine'

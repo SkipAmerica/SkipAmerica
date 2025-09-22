@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
+import { useDragHandler } from '@/hooks/live/useDragHandler';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
 
@@ -19,7 +20,11 @@ const LiveControlBarContent: React.FC = () => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
   const shellRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
+  
+  // Drag handler for full-screen dragging
+  const { dragY, isDragging } = useDragHandler(innerRef);
 
   const live = useLive();
   
@@ -208,10 +213,17 @@ const LiveControlBarContent: React.FC = () => {
       {/* LSB Shell - Always mounted for animation */}
       <div ref={shellRef} className="lsb-shell">
         <div 
+          ref={innerRef}
           className={cn(
             "lsb-inner",
-            (isVisible && shouldShowLSB) && "lsb-inner--visible"
+            (isVisible && shouldShowLSB) && "lsb-inner--visible",
+            isDragging && "lsb-inner--dragging"
           )}
+          style={{
+            transform: shouldShowLSB && isVisible 
+              ? `translateY(${dragY}px)` 
+              : 'translateY(100%)'
+          }}
           role="toolbar"
           aria-label="Live session controls"
         >

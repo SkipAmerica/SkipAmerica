@@ -524,13 +524,23 @@ body.live-active {
   gap: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: auto;
-  transition: transform 220ms ease-out;
+  transition: none; /* Disable transition when dragging */
   will-change: transform;
   transform: translateY(100%);
+  touch-action: none; /* Prevent scroll interference */
+  user-select: none; /* Prevent text selection during drag */
+  cursor: grab;
 }
 
 .lsb-inner--visible {
   transform: translateY(0);
+  transition: transform 220ms ease-out; /* Re-enable transition when not dragging */
+}
+
+.lsb-inner--dragging {
+  transition: none; /* Disable transition during drag */
+  cursor: grabbing;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 /* Ensure buttons inside LSB stay square */
