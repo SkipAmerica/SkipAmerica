@@ -152,21 +152,21 @@ const LiveControlBarContent: React.FC = () => {
     }
   }, [shouldShowLSB]);
 
-  // Publish CSS variables for FAB positioning
+  // Publish CSS variables for CPB positioning
   useEffect(() => {
     const shell = shellRef.current;
     const isLSBVisible = shouldShowLSB;
     
-    // Set visibility variable - use discoverable posture for immediate response
-    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
+    // Set DSB visibility for CPB positioning (0 or 1)
+    document.documentElement.style.setProperty('--dsb-visible', isLSBVisible ? '1' : '0');
     
-    // Set height variable
+    // Update DSB height variable
     if (shell && shell.offsetHeight > 0) {
-      document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
+      document.documentElement.style.setProperty('--dsb-h', `${shell.offsetHeight}px`);
     }
   }, [shouldShowLSB]);
 
-  // ResizeObserver to keep --lsb-height current
+  // ResizeObserver to keep --dsb-h current
   useEffect(() => {
     const shell = shellRef.current;
     if (!shell || typeof ResizeObserver === 'undefined') return;
@@ -174,7 +174,7 @@ const LiveControlBarContent: React.FC = () => {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (entry.target === shell && entry.contentRect.height > 0) {
-          document.documentElement.style.setProperty('--lsb-height', `${entry.contentRect.height}px`);
+          document.documentElement.style.setProperty('--dsb-h', `${entry.contentRect.height}px`);
         }
       }
     });

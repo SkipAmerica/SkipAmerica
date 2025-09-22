@@ -50,9 +50,9 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     <>
       {/* Button Container */}
       <div 
-        className="fixed left-4 z-40 flex flex-col gap-4 transition-all duration-300 ease-in-out"
+        className="fixed left-4 z-60 flex flex-col gap-4 transition-all duration-300 ease-in-out"
         style={{
-          bottom: `calc(env(safe-area-inset-bottom) + 12px + (var(--lsb-visible,0) * (var(--lsb-height,72px) + 12px)))`
+          bottom: `calc(var(--bottom-nav-h, 0px) + (var(--dsb-visible, 0) * var(--dsb-h, 0px)) + 12px + env(safe-area-inset-bottom))`
         }}
       >
         {/* Post Button */}

@@ -556,9 +556,6 @@ body.live-active {
   gap: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: auto;
-  transition: transform 220ms ease-out;
-  will-change: transform;
-  transform: translateY(100%);
   cursor: grab;
   user-select: none;
   -webkit-user-select: none;
@@ -568,9 +565,7 @@ body.live-active {
   cursor: grabbing;
 }
 
-.lsb-inner--visible {
-  transform: translateY(0);
-}
+/* Removed .lsb-inner--visible since visibility is now controlled at shell level */
 
 /* Queue Drawer Styles */
 .queue-drawer {
