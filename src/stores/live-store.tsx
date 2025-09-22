@@ -9,6 +9,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { transition, LiveState, LiveEvent, canGoLive, canEndLive } from '@/hooks/live/use-live-state-machine'
 import { normalizeError, safeStringify } from '@/shared/errors/err-utils'
+import { teardownMedia, canInitializeMedia, setMediaPhase, registerStream } from '@/shared/media/media-registry'
 import { requestWithDetail } from '@/shared/errors/network-helper'
 
 interface LiveStoreState {
@@ -285,12 +286,24 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     handleDispatch({ type: 'GO_LIVE' })
     
     try {
-      // Step 1: Request permissions (iOS/mobile)
+      // Step 1: Request permissions and initialize media (iOS/mobile)
       try {
         if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+          if (!canInitializeMedia(state.state)) {
+            throw new Error('Media initialization blocked - invalid state or teardown in progress')
+          }
+          
           console.info('[LIVE][START] Requesting permissions...');
-          await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-          console.info('[LIVE][START] Permissions granted');
+          setMediaPhase('initializing')
+          
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: true, 
+            audio: true 
+          });
+          
+          registerStream(stream)
+          setMediaPhase('active')
+          console.info('[LIVE][START] Permissions granted and media initialized');
         }
       } catch (permissionError) {
         const normalized = normalizeError(permissionError, {
@@ -422,6 +435,13 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       if (error.name === 'AbortError') return
       
+      // Ensure media cleanup on any failure
+      try {
+        await teardownMedia()
+      } catch (cleanupError) {
+        console.warn('[LIVE][START_FAILED] Media cleanup failed:', cleanupError)
+      }
+      
       // Catch-all error handler
       const normalized = normalizeError(error, {
         step: 'unknown',
@@ -465,7 +485,24 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     handleDispatch({ type: 'END_LIVE' })
     
     try {
-      // Step 1: Stop runtime services
+      // Step 1: Teardown media devices immediately
+      try {
+        console.info('[LIVE][END] Tearing down media devices...');
+        await teardownMedia()
+        console.info('[LIVE][END] Media devices torn down');
+      } catch (mediaError) {
+        const normalized = normalizeError(mediaError, {
+          step: 'teardown_media',
+          state: state.state,
+          event: 'END_LIVE',
+          sessionId: state.sessionId,
+          userId: user.id
+        });
+        console.error('[LIVE][END_FAILED]', safeStringify(normalized));
+        // Continue with end process even if media teardown fails
+      }
+
+      // Step 2: Stop runtime services
       try {
         console.info('[LIVE][END] Stopping runtime services...');
         // Runtime disposal happens in handleDispatch side effect
@@ -482,7 +519,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         // Continue with end process even if runtime cleanup fails
       }
 
-      // Step 2: Update live session in API
+      // Step 3: Update live session in API
       try {
         console.info('[LIVE][END] Updating live session...');
         const now = new Date().toISOString()
@@ -552,6 +589,13 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       
     } catch (error: any) {
       if (error.name === 'AbortError') return
+      
+      // Ensure media cleanup on any failure
+      try {
+        await teardownMedia()
+      } catch (cleanupError) {
+        console.warn('[LIVE][END_FAILED] Media cleanup failed:', cleanupError)
+      }
       
       // Catch-all error handler
       const normalized = normalizeError(error, {
