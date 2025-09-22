@@ -1,61 +1,82 @@
-import React, { createContext, useContext, useEffect, useReducer, useMemo, useCallback } from 'react'
-import { useToast } from '@/hooks/use-toast'
-import { supabase } from '@/integrations/supabase/client'
-import { useAuth } from '@/app/providers/auth-provider'
+/**
+ * Centralized Live Store using React Context + useReducer
+ * Manages all live session state and media orchestration
+ */
+import { createContext, useContext, useReducer, useCallback, useMemo, useEffect, ReactNode } from 'react'
 import { transition, canGoLive, canEndLive, LiveState, LiveEvent, isTransitioning } from '@/hooks/live/use-live-state-machine'
-import { orchestrateInit, orchestrateStop, ensureMediaSubscriptions, routeMediaError, mediaManager, setupMediaSubscriptions } from '@/media/MediaOrchestrator'
+import { ensureMediaSubscriptions, orchestrateInit, orchestrateStop, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
+import { useAuth } from '@/app/providers/auth-provider'
+import { supabase } from '@/integrations/supabase/client'
 
-interface LiveStoreState {
+// Core state structure
+export interface LiveStoreState {
   state: LiveState
-  startedAt?: number
-  sessionId?: string
+  sessionId: string | null
+  startedAt: number
   callsTaken: number
   totalEarningsCents: number
   showEarnings: boolean
   queueCount: number
   hapticsEnabled: boolean
-  lastHapticTime?: number
-  hapticsSuppressedUntil?: number
+  discoverableStartedAt: number | null // Timer tracking
+  accumulatedDiscoverableTime: number // Persistent across sessions
   inFlight: {
-    start: boolean
-    end: boolean
+    start: AbortController | null
+    end: AbortController | null
   }
-  error?: string
 }
 
-type Action =
-  | { type: 'DISPATCH_EVENT'; event: LiveEvent }
+// Actions for state management
+export type Action = 
+  | { type: 'STATE_TRANSITION'; event: LiveEvent }
   | { type: 'SET_SESSION_DATA'; sessionId: string; startedAt: number }
   | { type: 'INCREMENT_CALL'; earnings: number }
-  | { type: 'TOGGLE_EARNINGS_DISPLAY' }
-  | { type: 'SET_IN_FLIGHT'; operation: 'start' | 'end'; controller?: AbortController }
   | { type: 'UPDATE_QUEUE_COUNT'; count: number }
+  | { type: 'TOGGLE_EARNINGS' }
+  | { type: 'SET_IN_FLIGHT'; operation: 'start' | 'end'; controller?: AbortController }
   | { type: 'TRIGGER_HAPTIC' }
-  | { type: 'SET_HAPTICS_SUPPRESSED'; until: number }
-  | { type: 'ENABLE_HAPTICS' }
-  | { type: 'DISABLE_HAPTICS' }
-  | { type: 'SET_ERROR'; error?: string }
+  | { type: 'START_DISCOVERABLE_TIMER' }
+  | { type: 'STOP_DISCOVERABLE_TIMER' }
+  | { type: 'RESET_TIMER' }
 
 const initialState: LiveStoreState = {
   state: 'OFFLINE',
+  sessionId: null,
+  startedAt: 0,
   callsTaken: 0,
   totalEarningsCents: 0,
   showEarnings: false,
   queueCount: 0,
   hapticsEnabled: true,
+  discoverableStartedAt: null,
+  accumulatedDiscoverableTime: 0,
   inFlight: {
-    start: false,
-    end: false
+    start: null,
+    end: null
   }
 }
 
 function reducer(state: LiveStoreState, action: Action): LiveStoreState {
   switch (action.type) {
-    case 'DISPATCH_EVENT':
-      return {
-        ...state,
-        state: transition(state.state, action.event)
+    case 'STATE_TRANSITION': {
+      const newState = transition(state.state, action.event)
+      let updates: Partial<LiveStoreState> = { state: newState }
+      
+      // Handle timer logic based on state changes
+      if (state.state !== 'DISCOVERABLE' && newState === 'DISCOVERABLE') {
+        // Starting discoverable
+        updates.discoverableStartedAt = Date.now()
+      } else if (state.state === 'DISCOVERABLE' && newState === 'OFFLINE') {
+        // Going offline - accumulate time
+        if (state.discoverableStartedAt) {
+          updates.accumulatedDiscoverableTime = state.accumulatedDiscoverableTime + 
+            (Date.now() - state.discoverableStartedAt)
+        }
+        updates.discoverableStartedAt = null
       }
+      
+      return { ...state, ...updates }
+    }
     
     case 'SET_SESSION_DATA':
       return {
@@ -71,68 +92,45 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         totalEarningsCents: state.totalEarningsCents + action.earnings
       }
     
-    case 'TOGGLE_EARNINGS_DISPLAY':
-      return {
-        ...state,
-        showEarnings: !state.showEarnings
-      }
+    case 'UPDATE_QUEUE_COUNT':
+      return { ...state, queueCount: action.count }
+    
+    case 'TOGGLE_EARNINGS':
+      return { ...state, showEarnings: !state.showEarnings }
     
     case 'SET_IN_FLIGHT':
       return {
         ...state,
         inFlight: {
           ...state.inFlight,
-          [action.operation]: !state.inFlight[action.operation]
+          [action.operation]: action.controller || null
         }
       }
     
-    case 'UPDATE_QUEUE_COUNT':
-      return {
-        ...state,
-        queueCount: action.count
-      }
-    
     case 'TRIGGER_HAPTIC':
-      const now = Date.now()
-      if (!state.hapticsEnabled || 
-          (state.hapticsSuppressedUntil && now < state.hapticsSuppressedUntil) ||
-          (state.lastHapticTime && now - state.lastHapticTime < 3000)) {
-        return state
-      }
-      
-      // Trigger haptic feedback
-      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        navigator.vibrate([50, 100, 50])
-      }
-      
+      // TODO: Implement haptic feedback logic
+      return state
+    
+    case 'START_DISCOVERABLE_TIMER':
       return {
         ...state,
-        lastHapticTime: now
+        discoverableStartedAt: Date.now()
       }
     
-    case 'SET_HAPTICS_SUPPRESSED':
+    case 'STOP_DISCOVERABLE_TIMER':
       return {
         ...state,
-        hapticsSuppressedUntil: action.until
+        accumulatedDiscoverableTime: state.discoverableStartedAt 
+          ? state.accumulatedDiscoverableTime + (Date.now() - state.discoverableStartedAt)
+          : state.accumulatedDiscoverableTime,
+        discoverableStartedAt: null
       }
     
-    case 'ENABLE_HAPTICS':
+    case 'RESET_TIMER':
       return {
         ...state,
-        hapticsEnabled: true,
-        hapticsSuppressedUntil: undefined
-      }
-    
-    case 'DISABLE_HAPTICS':
-      return {
-        ...state,
-        hapticsEnabled: false
-      }
-    
-    case 'SET_ERROR':
-      return {
-        ...state,
-        error: action.error
+        discoverableStartedAt: null,
+        accumulatedDiscoverableTime: 0
       }
     
     default:
@@ -140,11 +138,13 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
   }
 }
 
-interface LiveStoreContextValue {
-  state: LiveState
+// Context value interface
+export interface LiveStoreContextValue {
+  // State
   isLive: boolean
-  startedAt?: number
-  sessionId?: string
+  state: LiveState
+  startedAt: number
+  sessionId: string | null
   callsTaken: number
   totalEarningsCents: number
   showEarnings: boolean
@@ -155,10 +155,12 @@ interface LiveStoreContextValue {
   canEndLive: boolean
   elapsedTime: string
   earningsDisplay: string
+  
+  // Actions
   dispatch: (event: LiveEvent) => void
   goLive: () => Promise<void>
-  startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
   confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
+  startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
   endLive: () => Promise<void>
   toggleEarningsDisplay: () => void
   incrementCall: (earnings: number) => void
@@ -169,30 +171,23 @@ interface LiveStoreContextValue {
 const LiveStoreContext = createContext<LiveStoreContextValue | null>(null)
 
 interface LiveStoreProviderProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   const [state, dispatch] = useReducer(reducer, initialState)
-  const { toast } = useToast()
   const { user } = useAuth()
-  
+
   const handleDispatch = useCallback((event: LiveEvent) => {
-    dispatch({ type: 'DISPATCH_EVENT', event })
-  }, [])
-  
-  // Runtime management side effect
-  useEffect(() => {
-    const oldState = state.state
-    const newState = state.state
-    
-    if (newState === 'SESSION_ACTIVE' && oldState !== 'SESSION_ACTIVE') {
-      console.info('[LIVE] Starting runtime services...')
-    } else if (newState === 'OFFLINE' && oldState !== 'OFFLINE') {
-      console.info('[LIVE] Stopping runtime services...')
-    }
+    console.info(`[LIVE][STATE] ${state.state} + ${event.type}`)
+    dispatch({ type: 'STATE_TRANSITION', event })
   }, [state.state])
-  
+
+  // Setup media subscriptions on mount
+  useEffect(() => {
+    ensureMediaSubscriptions()
+  }, [])
+
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
     if (!user || !canGoLive(state.state) || state.inFlight.start) return
@@ -201,44 +196,44 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
     try {
-      console.info('[LIVE][GO_LIVE] Setting availability...');
-      ensureMediaSubscriptions();
-      handleDispatch({ type: 'GO_LIVE' }); // -> LIVE_AVAILABLE
-      console.info('[LIVE][GO_LIVE] Now available for calls');
+      console.info('[LIVE][GO_LIVE] Setting availability...')
+      ensureMediaSubscriptions()
+      handleDispatch({ type: 'GO_LIVE' }) // -> DISCOVERABLE
+      console.info('[LIVE][GO_LIVE] Now discoverable for calls')
       
     } catch (error) {
-      console.error('[LIVE][GO_LIVE] Failed:', error);
-      handleDispatch({ type: 'START_FAILED' });
+      console.error('[LIVE][GO_LIVE] Failed:', error)
+      handleDispatch({ type: 'START_FAILED' })
     } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
     }
   }, [user, state.state, state.inFlight.start, handleDispatch])
 
   // START NEXT: enter lobby and trigger preview via subscription  
   const startNext = useCallback(async (localVideoEl: HTMLVideoElement) => {
-    if (!user || state.state !== 'LIVE_AVAILABLE' || state.inFlight.start) return
+    if (!user || state.state !== 'DISCOVERABLE' || state.inFlight.start) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
     try {
-      console.info('[LIVE][START_NEXT] Entering prep...');
-      ensureMediaSubscriptions();
+      console.info('[LIVE][START_NEXT] Entering prep...')
+      ensureMediaSubscriptions()
       
       // Store video element for orchestrator subscription
-      (window as any).__skipLocalVideoEl = localVideoEl;
+      ;(window as any).__skipLocalVideoEl = localVideoEl
       
-      handleDispatch({ type: 'ENTER_PREP' });
-      await Promise.resolve(); // allow reducer commit → SESSION_PREP
+      handleDispatch({ type: 'ENTER_PREP' })
+      await Promise.resolve() // allow reducer commit → SESSION_PREP
       
       // ensureMediaSubscriptions will observe SESSION_PREP and call orchestrateInit for preview
-      console.info('[LIVE][START_NEXT] Prep initiated, media will initialize via subscription');
+      console.info('[LIVE][START_NEXT] Prep initiated, media will initialize via subscription')
       
     } catch (error) {
-      console.error('[LIVE][START_NEXT] Failed:', error);
-      handleDispatch({ type: 'START_FAILED' });
+      console.error('[LIVE][START_NEXT] Failed:', error)
+      handleDispatch({ type: 'START_FAILED' })
     } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
     }
   }, [user, state.state, state.inFlight.start, handleDispatch])
 
@@ -250,19 +245,19 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
     try {
-      console.info('[LIVE][CONFIRM_JOIN] Entering joining state...');
-      handleDispatch({ type: 'ENTER_JOINING' }); // intent
-      await Promise.resolve(); // commit → SESSION_JOINING
+      console.info('[LIVE][CONFIRM_JOIN] Entering joining state...')
+      handleDispatch({ type: 'ENTER_JOINING' }) // intent
+      await Promise.resolve() // commit → SESSION_JOINING
 
       await orchestrateInit({
         targetState: 'SESSION_JOINING',
         previewOnly: false,
         videoEl: localVideoEl,
         audioEl: localAudioEl,
-      });
+      })
 
       // Create live session in API
-      console.info('[LIVE][CONFIRM_JOIN] Creating live session...');
+      console.info('[LIVE][CONFIRM_JOIN] Creating live session...')
       const now = new Date().toISOString()
       const { data: session, error } = await supabase
         .from('live_sessions')
@@ -272,132 +267,121 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
         })
         .select()
         .single()
+
+      if (error) throw error
       
-      if (error) {
-        throw new Error(`Failed to create live session: ${error.message}`)
-      }
-      
-      dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
+      dispatch({ 
+        type: 'SET_SESSION_DATA', 
+        sessionId: session.id,
+        startedAt: Date.now() 
+      })
 
       // Minimal RTC skeleton (replace signaling as needed)
-      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-      mediaManager.setPeerConnection(pc);
-      const stream = mediaManager.getLocalStream();
-      stream?.getTracks().forEach(t => pc.addTrack(t, stream));
+      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] })
+      mediaManager.setPeerConnection(pc)
+      const stream = mediaManager.getLocalStream()
+      stream?.getTracks().forEach(t => pc.addTrack(t, stream))
 
       pc.oniceconnectionstatechange = async () => {
-        const s = pc.iceConnectionState;
+        const s = pc.iceConnectionState
         if (s === 'connected' || s === 'completed') {
-          handleDispatch({ type: 'SESSION_STARTED' }); // -> SESSION_ACTIVE
-          console.info('[LIVE][CONFIRM_JOIN] Session fully active');
+          await handleDispatch({ type: 'SESSION_STARTED' }) // -> SESSION_ACTIVE
         }
         if (s === 'failed' || s === 'disconnected') {
-          routeMediaError(new Error('RTC failed'));
+          routeMediaError(new Error('RTC failed'))
         }
-      };
+      }
+
+      // TODO: replace placeholders with your signaling
+      // const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+      // send offer to server; receive answer; await pc.setRemoteDescription(answer);
 
     } catch (e) {
-      console.error('[LIVE][CONFIRM_JOIN] Failed:', e);
-      routeMediaError(e);
+      routeMediaError(e)
       // Roll back cleanly to PREP so the creator can retry or pick another caller
-      await orchestrateStop('join_failed');
-      handleDispatch({ type: 'ENTER_PREP' }); // back to SESSION_PREP
+      await orchestrateStop('join_failed')
+      await handleDispatch({ type: 'START_FAILED' })
     } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
     }
   }, [user, state.state, state.inFlight.start, handleDispatch])
 
   // END/STOP: full release
   const endLive = useCallback(async () => {
     if (!user || !canEndLive(state.state) || state.inFlight.end) return
-    
+
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'end', controller })
-    
+
     try {
-      console.info('[LIVE][END] Ending live session...');
+      console.info('[LIVE][END] Ending session...')
       
-      handleDispatch({ type: 'END_LIVE' });
-      await orchestrateStop('user_end');
+      handleDispatch({ type: 'END_LIVE' })
       
-      // Update session in database (if exists)
+      // Update session in API if exists
       if (state.sessionId) {
-        try {
-          console.info('[LIVE][END] Updating session record...');
-          const now = new Date().toISOString()
-          const sessionDuration = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 60000) : 0
-          
-          const { error } = await supabase
-            .from('live_sessions')
-            .update({
-              ended_at: now,
-              calls_taken: state.callsTaken,
-              total_earnings_cents: state.totalEarningsCents,
-              session_duration_minutes: sessionDuration
-            })
-            .eq('id', state.sessionId)
-          
-          if (error) {
-            console.warn('[LIVE][END] Failed to update session record:', error);
-          } else {
-            console.info('[LIVE][END] Session record updated');
-          }
-        } catch (dbError) {
-          console.warn('[LIVE][END] Failed to update session record:', dbError);
-        }
+        await supabase
+          .from('live_sessions')
+          .update({
+            ended_at: new Date().toISOString(),
+            calls_taken: state.callsTaken,
+            total_earnings_cents: state.totalEarningsCents
+          })
+          .eq('id', state.sessionId)
       }
+
+      await orchestrateStop('user_end')
+      handleDispatch({ type: 'SESSION_ENDED' }) // -> OFFLINE or back to DISCOVERABLE
       
-      handleDispatch({ type: 'SESSION_ENDED' }); // ENDING -> OFFLINE
-      console.info('[LIVE][END] Session ended');
+      console.info('[LIVE][END] Session ended successfully')
       
     } catch (error) {
-      console.error('[LIVE][END] End session failed:', error);
-      // Force cleanup
-      try {
-        await orchestrateStop('force_cleanup');
-        handleDispatch({ type: 'SESSION_ENDED' }); // Try to end cleanly
-      } catch (cleanupError) {
-        console.error('[LIVE][END] Force cleanup failed:', cleanupError);
-        handleDispatch({ type: 'RESET' }); // Force reset to OFFLINE
-      }
+      console.error('[LIVE][END] Failed:', error)
+      handleDispatch({ type: 'END_FAILED' })
     } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' });
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
     }
-  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch])
-  
+  }, [user, state.state, state.sessionId, state.callsTaken, state.totalEarningsCents, state.inFlight.end, handleDispatch])
+
   const toggleEarningsDisplay = useCallback(() => {
-    dispatch({ type: 'TOGGLE_EARNINGS_DISPLAY' })
+    dispatch({ type: 'TOGGLE_EARNINGS' })
   }, [])
-  
+
   const incrementCall = useCallback((earnings: number) => {
     dispatch({ type: 'INCREMENT_CALL', earnings })
   }, [])
-  
+
   const updateQueueCount = useCallback((count: number) => {
     dispatch({ type: 'UPDATE_QUEUE_COUNT', count })
   }, [])
-  
+
   const triggerHaptic = useCallback(() => {
     dispatch({ type: 'TRIGGER_HAPTIC' })
   }, [])
-  
+
   // Computed values
   const elapsedTime = useMemo(() => {
-    if (!state.startedAt) return '00:00'
-    const elapsed = Math.floor((Date.now() - state.startedAt) / 1000)
-    const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0')
-    const seconds = (elapsed % 60).toString().padStart(2, '0')
-    return `${minutes}:${seconds}`
-  }, [state.startedAt])
-  
+    if (state.state === 'DISCOVERABLE' && state.discoverableStartedAt) {
+      const currentTime = state.accumulatedDiscoverableTime + (Date.now() - state.discoverableStartedAt)
+      const minutes = Math.floor(currentTime / 60000)
+      const seconds = Math.floor((currentTime % 60000) / 1000)
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    } else if (state.accumulatedDiscoverableTime > 0) {
+      const minutes = Math.floor(state.accumulatedDiscoverableTime / 60000)
+      const seconds = Math.floor((state.accumulatedDiscoverableTime % 60000) / 1000)
+      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+    }
+    return '00:00'
+  }, [state.state, state.discoverableStartedAt, state.accumulatedDiscoverableTime])
+
   const earningsDisplay = useMemo(() => {
-    const dollars = state.totalEarningsCents / 100
-    return `$${dollars.toFixed(2)}`
-  }, [state.totalEarningsCents])
-  
-  const value: LiveStoreContextValue = {
-    state: state.state,
+    return `${state.callsTaken} / $${(state.totalEarningsCents / 100).toFixed(0)}`
+  }, [state.callsTaken, state.totalEarningsCents])
+
+  const contextValue: LiveStoreContextValue = {
+    // State
     isLive: state.state === 'SESSION_ACTIVE',
+    state: state.state,
     startedAt: state.startedAt,
     sessionId: state.sessionId,
     callsTaken: state.callsTaken,
@@ -410,45 +394,30 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     canEndLive: canEndLive(state.state) && !state.inFlight.end,
     elapsedTime,
     earningsDisplay,
+    
+    // Actions
     dispatch: handleDispatch,
     goLive,
-    startNext,
     confirmJoin,
+    startNext,
     endLive,
     toggleEarningsDisplay,
     incrementCall,
     updateQueueCount,
     triggerHaptic
   }
-  
-  // Initialize store subscriptions and media orchestrator
-  useEffect(() => {
-    setupMediaSubscriptions((callback) => {
-      // Simple subscription mechanism - call callback on state changes
-      const unsubscribe = () => {} // Placeholder for cleanup
-      callback() // Initial call
-      return unsubscribe
-    }, () => state)
-    
-    ensureMediaSubscriptions()
-    return () => {
-      console.info('[LIVE] Cleaning up media subscriptions...')
-    }
-  }, [])
 
   return (
-    <LiveStoreContext.Provider value={value}>
+    <LiveStoreContext.Provider value={contextValue}>
       {children}
     </LiveStoreContext.Provider>
   )
 }
 
-export function useLiveStore() {
+export function useLiveStore(): LiveStoreContextValue {
   const context = useContext(LiveStoreContext)
   if (!context) {
-    const error = new Error('useLiveStore must be used within a LiveStoreProvider')
-    error.name = 'ContextError'
-    throw error
+    throw new Error('useLiveStore must be used within a LiveStoreProvider')
   }
   return context
 }

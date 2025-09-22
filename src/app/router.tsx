@@ -10,6 +10,8 @@ const HomePage = lazy(() => import('@/pages/Index'))
 const AuthPage = lazy(() => import('@/pages/Auth'))
 const ProfilePage = lazy(() => import('@/pages/Profile'))
 const FeedPage = lazy(() => import('@/pages/Feed'))
+const LobbyPage = lazy(() => import('@/pages/Lobby'))
+const CallPage = lazy(() => import('@/pages/Call'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 
 // Route wrapper with error boundary and suspense
@@ -53,6 +55,22 @@ export function AppRouter() {
           <RouteWrapper>
             <AuthGuard>
               <FeedPage />
+            </AuthGuard>
+          </RouteWrapper>
+        } />
+        
+        <Route path="/lobby" element={
+          <RouteWrapper>
+            <AuthGuard>
+              <div>Lobby placeholder - TODO: implement proper routing</div>
+            </AuthGuard>
+          </RouteWrapper>
+        } />
+        
+        <Route path="/call" element={
+          <RouteWrapper>
+            <AuthGuard>
+              <div>Call placeholder - TODO: implement proper routing</div>
             </AuthGuard>
           </RouteWrapper>
         } />

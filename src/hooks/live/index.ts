@@ -34,6 +34,7 @@ export function useLive() {
     // Actions
     goLive: store.goLive,
     endLive: store.endLive,
+    confirmJoin: store.confirmJoin,
     toggleRightDisplay: store.toggleEarningsDisplay,
     incrementCall: store.incrementCall,
     updateQueueCount: store.updateQueueCount,

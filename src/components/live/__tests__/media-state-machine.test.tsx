@@ -56,9 +56,9 @@ describe('Media State Machine', () => {
       expect(canInitMedia('SESSION_PREP', 'idle')).toBe(true)
       expect(canInitMedia('SESSION_JOINING', 'idle')).toBe(true)
       expect(canInitMedia('OFFLINE', 'idle')).toBe(false)
-      expect(canInitMedia('LIVE_AVAILABLE', 'idle')).toBe(false)
+      expect(canInitMedia('DISCOVERABLE', 'idle')).toBe(false)
       expect(canInitMedia('SESSION_ACTIVE', 'idle')).toBe(false)
-      expect(canInitMedia('ENDING', 'idle')).toBe(false)
+      expect(canInitMedia('TEARDOWN', 'idle')).toBe(false)
     })
 
     it('returns false when media phase is ending', () => {

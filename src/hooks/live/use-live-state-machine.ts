@@ -4,12 +4,12 @@
  */
 
 export type LiveState = 
-  | 'OFFLINE'           // Not live, no session
-  | 'LIVE_AVAILABLE'    // Can go live, ready state  
-  | 'SESSION_PREP'      // Preparing session (lobby/preview)
-  | 'SESSION_JOINING'   // Joining session (connecting)
-  | 'SESSION_ACTIVE'    // Live session active
-  | 'ENDING'            // Ending session
+  | 'OFFLINE'           // Not discoverable
+  | 'DISCOVERABLE'      // Visible in discovery, queue can form
+  | 'SESSION_PREP'      // Lobby: creator preview + caller view
+  | 'SESSION_JOINING'   // Upgrade to two-way A/V + RTC setup
+  | 'SESSION_ACTIVE'    // Full 1-on-1 call on Call page
+  | 'TEARDOWN'          // Cleanup
 
 export type LiveEvent = 
   | { type: 'GO_LIVE' }
@@ -30,14 +30,15 @@ export function transition(currentState: LiveState, event: LiveEvent): LiveState
   switch (currentState) {
     case 'OFFLINE':
       switch (event.type) {
-        case 'GO_LIVE': return 'LIVE_AVAILABLE'
+        case 'GO_LIVE': return 'DISCOVERABLE'
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
       
-    case 'LIVE_AVAILABLE':
+    case 'DISCOVERABLE':
       switch (event.type) {
         case 'ENTER_PREP': return 'SESSION_PREP'
+        case 'END_LIVE': return 'TEARDOWN' // Go offline
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
@@ -45,7 +46,8 @@ export function transition(currentState: LiveState, event: LiveEvent): LiveState
     case 'SESSION_PREP':
       switch (event.type) {
         case 'ENTER_JOINING': return 'SESSION_JOINING'
-        case 'START_FAILED': return 'OFFLINE'
+        case 'START_FAILED': return 'DISCOVERABLE' // Back to queue
+        case 'END_LIVE': return 'TEARDOWN' // Go offline
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
@@ -53,22 +55,23 @@ export function transition(currentState: LiveState, event: LiveEvent): LiveState
     case 'SESSION_JOINING':
       switch (event.type) {
         case 'SESSION_STARTED': return 'SESSION_ACTIVE'
-        case 'START_FAILED': return 'OFFLINE'
+        case 'START_FAILED': return 'DISCOVERABLE' // Back to queue
+        case 'END_LIVE': return 'TEARDOWN'
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
       
     case 'SESSION_ACTIVE':
       switch (event.type) {
-        case 'END_LIVE': return 'ENDING'
+        case 'END_LIVE': return 'TEARDOWN'
+        case 'SESSION_ENDED': return 'DISCOVERABLE' // Stay discoverable for next caller
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
       
-    case 'ENDING':
+    case 'TEARDOWN':
       switch (event.type) {
         case 'SESSION_ENDED': return 'OFFLINE'
-        case 'END_FAILED': return 'SESSION_ACTIVE'
         case 'RESET': return 'OFFLINE'
         default: return currentState // no-op
       }
@@ -90,7 +93,7 @@ export function canEndLive(state: LiveState): boolean {
 }
 
 export function isTransitioning(state: LiveState): boolean {
-  return state === 'SESSION_PREP' || state === 'SESSION_JOINING' || state === 'ENDING'
+  return state === 'SESSION_PREP' || state === 'SESSION_JOINING' || state === 'TEARDOWN'
 }
 
 export function isLive(state: LiveState): boolean {

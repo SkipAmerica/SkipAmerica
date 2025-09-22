@@ -138,7 +138,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                 {isLive ? (
                   <span className="text-xs font-bold">End</span>
                 ) : (
-                  <Sparkles size={16} />
+                  <span className="text-xs font-bold">Disc.</span>
                 )}
               </div>
             </button>

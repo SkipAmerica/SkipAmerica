@@ -1,8 +1,6 @@
 export type LiveState =
   | 'OFFLINE'
-  | 'GO_LIVE'
-  | 'LIVE_AVAILABLE'
-  | 'ENTER_PREP'
+  | 'DISCOVERABLE'
   | 'SESSION_PREP'
   | 'SESSION_JOINING'
   | 'SESSION_ACTIVE'
