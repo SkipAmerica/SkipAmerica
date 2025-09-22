@@ -369,15 +369,11 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     try {
       console.info('[LIVE][START_NEXT] Entering prep...')
       ensureMediaSubscriptions()
-      
-      // Store video element for orchestrator subscription
-      ;(window as any).__skipLocalVideoEl = localVideoEl
-      
+
       handleDispatch({ type: 'ENTER_PREP' })
       await Promise.resolve() // allow reducer commit → SESSION_PREP
-      
-      // ensureMediaSubscriptions will observe SESSION_PREP and call orchestrateInit for preview
-      console.info('[LIVE][START_NEXT] Prep initiated, media will initialize via subscription')
+
+      console.info('[LIVE][START_NEXT] Prep initiated; preview will be started in PreCallLobby after user gesture')
       
     } catch (error) {
       console.error('[LIVE][START_NEXT] Failed:', error)

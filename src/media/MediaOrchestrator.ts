@@ -32,17 +32,6 @@ export function ensureMediaSubscriptions() {
 
   storeSubscribe(() => {
     const next: LiveState = getStoreState()?.state || 'OFFLINE';
-    if (prev !== 'SESSION_PREP' && next === 'SESSION_PREP') {
-      // Only auto-initialize if explicitly allowed
-      if (!mediaManager.hasLocalStream() && (window as any).__allowAutoPreview) {
-        const videoEl = (window as any).__skipLocalVideoEl;
-        orchestrateInit({ 
-          targetState: 'SESSION_PREP', 
-          previewOnly: true,
-          videoEl: videoEl
-        }).catch(err => routeMediaError(err));
-      }
-    }
     if (next === 'TEARDOWN') {
       mediaManager.stop('fsm_teardown');
     }

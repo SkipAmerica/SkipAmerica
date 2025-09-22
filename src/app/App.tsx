@@ -36,6 +36,12 @@ function App() {
     initializeCapacitor()
   }, [])
 
+  // Clear any stale media globals on mount
+  React.useEffect(() => {
+    (window as any).__allowAutoPreview = false
+    try { delete (window as any).__skipLocalVideoEl } catch {}
+  }, [])
+
   return (
     <AppProviders>
       <IOSAppShell>

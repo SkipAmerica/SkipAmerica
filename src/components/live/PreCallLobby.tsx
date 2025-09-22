@@ -246,8 +246,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     document.documentElement.classList.add('precall-open')
     return () => {
       document.documentElement.classList.remove('precall-open')
-      // Clear the auto-preview flag on unmount
-      ;(window as any).__allowAutoPreview = false
       cleanupMedia().catch(console.warn)
     }
   }, [])
@@ -440,8 +438,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   const startPreviewWithGesture = () => {
-    // Allow auto-preview for this session
-    ;(window as any).__allowAutoPreview = true
     setPhase('requesting-permissions')
     trackEvent('creator_precall_permissions_requested')
     initMedia()
