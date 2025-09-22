@@ -201,7 +201,7 @@ const LiveControlBarContent: React.FC = () => {
             onClick={handleQueueClick}
             disabled={queueCount === 0}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 h-auto text-white",
+              "flex items-center gap-2 px-3 py-2 h-auto text-white justify-self-start",
               "disabled:opacity-50"
             )}
           >
@@ -210,9 +210,9 @@ const LiveControlBarContent: React.FC = () => {
           </Button>
 
           {/* Center - Live Status */}
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium text-white">Discoverable</span>
+          <div className="flex items-center gap-2 justify-self-center">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-sm font-bold text-white uppercase">DISCOVERABLE</span>
           </div>
 
           {/* Right - Counter Display */}
@@ -222,7 +222,7 @@ const LiveControlBarContent: React.FC = () => {
             onClick={handleCounterClick}
             disabled={animatingToggle}
             className={cn(
-              "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white",
+              "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white justify-self-end",
               "transition-all duration-200",
               animatingToggle && "scale-95"
             )}

@@ -402,6 +402,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 
       await orchestrateStop('user_end')
       handleDispatch({ type: 'SESSION_ENDED' }) // -> OFFLINE or back to DISCOVERABLE
+      dispatch({ type: 'RESET_TIMER' }) // Reset timer when session fully ends
       
       console.info('[LIVE][END] Session ended successfully')
       
