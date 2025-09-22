@@ -328,6 +328,64 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   </div>
                 )}
               </Card>
+              
+              {/* Camera Controls */}
+              <div className="flex justify-center gap-4 py-3">
+                <Button
+                  size="lg"
+                  variant={isMicEnabled ? "default" : "destructive"}
+                  onClick={toggleMic}
+                  aria-pressed={isMicEnabled}
+                  aria-label={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
+                  className="h-12 w-12 rounded-full p-0"
+                >
+                  {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+                </Button>
+
+                <Button
+                  size="lg"
+                  variant={isVideoEnabled ? "default" : "destructive"}
+                  onClick={toggleVideo}
+                  disabled={isInitializing}
+                  aria-pressed={isVideoEnabled}
+                  aria-label={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
+                  className="h-12 w-12 rounded-full p-0"
+                >
+                  {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+                </Button>
+              </div>
+
+              {/* Audio Level and Network Status */}
+              <div className="flex items-center justify-center gap-6 py-2">
+                {/* Audio Level Meter */}
+                <div className="flex items-center gap-2">
+                  <Mic className="h-4 w-4 text-muted-foreground" />
+                  <div className="flex gap-1">
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`w-1 h-3 rounded-full transition-colors ${
+                          audioLevel > (i * 12.5) 
+                            ? 'bg-primary' 
+                            : 'bg-muted'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Network Status */}
+                <div className="flex items-center gap-2">
+                  <Wifi className="h-4 w-4 text-muted-foreground" />
+                  <Badge 
+                    variant={networkStatus === 'ok' ? 'default' : 'secondary'}
+                    className="text-xs px-2 py-1"
+                  >
+                    {networkStatus === 'checking' ? 'Checking...' : 
+                     networkStatus === 'ok' ? 'OK' : 'Degraded'}
+                  </Badge>
+                </div>
+              </div>
             </div>
 
             {/* Participant Preview */}
@@ -343,6 +401,24 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   </div>
                 </div>
               </Card>
+              
+              {/* Report User Control */}
+              <div className="flex justify-center py-3">
+                <ReportDialog
+                  reportedUserId="participant_id" // TODO: Replace with actual participant ID
+                  reportedUserName="Participant" // TODO: Replace with actual participant name
+                  trigger={
+                    <Button
+                      size="lg"
+                      variant="destructive"
+                      aria-label="Report user"
+                      className="h-12 w-12 rounded-full p-0 bg-red-600 hover:bg-red-700"
+                    >
+                      <Flag className="h-5 w-5" />
+                    </Button>
+                  }
+                />
+              </div>
             </div>
           </div>
 
@@ -370,21 +446,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             >
               {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
             </Button>
-
-            <ReportDialog
-              reportedUserId="participant_id" // TODO: Replace with actual participant ID
-              reportedUserName="Participant" // TODO: Replace with actual participant name
-              trigger={
-                <Button
-                  size="lg"
-                  variant="destructive"
-                  aria-label="Report user"
-                  className="h-12 w-12 rounded-full p-0 bg-red-600 hover:bg-red-700"
-                >
-                  <Flag className="h-5 w-5" />
-                </Button>
-              }
-            />
           </div>
 
           {/* Audio Level and Network Status */}
