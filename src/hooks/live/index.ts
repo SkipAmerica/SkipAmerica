@@ -9,6 +9,9 @@ import { useQueueManager } from './useQueueManager'
 export function useLive() {
   const store = useLiveStore()
   
+  // Initialize queue manager when discoverable or live
+  useQueueManager(store.isLive, store.isDiscoverable)
+  
   return {
     // Core state from store
     isLive: store.isLive,

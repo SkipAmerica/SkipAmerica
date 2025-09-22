@@ -14,7 +14,7 @@ interface QueueManagerState {
   isConnected: boolean
 }
 
-export function useQueueManager(isLive: boolean) {
+export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false) {
   const { user } = useAuth()
   const { toast } = useToast()
   const store = useLiveStore()
@@ -27,7 +27,7 @@ export function useQueueManager(isLive: boolean) {
 
   // Real-time subscription for queue changes
   useEffect(() => {
-    if (!isLive || !user) return
+    if ((!isLive && !isDiscoverable) || !user) return
 
     const channel = supabase
       .channel('queue-changes')
@@ -96,11 +96,11 @@ export function useQueueManager(isLive: boolean) {
       }
       setState(prev => ({ ...prev, isConnected: false }))
     }
-  }, [isLive, user, toast, store])
+  }, [isLive, isDiscoverable, user, toast, store])
 
   // Fetch initial queue count
   useEffect(() => {
-    if (!isLive || !user) return
+    if ((!isLive && !isDiscoverable) || !user) return
 
     let retryCount = 0
     const maxRetries = 3
@@ -135,7 +135,7 @@ export function useQueueManager(isLive: boolean) {
     }
 
     fetchCount()
-  }, [isLive, user, store])
+  }, [isLive, isDiscoverable, user, store])
 
   // Debounce the queue count to prevent UI jitter
   const debouncedQueueCount = useDebounce(store.queueCount, 300)
