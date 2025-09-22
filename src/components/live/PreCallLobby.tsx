@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight, Settings } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
 import { useLive } from '@/hooks/live'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 type PreflightPhase = 'idle' | 'requesting-permissions' | 'initializing-media' | 'ready' | 'error'
 
@@ -38,6 +40,12 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [error, setError] = useState<{code: string; message: string; hint?: string} | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
   const [isAudioOnlyMode, setIsAudioOnlyMode] = useState(false)
+  
+  // Device selection
+  const [availableDevices, setAvailableDevices] = useState<{audio: MediaDeviceInfo[], video: MediaDeviceInfo[]}>({audio: [], video: []})
+  const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
+  const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
+  const [showDeviceHelper, setShowDeviceHelper] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -102,13 +110,36 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     try {
       // Step 1: enumerate devices first
       const devices = await navigator.mediaDevices.enumerateDevices()
-      const hasCam = devices.some(d => d.kind === 'videoinput')
-      const hasMic = devices.some(d => d.kind === 'audioinput')
+      const audioDevices = devices.filter(d => d.kind === 'audioinput' && d.deviceId)
+      const videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId)
+      
+      setAvailableDevices({audio: audioDevices, video: videoDevices})
+      
+      // Set default selected devices if not already set
+      if (!selectedAudioDevice && audioDevices.length > 0) {
+        setSelectedAudioDevice(audioDevices[0].deviceId)
+      }
+      if (!selectedVideoDevice && videoDevices.length > 0) {
+        setSelectedVideoDevice(videoDevices[0].deviceId)
+      }
+      
+      const hasCam = videoDevices.length > 0
+      const hasMic = audioDevices.length > 0
 
-      // Step 2: build constraints progressively
+      // Step 2: build constraints progressively with specific device IDs
       const baseConstraints: MediaStreamConstraints = {
-        audio: hasMic ? { echoCancellation: true, noiseSuppression: true, autoGainControl: true } : false,
-        video: hasCam ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
+        audio: hasMic ? { 
+          deviceId: selectedAudioDevice || audioDevices[0]?.deviceId,
+          echoCancellation: true, 
+          noiseSuppression: true, 
+          autoGainControl: true 
+        } : false,
+        video: hasCam ? { 
+          deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
+          facingMode: 'user', 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        } : false
       }
 
       // Step 3: request
@@ -122,7 +153,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       // Fallback: If video fails with DEVICE_IN_USE or NotReadableError but audio is likely available
       if ((name === 'NotReadableError' || name === 'OverconstrainedError') && e.constraint !== 'audio') {
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          const audioStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: selectedAudioDevice ? { deviceId: selectedAudioDevice } : true, 
+            video: false 
+          })
           setIsAudioOnlyMode(true)
           setIsVideoEnabled(false)
           setPhase('ready')
@@ -284,7 +318,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       setIsMicEnabled(newMicState)
       
       // Update audio track enabled state if stream exists
-      const stream = mediaManager.getLocalStream()
+      const stream = streamRef.current
       if (stream) {
         const audioTracks = stream.getAudioTracks()
         audioTracks.forEach(track => {
@@ -295,6 +329,35 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       console.error('[PreCallLobby] Failed to toggle mic:', error)
       setIsMicEnabled(!isMicEnabled) // Revert on error
     }
+  }
+
+  // Device switching handlers
+  const handleAudioDeviceChange = (deviceId: string) => {
+    setSelectedAudioDevice(deviceId)
+    cleanupMedia()
+    initMedia()
+  }
+
+  const handleVideoDeviceChange = (deviceId: string) => {
+    setSelectedVideoDevice(deviceId)
+    cleanupMedia()
+    initMedia()
+  }
+
+  // Enter Call availability logic
+  const canEnterCall = () => {
+    if (phase !== 'ready') return false
+    // Allow if audio-only fallback active or normal AV stream
+    return streamRef.current !== null || isAudioOnlyMode
+  }
+
+  const getCallButtonText = () => {
+    if (!canEnterCall()) {
+      if (phase === 'error') return 'Fix issues to continue'
+      if (phase === 'requesting-permissions' || phase === 'initializing-media') return 'Preparing...'
+      return 'No inputs available'
+    }
+    return 'Enter Call'
   }
 
   const retryPreflight = async () => {
@@ -346,6 +409,55 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   >
                     Try again
                   </Button>
+                  {error?.code === 'DEVICE_IN_USE' && (
+                    <Dialog open={showDeviceHelper} onOpenChange={setShowDeviceHelper}>
+                      <DialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs text-destructive hover:bg-destructive/10"
+                        >
+                          Check usage
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle className="text-sm">Device Usage Helper</DialogTitle>
+                          <DialogDescription className="text-xs">
+                            Common apps that may be using your camera or microphone:
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <div className="text-xs space-y-1">
+                            <p className="font-medium">Desktop Apps:</p>
+                            <ul className="list-disc list-inside text-muted-foreground space-y-0.5 ml-2">
+                              <li>FaceTime, Skype, Zoom, Teams</li>
+                              <li>OBS, QuickTime Screen Recording</li>
+                              <li>Photo Booth, Camera app</li>
+                            </ul>
+                          </div>
+                          <div className="text-xs space-y-1">
+                            <p className="font-medium">Browser Tabs:</p>
+                            <ul className="list-disc list-inside text-muted-foreground space-y-0.5 ml-2">
+                              <li>Other video call websites</li>
+                              <li>Camera test websites</li>
+                            </ul>
+                          </div>
+                          <Button 
+                            size="sm" 
+                            onClick={() => {
+                              setShowDeviceHelper(false)
+                              cleanupMedia()
+                              initMedia()
+                            }}
+                            className="w-full text-xs"
+                          >
+                            Force reset preview
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                   {error?.hint && (
                     <Button
                       size="sm"
@@ -518,6 +630,46 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   </Badge>
                 </div>
               </div>
+              
+              {/* Device Selection (only if multiple devices) */}
+              {(availableDevices.audio.length > 1 || availableDevices.video.length > 1) && (
+                <div className="space-y-2 py-2">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Settings className="h-3 w-3" />
+                    <span>Device Selection</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {availableDevices.audio.length > 1 && (
+                      <Select value={selectedAudioDevice} onValueChange={handleAudioDeviceChange}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select microphone" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg">
+                          {availableDevices.audio.map(device => (
+                            <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
+                              {device.label || `Microphone ${device.deviceId.slice(-4)}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {availableDevices.video.length > 1 && (
+                      <Select value={selectedVideoDevice} onValueChange={handleVideoDeviceChange}>
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Select camera" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-lg">
+                          {availableDevices.video.map(device => (
+                            <SelectItem key={device.deviceId} value={device.deviceId} className="text-xs">
+                              {device.label || `Camera ${device.deviceId.slice(-4)}`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Participant Preview */}
@@ -607,8 +759,9 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   size="lg"
                   className="w-full"
                   onClick={handleEnterCall}
+                  disabled={!canEnterCall()}
                 >
-                  Enter Call
+                  {getCallButtonText()}
                 </Button>
               )}
               <Button
