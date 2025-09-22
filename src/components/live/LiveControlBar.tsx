@@ -1,25 +1,41 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, Clock, DollarSign } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Users, Clock, DollarSign, Phone, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
-import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/app/providers/auth-provider';
+import { useToast } from '@/hooks/use-toast';
 
-type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
+interface QueueEntry {
+  id: string
+  fan_id: string
+  joined_at: string
+  estimated_wait_minutes: number
+  topic?: string
+  profiles?: {
+    full_name: string
+    avatar_url: string | null
+  }
+}
 
 const LiveControlBarContent: React.FC = () => {
   // Always call all hooks unconditionally at the top level
-  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
-  const [animatingToggle, setAnimatingToggle] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [currentTime, setCurrentTime] = useState(Date.now());
-  const [counterMode, setCounterMode] = useState<CounterMode>(() => {
-    return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
-  });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [queueEntries, setQueueEntries] = useState<QueueEntry[]>([]);
+  const [queueLoading, setQueueLoading] = useState(false);
+  
   const shellRef = useRef<HTMLDivElement>(null);
-  const rafIdRef = useRef<number | null>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
+  const startYRef = useRef<number>(0);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const live = useLive();
   
@@ -29,241 +45,258 @@ const LiveControlBarContent: React.FC = () => {
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
   
-  // Compute discoverable posture using same predicate as store
-  const isInDiscoverablePosture = state === 'DISCOVERABLE' || state === 'SESSION_PREP' || state === 'SESSION_JOINING';
+  // Show DSB when discoverable but not in active call
+  const shouldShowDSB = isDiscoverable && !isLive;
 
-  const handleQueueClick = useCallback(() => {
-    if (queueCount > 0) {
-      setShowQueueDrawer(true);
-    }
-  }, [queueCount]);
-
-  const handleCounterClick = useCallback(() => {
-    if (animatingToggle) return;
-    
-    setAnimatingToggle(true);
-    setTimeout(() => setAnimatingToggle(false), 300);
-    
-    // Cycle through modes: SESSION_EARNINGS -> TODAY_EARNINGS -> SESSION_DURATION -> repeat
-    const nextMode = counterMode === 'SESSION_EARNINGS' ? 'TODAY_EARNINGS' :
-                     counterMode === 'TODAY_EARNINGS' ? 'SESSION_DURATION' : 'SESSION_EARNINGS';
-    
-    setCounterMode(nextMode);
-    localStorage.setItem('lsb-counter-mode', nextMode);
-  }, [animatingToggle, counterMode]);
-
-  // Add body class for live state
+  // Hydration guard to prevent flash
   useEffect(() => {
-    if (state === 'SESSION_ACTIVE') {
-      document.body.classList.add('live-active');
-    } else {
-      document.body.classList.remove('live-active');
-    }
-    
-    return () => {
-      document.body.classList.remove('live-active');
-    };
-  }, [state])
-  
-  // Show LSB when discoverable but not in active call
-  const shouldShowLSB = isDiscoverable && !isLive;
-
-  // Publish CSS variables for FAB positioning
-  useEffect(() => {
-    const shell = shellRef.current;
-    const isLSBVisible = shouldShowLSB;
-    
-    // Set visibility variable - use discoverable posture for immediate response
-    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
-    
-    // Set height variable
-    if (shell && shell.offsetHeight > 0) {
-      document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
-    }
-  }, [shouldShowLSB]);
-
-  // ResizeObserver to keep --lsb-height current
-  useEffect(() => {
-    const shell = shellRef.current;
-    if (!shell || typeof ResizeObserver === 'undefined') return;
-    
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        if (entry.target === shell && entry.contentRect.height > 0) {
-          document.documentElement.style.setProperty('--lsb-height', `${entry.contentRect.height}px`);
-        }
-      }
-    });
-    
-    observer.observe(shell);
-    return () => observer.disconnect();
+    const timer = setTimeout(() => {
+      setIsHydrated(true);
+    }, 100); // Small delay to ensure bottom nav is rendered first
+    return () => clearTimeout(timer);
   }, []);
 
-  // Handle animation states for show/hide
+  // Fetch queue entries
+  const fetchQueue = useCallback(async () => {
+    if (!user || !shouldShowDSB) return;
+    
+    setQueueLoading(true);
+    try {
+      const { data: queueData, error: queueError } = await supabase
+        .from('call_queue')
+        .select('*')
+        .eq('creator_id', user.id)
+        .eq('status', 'waiting')
+        .order('joined_at', { ascending: true });
+
+      if (queueError) throw queueError;
+
+      // Get profiles for each fan_id
+      let enrichedEntries: QueueEntry[] = [];
+      if (queueData?.length > 0) {
+        const fanIds = queueData.map(entry => entry.fan_id);
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', fanIds);
+
+        enrichedEntries = queueData.map(entry => ({
+          ...entry,
+          topic: (entry as any).topic || 'General discussion',
+          profiles: profilesData?.find(profile => profile.id === entry.fan_id)
+        }));
+      }
+
+      setQueueEntries(enrichedEntries);
+    } catch (error) {
+      console.error('Error fetching queue:', error);
+    } finally {
+      setQueueLoading(false);
+    }
+  }, [user, shouldShowDSB]);
+
   useEffect(() => {
-    if (shouldShowLSB && !isVisible) {
-      // Show: immediately set visible and start animation
+    if (isQueueOpen) {
+      fetchQueue();
+    }
+  }, [isQueueOpen, fetchQueue]);
+
+  const handleQueueClick = useCallback(() => {
+    setIsQueueOpen(!isQueueOpen);
+  }, [isQueueOpen]);
+
+  // Drag handlers for strip
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (isQueueOpen) return; // Only drag when collapsed
+    setIsDragging(true);
+    startYRef.current = e.clientY;
+    setDragY(0);
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }, [isQueueOpen]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const deltaY = startYRef.current - e.clientY;
+    const clampedDelta = Math.max(0, Math.min(deltaY, window.innerHeight * 0.8));
+    setDragY(clampedDelta);
+  }, [isDragging]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    
+    const threshold = window.innerHeight * 0.15; // 15% of screen height
+    if (dragY > threshold) {
+      setIsQueueOpen(true);
+    }
+    setDragY(0);
+    e.currentTarget.releasePointerCapture(e.pointerId);
+  }, [isDragging, dragY]);
+
+  const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('call_queue')
+        .update({ status: 'in_call' })
+        .eq('id', queueEntry.id);
+
+      if (error) throw error;
+
+      setQueueEntries(prev => prev.filter(entry => entry.id !== queueEntry.id));
+      
+      toast({
+        title: "Call Started",
+        description: `Connected with ${queueEntry.profiles?.full_name || 'user'}`,
+      });
+      
+      setIsQueueOpen(false);
+    } catch (error: any) {
+      toast({
+        title: "Call Failed", 
+        description: error.message || "Failed to start call. Please try again.",
+        variant: "destructive"
+      });
+    }
+  }, [user, toast]);
+  // Handle visibility states for show/hide
+  useEffect(() => {
+    if (shouldShowDSB && !isVisible) {
       setIsVisible(true);
-      setIsAnimating(true);
-      const timer = setTimeout(() => setIsAnimating(false), 220);
-      return () => clearTimeout(timer);
-    } else if (!shouldShowLSB && isVisible) {
-      // Hide: start animation, then hide after completion
-      setIsAnimating(true);
-      const timer = setTimeout(() => {
-        setIsVisible(false);
-        setIsAnimating(false);
-      }, 220);
-      return () => clearTimeout(timer);
+    } else if (!shouldShowDSB && isVisible) {
+      setIsVisible(false);
+      setIsQueueOpen(false); // Close drawer when hiding DSB
     }
-  }, [shouldShowLSB, isVisible]);
+  }, [shouldShowDSB, isVisible]);
 
-  // Real-time timer updates - only when in discoverable posture
-  useEffect(() => {
-    // Cancel any existing RAF loop
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
-    
-    // Start RAF loop only when in discoverable posture
-    if (!isInDiscoverablePosture) return;
-    
-    const animate = () => {
-      setCurrentTime(Date.now());
-      // Only continue if still in discoverable posture
-      if (isInDiscoverablePosture) {
-        rafIdRef.current = requestAnimationFrame(animate);
-      } else {
-        rafIdRef.current = null;
-      }
-    };
-    
-    rafIdRef.current = requestAnimationFrame(animate);
-    
-    // Cleanup function
-    return () => {
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-        rafIdRef.current = null;
-      }
-    };
-  }, [isInDiscoverablePosture]);
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
-  // Calculate real-time elapsed time for current session
-  const sessionStartedAt = live?.sessionStartedAt || null;
-  const sessionElapsed = live?.sessionElapsed || 0;
-  
-  const realTimeElapsed = useMemo(() => {
-    if (isInDiscoverablePosture && sessionStartedAt) {
-      const totalMs = sessionElapsed + (currentTime - sessionStartedAt);
-      const minutes = Math.floor(totalMs / 60000);
-      const seconds = Math.floor((totalMs % 60000) / 1000);
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else if (sessionElapsed > 0) {
-      const minutes = Math.floor(sessionElapsed / 60000);
-      const seconds = Math.floor((sessionElapsed % 60000) / 1000);
-      return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    }
-    return '00:00';
-  }, [isInDiscoverablePosture, sessionStartedAt, sessionElapsed, currentTime]);
-
-  // Calculate counter display based on mode
-  const { counterText, counterSubtext, counterIcon } = useMemo(() => {
-    const sessionCalls = live?.sessionCalls || 0;
-    const sessionEarnings = live?.sessionEarningsCents || 0;
-    const todayCalls = live?.todayCalls || 0;
-    const todayEarnings = live?.todayEarningsCents || 0;
-
-    switch (counterMode) {
-      case 'SESSION_EARNINGS':
-        return {
-          counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
-          counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
-          counterIcon: 'DollarSign'
-        };
-      case 'TODAY_EARNINGS':
-        return {
-          counterText: `$${(todayEarnings / 100).toFixed(2)}`,
-          counterSubtext: `${todayCalls} call${todayCalls !== 1 ? 's' : ''} today`,
-          counterIcon: 'DollarSign'
-        };
-      case 'SESSION_DURATION':
-        return {
-          counterText: realTimeElapsed,
-          counterSubtext: 'this session',
-          counterIcon: 'Clock'
-        };
-      default:
-        return {
-          counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
-          counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
-          counterIcon: 'DollarSign'
-        };
-    }
-  }, [counterMode, live?.sessionCalls, live?.sessionEarningsCents, live?.todayCalls, live?.todayEarningsCents, realTimeElapsed]);
-  
+  if (!shouldShowDSB || !isHydrated) {
+    return null;
+  }
   return (
-    <>
-      {/* LSB Shell - Always mounted for animation */}
-      <div ref={shellRef} className="lsb-shell">
+    <div ref={shellRef} className="dsb-shell" data-hydrated={isHydrated}>
+      {/* Collapsed Strip (Grabbable Handle) */}
+      {!isQueueOpen && (
         <div 
           className={cn(
-            "lsb-inner",
-            (isVisible && shouldShowLSB) && "lsb-inner--visible"
+            "dsb-strip",
+            isVisible && "dsb-strip--visible"
           )}
-          role="toolbar"
-          aria-label="Live session controls"
+          style={{
+            transform: isDragging ? `translateY(${-dragY}px)` : undefined
+          }}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          role="button"
+          aria-label="Drag to open queue or tap to toggle"
+          tabIndex={0}
+          onClick={(e) => {
+            if (!isDragging) {
+              handleQueueClick();
+            }
+          }}
         >
-          {/* Left - Queue button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleQueueClick}
-            disabled={queueCount === 0}
-            className={cn(
-              "flex items-center gap-2 px-3 py-2 h-auto text-white justify-self-start",
-              "disabled:opacity-50"
-            )}
-          >
-            <Users size={16} />
-            <span className="text-sm font-medium">{queueCount}</span>
-          </Button>
+          <div className="flex items-center justify-center h-full">
+            <Grip className="w-4 h-4 text-white/60" />
+          </div>
+        </div>
+      )}
 
-          {/* Center - Live Status */}
-          <div className="flex items-center gap-2 justify-self-center">
-            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-            <span className="text-sm font-bold text-white uppercase">DISCOVERABLE</span>
+      {/* Expanded Drawer */}
+      <div 
+        ref={drawerRef}
+        className={cn(
+          "dsb-drawer",
+          isQueueOpen && "dsb-drawer--open"
+        )}
+        role="dialog"
+        aria-expanded={isQueueOpen}
+        aria-label="Queue drawer"
+      >
+        {/* Drawer Handle */}
+        <div 
+          className="dsb-drawer-handle"
+          onClick={() => setIsQueueOpen(false)}
+          role="button"
+          aria-label="Close queue drawer"
+          tabIndex={0}
+        />
+
+        {/* Drawer Content */}
+        <div className="dsb-drawer-content">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-white" />
+              <h2 className="text-xl font-bold text-white">Queue ({queueEntries.length})</h2>
+            </div>
+            <Button
+              onClick={handleQueueClick}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/10"
+            >
+              <Users size={16} />
+              <span className="ml-2">{queueEntries.length}</span>
+            </Button>
           </div>
 
-          {/* Right - Counter Display */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCounterClick}
-            disabled={animatingToggle}
-            className={cn(
-              "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white justify-self-end",
-              "transition-all duration-200",
-              animatingToggle && "scale-95"
-            )}
-          >
-            <div className="flex items-center gap-1">
-              {counterIcon === 'Clock' ? <Clock size={14} /> : <DollarSign size={14} />}
-              <span className="text-xs font-bold tabular-nums">
-                {counterText}
-              </span>
+          {/* Queue Entries */}
+          {queueLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
             </div>
-            <span className="text-xs opacity-90">
-              {counterSubtext}
-            </span>
-          </Button>
+          ) : queueEntries.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 opacity-60">
+              <Users className="w-16 h-16 mb-4" />
+              <p className="text-lg font-medium mb-2">No one in queue yet</p>
+              <p className="text-sm">Fans will appear here when they join</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {queueEntries.map((entry, index) => (
+                <div key={entry.id} className="dsb-queue-entry">
+                  <div className="dsb-queue-avatar">
+                    {entry.profiles?.full_name 
+                      ? getInitials(entry.profiles.full_name)
+                      : 'U'
+                    }
+                  </div>
+                  <div className="dsb-queue-info">
+                    <div className="dsb-queue-name">
+                      {entry.profiles?.full_name || 'Anonymous User'}
+                    </div>
+                    <div className="dsb-queue-topic">
+                      Topic: {entry.topic || 'General discussion'}
+                    </div>
+                  </div>
+                  <div className="dsb-queue-actions">
+                    <Button
+                      size="sm"
+                      onClick={() => handleStartCall(entry)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Call
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-      
-      <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
-    </>
-  )
+    </div>
+  );
 }
 
 export const LiveControlBar: React.FC = () => (
