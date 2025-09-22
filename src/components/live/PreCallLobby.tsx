@@ -83,6 +83,12 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     }
   }
 
+  // Analytics tracking (non-PII)
+  const trackEvent = (eventName: string, properties?: Record<string, any>) => {
+    // Fire analytics event - replace with your analytics system
+    console.log(`[Analytics] ${eventName}`, properties)
+  }
+
   const attachLocalPreview = (stream: MediaStream) => {
     // stop previous
     if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
@@ -144,11 +150,20 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
       // Step 3: request
       const stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
-      attachLocalPreview(stream) // your existing preview hookup
+      attachLocalPreview(stream)
+      
+      // Track successful initialization
+      const hasAudio = stream.getAudioTracks().length > 0
+      const hasVideo = stream.getVideoTracks().length > 0
+      trackEvent('creator_precall_media_initialized', { audio: hasAudio, video: hasVideo })
+      
       setPhase('ready')
       return
     } catch (e: any) {
       const { name, message } = e || {}
+      
+      // Track media error
+      trackEvent('creator_precall_media_error', { code: name, name, message })
       
       // Fallback: If video fails with DEVICE_IN_USE or NotReadableError but audio is likely available
       if ((name === 'NotReadableError' || name === 'OverconstrainedError') && e.constraint !== 'audio') {
@@ -159,6 +174,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
           })
           setIsAudioOnlyMode(true)
           setIsVideoEnabled(false)
+          
+          // Track successful audio-only fallback
+          trackEvent('creator_precall_media_initialized', { audio: true, video: false })
+          
           setPhase('ready')
           return
         } catch (audioError) {
@@ -166,17 +185,38 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         }
       }
       
-      // Granular mapping
+      // Granular mapping with updated copy
       if (name === 'NotAllowedError' || name === 'SecurityError') {
-        setError({ code: 'PERMISSION_DENIED', message: 'Camera/Microphone permission denied.', hint: 'Enable permissions in Settings and retry.' })
+        trackEvent('creator_precall_permissions_denied', { code: name })
+        setError({ 
+          code: 'PERMISSION_DENIED', 
+          message: 'Permission needed', 
+          hint: 'Enable camera & mic in Settings > Privacy.' 
+        })
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-        setError({ code: 'DEVICE_UNAVAILABLE', message: 'No usable camera or microphone found.', hint: 'Check connections or select a different device.' })
+        setError({ 
+          code: 'DEVICE_UNAVAILABLE', 
+          message: 'No devices found', 
+          hint: 'Try switching devices or reconnecting your camera.' 
+        })
       } else if (name === 'NotReadableError') {
-        setError({ code: 'DEVICE_IN_USE', message: 'Camera or microphone is already in use by another app.', hint: 'Close other apps using the camera/mic and retry.' })
+        setError({ 
+          code: 'DEVICE_IN_USE', 
+          message: 'Camera/Mic busy', 
+          hint: 'Close other apps using your camera or microphone, then try again.' 
+        })
       } else if (name === 'AbortError') {
-        setError({ code: 'ABORTED', message: 'Device access was interrupted.', hint: 'Retry. If this persists, restart the app.' })
+        setError({ 
+          code: 'ABORTED', 
+          message: 'Couldn\'t start preview', 
+          hint: 'Try switching devices or reconnecting your camera.' 
+        })
       } else {
-        setError({ code: 'UNKNOWN', message: 'Could not start preview.', hint: (message || 'Retry or check device settings.') })
+        setError({ 
+          code: 'UNKNOWN', 
+          message: 'Couldn\'t start preview', 
+          hint: 'Try switching devices or reconnecting your camera.' 
+        })
       }
       setPhase('error')
     }
@@ -194,6 +234,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Initialize media on mount
   useEffect(() => {
     setPhase('requesting-permissions')
+    trackEvent('creator_precall_permissions_requested')
     initMedia()
   }, [])
 
@@ -334,12 +375,14 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Device switching handlers
   const handleAudioDeviceChange = (deviceId: string) => {
     setSelectedAudioDevice(deviceId)
+    trackEvent('creator_precall_device_switched', { audioId: deviceId })
     cleanupMedia()
     initMedia()
   }
 
   const handleVideoDeviceChange = (deviceId: string) => {
     setSelectedVideoDevice(deviceId)
+    trackEvent('creator_precall_device_switched', { videoId: deviceId })
     cleanupMedia()
     initMedia()
   }
@@ -361,6 +404,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   const retryPreflight = async () => {
+    trackEvent('creator_precall_retry_clicked')
     setPhase('requesting-permissions')
     setError(null)
     setShowErrorDetails(false)
