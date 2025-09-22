@@ -7,6 +7,7 @@ import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff } from 'lu
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
+import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
 
 interface QueueEntry {
@@ -37,16 +38,19 @@ interface QueueState {
 export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
+  const { store } = useLive()
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
-  const [state, setState] = useState<QueueState>({
+  const [state, setLocalState] = useState<QueueState>({
     entries: [],
     loading: false,
     error: null,
     retryCount: 0,
     isConnected: true
   })
+  const [processingInvite, setProcessingInvite] = useState(false)
+  const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -71,7 +75,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
-    setState(prev => ({ 
+    setLocalState(prev => ({ 
       ...prev, 
       loading: true, 
       error: isRetry ? null : prev.error,
@@ -116,7 +120,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         }))
       }
 
-      setState(prev => ({
+      setLocalState(prev => ({
         ...prev,
         entries: enrichedEntries,
         loading: false,
@@ -130,7 +134,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       
       console.error('Error fetching queue:', error)
       
-      setState(prev => ({
+      setLocalState(prev => ({
         ...prev,
         loading: false,
         error: error.message || 'Failed to load queue',
@@ -154,50 +158,37 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   }, [isOpen, user, fetchQueue])
 
   const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
-    if (!user) return
+    if (!user || processingInvite) return
 
     try {
-      // Update queue entry status to 'in_call'
-      const { error } = await supabase
-        .from('call_queue')
-        .update({ status: 'in_call' })
-        .eq('id', queueEntry.id)
-
-      if (error) {
-        const wrappedError = new Error(`Failed to start call: ${error.message}`)
-        wrappedError.name = 'DatabaseError'
-        ;(wrappedError as any).code = error.code
-        throw wrappedError
-      }
-
-      // Remove from local state
-      setState(prev => ({
-        ...prev,
-        entries: prev.entries.filter(entry => entry.id !== queueEntry.id)
-      }))
+      setProcessingInvite(true)
+      
+      // Set active invite and transition to SESSION_PREP
+      setActiveInvite(queueEntry)
+      store.dispatch({ type: 'ENTER_PREP' })
       
       toast({
-        title: "Call Started",
-        description: `Connected with ${queueEntry.profiles?.full_name || 'user'}`,
+        title: "Starting Pre-Call",
+        description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
       })
       
-      // Close drawer after successful call start
+      // Close drawer after successful transition
       onClose()
       
-      // Here you would typically navigate to the call interface
-      console.log('Starting call with:', queueEntry.profiles?.full_name)
     } catch (error: any) {
-      console.error('Error starting call:', error)
+      console.error('Error starting pre-call:', error)
       toast({
-        title: "Call Failed", 
-        description: error.message || "Failed to start call. Please try again.",
+        title: "Failed to Start Pre-Call", 
+        description: error.message || "Failed to start pre-call. Please try again.",
         variant: "destructive"
       })
+    } finally {
+      setProcessingInvite(false)
     }
-  }, [user, toast, onClose])
+  }, [user, processingInvite, store, toast, onClose])
 
   const handleRetry = useCallback(() => {
-    setState(prev => ({ ...prev, retryCount: 0 }))
+    setLocalState(prev => ({ ...prev, retryCount: 0 }))
     fetchQueue(true)
   }, [fetchQueue])
 
@@ -329,11 +320,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                     <Button
                       size="sm"
                       onClick={() => handleStartCall(entry)}
-                      className="bg-live hover:bg-live/90 text-white"
+                      disabled={processingInvite}
+                      className="bg-live hover:bg-live/90 text-white disabled:opacity-50"
                       aria-label={`Start pre-call with ${entry.profiles?.full_name || 'user'}`}
                     >
                       <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
-                      Start Pre-Call
+                      {processingInvite ? 'Starting...' : 'Start Pre-Call'}
                     </Button>
                   )}
                 </div>
