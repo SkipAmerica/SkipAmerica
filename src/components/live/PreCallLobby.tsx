@@ -91,14 +91,16 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Attach stream to video element
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !isVideoEnabled) return
+    if (!video || !isVideoEnabled || isInitializing) return
 
     const attachStream = () => {
       const stream = mediaManager.getLocalStream()
+      console.log('[PreCallLobby] Attempting to attach stream:', !!stream, 'to video element')
       if (stream && video.srcObject !== stream) {
         video.srcObject = stream
         video.muted = true
         video.autoplay = true
+        console.log('[PreCallLobby] Stream attached successfully')
         const playPromise = video.play?.()
         if (playPromise && typeof playPromise.then === 'function') {
           playPromise.catch(() => {})
@@ -125,7 +127,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         console.warn('[PreCallLobby] Failed to cleanup video:', err)
       }
     }
-  }, [isVideoEnabled])
+  }, [isVideoEnabled, isInitializing])
 
   // Audio level monitoring
   useEffect(() => {
@@ -422,63 +424,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="flex justify-center gap-4 py-4">
-            <Button
-              size="lg"
-              variant={isMicEnabled ? "default" : "destructive"}
-              onClick={toggleMic}
-              aria-pressed={isMicEnabled}
-              aria-label={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-            </Button>
-
-            <Button
-              size="lg"
-              variant={isVideoEnabled ? "default" : "destructive"}
-              onClick={toggleVideo}
-              disabled={isInitializing}
-              aria-pressed={isVideoEnabled}
-              aria-label={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </Button>
-          </div>
-
-          {/* Audio Level and Network Status */}
-          <div className="flex items-center justify-center gap-6 py-2">
-            {/* Audio Level Meter */}
-            <div className="flex items-center gap-2">
-              <Mic className="h-4 w-4 text-muted-foreground" />
-              <div className="flex gap-1">
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-1 h-3 rounded-full transition-colors ${
-                      audioLevel > (i * 12.5) 
-                        ? 'bg-primary' 
-                        : 'bg-muted'
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Network Status */}
-            <div className="flex items-center gap-2">
-              <Wifi className="h-4 w-4 text-muted-foreground" />
-              <Badge 
-                variant={networkStatus === 'ok' ? 'default' : 'secondary'}
-                className="text-xs px-2 py-1"
-              >
-                {networkStatus === 'checking' ? 'Checking...' : 
-                 networkStatus === 'ok' ? 'OK' : 'Degraded'}
-              </Badge>
-            </div>
-          </div>
 
           {/* Quick Words Section */}
           <div className="space-y-4">
