@@ -27,6 +27,12 @@ export interface LiveStoreState {
   todayKey: string // YYYY-MM-DD local date
   todayEarningsCents: number
   todayCalls: number
+  // Per-session analytics
+  currentSessionId: number
+  sessionCalls: number
+  sessionEarningsCents: number
+  sessionStartedAt: number | null // ms since epoch when session began
+  sessionElapsed: number // accumulated ms for THIS session
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -66,6 +72,12 @@ const initialState: LiveStoreState = {
   todayKey: getTodayKey(),
   todayEarningsCents: 0,
   todayCalls: 0,
+  // Per-session analytics
+  currentSessionId: 0,
+  sessionCalls: 0,
+  sessionEarningsCents: 0,
+  sessionStartedAt: null,
+  sessionElapsed: 0,
   inFlight: {
     start: null,
     end: null
@@ -82,23 +94,49 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
       // Centralized posture check for ALL state transitions
       const wasInDiscoverablePosture = inDiscoverablePosture(prevState);
       const isNowInDiscoverablePosture = inDiscoverablePosture(nextState);
+      const now = Date.now();
       
-      // Handle timer accumulation on exit from discoverable posture
+      // Handle EXIT from discoverable posture - finalize session analytics
       if (wasInDiscoverablePosture && !isNowInDiscoverablePosture) {
-        // Exiting discoverable posture - accumulate time and stop timer
+        // Accumulate session time and stop timer
+        if (state.sessionStartedAt) {
+          updates.sessionElapsed = state.sessionElapsed + (now - state.sessionStartedAt);
+          updates.sessionStartedAt = null;
+        }
+        // Also handle legacy discoverable timer
         if (state.discoverableStartedAt) {
           updates.accumulatedDiscoverableTime = state.accumulatedDiscoverableTime + 
-            (Date.now() - state.discoverableStartedAt);
+            (now - state.discoverableStartedAt);
           updates.discoverableStartedAt = null;
         }
+        
+        // Emit session ended analytics
+        console.info(`[Analytics] SessionEnded`, {
+          sessionId: state.currentSessionId,
+          durationMs: updates.sessionElapsed || state.sessionElapsed,
+          calls: state.sessionCalls,
+          earningsCents: state.sessionEarningsCents
+        });
       }
       
-      // Handle timer start on entry to discoverable posture  
+      // Handle ENTRY to discoverable posture - start new session with reset analytics
       if (!wasInDiscoverablePosture && isNowInDiscoverablePosture) {
-        // Entering discoverable posture - start timer if not already started
+        // New discoverable session begins: hard reset per-session analytics to zero
+        updates.currentSessionId = (state.currentSessionId || 0) + 1;
+        updates.sessionCalls = 0;
+        updates.sessionEarningsCents = 0;
+        updates.sessionElapsed = 0;
+        updates.sessionStartedAt = now;
+        
+        // Also start legacy discoverable timer
         if (!state.discoverableStartedAt) {
-          updates.discoverableStartedAt = Date.now();
+          updates.discoverableStartedAt = now;
         }
+        
+        // Emit session started analytics
+        console.info(`[Analytics] SessionStarted`, {
+          sessionId: updates.currentSessionId
+        });
       }
       
       return { ...state, ...updates };
@@ -128,7 +166,10 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         callsTaken: state.callsTaken + 1,
         totalEarningsCents: state.totalEarningsCents + action.earnings,
         todayEarningsCents: newState.todayEarningsCents + action.earnings,
-        todayCalls: newState.todayCalls + 1
+        todayCalls: newState.todayCalls + 1,
+        // Also increment per-session analytics
+        sessionCalls: state.sessionCalls + 1,
+        sessionEarningsCents: state.sessionEarningsCents + action.earnings
       }
     }
     
@@ -200,6 +241,12 @@ export interface LiveStoreContextValue {
   todayKey: string
   todayEarningsCents: number
   todayCalls: number
+  // Per-session analytics
+  currentSessionId: number
+  sessionCalls: number
+  sessionEarningsCents: number
+  sessionStartedAt: number | null
+  sessionElapsed: number
   // Timer fields
   discoverableStartedAt: number | null
   accumulatedDiscoverableTime: number
@@ -501,6 +548,12 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     todayKey: state.todayKey,
     todayEarningsCents: state.todayEarningsCents,
     todayCalls: state.todayCalls,
+    // Per-session analytics
+    currentSessionId: state.currentSessionId,
+    sessionCalls: state.sessionCalls,
+    sessionEarningsCents: state.sessionEarningsCents,
+    sessionStartedAt: state.sessionStartedAt,
+    sessionElapsed: state.sessionElapsed,
     // Timer fields
     discoverableStartedAt: state.discoverableStartedAt,
     accumulatedDiscoverableTime: state.accumulatedDiscoverableTime,

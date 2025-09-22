@@ -150,28 +150,28 @@ const LiveControlBarContent: React.FC = () => {
     };
   }, [isInDiscoverablePosture]);
 
-  // Calculate real-time elapsed time
-  const discoverableStartedAt = live?.discoverableStartedAt || null;
-  const accumulatedTime = live?.accumulatedDiscoverableTime || 0;
+  // Calculate real-time elapsed time for current session
+  const sessionStartedAt = live?.sessionStartedAt || null;
+  const sessionElapsed = live?.sessionElapsed || 0;
   
   const realTimeElapsed = useMemo(() => {
-    if (isInDiscoverablePosture && discoverableStartedAt) {
-      const totalMs = accumulatedTime + (currentTime - discoverableStartedAt);
+    if (isInDiscoverablePosture && sessionStartedAt) {
+      const totalMs = sessionElapsed + (currentTime - sessionStartedAt);
       const minutes = Math.floor(totalMs / 60000);
       const seconds = Math.floor((totalMs % 60000) / 1000);
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    } else if (accumulatedTime > 0) {
-      const minutes = Math.floor(accumulatedTime / 60000);
-      const seconds = Math.floor((accumulatedTime % 60000) / 1000);
+    } else if (sessionElapsed > 0) {
+      const minutes = Math.floor(sessionElapsed / 60000);
+      const seconds = Math.floor((sessionElapsed % 60000) / 1000);
       return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
     }
     return '00:00';
-  }, [isInDiscoverablePosture, discoverableStartedAt, accumulatedTime, currentTime]);
+  }, [isInDiscoverablePosture, sessionStartedAt, sessionElapsed, currentTime]);
 
   // Calculate counter display based on mode
   const { counterText, counterSubtext, counterIcon } = useMemo(() => {
-    const sessionCalls = live?.callsTaken || 0;
-    const sessionEarnings = live?.totalEarningsCents || 0;
+    const sessionCalls = live?.sessionCalls || 0;
+    const sessionEarnings = live?.sessionEarningsCents || 0;
     const todayCalls = live?.todayCalls || 0;
     const todayEarnings = live?.todayEarningsCents || 0;
 
@@ -201,7 +201,7 @@ const LiveControlBarContent: React.FC = () => {
           counterIcon: 'DollarSign'
         };
     }
-  }, [counterMode, live?.callsTaken, live?.totalEarningsCents, live?.todayCalls, live?.todayEarningsCents, realTimeElapsed]);
+  }, [counterMode, live?.sessionCalls, live?.sessionEarningsCents, live?.todayCalls, live?.todayEarningsCents, realTimeElapsed]);
   
   return (
     <>

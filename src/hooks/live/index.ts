@@ -34,6 +34,13 @@ export function useLive() {
     todayEarningsCents: store.todayEarningsCents,
     todayCalls: store.todayCalls,
     
+    // Per-session analytics
+    currentSessionId: store.currentSessionId,
+    sessionCalls: store.sessionCalls,
+    sessionEarningsCents: store.sessionEarningsCents,
+    sessionStartedAt: store.sessionStartedAt,
+    sessionElapsed: store.sessionElapsed,
+    
     // Timer fields
     discoverableStartedAt: store.discoverableStartedAt,
     accumulatedDiscoverableTime: store.accumulatedDiscoverableTime,
