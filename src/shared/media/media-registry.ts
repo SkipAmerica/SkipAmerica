@@ -287,7 +287,6 @@ export async function initializeMedia(storeState: string, previewOnly = false): 
       mediaRegistry.phase = 'active'
       console.info('[MEDIA][INIT] Media initialization complete')
       
-      return stream
     } catch (error) {
       console.error('[MEDIA][INIT] Failed:', error)
       mediaRegistry.phase = 'idle'

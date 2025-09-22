@@ -257,7 +257,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'DISPATCH_EVENT', event })
     
     // Handle runtime lifecycle
-    if (newState === 'LIVE' && oldState !== 'LIVE') {
+    if (newState === 'SESSION_ACTIVE' && oldState !== 'SESSION_ACTIVE') {
       startRuntime()
     } else if (newState === 'OFFLINE' && oldState !== 'OFFLINE') {
       disposeRuntime()
