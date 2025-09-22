@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight, Settings } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
-import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
+import { mediaManager, orchestrateInit, orchestrateStop, routeMediaError } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
 import { useLive } from '@/hooks/live'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -53,8 +53,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [newItemText, setNewItemText] = useState('')
 
   const { confirmJoin } = useLive()
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
@@ -76,11 +74,12 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setEditableList(editableList.filter(item => item.id !== itemId))
   }
 
-  // Resilient media initialization
-  function cleanupMedia() {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(t => t.stop())
-      streamRef.current = null
+  // Media initialization using MediaOrchestrator
+  const cleanupMedia = async () => {
+    try {
+      await orchestrateStop('precall_cleanup')
+    } catch (error) {
+      console.warn('[PreCallLobby] Failed to cleanup media:', error)
     }
   }
 
@@ -90,36 +89,13 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     console.log(`[Analytics] ${eventName}`, properties)
   }
 
-  const attachLocalPreview = (stream: MediaStream) => {
-    // stop previous
-    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
-    streamRef.current = stream
-    
-    // your existing code to set <video>.srcObject = stream
-    const video = videoRef.current
-    if (video && stream) {
-      video.srcObject = stream
-      video.muted = true
-      video.autoplay = true
-      console.log('[PreCallLobby] Stream attached successfully to preview')
-      
-      // iOS-safe play promise handling
-      const playPromise = video.play?.()
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch((err) => {
-          console.warn('[PreCallLobby] Video play failed (expected on iOS without gesture):', err)
-        })
-      }
-    }
-  }
-
   async function initMedia() {
     setError(null)
     setPhase('initializing-media')
     setIsAudioOnlyMode(false)
     
     try {
-      // Step 1: enumerate devices first
+      // Enumerate devices first
       const devices = await navigator.mediaDevices.enumerateDevices()
       const audioDevices = devices.filter(d => d.kind === 'audioinput' && d.deviceId)
       const videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId)
@@ -134,48 +110,27 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         setSelectedVideoDevice(videoDevices[0].deviceId)
       }
       
-      const hasCam = videoDevices.length > 0
-      const hasMic = audioDevices.length > 0
-
-      // Step 2: build constraints progressively with specific device IDs
-      const baseConstraints: MediaStreamConstraints = {
-        audio: hasMic ? { 
-          deviceId: selectedAudioDevice || audioDevices[0]?.deviceId,
-          echoCancellation: true, 
-          noiseSuppression: true, 
-          autoGainControl: true 
-        } : false,
-        video: hasCam ? { 
-          deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
-          facingMode: 'user', 
-          width: { ideal: 1280 }, 
-          height: { ideal: 720 } 
-        } : false
-      }
-
-      // Step 3: request with iOS/Safari fallback handling
-      let stream: MediaStream
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
-      } catch (facingModeError: any) {
-        // iOS/Safari fallback: retry without facingMode if it failed
-        if (facingModeError.name === 'OverconstrainedError' && baseConstraints.video && typeof baseConstraints.video === 'object') {
-          console.warn('[PreCallLobby] facingMode failed, retrying without it')
-          const fallbackConstraints = {
-            ...baseConstraints,
-            video: {
-              deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
-              width: { ideal: 1280 },
-              height: { ideal: 720 }
-            }
-          }
-          stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints)
-        } else {
-          throw facingModeError
-        }
-      }
+      // Use MediaOrchestrator for media initialization  
+      const audioConstraints = audioDevices.length > 0 ? { 
+        deviceId: selectedAudioDevice || audioDevices[0]?.deviceId,
+        echoCancellation: true, 
+        noiseSuppression: true, 
+        autoGainControl: true 
+      } : true
       
-      attachLocalPreview(stream)
+      const videoConstraints = videoDevices.length > 0 && isVideoEnabled ? { 
+        deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
+        facingMode: 'user', 
+        width: { ideal: 1280 }, 
+        height: { ideal: 720 } 
+      } : isVideoEnabled
+      
+      const stream = await orchestrateInit({
+        targetState: 'SESSION_PREP',
+        previewOnly: true,
+        audio: isMicEnabled ? audioConstraints : false,
+        video: videoConstraints
+      })
       
       // Track successful initialization
       const hasAudio = stream.getAudioTracks().length > 0
@@ -183,58 +138,66 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       trackEvent('creator_precall_media_initialized', { audio: hasAudio, video: hasVideo })
       
       setPhase('ready')
-      return
     } catch (e: any) {
-      const { name, message } = e || {}
+      const { code, name, message } = e || {}
       
       // Track media error
-      trackEvent('creator_precall_media_error', { code: name, name, message })
+      trackEvent('creator_precall_media_error', { 
+        code: code || name, 
+        name: name || 'UNKNOWN', 
+        message 
+      })
       
-      // Fallback: If video fails with DEVICE_IN_USE or NotReadableError but audio is likely available
-      if ((name === 'NotReadableError' || name === 'OverconstrainedError') && e.constraint !== 'audio') {
+      // Try audio-only fallback for some errors
+      if ((code === 'HARDWARE_ERROR' || name === 'NotReadableError') && isVideoEnabled) {
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ 
-            audio: selectedAudioDevice ? { deviceId: selectedAudioDevice } : true, 
-            video: false 
+          console.log('[PreCallLobby] Trying audio-only fallback...')
+          const fallbackAudioConstraints = availableDevices.audio.length > 0 ? { 
+            deviceId: selectedAudioDevice || availableDevices.audio[0]?.deviceId,
+            echoCancellation: true, 
+            noiseSuppression: true, 
+            autoGainControl: true 
+          } : true
+          
+          await orchestrateInit({
+            targetState: 'SESSION_PREP',
+            previewOnly: true,
+            audio: isMicEnabled ? fallbackAudioConstraints : false,
+            video: false
           })
+          
           setIsAudioOnlyMode(true)
           setIsVideoEnabled(false)
-          
-          // Track successful audio-only fallback
           trackEvent('creator_precall_media_initialized', { audio: true, video: false })
-          
           setPhase('ready')
           return
         } catch (audioError) {
-          // If audio also fails, continue with original error handling
+          console.warn('[PreCallLobby] Audio-only fallback also failed:', audioError)
         }
       }
       
-      // Granular mapping with updated copy
-      if (name === 'NotAllowedError' || name === 'SecurityError') {
+      // Handle errors with MediaOrchestrator error routing
+      routeMediaError(e)
+      
+      // Map to local error state for UI
+      if (code === 'PERMISSION_DENIED' || name === 'NotAllowedError') {
         trackEvent('creator_precall_permissions_denied', { code: name })
         setError({ 
           code: 'PERMISSION_DENIED', 
           message: 'Permission needed', 
           hint: 'Enable camera & mic in Settings > Privacy.' 
         })
-      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+      } else if (code === 'DEVICE_NOT_FOUND' || name === 'NotFoundError') {
         setError({ 
           code: 'DEVICE_UNAVAILABLE', 
           message: 'No devices found', 
           hint: 'Try switching devices or reconnecting your camera.' 
         })
-      } else if (name === 'NotReadableError') {
+      } else if (code === 'HARDWARE_ERROR' || name === 'NotReadableError') {
         setError({ 
           code: 'DEVICE_IN_USE', 
           message: 'Camera/Mic busy', 
           hint: 'Close other apps using your camera or microphone, then try again.' 
-        })
-      } else if (name === 'AbortError') {
-        setError({ 
-          code: 'ABORTED', 
-          message: 'Couldn\'t start preview', 
-          hint: 'Try switching devices or reconnecting your camera.' 
         })
       } else {
         setError({ 
@@ -252,17 +215,18 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     document.documentElement.classList.add('precall-open')
     return () => {
       document.documentElement.classList.remove('precall-open')
-      cleanupMedia()
+      cleanupMedia().catch(console.warn)
     }
   }, [])
 
   // Initialize media on mount
   useEffect(() => {
-    // Check if we need user gesture for autoplay (common on iOS/Safari)
-    const needsGesture = /iPhone|iPad|iPod|Safari/.test(navigator.userAgent) && 
-                        !/(CriOS|FxiOS|EdgiOS)/.test(navigator.userAgent)
+    // More accurate Safari detection
+    const isSafari = /Safari/.test(navigator.userAgent) && 
+                    !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent)
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
     
-    if (needsGesture) {
+    if (isSafari || isIOS) {
       setNeedsUserGesture(true)
       setPhase('idle')
     } else {
@@ -344,15 +308,12 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       const newVideoState = !isVideoEnabled
       setIsVideoEnabled(newVideoState)
       
-      // Restart media with new settings
-      if (mediaManager.hasLocalStream()) {
-        await mediaManager.stop('video_toggle')
-        await mediaManager.start({
-          video: newVideoState,
-          audio: isMicEnabled,
-          previewOnly: true,
-          targetState: 'SESSION_PREP'
-        })
+      // Restart media with new settings through MediaOrchestrator
+      await cleanupMedia()
+      
+      // Only restart if we're in ready state
+      if (phase === 'ready') {
+        await initMedia()
       }
     } catch (error) {
       console.error('[PreCallLobby] Failed to toggle video:', error)
@@ -374,10 +335,20 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   const handleEnterCall = useCallback(async () => {
     try {
-      // Use existing join flow to transition to SESSION_JOINING then LIVE
-      if (videoRef.current) {
-        confirmJoin(videoRef.current)
+      // Create temporary video elements for confirmJoin
+      // MediaOrchestrator already has the stream attached
+      const tempVideo = document.createElement('video')
+      tempVideo.muted = true
+      tempVideo.autoplay = true
+      tempVideo.playsInline = true
+      
+      // Attach the current stream to the temp video element
+      const stream = mediaManager.getLocalStream()
+      if (stream) {
+        tempVideo.srcObject = stream
       }
+      
+      confirmJoin(tempVideo)
     } catch (error) {
       console.error('[PreCallLobby] Failed to enter call:', error)
     }
@@ -392,8 +363,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       const newMicState = !isMicEnabled
       setIsMicEnabled(newMicState)
       
-      // Update audio track enabled state if stream exists
-      const stream = streamRef.current
+      // Update audio track enabled state if stream exists from MediaManager
+      const stream = mediaManager.getLocalStream()
       if (stream) {
         const audioTracks = stream.getAudioTracks()
         audioTracks.forEach(track => {
@@ -407,25 +378,25 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   // Device switching handlers
-  const handleAudioDeviceChange = (deviceId: string) => {
+  const handleAudioDeviceChange = async (deviceId: string) => {
     setSelectedAudioDevice(deviceId)
     trackEvent('creator_precall_device_switched', { audioId: deviceId })
-    cleanupMedia()
-    initMedia()
+    await cleanupMedia()
+    await initMedia()
   }
 
-  const handleVideoDeviceChange = (deviceId: string) => {
+  const handleVideoDeviceChange = async (deviceId: string) => {
     setSelectedVideoDevice(deviceId)
     trackEvent('creator_precall_device_switched', { videoId: deviceId })
-    cleanupMedia()
-    initMedia()
+    await cleanupMedia()
+    await initMedia()
   }
 
   // Enter Call availability logic
   const canEnterCall = () => {
     if (phase !== 'ready') return false
-    // Allow if audio-only fallback active or normal AV stream
-    return streamRef.current !== null || isAudioOnlyMode
+    // Allow if MediaManager has stream or audio-only fallback is active
+    return mediaManager.hasLocalStream() || isAudioOnlyMode
   }
 
   const getCallButtonText = () => {
@@ -442,8 +413,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setPhase('requesting-permissions')
     setError(null)
     setShowErrorDetails(false)
-    cleanupMedia()
-    initMedia()
+    await cleanupMedia()
+    await initMedia()
   }
 
   const startPreviewWithGesture = () => {
@@ -635,17 +606,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
               </div>
               <Card className="flex-1 min-h-[200px] overflow-hidden relative">
                 {isVideoEnabled && !isInitializing && !isAudioOnlyMode ? (
-                  <video
-                    ref={videoRef}
+                  <MediaPreview 
                     className="w-full h-full object-cover"
-                    muted
-                    autoPlay
-                    playsInline
-                    style={{ 
-                      width: '100%', 
-                      height: '100%', 
-                      objectFit: 'cover' 
-                    }}
+                    muted={true}
+                    autoPlay={true}
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
