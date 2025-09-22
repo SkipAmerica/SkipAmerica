@@ -62,6 +62,11 @@ const LiveControlBarContent: React.FC = () => {
   // Hydration effect - prevent flash
   useEffect(() => {
     setIsHydrated(true);
+    const el = document.getElementById("dsb-root");
+    if (el) {
+      el.setAttribute("data-hydrated", "true");
+      el.classList.remove("dsb-prehydrate");
+    }
   }, []);
 
   // Add body class for live state
@@ -252,11 +257,14 @@ const LiveControlBarContent: React.FC = () => {
     <>
       {/* DSB Shell - Always mounted for animation */}
       <div 
+        id="dsb-root"
         ref={shellRef} 
         className={cn(
           "lsb-shell",
+          "dsb-prehydrate",
           isHydrated && "lsb-shell--hydrated"
         )}
+        data-hydrated="false"
       >
         <div 
           ref={panelRef}

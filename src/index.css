@@ -507,16 +507,25 @@ body.live-active {
   width: 100%;
   pointer-events: none;
   z-index: 50; /* Above bottom nav (z-40), below CPB (z-60) */
-  /* Hydration flash prevention */
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
 }
 
-.lsb-shell--hydrated {
+/* Pre-hydration: DSB must be invisible, non-interactive, and behind bottom nav */
+.dsb-prehydrate {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  /* keep it below nav regardless of existing z-index */
+  z-index: 0 !important;
+}
+
+/* Post-hydration: restore visibility; actual stacking handled by existing classes */
+#dsb-root[data-hydrated="true"] {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
+}
+
+.lsb-shell--hydrated {
   transition: opacity 0.2s ease-out;
 }
 
