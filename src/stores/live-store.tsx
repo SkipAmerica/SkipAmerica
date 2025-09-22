@@ -8,6 +8,9 @@ import { ensureMediaSubscriptions, orchestrateInit, orchestrateStop, routeMediaE
 import { useAuth } from '@/app/providers/auth-provider'
 import { supabase } from '@/integrations/supabase/client'
 
+/* Prevent double-taps/races on discoverable toggle */
+let __discToggleInFlight = false;
+
 // Core state structure
 export interface LiveStoreState {
   state: LiveState
@@ -202,13 +205,21 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 
   // GO UNDISCOVERABLE: return to offline (proper FSM transition)
   const goUndiscoverable = useCallback(async () => {
-    if (!user || state.state !== 'DISCOVERABLE' || state.inFlight.end) return
-    
-    console.log('[LiveStore] Going offline from discoverable...')
-    // Follow FSM: DISCOVERABLE -> END_LIVE -> TEARDOWN -> SESSION_ENDED -> OFFLINE
-    handleDispatch({ type: 'END_LIVE' }) // -> TEARDOWN
-    // The reducer will handle the next transition to OFFLINE
-  }, [user, state.state, state.inFlight.end, handleDispatch])
+    if (__discToggleInFlight) return;
+    __discToggleInFlight = true;
+    try {
+      const st = state.state;
+
+      // Complete the legal FSM path: DISCOVERABLE -> TEARDOWN -> OFFLINE
+      await handleDispatch({ type: 'END_LIVE' });      // should move to TEARDOWN
+      await Promise.resolve();                         // allow reducer to commit microtask
+      await handleDispatch({ type: 'SESSION_ENDED' }); // TEARDOWN -> OFFLINE
+
+      console.info('[DISCOVERABLE] -> OFFLINE (END_LIVE → SESSION_ENDED)');
+    } finally {
+      __discToggleInFlight = false;
+    }
+  }, [handleDispatch, state.state])
 
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
@@ -381,24 +392,29 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'TRIGGER_HAPTIC' })
   }, [])
 
-  const toggleDiscoverable = useCallback(() => {
-    console.log('[LiveStore] Toggle discoverable clicked, current state:', state.state)
-    if (state.inFlight.start || state.inFlight.end || isTransitioning(state.state)) {
-      console.log('[LiveStore] Toggle blocked - transitioning or in flight')
-      return
+  const toggleDiscoverable = useCallback(async () => {
+    if (__discToggleInFlight) return;
+
+    const st = state.state;
+
+    // Ignore toggles while transitional states are in progress to prevent races
+    if (st === 'TEARDOWN') {
+      console.info('[DISCOVERABLE][ignored] state:', st);
+      return;
     }
-    // Ignore when in active call
-    if (state.state === 'SESSION_ACTIVE') {
-      console.log('[LiveStore] Toggle ignored - in active call')
-      return
+
+    if (st === 'OFFLINE') {
+      return goDiscoverable();
     }
-    
-    if (state.state === 'OFFLINE') {
-      goDiscoverable()
-    } else if (state.state === 'DISCOVERABLE') {
-      goUndiscoverable()
+
+    // Treat DISCOVERABLE posture (and lobby/joining) as "on"
+    if (st === 'DISCOVERABLE' || st === 'SESSION_PREP' || st === 'SESSION_JOINING') {
+      return goUndiscoverable();
     }
-  }, [state.state, state.inFlight.start, state.inFlight.end, goDiscoverable, goUndiscoverable])
+
+    // In an active call, center toggle is not responsible for ending; do nothing.
+    console.info('[DISCOVERABLE][no-op] state:', st);
+  }, [state.state, goDiscoverable, goUndiscoverable])
 
   // Computed values
   const elapsedTime = useMemo(() => {
