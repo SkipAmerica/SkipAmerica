@@ -1,10 +1,10 @@
 /**
- * Media preview component for live sessions
+ * Updated MediaPreview component to work with new MediaOrchestrator
  * Never calls getUserMedia - only attaches provided streams
  */
 
 import React, { useEffect, useRef } from 'react'
-import { registerVideo, unregisterVideo, getMediaRegistry } from '@/shared/media/media-registry'
+import { mediaManager } from '@/media/MediaOrchestrator'
 
 interface MediaPreviewProps {
   className?: string
@@ -19,15 +19,20 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
     const video = videoRef.current
     if (!video) return
 
-    // Register video element
-    registerVideo(video)
-
-    // Attach stream from registry if available
+    // Attach stream from media manager if available
     const attachStream = () => {
-      const registry = getMediaRegistry()
-      if (registry.stream && video.srcObject !== registry.stream) {
+      const stream = mediaManager.getLocalStream()
+      if (stream && video.srcObject !== stream) {
         console.info('[MEDIA][PREVIEW] Attaching stream to video element')
-        video.srcObject = registry.stream
+        video.srcObject = stream
+        video.muted = muted
+        video.autoplay = autoPlay
+        // @ts-ignore
+        video.playsInline = true
+        const playPromise = video.play?.()
+        if (playPromise && typeof playPromise.then === 'function') {
+          playPromise.catch(() => {})
+        }
       }
     }
 
@@ -49,11 +54,8 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
       } catch (err) {
         console.warn('[MEDIA][PREVIEW] Failed to cleanup video:', err)
       }
-      
-      // Unregister video element
-      unregisterVideo(video)
     }
-  }, [])
+  }, [muted, autoPlay])
 
   return (
     <video

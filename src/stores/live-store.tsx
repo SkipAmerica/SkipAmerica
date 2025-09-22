@@ -9,7 +9,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { transition, LiveState, LiveEvent, canGoLive, canEndLive, canInitMedia, isLive, isTransitioning } from '@/hooks/live/use-live-state-machine'
 import { normalizeError, safeStringify } from '@/shared/errors/err-utils'
-import { teardownMedia, initializeMedia, mediaSummary, getMediaRegistry } from '@/shared/media/media-registry'
+import { orchestrateInit, orchestrateStop, ensureMediaSubscriptions, setupMediaSubscriptions, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
 import { requestWithDetail } from '@/shared/errors/network-helper'
 
 interface LiveStoreState {
@@ -288,30 +288,23 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     // Move to prep state for lobby/preview
     handleDispatch({ type: 'ENTER_PREP' })
     
+    // Allow state to commit before media init
+    await Promise.resolve()
+    
     try {
-      // Step 1: Initialize media for preview (SESSION_PREP)
+      // Step 1: Initialize media for preview (SESSION_PREP target)
       try {
         if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
           console.info('[LIVE][START] Initializing preview media...');
           
-          await initializeMedia(state.state, true) // Preview only
+          await orchestrateInit({ 
+            targetState: 'SESSION_PREP', 
+            previewOnly: true 
+          })
           console.info('[LIVE][START] Preview media initialized');
         }
       } catch (permissionError) {
-        const normalized = normalizeError(permissionError, {
-          step: 'request_permissions',
-          state: state.state,
-          event: 'GO_LIVE',
-          userId: user.id
-        });
-        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
-        
-        toast({
-          title: "Camera/Microphone Access Required",
-          description: normalized.message || "Please allow camera and microphone access to go live",
-          variant: "destructive"
-        });
-        
+        routeMediaError(permissionError)
         handleDispatch({ type: 'START_FAILED' });
         dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
         return;
@@ -429,7 +422,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       
       // Ensure media cleanup on any failure
       try {
-        await teardownMedia()
+        await orchestrateStop('go_live_failed')
       } catch (cleanupError) {
         console.warn('[LIVE][START_FAILED] Media cleanup failed:', cleanupError)
       }
@@ -480,7 +473,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       // Step 1: Teardown media devices immediately
       try {
         console.info('[LIVE][END] Tearing down media devices...');
-        await teardownMedia()
+        await orchestrateStop('user_end')
         console.info('[LIVE][END] Media devices torn down');
       } catch (mediaError) {
         const normalized = normalizeError(mediaError, {
@@ -584,7 +577,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       
       // Ensure media cleanup on any failure
       try {
-        await teardownMedia()
+        await orchestrateStop('end_live_failed')
       } catch (cleanupError) {
         console.warn('[LIVE][END_FAILED] Media cleanup failed:', cleanupError)
       }
@@ -666,6 +659,20 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     triggerHaptic
   }
   
+  // Initialize store subscriptions and media orchestrator
+  useEffect(() => {
+    setupMediaSubscriptions((callback) => {
+      // Simple subscription mechanism - call callback on state changes
+      const unsubscribe = () => {} // Placeholder for cleanup
+      callback() // Initial call
+      return unsubscribe
+    }, () => state)
+    
+    ensureMediaSubscriptions()
+    startRuntime()
+    return () => disposeRuntime()
+  }, [])
+
   return (
     <LiveStoreContext.Provider value={value}>
       {children}
