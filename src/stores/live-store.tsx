@@ -65,17 +65,24 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
       const newState = transition(state.state, action.event)
       let updates: Partial<LiveStoreState> = { state: newState }
       
-      // Handle timer logic based on state changes
-      if (state.state !== 'DISCOVERABLE' && newState === 'DISCOVERABLE') {
-        // Starting discoverable
-        updates.discoverableStartedAt = Date.now()
-      } else if (state.state === 'DISCOVERABLE' && newState === 'OFFLINE') {
-        // Going offline - accumulate time
+      // Define discoverable postures
+      const discoverableStates = ['DISCOVERABLE', 'SESSION_PREP', 'SESSION_JOINING']
+      const wasDiscoverable = discoverableStates.includes(state.state)
+      const isNowDiscoverable = discoverableStates.includes(newState)
+      
+      // Handle timer logic based on discoverable posture changes
+      if (!wasDiscoverable && isNowDiscoverable) {
+        // Entering discoverable posture - start timer if not already started
+        if (!state.discoverableStartedAt) {
+          updates.discoverableStartedAt = Date.now()
+        }
+      } else if (wasDiscoverable && !isNowDiscoverable) {
+        // Leaving discoverable posture (to ANY non-discoverable state) - accumulate time
         if (state.discoverableStartedAt) {
           updates.accumulatedDiscoverableTime = state.accumulatedDiscoverableTime + 
             (Date.now() - state.discoverableStartedAt)
+          updates.discoverableStartedAt = null
         }
-        updates.discoverableStartedAt = null
       }
       
       return { ...state, ...updates }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ const LiveControlBarContent: React.FC = () => {
   const [animatingToggle, setAnimatingToggle] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const shellRef = useRef<HTMLDivElement>(null);
 
   const live = useLive();
   
@@ -56,6 +57,37 @@ const LiveControlBarContent: React.FC = () => {
   // Show LSB when discoverable but not in active call
   const shouldShowLSB = isDiscoverable && !isLive;
 
+  // Publish CSS variables for FAB positioning
+  useEffect(() => {
+    const shell = shellRef.current;
+    const isLSBVisible = shouldShowLSB;
+    
+    // Set visibility variable
+    document.documentElement.style.setProperty('--lsb-visible', isLSBVisible ? '1' : '0');
+    
+    // Set height variable
+    if (shell && shell.offsetHeight > 0) {
+      document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
+    }
+  }, [shouldShowLSB]);
+
+  // ResizeObserver to keep --lsb-height current
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell || typeof ResizeObserver === 'undefined') return;
+    
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.target === shell && entry.contentRect.height > 0) {
+          document.documentElement.style.setProperty('--lsb-height', `${entry.contentRect.height}px`);
+        }
+      }
+    });
+    
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, []);
+
   // Handle animation states for show/hide
   useEffect(() => {
     if (shouldShowLSB && !isVisible) {
@@ -78,7 +110,7 @@ const LiveControlBarContent: React.FC = () => {
   return (
     <>
       {/* LSB Shell - Always mounted for animation */}
-      <div className="lsb-shell">
+      <div ref={shellRef} className="lsb-shell">
         <div 
           className={cn(
             "lsb-inner",
