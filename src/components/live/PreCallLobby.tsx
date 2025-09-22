@@ -179,6 +179,32 @@ export function PreCallLobby({}: PreCallLobbyProps) {
             </div>
           </div>
 
+          {/* Controls */}
+          <div className="flex justify-center gap-4 py-4">
+            <Button
+              size="lg"
+              variant={isMicEnabled ? "default" : "destructive"}
+              onClick={toggleMic}
+              aria-pressed={isMicEnabled}
+              aria-label={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
+              className="h-12 w-12 rounded-full p-0"
+            >
+              {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </Button>
+
+            <Button
+              size="lg"
+              variant={isVideoEnabled ? "default" : "destructive"}
+              onClick={toggleVideo}
+              disabled={isInitializing}
+              aria-pressed={isVideoEnabled}
+              aria-label={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
+              className="h-12 w-12 rounded-full p-0"
+            >
+              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </Button>
+          </div>
+
           {/* Quick Words Section */}
           <div className="space-y-4">
             <div>
@@ -232,32 +258,6 @@ export function PreCallLobby({}: PreCallLobbyProps) {
                 Cancel
               </Button>
             </div>
-          </div>
-
-          {/* Controls */}
-          <div className="flex-shrink-0 flex justify-center gap-4 pb-safe">
-            <Button
-              size="lg"
-              variant={isMicEnabled ? "default" : "destructive"}
-              onClick={toggleMic}
-              aria-pressed={isMicEnabled}
-              aria-label={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              {isMicEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
-            </Button>
-
-            <Button
-              size="lg"
-              variant={isVideoEnabled ? "default" : "destructive"}
-              onClick={toggleVideo}
-              disabled={isInitializing}
-              aria-pressed={isVideoEnabled}
-              aria-label={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
-              className="h-12 w-12 rounded-full p-0"
-            >
-              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
-            </Button>
           </div>
         </div>
       </main>
