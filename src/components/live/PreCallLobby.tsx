@@ -45,6 +45,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   const { confirmJoin } = useLive()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
@@ -67,7 +68,19 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   // Resilient media initialization
+  function cleanupMedia() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop())
+      streamRef.current = null
+    }
+  }
+
   const attachLocalPreview = (stream: MediaStream) => {
+    // stop previous
+    if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop())
+    streamRef.current = stream
+    
+    // your existing code to set <video>.srcObject = stream
     const video = videoRef.current
     if (video && stream) {
       video.srcObject = stream
@@ -140,6 +153,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     document.documentElement.classList.add('precall-open')
     return () => {
       document.documentElement.classList.remove('precall-open')
+      cleanupMedia()
     }
   }, [])
 
@@ -287,6 +301,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setPhase('requesting-permissions')
     setError(null)
     setShowErrorDetails(false)
+    cleanupMedia()
     initMedia()
   }
 
