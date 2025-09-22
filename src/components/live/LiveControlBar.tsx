@@ -10,6 +10,8 @@ const LiveControlBarContent: React.FC = () => {
   // Always call all hooks unconditionally at the top level
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const live = useLive();
   
@@ -52,26 +54,36 @@ const LiveControlBarContent: React.FC = () => {
   }, [state])
   
   // Show LSB when discoverable but not in active call
-  const shouldShowLSB = isDiscoverable && !isLive
-  
-  // If we should not show LSB, render empty shell to maintain consistent DOM structure
-  if (!shouldShowLSB) {
-    return (
-      <>
-        <div className="lsb-shell">
-          <div className="lsb-inner" />
-        </div>
-        <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
-      </>
-    );
-  }
+  const shouldShowLSB = isDiscoverable && !isLive;
+
+  // Handle animation states for show/hide
+  useEffect(() => {
+    if (shouldShowLSB && !isVisible) {
+      // Show: immediately set visible and start animation
+      setIsVisible(true);
+      setIsAnimating(true);
+      const timer = setTimeout(() => setIsAnimating(false), 220);
+      return () => clearTimeout(timer);
+    } else if (!shouldShowLSB && isVisible) {
+      // Hide: start animation, then hide after completion
+      setIsAnimating(true);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+        setIsAnimating(false);
+      }, 220);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldShowLSB, isVisible]);
   
   return (
     <>
       {/* LSB Shell - Always mounted for animation */}
       <div className="lsb-shell">
         <div 
-          className="lsb-inner lsb-inner--visible"
+          className={cn(
+            "lsb-inner",
+            (isVisible && shouldShowLSB) && "lsb-inner--visible"
+          )}
           role="toolbar"
           aria-label="Live session controls"
         >

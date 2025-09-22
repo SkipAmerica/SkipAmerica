@@ -506,7 +506,7 @@ body.live-active {
   bottom: 0;
   width: 100%;
   pointer-events: none;
-  z-index: 20; /* Under bottom nav (z-30) */
+  z-index: 60; /* Above bottom nav (z-50) */
 }
 
 .lsb-inner {
