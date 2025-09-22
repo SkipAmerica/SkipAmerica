@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
@@ -28,6 +28,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
   const [rulesConfirmed, setRulesConfirmed] = useState(false)
+  const [audioLevel, setAudioLevel] = useState(0)
+  const [networkStatus, setNetworkStatus] = useState<'checking' | 'ok' | 'degraded'>('checking')
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -35,6 +37,9 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   const { confirmJoin } = useLive()
   const videoRef = useRef<HTMLVideoElement>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const animationFrameRef = useRef<number | null>(null)
   const cannotSayList = editableList // Use editable list instead of static list
 
   // Editing functions
@@ -121,6 +126,66 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       }
     }
   }, [isVideoEnabled])
+
+  // Audio level monitoring
+  useEffect(() => {
+    if (!isMicEnabled || isInitializing) return
+
+    const setupAudioAnalysis = () => {
+      const stream = mediaManager.getLocalStream()
+      if (!stream) return
+
+      try {
+        const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+        const analyser = audioContext.createAnalyser()
+        const source = audioContext.createMediaStreamSource(stream)
+        
+        analyser.fftSize = 256
+        analyser.smoothingTimeConstant = 0.8
+        source.connect(analyser)
+        
+        audioContextRef.current = audioContext
+        analyserRef.current = analyser
+
+        const dataArray = new Uint8Array(analyser.frequencyBinCount)
+        
+        const updateLevel = () => {
+          if (!analyserRef.current) return
+          
+          analyserRef.current.getByteFrequencyData(dataArray)
+          const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length
+          setAudioLevel(Math.min(100, (average / 128) * 100))
+          
+          animationFrameRef.current = requestAnimationFrame(updateLevel)
+        }
+        
+        updateLevel()
+      } catch (err) {
+        console.warn('[PreCallLobby] Failed to setup audio analysis:', err)
+      }
+    }
+
+    setupAudioAnalysis()
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+        audioContextRef.current = null
+      }
+      analyserRef.current = null
+    }
+  }, [isMicEnabled, isInitializing])
+
+  // Network status monitoring
+  useEffect(() => {
+    if (!isInitializing && mediaManager.getLocalStream()) {
+      setNetworkStatus('ok')
+    }
+  }, [isInitializing])
 
   // Handle video toggle
   const toggleVideo = async () => {
@@ -320,6 +385,38 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                 </Button>
               }
             />
+          </div>
+
+          {/* Audio Level and Network Status */}
+          <div className="flex items-center justify-center gap-6 py-2">
+            {/* Audio Level Meter */}
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 text-muted-foreground" />
+              <div className="flex gap-1">
+                {[...Array(8)].map((_, i) => (
+                  <div
+                    key={i}
+                    className={`w-1 h-3 rounded-full transition-colors ${
+                      audioLevel > (i * 12.5) 
+                        ? 'bg-primary' 
+                        : 'bg-muted'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Network Status */}
+            <div className="flex items-center gap-2">
+              <Wifi className="h-4 w-4 text-muted-foreground" />
+              <Badge 
+                variant={networkStatus === 'ok' ? 'default' : 'secondary'}
+                className="text-xs px-2 py-1"
+              >
+                {networkStatus === 'checking' ? 'Checking...' : 
+                 networkStatus === 'ok' ? 'OK' : 'Degraded'}
+              </Badge>
+            </div>
           </div>
 
           {/* Quick Words Section */}
