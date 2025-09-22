@@ -503,10 +503,10 @@ body.live-active {
 .lsb-shell {
   position: fixed;
   left: 0;
-  bottom: 0;
+  bottom: var(--ios-tab-bar-height);
   width: 100%;
   pointer-events: none;
-  z-index: 60; /* Above bottom nav (z-50) */
+  z-index: 40; /* Under bottom nav (z-50) */
 }
 
 .lsb-inner {
