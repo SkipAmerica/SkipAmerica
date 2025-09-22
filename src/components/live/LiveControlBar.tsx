@@ -4,6 +4,7 @@ import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer';
+import { QueueDrawerContent } from './QueueDrawerContent';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
@@ -18,8 +19,14 @@ const LiveControlBarContent: React.FC = () => {
   const [counterMode, setCounterMode] = useState<CounterMode>(() => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
+  const [isHydrated, setIsHydrated] = useState(false);
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
+  const startDragY = useRef(0);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const live = useLive();
   
@@ -34,9 +41,9 @@ const LiveControlBarContent: React.FC = () => {
 
   const handleQueueClick = useCallback(() => {
     if (queueCount > 0) {
-      setShowQueueDrawer(true);
+      setIsQueueOpen(!isQueueOpen);
     }
-  }, [queueCount]);
+  }, [queueCount, isQueueOpen]);
 
   const handleCounterClick = useCallback(() => {
     if (animatingToggle) return;
@@ -52,6 +59,11 @@ const LiveControlBarContent: React.FC = () => {
     localStorage.setItem('lsb-counter-mode', nextMode);
   }, [animatingToggle, counterMode]);
 
+  // Hydration effect - prevent flash
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   // Add body class for live state
   useEffect(() => {
     if (state === 'SESSION_ACTIVE') {
@@ -64,6 +76,39 @@ const LiveControlBarContent: React.FC = () => {
       document.body.classList.remove('live-active');
     };
   }, [state])
+
+  // Drag handlers
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (!panelRef.current) return;
+    
+    setIsDragging(true);
+    startDragY.current = e.clientY;
+    panelRef.current.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    
+    const deltaY = startDragY.current - e.clientY; // Positive when dragging up
+    setDragY(Math.max(0, deltaY)); // Only allow upward drag
+  }, [isDragging]);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!isDragging) return;
+    
+    setIsDragging(false);
+    const threshold = 50; // pixels
+    
+    if (dragY > threshold) {
+      setIsQueueOpen(true);
+    } else {
+      setIsQueueOpen(false);
+    }
+    
+    setDragY(0);
+    panelRef.current?.releasePointerCapture(e.pointerId);
+  }, [isDragging, dragY]);
   
   // Show LSB when discoverable but not in active call
   const shouldShowLSB = isDiscoverable && !isLive;
@@ -205,15 +250,30 @@ const LiveControlBarContent: React.FC = () => {
   
   return (
     <>
-      {/* LSB Shell - Always mounted for animation */}
-      <div ref={shellRef} className="lsb-shell">
+      {/* DSB Shell - Always mounted for animation */}
+      <div 
+        ref={shellRef} 
+        className={cn(
+          "lsb-shell",
+          isHydrated && "lsb-shell--hydrated"
+        )}
+      >
         <div 
+          ref={panelRef}
           className={cn(
             "lsb-inner",
             (isVisible && shouldShowLSB) && "lsb-inner--visible"
           )}
           role="toolbar"
           aria-label="Live session controls"
+          aria-controls="queue-drawer"
+          aria-expanded={isQueueOpen}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          style={{
+            transform: isDragging ? `translateY(${-dragY}px)` : undefined
+          }}
         >
           {/* Left - Queue button */}
           <Button
@@ -259,9 +319,23 @@ const LiveControlBarContent: React.FC = () => {
             </span>
           </Button>
         </div>
+        
+        {/* Queue Drawer */}
+        <div 
+          id="queue-drawer"
+          className={cn(
+            "queue-drawer",
+            isQueueOpen && "queue-drawer--open"
+          )}
+          role="dialog"
+          aria-expanded={isQueueOpen}
+          aria-label="Queue drawer"
+        >
+          <div className="queue-drawer__content">
+            <QueueDrawerContent queueCount={queueCount} />
+          </div>
+        </div>
       </div>
-      
-      <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
     </>
   )
 }
