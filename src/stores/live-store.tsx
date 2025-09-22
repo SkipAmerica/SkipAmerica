@@ -305,7 +305,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   const handleDispatch = useCallback((event: LiveEvent) => {
     console.info(`[LIVE][STATE] ${state.state} + ${event.type}`)
     dispatch({ type: 'STATE_TRANSITION', event })
-  }, [state.state])
+  }, [])
 
   // Setup media subscriptions on mount
   useEffect(() => {

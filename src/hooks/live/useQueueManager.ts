@@ -12,6 +12,8 @@ import { useLiveStore } from '@/stores/live-store'
 interface QueueManagerState {
   error?: string
   isConnected: boolean
+  retryCount: number
+  lastFetchTime: number
 }
 
 export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false) {
@@ -22,7 +24,9 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
   const [state, setState] = useState<QueueManagerState>({
-    isConnected: false
+    isConnected: false,
+    retryCount: 0,
+    lastFetchTime: 0
   })
 
   // Real-time subscription for queue changes
@@ -98,44 +102,98 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     }
   }, [isLive, isDiscoverable, user, toast, store])
 
-  // Fetch initial queue count
+  // Fetch initial queue count with enhanced error recovery
   useEffect(() => {
     if ((!isLive && !isDiscoverable) || !user) return
 
-    let retryCount = 0
-    const maxRetries = 3
+    const now = Date.now()
+    const timeSinceLastFetch = now - state.lastFetchTime
+    
+    // Debounce rapid successive calls (prevent spam from render loops)
+    if (timeSinceLastFetch < 1000) {
+      console.log('[QueueManager] Debouncing fetch request')
+      return
+    }
 
-    const fetchCount = async () => {
+    let mounted = true
+    const controller = new AbortController()
+
+    const fetchCount = async (attempt: number = 0) => {
+      if (!mounted) return
+
+      const maxRetries = 5
+      const baseDelay = 1000
+      const maxDelay = 30000
+
       try {
+        setState(prev => ({ ...prev, lastFetchTime: now }))
+        
         const { count, error } = await supabase
           .from('call_queue')
           .select('*', { count: 'exact', head: true })
           .eq('creator_id', user.id)
           .eq('status', 'waiting')
+          .abortSignal(controller.signal)
+
+        if (!mounted) return
 
         if (error) {
-          const wrappedError = new Error(`Failed to fetch queue count: ${error.message}`)
-          wrappedError.name = 'DatabaseError'
-          ;(wrappedError as any).code = error.code
-          throw wrappedError
+          throw new Error(`Database error: ${error.message} (${error.code})`)
         }
 
+        // Success - reset retry count and update state
         store.updateQueueCount(count || 0)
-        setState(prev => ({ ...prev, error: undefined }))
-      } catch (error: any) {
-        console.error('Error fetching queue count:', error)
+        setState(prev => ({ 
+          ...prev, 
+          error: undefined, 
+          isConnected: true,
+          retryCount: 0
+        }))
         
-        if (retryCount < maxRetries) {
-          retryCount++
-          setTimeout(fetchCount, 2000 * retryCount)
+      } catch (error: any) {
+        if (!mounted || error.name === 'AbortError') return
+        
+        console.warn(`[QueueManager] Fetch attempt ${attempt + 1} failed:`, error.message)
+        
+        const isNetworkError = error.message?.includes('503') || 
+                              error.message?.includes('Failed to fetch') ||
+                              error.message?.includes('NetworkError')
+        
+        if (attempt < maxRetries && isNetworkError) {
+          // Exponential backoff with jitter
+          const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
+          const jitter = Math.random() * 1000
+          const totalDelay = delay + jitter
+          
+          setState(prev => ({ 
+            ...prev, 
+            error: `Connection issue, retrying in ${Math.round(totalDelay/1000)}s...`,
+            isConnected: false,
+            retryCount: attempt + 1
+          }))
+          
+          setTimeout(() => {
+            if (mounted) fetchCount(attempt + 1)
+          }, totalDelay)
         } else {
-          setState(prev => ({ ...prev, error: 'Failed to load queue' }))
+          // Max retries reached or non-recoverable error
+          setState(prev => ({ 
+            ...prev, 
+            error: attempt >= maxRetries ? 'Connection failed after multiple attempts' : error.message,
+            isConnected: false,
+            retryCount: attempt + 1
+          }))
         }
       }
     }
 
     fetchCount()
-  }, [isLive, isDiscoverable, user, store])
+
+    return () => {
+      mounted = false
+      controller.abort()
+    }
+  }, [isLive, isDiscoverable, user?.id, store])
 
   // Debounce the queue count to prevent UI jitter
   const debouncedQueueCount = useDebounce(store.queueCount, 300)
