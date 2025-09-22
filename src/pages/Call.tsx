@@ -28,12 +28,17 @@ interface CallProps {
 }
 
 export default function Call({ creator, caller, isCreatorView = false }: CallProps) {
+  // Always call all hooks unconditionally at the top level
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { state, endLive } = useLive();
+  const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware('call');
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  
+  // Safely access live store values after hooks
+  const state = live?.state || 'OFFLINE';
+  const endLive = live?.endLive || (() => {});
 
   // Redirect if not in correct state
   useEffect(() => {

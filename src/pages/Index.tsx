@@ -83,11 +83,19 @@ const Index = () => {
   const [activeCall, setActiveCall] = useState<string | null>(null);
   
   
+  // Always call all hooks unconditionally at the top level
   const { user } = useAuth();
   const { profile } = useProfile();
   const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
+  
+  // Safely access live store values after hooks
+  const isLive = live?.isLive || false;
+  const isDiscoverable = live?.isDiscoverable || false;
+  const isTransitioning = live?.isTransitioning || false;
+  const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
+  const endLive = live?.endLive || (() => {});
 
   // Stabilize iOS safe area top across keyboard show/hide
   useEffect(() => {
@@ -403,11 +411,11 @@ const Index = () => {
           }}
           showFollowing={!!user}
           isCreator={profile?.account_type === 'creator'}
-          isLive={live.isLive}
-          isDiscoverable={live.isDiscoverable}
-          isTransitioning={live.isTransitioning}
-          onToggleDiscoverable={live.toggleDiscoverable}
-          onEndCall={live.endLive}
+          isLive={isLive}
+          isDiscoverable={isDiscoverable}
+          isTransitioning={isTransitioning}
+          onToggleDiscoverable={toggleDiscoverable}
+          onEndCall={endLive}
         />
 
       {/* User Menu Action Sheet */}

@@ -31,7 +31,6 @@ interface AppProvidersProps {
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
-  console.log('[AppProviders] Rendering provider hierarchy...')
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

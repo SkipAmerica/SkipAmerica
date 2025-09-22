@@ -35,8 +35,12 @@ function App() {
 }
 
 function AppContent() {
-  const { isLive } = useLive()
-
+  // Always call hooks unconditionally at the top level
+  const live = useLive()
+  
+  // Compute derived values after hooks
+  const isLive = live?.isLive || false
+  
   return (
     <div 
       className={cn(

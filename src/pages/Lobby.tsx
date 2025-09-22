@@ -30,31 +30,41 @@ interface LobbyProps {
 }
 
 export default function Lobby({ creator, caller, isCreatorView = false }: LobbyProps) {
+  // Always call all hooks unconditionally at the top level
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
   const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware('lobby');
+  
+  // Safely access live store values after hooks
+  const liveState = live?.state || 'OFFLINE';
+  const confirmJoin = live?.confirmJoin || (() => {});
+  const endLive = live?.endLive || (() => {});
+  const isLive = live?.isLive || false;
+  const isDiscoverable = live?.isDiscoverable || false;
+  const isTransitioning = live?.isTransitioning || false;
+  const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
 
   const isCreator = profile?.account_type === 'creator';
 
   // Redirect if not in correct state
   useEffect(() => {
-    if (live.state !== 'SESSION_PREP') {
+    if (liveState !== 'SESSION_PREP') {
       navigate('/');
     }
-  }, [live.state, navigate]);
+  }, [liveState, navigate]);
 
   const handleConfirmJoin = async () => {
     const videoEl = document.querySelector('#lobby-local-video') as HTMLVideoElement;
     const audioEl = document.querySelector('#lobby-local-audio') as HTMLAudioElement;
     
-    await live.confirmJoin(videoEl, audioEl);
+    await confirmJoin(videoEl, audioEl);
     // Navigation to Call page will happen via state change in router
   };
 
   const handleGoOffline = async () => {
-    await live.endLive();
+    await endLive();
     navigate('/');
   };
 
@@ -182,10 +192,10 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         onTabChange={() => {}} // Disabled during lobby
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
-        isLive={live.isLive}
-        isDiscoverable={live.isDiscoverable}
-        isTransitioning={live.isTransitioning}
-        onToggleDiscoverable={live.toggleDiscoverable}
+        isLive={isLive}
+        isDiscoverable={isDiscoverable}
+        isTransitioning={isTransitioning}
+        onToggleDiscoverable={toggleDiscoverable}
         onEndCall={() => {}}
       />
     </div>

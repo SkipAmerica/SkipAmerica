@@ -7,20 +7,21 @@ import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 const LiveControlBarContent: React.FC = () => {
+  // Always call all hooks unconditionally at the top level
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
 
-  // Always call all hooks unconditionally at the top level
-  const { 
-    isLive, 
-    isDiscoverable,
-    state, 
-    queueCount, 
-    elapsedTime, 
-    earningsDisplay, 
-    rightDisplayMode, 
-    toggleRightDisplay 
-  } = useLive();
+  const live = useLive();
+  
+  // Safely access live store values
+  const isLive = live?.isLive || false;
+  const isDiscoverable = live?.isDiscoverable || false;
+  const state = live?.state || 'OFFLINE';
+  const queueCount = live?.queueCount || 0;
+  const elapsedTime = live?.elapsedTime || '00:00';
+  const earningsDisplay = live?.earningsDisplay || '0 / $0';
+  const rightDisplayMode = live?.rightDisplayMode || 'time';
+  const toggleRightDisplay = live?.toggleRightDisplay || (() => {});
 
   const handleQueueClick = useCallback(() => {
     if (queueCount > 0) {
@@ -53,15 +54,24 @@ const LiveControlBarContent: React.FC = () => {
   // Show LSB when discoverable but not in active call
   const shouldShowLSB = isDiscoverable && !isLive
   
+  // If we should not show LSB, render empty shell to maintain consistent DOM structure
+  if (!shouldShowLSB) {
+    return (
+      <>
+        <div className="lsb-shell">
+          <div className="lsb-inner" />
+        </div>
+        <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
+      </>
+    );
+  }
+  
   return (
     <>
       {/* LSB Shell - Always mounted for animation */}
       <div className="lsb-shell">
         <div 
-          className={cn(
-            "lsb-inner",
-            shouldShowLSB && "lsb-inner--visible"
-          )}
+          className="lsb-inner lsb-inner--visible"
           role="toolbar"
           aria-label="Live session controls"
         >
