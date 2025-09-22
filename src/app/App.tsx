@@ -67,7 +67,11 @@ function AppContent() {
       <LiveControlBar />
       
       {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
-      {live?.state === 'SESSION_PREP' && <PreCallLobby />}
+      {live?.state === 'SESSION_PREP' && (
+        <PreCallLobby 
+          onBack={() => live?.store?.dispatch({ type: 'START_FAILED' })}
+        />
+      )}
     </div>
   )
 }
