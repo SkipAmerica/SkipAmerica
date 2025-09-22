@@ -503,11 +503,12 @@ body.live-active {
 .lsb-shell {
   position: fixed;
   left: 0;
-  bottom: var(--ios-tab-bar-height);
+  /* anchor at bottom of screen, not above nav */
+  bottom: 0;
+  margin-bottom: var(--ios-tab-bar-height); /* creates space above nav */
   width: 100%;
   pointer-events: none;
-  /* DSB sits above bottom nav, but below CPB */
-  z-index: 50;
+  z-index: 50; /* below CPB, above nav */
 }
 
 .lsb-inner {
