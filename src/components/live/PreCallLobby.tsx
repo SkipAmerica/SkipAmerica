@@ -37,6 +37,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [phase, setPhase] = useState<PreflightPhase>('idle')
   const [error, setError] = useState<{code: string; message: string; hint?: string} | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
+  const [isAudioOnlyMode, setIsAudioOnlyMode] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -65,6 +66,100 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setEditableList(editableList.filter(item => item.id !== itemId))
   }
 
+  // Resilient media initialization
+  const attachLocalPreview = (stream: MediaStream) => {
+    const video = videoRef.current
+    if (video && stream) {
+      video.srcObject = stream
+      video.muted = true
+      video.autoplay = true
+      console.log('[PreCallLobby] Stream attached successfully to preview')
+      const playPromise = video.play?.()
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch(() => {})
+      }
+    }
+  }
+
+  const initMedia = async () => {
+    setError(null)
+    setPhase('initializing-media')
+    setIsAudioOnlyMode(false)
+    
+    try {
+      // Step 1: enumerate devices first
+      const devices = await navigator.mediaDevices.enumerateDevices()
+      const hasCam = devices.some(d => d.kind === 'videoinput')
+      const hasMic = devices.some(d => d.kind === 'audioinput')
+
+      // Step 2: build constraints progressively
+      const baseConstraints: MediaStreamConstraints = {
+        audio: hasMic ? { echoCancellation: true, noiseSuppression: true, autoGainControl: true } : false,
+        video: hasCam ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
+      }
+
+      // Step 3: request media
+      let stream: MediaStream
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(baseConstraints)
+        attachLocalPreview(stream)
+        setPhase('ready')
+        return
+      } catch (videoError: any) {
+        // Fallback: try audio-only if video fails with device issues
+        if ((videoError.name === 'NotReadableError' || videoError.name === 'OverconstrainedError') && hasMic) {
+          console.warn('[PreCallLobby] Video failed, trying audio-only fallback:', videoError.message)
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            setIsAudioOnlyMode(true)
+            setIsVideoEnabled(false)
+            setPhase('ready')
+            return
+          } catch (audioError: any) {
+            // If audio also fails, throw the original video error
+            throw videoError
+          }
+        }
+        throw videoError
+      }
+    } catch (e: any) {
+      const { name, message } = e || {}
+      // Granular error mapping
+      if (name === 'NotAllowedError' || name === 'SecurityError') {
+        setError({
+          code: 'PERMISSION_DENIED',
+          message: 'Camera/Microphone permission denied.',
+          hint: 'Enable permissions in Settings and retry.'
+        })
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        setError({
+          code: 'DEVICE_UNAVAILABLE',
+          message: 'No usable camera or microphone found.',
+          hint: 'Check connections or select a different device.'
+        })
+      } else if (name === 'NotReadableError') {
+        setError({
+          code: 'DEVICE_IN_USE',
+          message: 'Camera or microphone is already in use by another app.',
+          hint: 'Close other apps using the camera/mic and retry.'
+        })
+      } else if (name === 'AbortError') {
+        setError({
+          code: 'ABORTED',
+          message: 'Device access was interrupted.',
+          hint: 'Retry. If this persists, restart the app.'
+        })
+      } else {
+        setError({
+          code: 'UNKNOWN',
+          message: 'Could not start preview.',
+          hint: message || 'Retry or check device settings.'
+        })
+      }
+      setPhase('error')
+    }
+  }
+
   // Add/remove dimming class on mount/unmount
   useEffect(() => {
     document.documentElement.classList.add('precall-open')
@@ -76,34 +171,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Initialize media on mount
   useEffect(() => {
     setPhase('requesting-permissions')
-    
-    const initializeMedia = async () => {
-      try {
-        setPhase('initializing-media')
-        if (!mediaManager.hasLocalStream()) {
-          await mediaManager.start({
-            video: isVideoEnabled,
-            audio: isMicEnabled,
-            previewOnly: true,
-            targetState: 'SESSION_PREP'
-          })
-        }
-        setPhase('ready')
-        setError(null)
-      } catch (error) {
-        console.warn('[PreCallLobby] Failed to initialize media:', error)
-        setPhase('error')
-        setError({
-          code: 'MEDIA_INIT_FAILED',
-          message: 'Failed to access camera or microphone',
-          hint: 'Please check your browser permissions and make sure no other apps are using your camera or microphone.'
-        })
-      } finally {
-        setIsInitializing(false)
-      }
-    }
-
-    initializeMedia()
+    initMedia()
   }, [])
 
   // Attach stream to video element
@@ -279,27 +347,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setPhase('requesting-permissions')
     setError(null)
     setShowErrorDetails(false)
-    
-    try {
-      setPhase('initializing-media')
-      await mediaManager.stop('retry')
-      await mediaManager.start({
-        video: isVideoEnabled,
-        audio: isMicEnabled,
-        previewOnly: true,
-        targetState: 'SESSION_PREP'
-      })
-      setPhase('ready')
-      setError(null)
-    } catch (error) {
-      console.warn('[PreCallLobby] Retry failed:', error)
-      setPhase('error')
-      setError({
-        code: 'MEDIA_INIT_FAILED',
-        message: 'Failed to access camera or microphone',
-        hint: 'Please check your browser permissions and make sure no other apps are using your camera or microphone.'
-      })
-    }
+    initMedia()
   }
 
   return (
@@ -411,9 +459,16 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
           <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-[400px]">
             {/* Self Preview */}
             <div className="flex-1 flex flex-col">
-              <h2 className="text-sm font-medium mb-2">Your Camera</h2>
-              <Card className="flex-1 min-h-[200px] overflow-hidden">
-                {isVideoEnabled && !isInitializing ? (
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm font-medium">Your Camera</h2>
+                {isAudioOnlyMode && (
+                  <Badge variant="secondary" className="text-xs">
+                    Video unavailable - Audio only
+                  </Badge>
+                )}
+              </div>
+              <Card className="flex-1 min-h-[200px] overflow-hidden relative">
+                {isVideoEnabled && !isInitializing && !isAudioOnlyMode ? (
                   <video
                     ref={videoRef}
                     className="w-full h-full object-cover"
@@ -433,6 +488,12 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                         <div className="space-y-2">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                           <p className="text-sm">Initializing camera...</p>
+                        </div>
+                      ) : isAudioOnlyMode ? (
+                        <div className="space-y-2">
+                          <Mic className="h-12 w-12 mx-auto" />
+                          <p className="text-sm">Audio-only mode</p>
+                          <p className="text-xs opacity-80">Camera unavailable</p>
                         </div>
                       ) : (
                         <div className="space-y-2">
