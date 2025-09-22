@@ -84,11 +84,12 @@ function LiveControlBarContent() {
         {/* Center: Live Status */}
         <div className="flex-1 flex justify-center">
           <div className="flex items-center gap-2 px-4 py-2 bg-live/10 rounded-full border border-live/20">
-            {state === 'STARTING' || state === 'ENDING' ? (
+            {state === 'SESSION_PREP' || state === 'SESSION_JOINING' || state === 'ENDING' ? (
               <>
                 <div className="animate-spin rounded-full h-3 w-3 border border-live border-t-transparent" />
                 <span className="text-sm font-medium text-live">
-                  {state === 'STARTING' ? 'Going Live...' : 'Ending...'}
+                  {state === 'SESSION_PREP' ? 'Preparing...' : 
+                   state === 'SESSION_JOINING' ? 'Connecting...' : 'Ending...'}
                 </span>
               </>
             ) : (

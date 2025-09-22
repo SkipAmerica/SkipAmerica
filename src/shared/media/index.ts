@@ -6,7 +6,9 @@ export {
   registerVideo,
   unregisterVideo,
   teardownMedia,
-  canInitializeMedia,
+  initializeMedia,
+  canInitMedia,
+  mediaSummary,
   emergencyCleanup,
   type MediaRegistry
 } from './media-registry'

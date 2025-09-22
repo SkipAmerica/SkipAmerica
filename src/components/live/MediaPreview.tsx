@@ -1,6 +1,6 @@
 /**
  * Media preview component for live sessions
- * Properly registers/unregisters video elements with media registry
+ * Never calls getUserMedia - only attaches provided streams
  */
 
 import React, { useEffect, useRef } from 'react'
@@ -23,33 +23,36 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
     registerVideo(video)
 
     // Attach stream from registry if available
-    const registry = getMediaRegistry()
-    if (registry.stream) {
-      video.srcObject = registry.stream
-    }
-
-    return () => {
-      // Unregister on cleanup
-      unregisterVideo(video)
-    }
-  }, [])
-
-  // Watch for stream changes in registry
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    const checkForStream = () => {
+    const attachStream = () => {
       const registry = getMediaRegistry()
       if (registry.stream && video.srcObject !== registry.stream) {
+        console.info('[MEDIA][PREVIEW] Attaching stream to video element')
         video.srcObject = registry.stream
       }
     }
 
-    // Check periodically for stream changes
-    const interval = setInterval(checkForStream, 100)
-    
-    return () => clearInterval(interval)
+    // Initial attach
+    attachStream()
+
+    // Watch for stream changes
+    const interval = setInterval(attachStream, 500)
+
+    return () => {
+      clearInterval(interval)
+      
+      // Clean up video element
+      try {
+        video.pause()
+        video.srcObject = null
+        video.removeAttribute('src')
+        video.load()
+      } catch (err) {
+        console.warn('[MEDIA][PREVIEW] Failed to cleanup video:', err)
+      }
+      
+      // Unregister video element
+      unregisterVideo(video)
+    }
   }, [])
 
   return (

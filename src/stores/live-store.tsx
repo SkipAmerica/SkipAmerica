@@ -7,9 +7,9 @@ import React, { createContext, useContext, useReducer, useCallback, useRef, useE
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
-import { transition, LiveState, LiveEvent, canGoLive, canEndLive } from '@/hooks/live/use-live-state-machine'
+import { transition, LiveState, LiveEvent, canGoLive, canEndLive, canInitMedia, isLive, isTransitioning } from '@/hooks/live/use-live-state-machine'
 import { normalizeError, safeStringify } from '@/shared/errors/err-utils'
-import { teardownMedia, canInitializeMedia, setMediaPhase, registerStream } from '@/shared/media/media-registry'
+import { teardownMedia, initializeMedia, mediaSummary, getMediaRegistry } from '@/shared/media/media-registry'
 import { requestWithDetail } from '@/shared/errors/network-helper'
 
 interface LiveStoreState {
@@ -275,35 +275,27 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       const startLog = {
         from: state.state,
         event: 'GO_LIVE',
-        to: 'STARTING',
+        to: 'LIVE_AVAILABLE',
         userId: user.id,
         timestamp: new Date().toISOString(),
         mode: import.meta.env.MODE
       }
-      console.info(`[LIVE] ${state.state} –GO_LIVE–> STARTING`, safeStringify(startLog))
+      console.info(`[LIVE] ${state.state} –GO_LIVE–> LIVE_AVAILABLE`, safeStringify(startLog))
     }
     
     handleDispatch({ type: 'GO_LIVE' })
     
+    // Move to prep state for lobby/preview
+    handleDispatch({ type: 'ENTER_PREP' })
+    
     try {
-      // Step 1: Request permissions and initialize media (iOS/mobile)
+      // Step 1: Initialize media for preview (SESSION_PREP)
       try {
         if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
-          if (!canInitializeMedia(state.state)) {
-            throw new Error('Media initialization blocked - invalid state or teardown in progress')
-          }
+          console.info('[LIVE][START] Initializing preview media...');
           
-          console.info('[LIVE][START] Requesting permissions...');
-          setMediaPhase('initializing')
-          
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: true, 
-            audio: true 
-          });
-          
-          registerStream(stream)
-          setMediaPhase('active')
-          console.info('[LIVE][START] Permissions granted and media initialized');
+          await initializeMedia(state.state, true) // Preview only
+          console.info('[LIVE][START] Preview media initialized');
         }
       } catch (permissionError) {
         const normalized = normalizeError(permissionError, {
@@ -420,17 +412,17 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
       // Success!
       if ((window as any).__LIVE_DEBUG) {
         const successLog = {
-          from: 'STARTING',
-          event: 'LIVE_STARTED',
-          to: 'LIVE',
+          from: 'SESSION_JOINING',
+          event: 'SESSION_STARTED',
+          to: 'SESSION_ACTIVE',
           sessionId: state.sessionId,
           timestamp: new Date().toISOString(),
           mode: import.meta.env.MODE
         }
-        console.info(`[LIVE] STARTING –LIVE_STARTED–> LIVE`, safeStringify(successLog))
+        console.info(`[LIVE] SESSION_JOINING –SESSION_STARTED–> SESSION_ACTIVE`, safeStringify(successLog))
       }
       
-      handleDispatch({ type: 'LIVE_STARTED' })
+      handleDispatch({ type: 'SESSION_STARTED' })
       
     } catch (error: any) {
       if (error.name === 'AbortError') return
@@ -566,21 +558,21 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Success!
+      // Success!  
       if ((window as any).__LIVE_DEBUG) {
         const successLog = {
           from: 'ENDING',
-          event: 'LIVE_ENDED',
+          event: 'SESSION_ENDED',
           to: 'OFFLINE',
           callsTaken: state.callsTaken,
           earnings: state.totalEarningsCents,
           timestamp: new Date().toISOString(),
           mode: import.meta.env.MODE
         }
-        console.info(`[LIVE] ENDING –LIVE_ENDED–> OFFLINE`, safeStringify(successLog))
+        console.info(`[LIVE] ENDING –SESSION_ENDED–> OFFLINE`, safeStringify(successLog))
       }
       
-      handleDispatch({ type: 'LIVE_ENDED' })
+      handleDispatch({ type: 'SESSION_ENDED' })
       
       toast({
         title: "Live session ended",
@@ -659,8 +651,8 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
   
   const value: LiveStoreContextValue = {
     ...state,
-    isLive: state.state === 'LIVE',
-    isTransitioning: state.state === 'STARTING' || state.state === 'ENDING',
+    isLive: isLive(state.state) && !state.inFlight.end,
+    isTransitioning: isTransitioning(state.state),
     canGoLive: canGoLive(state.state) && !state.inFlight.start,
     canEndLive: canEndLive(state.state) && !state.inFlight.end,
     elapsedTime,
