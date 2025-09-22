@@ -52,7 +52,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
       <div 
         className="fixed left-4 z-40 flex flex-col gap-4 transition-all duration-300 ease-in-out"
         style={{
-          bottom: `calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom) + 12px + (var(--lsb-visible,0) * (var(--lsb-height,72px) + 36px)))`,
+          bottom: `calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom) + 12px + (var(--lsb-visible,0) * (var(--lsb-height,72px) + 72px)))`,
           transition: 'bottom 300ms cubic-bezier(0.4, 0, 0.2, 1)'
         }}
       >
