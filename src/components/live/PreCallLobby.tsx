@@ -46,7 +46,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [selectedAudioDevice, setSelectedAudioDevice] = useState<string>('')
   const [selectedVideoDevice, setSelectedVideoDevice] = useState<string>('')
   const [showDeviceHelper, setShowDeviceHelper] = useState(false)
-  const [needsUserGesture, setNeedsUserGesture] = useState(false)
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
@@ -219,21 +218,10 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     }
   }, [])
 
-  // Initialize media on mount
+  // Initialize on component mount - wait for user gesture
   useEffect(() => {
-    // More accurate Safari detection
-    const isSafari = /Safari/.test(navigator.userAgent) && 
-                    !/Chrome|CriOS|FxiOS|EdgiOS/.test(navigator.userAgent)
-    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent)
-    
-    if (isSafari || isIOS) {
-      setNeedsUserGesture(true)
-      setPhase('idle')
-    } else {
-      setPhase('requesting-permissions')
-      trackEvent('creator_precall_permissions_requested')
-      initMedia()
-    }
+    // Start in idle phase for all browsers - only initialize after user clicks "Start Preview"
+    setPhase('idle')
   }, [])
 
   // Attach stream to video element (simplified - no polling)
@@ -418,7 +406,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   }
 
   const startPreviewWithGesture = () => {
-    setNeedsUserGesture(false)
     setPhase('requesting-permissions')
     trackEvent('creator_precall_permissions_requested')
     initMedia()
@@ -564,8 +551,8 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         )}
       </div>
 
-      {/* Start Preview Button (iOS/Safari user gesture requirement) */}
-      {needsUserGesture && phase === 'idle' && (
+      {/* Start Preview Button - Shows for all browsers when idle */}
+      {phase === 'idle' && (
         <div className="flex-shrink-0 bg-background border-b p-3">
           <div className="flex items-center justify-center">
             <Button onClick={startPreviewWithGesture} className="px-6">
