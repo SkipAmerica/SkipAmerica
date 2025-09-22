@@ -33,6 +33,8 @@ export function useDragHandler(elementRef: React.RefObject<HTMLElement>) {
 
   const animationFrameRef = useRef<number>()
   const velocityTrackingRef = useRef<Array<{ y: number; time: number }>>([])
+  const isPointerActiveRef = useRef(false)
+  const hasPointerEvents = typeof window !== 'undefined' && 'PointerEvent' in window
 
   // Calculate snap positions based on viewport
   const getSnapPositions = useCallback((): DragPosition => {
@@ -99,31 +101,43 @@ export function useDragHandler(elementRef: React.RefObject<HTMLElement>) {
     animationFrameRef.current = requestAnimationFrame(animate)
   }, [dragState.dragY])
 
+  // Unified helpers
+  const getClientY = (e: TouchEvent | PointerEvent | MouseEvent) => {
+    // Touch
+    if ('touches' in e && (e as TouchEvent).touches?.length) {
+      return (e as TouchEvent).touches[0].clientY
+    }
+    // Pointer/Mouse
+    return (e as PointerEvent | MouseEvent).clientY
+  }
+
+  const withinHandle = (el: HTMLElement, clientY: number) => {
+    const rect = el.getBoundingClientRect()
+    return clientY >= rect.top && clientY <= rect.bottom
+  }
+
   // Handle touch start
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!elementRef.current) return
-    
-    const touch = e.touches[0]
-    const rect = elementRef.current.getBoundingClientRect()
-    
-    // Only start drag if touching the DSB panel
-    if (touch.clientY < rect.top || touch.clientY > rect.bottom) return
-    
+
+    const y = getClientY(e)
+    if (!withinHandle(elementRef.current, y)) return
+
     e.preventDefault()
-    
+
     const now = performance.now()
     setDragState(prev => ({
       ...prev,
       isDragging: true,
-      startY: touch.clientY,
+      startY: y,
       startDragY: prev.dragY,
       lastMoveTime: now,
-      lastMoveY: touch.clientY,
+      lastMoveY: y,
       velocity: 0
     }))
-    
+
     // Clear velocity tracking
-    velocityTrackingRef.current = [{ y: touch.clientY, time: now }]
+    velocityTrackingRef.current = [{ y, time: now }]
     
     // Cancel any ongoing animation
     if (animationFrameRef.current) {
@@ -137,29 +151,29 @@ export function useDragHandler(elementRef: React.RefObject<HTMLElement>) {
   // Handle touch move
   const handleTouchMove = useCallback((e: TouchEvent) => {
     if (!dragState.isDragging) return
-    
+
     e.preventDefault()
-    const touch = e.touches[0]
-    const deltaY = touch.clientY - dragState.startY
+    const y = getClientY(e)
+    const deltaY = y - dragState.startY
     const newDragY = dragState.startDragY + deltaY
-    
+
     // Constrain to valid range
     const positions = getSnapPositions()
     const constrainedY = Math.max(positions.extended, Math.min(positions.collapsed, newDragY))
-    
+
     const now = performance.now()
-    
+
     // Track velocity
-    velocityTrackingRef.current.push({ y: touch.clientY, time: now })
+    velocityTrackingRef.current.push({ y, time: now })
     if (velocityTrackingRef.current.length > 5) {
       velocityTrackingRef.current.shift()
     }
-    
+
     setDragState(prev => ({
       ...prev,
       dragY: constrainedY,
       lastMoveTime: now,
-      lastMoveY: touch.clientY
+      lastMoveY: y
     }))
   }, [dragState.isDragging, dragState.startY, dragState.startDragY, getSnapPositions])
 
@@ -185,25 +199,106 @@ export function useDragHandler(elementRef: React.RefObject<HTMLElement>) {
     setTimeout(() => store.triggerHaptic(), 50)
   }, [dragState.isDragging, dragState.dragY, findNearestSnap, animateToPosition, store])
 
+  // Pointer/Mouse parity (desktop dev)
+  const handlePointerDown = useCallback((e: PointerEvent | MouseEvent) => {
+    if (!elementRef.current) return
+    // Ignore secondary buttons
+    if (typeof (e as any).button === 'number' && (e as any).button !== 0) return
+
+    const y = getClientY(e as any)
+    if (!withinHandle(elementRef.current, y)) return
+
+    e.preventDefault()
+    isPointerActiveRef.current = true
+
+    const now = performance.now()
+    setDragState(prev => ({
+      ...prev,
+      isDragging: true,
+      startY: y,
+      startDragY: prev.dragY,
+      lastMoveTime: now,
+      lastMoveY: y,
+      velocity: 0
+    }))
+    velocityTrackingRef.current = [{ y, time: now }]
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
+    store.triggerHaptic()
+  }, [elementRef, store])
+
+  const handlePointerMove = useCallback((e: PointerEvent | MouseEvent) => {
+    if (!dragState.isDragging || !isPointerActiveRef.current) return
+    e.preventDefault()
+    const y = getClientY(e as any)
+    const deltaY = y - dragState.startY
+    const newDragY = dragState.startDragY + deltaY
+    const positions = getSnapPositions()
+    const constrainedY = Math.max(positions.extended, Math.min(positions.collapsed, newDragY))
+    const now = performance.now()
+    velocityTrackingRef.current.push({ y, time: now })
+    if (velocityTrackingRef.current.length > 5) velocityTrackingRef.current.shift()
+    setDragState(prev => ({ ...prev, dragY: constrainedY, lastMoveTime: now, lastMoveY: y }))
+  }, [dragState.isDragging, dragState.startY, dragState.startDragY, getSnapPositions])
+
+  const handlePointerUp = useCallback((e: PointerEvent | MouseEvent) => {
+    if (!dragState.isDragging || !isPointerActiveRef.current) return
+    e.preventDefault()
+    isPointerActiveRef.current = false
+    let velocity = 0
+    if (velocityTrackingRef.current.length >= 2) {
+      const recent = velocityTrackingRef.current.slice(-3)
+      const timeDiff = recent[recent.length - 1].time - recent[0].time
+      const yDiff = recent[recent.length - 1].y - recent[0].y
+      velocity = timeDiff > 0 ? (yDiff / timeDiff) * 1000 : 0
+    }
+    const targetY = findNearestSnap(dragState.dragY, velocity)
+    animateToPosition(targetY)
+    setTimeout(() => store.triggerHaptic(), 50)
+  }, [dragState.isDragging, dragState.dragY, findNearestSnap, animateToPosition, store])
+
   // Setup event listeners
   useEffect(() => {
     const element = elementRef.current
     if (!element) return
-    
+
+    // Touch (iOS Safari)
     element.addEventListener('touchstart', handleTouchStart, { passive: false })
     document.addEventListener('touchmove', handleTouchMove, { passive: false })
     document.addEventListener('touchend', handleTouchEnd, { passive: false })
-    
+
+    // Pointer preferred, else mouse fallback (desktop dev)
+    if (hasPointerEvents) {
+      element.addEventListener('pointerdown', handlePointerDown as any, { passive: false })
+      document.addEventListener('pointermove', handlePointerMove as any, { passive: false })
+      document.addEventListener('pointerup', handlePointerUp as any, { passive: false })
+      document.addEventListener('pointercancel', handlePointerUp as any, { passive: false })
+    } else {
+      element.addEventListener('mousedown', handlePointerDown as any, { passive: false })
+      document.addEventListener('mousemove', handlePointerMove as any, { passive: false })
+      document.addEventListener('mouseup', handlePointerUp as any, { passive: false })
+    }
+
     return () => {
       element.removeEventListener('touchstart', handleTouchStart)
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
-      
+
+      if (hasPointerEvents) {
+        element.removeEventListener('pointerdown', handlePointerDown as any)
+        document.removeEventListener('pointermove', handlePointerMove as any)
+        document.removeEventListener('pointerup', handlePointerUp as any)
+        document.removeEventListener('pointercancel', handlePointerUp as any)
+      } else {
+        element.removeEventListener('mousedown', handlePointerDown as any)
+        document.removeEventListener('mousemove', handlePointerMove as any)
+        document.removeEventListener('mouseup', handlePointerUp as any)
+      }
+
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [elementRef, handleTouchStart, handleTouchMove, handleTouchEnd])
+  }, [elementRef, handleTouchStart, handleTouchMove, handleTouchEnd, handlePointerDown, handlePointerMove, handlePointerUp, hasPointerEvents])
 
   // Reset position when DSB becomes visible/hidden
   useEffect(() => {

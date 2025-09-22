@@ -220,7 +220,7 @@ const LiveControlBarContent: React.FC = () => {
             isDragging && "lsb-inner--dragging"
           )}
           style={{
-            transform: shouldShowLSB && isVisible 
+            transform: (isVisible && shouldShowLSB) 
               ? `translateY(${dragY}px)` 
               : 'translateY(100%)'
           }}

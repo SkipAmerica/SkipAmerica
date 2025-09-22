@@ -506,7 +506,8 @@ body.live-active {
   bottom: var(--ios-tab-bar-height);
   width: 100%;
   pointer-events: none;
-  z-index: 40; /* Under bottom nav (z-50) */
+  /* DSB sits above bottom nav, but below CPB */
+  z-index: 50;
 }
 
 .lsb-inner {
@@ -524,7 +525,7 @@ body.live-active {
   gap: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: auto;
-  transition: none; /* Disable transition when dragging */
+  transition: none; /* default: no transition (drag will set inline transform) */
   will-change: transform;
   transform: translateY(100%);
   touch-action: none; /* Prevent scroll interference */
@@ -533,14 +534,29 @@ body.live-active {
 }
 
 .lsb-inner--visible {
-  transform: translateY(0);
-  transition: transform 220ms ease-out; /* Re-enable transition when not dragging */
+  /* Let inline style control translateY(dragY); only restore transition */
+  transition: transform 220ms ease-out;
 }
 
 .lsb-inner--dragging {
   transition: none; /* Disable transition during drag */
   cursor: grabbing;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* CPB should always float above DSB + Bottom Nav */
+#cpb-root {
+  position: fixed; /* or absolute in fixed stacking context */
+  left: 0;
+  right: 0;
+  z-index: 60; /* above .lsb-shell (50) and nav */
+  bottom: calc(
+    var(--ios-tab-bar-height, 0px)
+    + (var(--lsb-visible, 0) * var(--lsb-height, 0px))
+    + 12px
+    + env(safe-area-inset-bottom, 0px)
+  );
+  transition: bottom 200ms ease;
 }
 
 /* Ensure buttons inside LSB stay square */
