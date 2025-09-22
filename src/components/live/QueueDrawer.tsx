@@ -228,7 +228,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" aria-hidden="true" />
-              Creator Lobby ({state.entries.length})
+              {user?.user_metadata?.full_name ? 
+                `${user.user_metadata.full_name.split(' ')[0]}'s Lobby (${state.entries.length})` : 
+                `Creator Lobby (${state.entries.length})`
+              }
             </div>
             <div className="flex items-center gap-2">
               {state.isConnected ? (
