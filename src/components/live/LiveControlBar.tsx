@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -159,25 +159,25 @@ const LiveControlBarContent: React.FC = () => {
         return {
           counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
           counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
-          counterIcon: DollarSign
+          counterIcon: 'DollarSign'
         };
       case 'TODAY_EARNINGS':
         return {
           counterText: `$${(todayEarnings / 100).toFixed(2)}`,
           counterSubtext: `${todayCalls} call${todayCalls !== 1 ? 's' : ''} today`,
-          counterIcon: DollarSign
+          counterIcon: 'DollarSign'
         };
       case 'SESSION_DURATION':
         return {
           counterText: realTimeElapsed,
           counterSubtext: 'this session',
-          counterIcon: Clock
+          counterIcon: 'Clock'
         };
       default:
         return {
           counterText: `$${(sessionEarnings / 100).toFixed(2)}`,
           counterSubtext: `${sessionCalls} call${sessionCalls !== 1 ? 's' : ''}`,
-          counterIcon: DollarSign
+          counterIcon: 'DollarSign'
         };
     }
   }, [counterMode, live?.callsTaken, live?.totalEarningsCents, live?.todayCalls, live?.todayEarningsCents, realTimeElapsed]);
@@ -228,7 +228,7 @@ const LiveControlBarContent: React.FC = () => {
             )}
           >
             <div className="flex items-center gap-1">
-              {React.createElement(counterIcon, { size: 14 })}
+              {counterIcon === 'Clock' ? <Clock size={14} /> : <DollarSign size={14} />}
               <span className="text-xs font-bold tabular-nums">
                 {counterText}
               </span>
