@@ -1,17 +1,15 @@
-/**
- * Live Control Bar - Re-enabled with proper state machine integration
- */
+import React, { useState, useCallback, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Users, Clock, DollarSign } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useLive } from '@/hooks/live';
+import { QueueDrawer } from './QueueDrawer';
+import { LiveErrorBoundary } from './LiveErrorBoundary';
 
-import React, { useState, useCallback, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Users, Clock, DollarSign, RotateCcw } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useLive } from '@/hooks/live'
-import { QueueDrawer } from './QueueDrawer'
-import { useToast } from '@/hooks/use-toast'
-import { LiveErrorBoundary } from './LiveErrorBoundary'
+const LiveControlBarContent: React.FC = () => {
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
+  const [animatingToggle, setAnimatingToggle] = useState(false);
 
-function LiveControlBarContent() {
   // Always call all hooks unconditionally at the top level
   const { 
     isLive, 
@@ -21,106 +19,98 @@ function LiveControlBarContent() {
     elapsedTime, 
     earningsDisplay, 
     rightDisplayMode, 
-    toggleRightDisplay
-  } = useLive()
-  
-  const [showQueueDrawer, setShowQueueDrawer] = useState(false)
-  const [isToggling, setIsToggling] = useState(false)
-  const { toast } = useToast()
-  const retryTimeoutRef = useRef<NodeJS.Timeout>()
-  
+    toggleRightDisplay 
+  } = useLive();
+
   const handleQueueClick = useCallback(() => {
-    setShowQueueDrawer(true)
-  }, [])
-  
+    if (queueCount > 0) {
+      setShowQueueDrawer(true);
+    }
+  }, [queueCount]);
+
   const handleRightDisplayToggle = useCallback(() => {
-    if (isToggling) return
-    setIsToggling(true)
-    toggleRightDisplay()
-    setTimeout(() => setIsToggling(false), 200)
-  }, [isToggling, toggleRightDisplay])
-  
-  // Add body class for live state - always call useEffect
-  React.useEffect(() => {
-    if (state !== 'OFFLINE') {
-      document.body.classList.add('live-active')
+    if (animatingToggle) return;
+    
+    setAnimatingToggle(true);
+    setTimeout(() => setAnimatingToggle(false), 300);
+    
+    toggleRightDisplay();
+  }, [animatingToggle, toggleRightDisplay]);
+
+  // Add body class for live state
+  useEffect(() => {
+    if (state === 'SESSION_ACTIVE') {
+      document.body.classList.add('live-active');
     } else {
-      document.body.classList.remove('live-active')
+      document.body.classList.remove('live-active');
     }
     
     return () => {
-      document.body.classList.remove('live-active')
-    }
+      document.body.classList.remove('live-active');
+    };
   }, [state])
   
-  // Compute render condition after all hooks
-  const shouldRender = isLive || isDiscoverable
-  
-  // Don't render when offline - moved after all hooks
-  if (!shouldRender) {
-    return null
-  }
+  // Show LSB when discoverable but not in active call
+  const shouldShowLSB = isDiscoverable && !isLive
   
   return (
     <>
-      <div 
-        className={cn(
-          "fixed bottom-[49px] left-0 right-0 z-30", // z-30 to be under Bottom Nav (z-50)
-          "h-14 bg-card/95 backdrop-blur-md border-t border-border/30",
-          "flex items-center justify-between px-4 shadow-lg",
-          "transition-all duration-300 ease-out",
-          "transform will-change-transform", // Hardware acceleration
-          shouldRender ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
-        )}
-        style={{
-          transform: shouldRender ? 'translateY(0)' : 'translateY(100%)',
-          transitionProperty: 'transform, opacity',
-          transitionDuration: '300ms',
-          transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
-        }}
-        role="toolbar"
-        aria-label="Live session controls"
-      >
-        {/* Left: Queue */}
-        <div className="flex-1 flex justify-start">
-          <Button variant="ghost" size="sm" onClick={handleQueueClick} className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            <span className="font-medium">{queueCount}</span>
+      {/* LSB Shell - Always mounted for animation */}
+      <div className="lsb-shell">
+        <div 
+          className={cn(
+            "lsb-inner",
+            shouldShowLSB && "lsb-inner--visible"
+          )}
+          role="toolbar"
+          aria-label="Live session controls"
+        >
+          {/* Left - Queue button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleQueueClick}
+            disabled={queueCount === 0}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 h-auto",
+              "disabled:opacity-50"
+            )}
+          >
+            <Users size={16} />
+            <span className="text-sm font-medium">{queueCount}</span>
           </Button>
-        </div>
-        
-        {/* Center: Live Status */}
-        <div className="flex-1 flex justify-center">
-          <div className="flex items-center gap-2 px-4 py-2 bg-live/10 rounded-full border border-live/20">
-            {state === 'SESSION_PREP' || state === 'SESSION_JOINING' || state === 'TEARDOWN' ? (
+
+          {/* Center - Live Status */}
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-pulse" />
+            <span className="text-sm font-medium text-cyan-600">Discoverable</span>
+          </div>
+
+          {/* Right - Time/Earnings Display */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRightDisplayToggle}
+            disabled={animatingToggle}
+            className={cn(
+              "flex items-center gap-2 px-3 py-2 h-auto min-w-0",
+              "transition-all duration-200",
+              animatingToggle && "scale-95"
+            )}
+          >
+            {rightDisplayMode === 'earnings' ? (
               <>
-                <div className="animate-spin rounded-full h-3 w-3 border border-live border-t-transparent" />
-                <span className="text-sm font-medium text-live">
-                  {state === 'SESSION_PREP' ? 'Preparing...' : 
-                   state === 'SESSION_JOINING' ? 'Connecting...' : 'Ending...'}
+                <DollarSign size={16} />
+                <span className="text-sm font-medium tabular-nums">
+                  {earningsDisplay}
                 </span>
               </>
             ) : (
               <>
-                <div className="w-2 h-2 bg-live rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-live">Discoverable</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        {/* Right: Time/Earnings */}
-        <div className="flex-1 flex justify-end">
-          <Button variant="ghost" size="sm" onClick={handleRightDisplayToggle} disabled={isToggling} className="flex items-center gap-2">
-            {rightDisplayMode === 'time' ? (
-              <>
-                <Clock className="w-4 h-4" />
-                <span className="font-medium font-mono text-sm">{elapsedTime}</span>
-              </>
-            ) : (
-              <>
-                <DollarSign className="w-4 h-4" />
-                <span className="font-medium text-sm">{earningsDisplay}</span>
+                <Clock size={16} />
+                <span className="text-sm font-medium tabular-nums">
+                  {elapsedTime}
+                </span>
               </>
             )}
           </Button>
@@ -132,10 +122,8 @@ function LiveControlBarContent() {
   )
 }
 
-export function LiveControlBar() {
-  return (
-    <LiveErrorBoundary>
-      <LiveControlBarContent />
-    </LiveErrorBoundary>
-  )
-}
+export const LiveControlBar: React.FC = () => (
+  <LiveErrorBoundary>
+    <LiveControlBarContent />
+  </LiveErrorBoundary>
+)

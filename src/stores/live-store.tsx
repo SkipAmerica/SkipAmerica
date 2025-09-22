@@ -200,12 +200,14 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     handleDispatch({ type: 'GO_LIVE' }) // -> DISCOVERABLE
   }, [user, state.state, state.inFlight.start, handleDispatch])
 
-  // GO UNDISCOVERABLE: return to offline 
+  // GO UNDISCOVERABLE: return to offline (proper FSM transition)
   const goUndiscoverable = useCallback(async () => {
     if (!user || state.state !== 'DISCOVERABLE' || state.inFlight.end) return
     
     console.log('[LiveStore] Going offline from discoverable...')
-    handleDispatch({ type: 'SESSION_ENDED' }) // -> OFFLINE
+    // Follow FSM: DISCOVERABLE -> END_LIVE -> TEARDOWN -> SESSION_ENDED -> OFFLINE
+    handleDispatch({ type: 'END_LIVE' }) // -> TEARDOWN
+    // The reducer will handle the next transition to OFFLINE
   }, [user, state.state, state.inFlight.end, handleDispatch])
 
   // GO LIVE: availability only (no media)
@@ -385,6 +387,12 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
       console.log('[LiveStore] Toggle blocked - transitioning or in flight')
       return
     }
+    // Ignore when in active call
+    if (state.state === 'SESSION_ACTIVE') {
+      console.log('[LiveStore] Toggle ignored - in active call')
+      return
+    }
+    
     if (state.state === 'OFFLINE') {
       goDiscoverable()
     } else if (state.state === 'DISCOVERABLE') {

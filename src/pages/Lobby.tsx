@@ -185,7 +185,7 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         isLive={live.isLive}
         isDiscoverable={live.isDiscoverable}
         isTransitioning={live.isTransitioning}
-        onToggleDiscoverable={handleGoOffline}
+        onToggleDiscoverable={live.toggleDiscoverable}
         onEndCall={() => {}}
       />
     </div>

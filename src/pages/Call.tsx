@@ -161,7 +161,7 @@ export default function Call({ creator, caller, isCreatorView = false }: CallPro
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
         isLive={true} // Show as live during call
-        isDiscoverable={false}
+        isDiscoverable={true} // Keep as discoverable during call
         isTransitioning={false}
         onToggleDiscoverable={() => {}} // No-op on call page
         onEndCall={handleEndCall}

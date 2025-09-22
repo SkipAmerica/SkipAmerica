@@ -29,12 +29,12 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
     if (busyRef.current || isTransitioning) return;
     
     // On Call page, center button is no-op
-    if (isLive) return;
+    if (activeTab === 'call') return;
     
     busyRef.current = true;
     setTimeout(() => { busyRef.current = false; }, 450);
     onToggleDiscoverable?.();
-  }, [isTransitioning, isLive, onToggleDiscoverable]);
+  }, [isTransitioning, activeTab, onToggleDiscoverable]);
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },

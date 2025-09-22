@@ -498,3 +498,33 @@ body.live-active {
     transition: top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
+
+/* LSB Animation Classes */
+.lsb-shell {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 20; /* Under bottom nav (z-30) */
+}
+
+.lsb-inner {
+  height: 3.5rem; /* h-14 */
+  background: hsl(var(--card) / 0.95);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid hsl(var(--border) / 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
+  transition: transform 220ms ease-out;
+  will-change: transform;
+  transform: translateY(100%);
+}
+
+.lsb-inner--visible {
+  transform: translateY(0);
+}
