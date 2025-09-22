@@ -389,6 +389,7 @@ export type Database = {
         Row: {
           created_at: string
           creator_id: string
+          discussion_topic: string | null
           estimated_wait_minutes: number | null
           fan_id: string
           id: string
@@ -398,6 +399,7 @@ export type Database = {
         Insert: {
           created_at?: string
           creator_id: string
+          discussion_topic?: string | null
           estimated_wait_minutes?: number | null
           fan_id: string
           id?: string
@@ -407,6 +409,7 @@ export type Database = {
         Update: {
           created_at?: string
           creator_id?: string
+          discussion_topic?: string | null
           estimated_wait_minutes?: number | null
           fan_id?: string
           id?: string

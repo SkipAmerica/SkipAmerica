@@ -14,6 +14,7 @@ interface QueueEntry {
   fan_id: string
   joined_at: string
   estimated_wait_minutes: number
+  discussion_topic?: string
   profiles?: {
     full_name: string
     avatar_url: string | null
@@ -81,7 +82,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       // First get queue entries
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*')
+        .select('*, discussion_topic')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
         .order('joined_at', { ascending: true })
@@ -307,6 +308,11 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                       <p id={`queue-entry-${index}`} className="font-medium">
                         {entry.profiles?.full_name || 'Anonymous User'}
                       </p>
+                      {entry.discussion_topic && (
+                        <p className="text-sm text-primary mb-1">
+                          {entry.discussion_topic}
+                        </p>
+                      )}
                       <div className="flex items-center text-sm text-muted-foreground">
                         <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
                         <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
@@ -316,15 +322,17 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                     </div>
                   </div>
 
-                  <Button
-                    size="sm"
-                    onClick={() => handleStartCall(entry)}
-                    className="bg-live hover:bg-live/90 text-white"
-                    aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
-                  >
-                    <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
-                    Call
-                  </Button>
+                  {index === 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStartCall(entry)}
+                      className="bg-live hover:bg-live/90 text-white"
+                      aria-label={`Start pre-call with ${entry.profiles?.full_name || 'user'}`}
+                    >
+                      <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
+                      Start Pre-Call
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

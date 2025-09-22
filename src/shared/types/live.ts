@@ -19,6 +19,7 @@ export interface QueueEntry {
   fan_id: string
   status: 'waiting' | 'in_call' | 'completed' | 'cancelled'
   estimated_wait_minutes?: number
+  discussion_topic?: string
   created_at: string
   updated_at: string
 }
