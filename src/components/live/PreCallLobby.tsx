@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, Check, X, Plus, Edit2 } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager } from '@/media/MediaOrchestrator'
 
@@ -24,21 +24,12 @@ export function PreCallLobby({}: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
-  const [confirmedItems, setConfirmedItems] = useState<Set<string>>(new Set())
   
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
   const [newItemText, setNewItemText] = useState('')
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  const [editingText, setEditingText] = useState('')
-
-  // Reset confirmation state on mount
-  useEffect(() => {
-    setConfirmedItems(new Set())
-  }, [])
 
   const cannotSayList = editableList // Use editable list instead of static list
-  const allItemsConfirmed = confirmedItems.size === cannotSayList.length
 
   // Editing functions
   const addNewItem = () => {
@@ -54,33 +45,6 @@ export function PreCallLobby({}: PreCallLobbyProps) {
 
   const removeItem = (itemId: string) => {
     setEditableList(editableList.filter(item => item.id !== itemId))
-    setConfirmedItems(prev => {
-      const newSet = new Set(prev)
-      newSet.delete(itemId)
-      return newSet
-    })
-  }
-
-  const startEditing = (item: { id: string; label: string }) => {
-    setEditingItemId(item.id)
-    setEditingText(item.label)
-  }
-
-  const saveEdit = () => {
-    if (editingText.trim() && editingItemId) {
-      setEditableList(editableList.map(item => 
-        item.id === editingItemId 
-          ? { ...item, label: editingText.trim() }
-          : item
-      ))
-      setEditingItemId(null)
-      setEditingText('')
-    }
-  }
-
-  const cancelEdit = () => {
-    setEditingItemId(null)
-    setEditingText('')
   }
 
   // Add/remove dimming class on mount/unmount
@@ -135,18 +99,6 @@ export function PreCallLobby({}: PreCallLobbyProps) {
     }
   }
 
-  // Handle confirmation toggle
-  const toggleItemConfirmation = (itemId: string) => {
-    setConfirmedItems(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId)
-      } else {
-        newSet.add(itemId)
-      }
-      return newSet
-    })
-  }
   const toggleMic = async () => {
     try {
       const newMicState = !isMicEnabled
@@ -227,115 +179,41 @@ export function PreCallLobby({}: PreCallLobbyProps) {
             </div>
           </div>
 
-          {/* Editable Cannot-Say List Section */}
+          {/* Quick Words Section */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-sm font-medium mb-3">Community Guidelines Editor</h2>
-              <p className="text-xs text-muted-foreground mb-4">
-                Customize the guidelines for your call. Add, edit, or remove items as needed:
+              <h2 className="text-sm font-medium mb-3">Community Guidelines</h2>
+              <p className="text-xs text-muted-foreground mb-3">
+                Type specific words or phrases and press Enter to add them as removable chips:
               </p>
+              <Input
+                value={newItemText}
+                onChange={(e) => setNewItemText(e.target.value)}
+                placeholder="Type words and press Enter..."
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && newItemText.trim()) {
+                    addNewItem()
+                  }
+                }}
+                className="mb-3"
+              />
               
-              {/* Add New Item */}
-              <div className="flex gap-2 mb-4">
-                <Input
-                  value={newItemText}
-                  onChange={(e) => setNewItemText(e.target.value)}
-                  placeholder="Add new guideline..."
-                  onKeyPress={(e) => e.key === 'Enter' && addNewItem()}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={addNewItem}
-                  disabled={!newItemText.trim()}
-                  size="sm"
-                  className="px-3"
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
-
-              {/* Editable Guidelines List */}
-              <div className="space-y-2 mb-6">
-                {cannotSayList.map((item) => (
-                  <div key={item.id} className="flex items-center gap-2 p-3 border rounded-lg bg-card">
-                    {editingItemId === item.id ? (
-                      <div className="flex-1 flex gap-2">
-                        <Input
-                          value={editingText}
-                          onChange={(e) => setEditingText(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && saveEdit()}
-                          onBlur={saveEdit}
-                          className="flex-1"
-                          autoFocus
-                        />
-                        <Button size="sm" onClick={saveEdit} variant="outline">
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" onClick={cancelEdit} variant="outline">
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="flex-1 text-sm">{item.label}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => startEditing(item)}
-                          className="h-8 px-2"
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => removeItem(item.id)}
-                          className="h-8 px-2 text-destructive hover:text-destructive"
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Quick Words Input */}
-              <div className="border-t pt-4">
-                <h3 className="text-sm font-medium mb-2">Quick Words</h3>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Type specific words or phrases and press Enter to add them as removable chips:
-                </p>
-                <Input
-                  value={newItemText}
-                  onChange={(e) => setNewItemText(e.target.value)}
-                  placeholder="Type words and press Enter..."
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && newItemText.trim()) {
-                      addNewItem()
-                    }
-                  }}
-                  className="mb-3"
-                />
-                
-                {/* Word Chips */}
-                {cannotSayList.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {cannotSayList.map((item) => (
-                      <Badge
-                        key={item.id}
-                        variant="secondary"
-                        className="cursor-pointer hover:bg-destructive/20 group"
-                        onClick={() => removeItem(item.id)}
-                      >
-                        {item.label}
-                        <X className="h-3 w-3 ml-1 group-hover:text-destructive" />
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
+              {/* Word Chips */}
+              {cannotSayList.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {cannotSayList.map((item) => (
+                    <Badge
+                      key={item.id}
+                      variant="secondary"
+                      className="cursor-pointer hover:bg-destructive/20 group"
+                      onClick={() => removeItem(item.id)}
+                    >
+                      {item.label}
+                      <X className="h-3 w-3 ml-1 group-hover:text-destructive" />
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Action Buttons */}
