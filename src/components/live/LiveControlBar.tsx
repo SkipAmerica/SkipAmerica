@@ -5,12 +5,10 @@ import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
 import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
-import { useDragHandler } from '@/hooks/live/useDragHandler';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
 
 const LiveControlBarContent: React.FC = () => {
-  const [hydrated, setHydrated] = useState(false);
   // Always call all hooks unconditionally at the top level
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
@@ -21,11 +19,7 @@ const LiveControlBarContent: React.FC = () => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
   const shellRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
-  
-  // Drag handler for full-screen dragging
-  const { dragY, isDragging } = useDragHandler(innerRef);
 
   const live = useLive();
   
@@ -80,18 +74,13 @@ const LiveControlBarContent: React.FC = () => {
     const isLSBVisible = shouldShowLSB;
     
     // Set visibility variable - use discoverable posture for immediate response
-    document.documentElement.style.setProperty('--lsb-visible', (hydrated && isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
+    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
     
     // Set height variable
     if (shell && shell.offsetHeight > 0) {
       document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
     }
-  }, [hydrated, shouldShowLSB, isInDiscoverablePosture]);
-
-  useEffect(() => {
-    // Ensure bottom nav paints first, then reveal DSB
-    requestAnimationFrame(() => setHydrated(true));
-  }, []);
+  }, [shouldShowLSB]);
 
   // ResizeObserver to keep --lsb-height current
   useEffect(() => {
@@ -112,13 +101,13 @@ const LiveControlBarContent: React.FC = () => {
 
   // Handle animation states for show/hide
   useEffect(() => {
-    if (hydrated && shouldShowLSB && !isVisible) {
+    if (shouldShowLSB && !isVisible) {
       // Show: immediately set visible and start animation
       setIsVisible(true);
       setIsAnimating(true);
       const timer = setTimeout(() => setIsAnimating(false), 220);
       return () => clearTimeout(timer);
-    } else if ((!hydrated || !shouldShowLSB) && isVisible) {
+    } else if (!shouldShowLSB && isVisible) {
       // Hide: start animation, then hide after completion
       setIsAnimating(true);
       const timer = setTimeout(() => {
@@ -127,7 +116,7 @@ const LiveControlBarContent: React.FC = () => {
       }, 220);
       return () => clearTimeout(timer);
     }
-  }, [hydrated, shouldShowLSB, isVisible]);
+  }, [shouldShowLSB, isVisible]);
 
   // Real-time timer updates - only when in discoverable posture
   useEffect(() => {
@@ -217,23 +206,12 @@ const LiveControlBarContent: React.FC = () => {
   return (
     <>
       {/* LSB Shell - Always mounted for animation */}
-      <div
-        ref={shellRef}
-        className={cn("lsb-shell", !hydrated && "dsb-prehydrate")}
-        data-hydrated={hydrated ? "1" : "0"}
-      >
+      <div ref={shellRef} className="lsb-shell">
         <div 
-          ref={innerRef}
           className={cn(
             "lsb-inner",
-            (isVisible && shouldShowLSB) && "lsb-inner--visible",
-            isDragging && "lsb-inner--dragging"
+            (isVisible && shouldShowLSB) && "lsb-inner--visible"
           )}
-          style={{
-            transform: (hydrated && isVisible && shouldShowLSB) 
-              ? `translateY(${dragY}px)` 
-              : 'translateY(100%)'
-          }}
           role="toolbar"
           aria-label="Live session controls"
         >

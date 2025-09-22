@@ -492,12 +492,6 @@ body.live-active {
   padding-bottom: var(--live-control-bar-height);
 }
 
-:root {
-  --ios-tab-bar-height: 0px;
-  --lsb-visible: 0;
-  --lsb-height: 56px; /* fallback until measured */
-}
-
 /* Mobile-specific overrides */
 @media screen and (max-width: 768px) {
   .freeze-pane-container {
@@ -505,23 +499,14 @@ body.live-active {
   }
 }
 
-/* LSB shell */
+/* LSB Animation Classes */
 .lsb-shell {
   position: fixed;
   left: 0;
-  bottom: 0;                         /* anchor to screen bottom */
-  margin-bottom: var(--ios-tab-bar-height); /* sit just above Bottom Nav */
+  bottom: var(--ios-tab-bar-height);
   width: 100%;
   pointer-events: none;
-  z-index: 50;                       /* below CPB(60), above nav(40..49) */
-}
-
-/* Hard-hide until hydration to prevent flash above nav */
-.dsb-prehydrate {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 0 !important;
+  z-index: 40; /* Under bottom nav (z-50) */
 }
 
 .lsb-inner {
@@ -539,38 +524,13 @@ body.live-active {
   gap: 1rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   pointer-events: auto;
-  transition: none; /* Inline transform controls position */
+  transition: transform 220ms ease-out;
   will-change: transform;
   transform: translateY(100%);
-  touch-action: none;
-  user-select: none;
-  cursor: grab;
 }
 
 .lsb-inner--visible {
-  /* no transform here; inline style is source of truth */
-  transition: transform 220ms ease-out;
-}
-
-.lsb-inner--dragging {
-  transition: none; /* Disable transition during drag */
-  cursor: grabbing;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-/* CPB always above DSB + Bottom Nav */
-#cpb-root {
-  position: fixed;
-  left: 0;
-  right: 0;
-  z-index: 60;
-  bottom: calc(
-    var(--ios-tab-bar-height, 0px)
-    + (var(--lsb-visible, 0) * var(--lsb-height, 0px))
-    + 12px
-    + env(safe-area-inset-bottom, 0px)
-  );
-  transition: bottom 200ms ease;
+  transform: translateY(0);
 }
 
 /* Ensure buttons inside LSB stay square */
