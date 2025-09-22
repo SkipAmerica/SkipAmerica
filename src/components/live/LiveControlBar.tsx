@@ -80,7 +80,7 @@ const LiveControlBarContent: React.FC = () => {
     if (shell && shell.offsetHeight > 0) {
       document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
     }
-  }, [shouldShowLSB]);
+  }, [shouldShowLSB, isInDiscoverablePosture]);
 
   // ResizeObserver to keep --lsb-height current
   useEffect(() => {
