@@ -1,9 +1,4 @@
-/**
- * Centralized live session store with React Context
- * Single source of truth for all live state
- */
-
-import React, { createContext, useContext, useReducer, useCallback, useRef, useEffect } from 'react'
+import React, { createContext, useContext, useEffect, useReducer, useMemo, useCallback, useRef } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
@@ -165,6 +160,8 @@ interface LiveStoreContextValue extends LiveStoreState {
   // Actions
   dispatch: (event: LiveEvent) => void
   goLive: () => Promise<void>
+  startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
+  confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
   endLive: () => Promise<void>
   toggleEarningsDisplay: () => void
   incrementCall: (earnings: number) => void
@@ -264,197 +261,194 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.state, startRuntime, disposeRuntime])
   
+  // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
     if (!user || !canGoLive(state.state) || state.inFlight.start) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
-    // Log state transition with immutable snapshot
-    if ((window as any).__LIVE_DEBUG) {
-      const startLog = {
-        from: state.state,
-        event: 'GO_LIVE',
-        to: 'LIVE_AVAILABLE',
-        userId: user.id,
-        timestamp: new Date().toISOString(),
-        mode: import.meta.env.MODE
-      }
-      console.info(`[LIVE] ${state.state} –GO_LIVE–> LIVE_AVAILABLE`, safeStringify(startLog))
-    }
-    
-    handleDispatch({ type: 'GO_LIVE' })
-    
-    // Move to prep state for lobby/preview
-    handleDispatch({ type: 'ENTER_PREP' })
-    
-    // Allow state to commit before media init
-    await Promise.resolve()
-    
     try {
-      // Step 1: Initialize media for preview (SESSION_PREP target)
-      try {
-        if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
-          console.info('[LIVE][START] Initializing preview media...');
-          
-          await orchestrateInit({ 
-            targetState: 'SESSION_PREP', 
-            previewOnly: true 
-          })
-          console.info('[LIVE][START] Preview media initialized');
-        }
-      } catch (permissionError) {
-        routeMediaError(permissionError)
-        handleDispatch({ type: 'START_FAILED' });
-        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
-        return;
-      }
-
-      // Step 2: WebRTC initialization (placeholder)
-      try {
-        console.info('[LIVE][START] Initializing WebRTC...');
-        // WebRTC setup would go here
-        console.info('[LIVE][START] WebRTC initialized');
-      } catch (webrtcError) {
-        const normalized = normalizeError(webrtcError, {
-          step: 'webrtc_init',
-          state: state.state,
-          event: 'GO_LIVE',
-          userId: user.id
-        });
-        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
-        
-        toast({
-          title: "Connection Failed",
-          description: normalized.message || "Failed to initialize video connection",
-          variant: "destructive"
-        });
-        
-        handleDispatch({ type: 'START_FAILED' });
-        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
-        return;
-      }
-
-      // Step 3: Create live session in API
-      try {
-        console.info('[LIVE][START] Creating live session...');
-        const now = new Date().toISOString()
-        const { data: session, error } = await supabase
-          .from('live_sessions')
-          .insert({
-            creator_id: user.id,
-            started_at: now
-          })
-          .select()
-          .single()
-        
-        if (error) {
-          const wrappedError = new Error(`Failed to create live session: ${error.message}`)
-          wrappedError.name = 'DatabaseError'
-          ;(wrappedError as any).code = error.code
-          throw wrappedError
-        }
-        
-        console.info('[LIVE][START] Live session created:', session.id);
-        dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
-      } catch (apiError) {
-        const normalized = normalizeError(apiError, {
-          step: 'start_session_api',
-          state: state.state,
-          event: 'GO_LIVE',
-          userId: user.id
-        });
-        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
-        
-        toast({
-          title: "Failed to go live",
-          description: normalized.message || "Database error occurred",
-          variant: "destructive"
-        });
-        
-        handleDispatch({ type: 'START_FAILED' });
-        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
-        return;
-      }
-
-      // Step 4: Start runtime services
-      try {
-        console.info('[LIVE][START] Starting runtime services...');
-        // Runtime is started in handleDispatch side effect
-        console.info('[LIVE][START] Runtime services started');
-      } catch (runtimeError) {
-        const normalized = normalizeError(runtimeError, {
-          step: 'start_runtime',
-          state: state.state,
-          event: 'GO_LIVE',
-          userId: user.id
-        });
-        console.error('[LIVE][START_FAILED]', safeStringify(normalized));
-        
-        toast({
-          title: "Service Startup Failed",
-          description: normalized.message || "Failed to start live services",
-          variant: "destructive"
-        });
-        
-        handleDispatch({ type: 'START_FAILED' });
-        dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
-        return;
-      }
-
-      // Success!
+      // Log state transition with immutable snapshot
       if ((window as any).__LIVE_DEBUG) {
-        const successLog = {
-          from: 'SESSION_JOINING',
-          event: 'SESSION_STARTED',
-          to: 'SESSION_ACTIVE',
-          sessionId: state.sessionId,
+        const startLog = {
+          from: state.state,
+          event: 'GO_LIVE',
+          to: 'LIVE_AVAILABLE',
+          userId: user.id,
           timestamp: new Date().toISOString(),
           mode: import.meta.env.MODE
         }
-        console.info(`[LIVE] SESSION_JOINING –SESSION_STARTED–> SESSION_ACTIVE`, safeStringify(successLog))
+        console.info(`[LIVE] ${state.state} –GO_LIVE–> LIVE_AVAILABLE`, safeStringify(startLog))
       }
       
-      handleDispatch({ type: 'SESSION_STARTED' })
+      console.info('[LIVE][GO_LIVE] Setting availability...');
+      ensureMediaSubscriptions();
+      handleDispatch({ type: 'GO_LIVE' }); // -> LIVE_AVAILABLE
+      console.info('[LIVE][GO_LIVE] Now available for calls');
       
-    } catch (error: any) {
-      if (error.name === 'AbortError') return
-      
-      // Ensure media cleanup on any failure
-      try {
-        await orchestrateStop('go_live_failed')
-      } catch (cleanupError) {
-        console.warn('[LIVE][START_FAILED] Media cleanup failed:', cleanupError)
-      }
-      
-      // Catch-all error handler
-      const normalized = normalizeError(error, {
-        step: 'unknown',
-        state: state.state,
-        event: 'GO_LIVE',
-        userId: user.id
-      });
-      console.error('[LIVE][START_FAILED]', safeStringify(normalized));
-      
-      handleDispatch({ type: 'START_FAILED' })
-      
-      toast({
-        title: "Failed to go live",
-        description: normalized.message || "Something went wrong starting your live session.",
-        variant: "destructive"
-      })
+    } catch (error) {
+      console.error('[LIVE][GO_LIVE] Failed:', error);
+      handleDispatch({ type: 'START_FAILED' });
     } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
     }
-  }, [user, state.state, state.inFlight.start, state.sessionId, handleDispatch, toast])
-  
+  }, [user, state.state, state.inFlight.start, handleDispatch])
+
+  // START NEXT: enter lobby and trigger preview via subscription  
+  const startNext = useCallback(async (localVideoEl: HTMLVideoElement) => {
+    if (!user || state.state !== 'LIVE_AVAILABLE' || state.inFlight.start) return
+    
+    const controller = new AbortController()
+    dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
+    
+    try {
+      console.info('[LIVE][START_NEXT] Entering prep...');
+      ensureMediaSubscriptions();
+      
+      // Store video element for orchestrator subscription
+      (window as any).__skipLocalVideoEl = localVideoEl;
+      
+      handleDispatch({ type: 'ENTER_PREP' });
+      await Promise.resolve(); // allow reducer commit → SESSION_PREP
+      
+      // ensureMediaSubscriptions will observe SESSION_PREP and call orchestrateInit for preview
+      console.info('[LIVE][START_NEXT] Prep initiated, media will initialize via subscription');
+      
+    } catch (error) {
+      console.error('[LIVE][START_NEXT] Failed:', error);
+      handleDispatch({ type: 'START_FAILED' });
+    } finally {
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+    }
+  }, [user, state.state, state.inFlight.start, handleDispatch])
+
+  // CONFIRM JOIN: both sides agreed; upgrade to full media + RTC and move to ACTIVE on ICE connected
+  const confirmJoin = useCallback(async (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => {
+    if (!user || state.state !== 'SESSION_PREP' || state.inFlight.start) return
+    
+    const controller = new AbortController()
+    dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
+    
+    try {
+      console.info('[LIVE][CONFIRM_JOIN] Entering joining state...');
+      handleDispatch({ type: 'ENTER_JOINING' }); // intent
+      await Promise.resolve(); // commit → SESSION_JOINING
+
+      await orchestrateInit({
+        targetState: 'SESSION_JOINING',
+        previewOnly: false,
+        videoEl: localVideoEl,
+        audioEl: localAudioEl,
+      });
+
+      // Create live session in API
+      console.info('[LIVE][CONFIRM_JOIN] Creating live session...');
+      const now = new Date().toISOString()
+      const { data: session, error } = await supabase
+        .from('live_sessions')
+        .insert({
+          creator_id: user.id,
+          started_at: now
+        })
+        .select()
+        .single()
+      
+      if (error) {
+        throw new Error(`Failed to create live session: ${error.message}`)
+      }
+      
+      dispatch({ type: 'SET_SESSION_DATA', sessionId: session.id, startedAt: Date.now() })
+
+      // Minimal RTC skeleton (replace signaling as needed)
+      const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+      mediaManager.setPeerConnection(pc);
+      const stream = mediaManager.getLocalStream();
+      stream?.getTracks().forEach(t => pc.addTrack(t, stream));
+
+      pc.oniceconnectionstatechange = async () => {
+        const s = pc.iceConnectionState;
+        if (s === 'connected' || s === 'completed') {
+          handleDispatch({ type: 'SESSION_STARTED' }); // -> SESSION_ACTIVE
+          console.info('[LIVE][CONFIRM_JOIN] Session fully active');
+        }
+        if (s === 'failed' || s === 'disconnected') {
+          routeMediaError(new Error('RTC failed'));
+        }
+      };
+
+      // TODO: replace placeholders with your signaling
+      // const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+      // send offer to server; receive answer; await pc.setRemoteDescription(answer);
+
+    } catch (e) {
+      console.error('[LIVE][CONFIRM_JOIN] Failed:', e);
+      routeMediaError(e);
+      // Roll back cleanly to PREP so the creator can retry or pick another caller
+      await orchestrateStop('join_failed');
+      handleDispatch({ type: 'ENTER_PREP' }); // back to SESSION_PREP
+    } finally {
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' });
+    }
+  }, [user, state.state, state.inFlight.start, handleDispatch, supabase])
+
+  // END/STOP: full release
   const endLive = useCallback(async () => {
     if (!user || !canEndLive(state.state) || state.inFlight.end || !state.sessionId) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'end', controller })
     
-    // Log state transition with immutable snapshot
+    try {
+      console.info('[LIVE][END] Ending live session...');
+      
+      handleDispatch({ type: 'TEARDOWN_INTENT' });
+      await orchestrateStop('user_end');
+      
+      // Update session in database (if exists)
+      if (state.sessionId) {
+        try {
+          console.info('[LIVE][END] Updating session record...');
+          const now = new Date().toISOString()
+          const sessionDuration = state.startedAt ? Math.floor((Date.now() - state.startedAt) / 60000) : 0
+          
+          const { error } = await supabase
+            .from('live_sessions')
+            .update({
+              ended_at: now,
+              calls_taken: state.callsTaken,
+              total_earnings_cents: state.totalEarningsCents,
+              session_duration_minutes: sessionDuration
+            })
+            .eq('id', state.sessionId)
+          
+          if (error) {
+            console.warn('[LIVE][END] Failed to update session record:', error);
+          } else {
+            console.info('[LIVE][END] Session record updated');
+          }
+        } catch (dbError) {
+          console.warn('[LIVE][END] Failed to update session record:', dbError);
+        }
+      }
+      
+      handleDispatch({ type: 'LIVE_AVAILABLE' }); // stay live for next caller, or OFFLINE if you prefer
+      console.info('[LIVE][END] Session ended, back to available');
+      
+    } catch (error) {
+      console.error('[LIVE][END] End session failed:', error);
+      // Force cleanup
+      try {
+        await orchestrateStop('force_cleanup');
+        handleDispatch({ type: 'LIVE_AVAILABLE' });
+      } catch (cleanupError) {
+        console.error('[LIVE][END] Force cleanup failed:', cleanupError);
+        handleDispatch({ type: 'OFFLINE' });
+      }
+    } finally {
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' });
+    }
+  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch, supabase])
     if ((window as any).__LIVE_DEBUG) {
       const endLog = {
         from: state.state,
@@ -602,7 +596,7 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
     }
-  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch, toast])
+  }, [user, state.state, state.inFlight.end, state.sessionId, state.startedAt, state.callsTaken, state.totalEarningsCents, handleDispatch, supabase, toast])
   
   const toggleEarningsDisplay = useCallback(() => {
     dispatch({ type: 'TOGGLE_EARNINGS_DISPLAY' })
@@ -652,6 +646,8 @@ export function LiveStoreProvider({ children }: { children: React.ReactNode }) {
     earningsDisplay,
     dispatch: handleDispatch,
     goLive,
+    startNext,
+    confirmJoin,
     endLive,
     toggleEarningsDisplay,
     incrementCall,

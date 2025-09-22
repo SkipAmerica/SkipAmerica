@@ -35,9 +35,12 @@ export function ensureMediaSubscriptions() {
     if (prev !== 'SESSION_PREP' && next === 'SESSION_PREP') {
       // Lazy-start preview if not already active
       if (!mediaManager.hasLocalStream()) {
-        orchestrateInit({ targetState: 'SESSION_PREP', previewOnly: true }).catch(err =>
-          routeMediaError(err)
-        );
+        const videoEl = (window as any).__skipLocalVideoEl;
+        orchestrateInit({ 
+          targetState: 'SESSION_PREP', 
+          previewOnly: true,
+          videoEl: videoEl
+        }).catch(err => routeMediaError(err));
       }
     }
     if (next === 'TEARDOWN') {
