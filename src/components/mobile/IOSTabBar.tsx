@@ -8,9 +8,10 @@ interface IOSTabBarProps {
   showFollowing?: boolean;
   isCreator?: boolean;
   isLive?: boolean;
+  isDiscoverable?: boolean;
   isTransitioning?: boolean;
-  onGoLive?: () => void;
-  onEndLive?: () => void;
+  onToggleDiscoverable?: () => void;
+  onEndCall?: () => void;
 }
 
 interface TabItem {
@@ -20,20 +21,20 @@ interface TabItem {
   badge?: number;
 }
 
-export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isTransitioning, onGoLive, onEndLive }: IOSTabBarProps) {
+export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isDiscoverable, isTransitioning, onToggleDiscoverable, onEndCall }: IOSTabBarProps) {
   const busyRef = React.useRef(false);
   const handleCenterAction = React.useCallback((e: React.MouseEvent<HTMLButtonElement> | React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (busyRef.current || isTransitioning) return;
+    
+    // On Call page, center button is no-op
+    if (isLive) return;
+    
     busyRef.current = true;
     setTimeout(() => { busyRef.current = false; }, 450);
-    if (isLive) {
-      onEndLive?.();
-    } else {
-      onGoLive?.();
-    }
-  }, [isTransitioning, isLive, onGoLive, onEndLive]);
+    onToggleDiscoverable?.();
+  }, [isTransitioning, isLive, onToggleDiscoverable]);
   // Define tabs based on creator status
   const leftTabs: TabItem[] = [
     { id: 'discover', label: 'Discover', icon: Home },
@@ -123,7 +124,8 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                 "ios-touchable",
                 "flex flex-col items-center justify-center",
                 "transition-all duration-200",
-                "disabled:opacity-60 disabled:pointer-events-none"
+                "disabled:opacity-60 disabled:pointer-events-none",
+                isLive && "cursor-default"
               )}
               aria-disabled={!!isTransitioning}
             >
@@ -132,14 +134,12 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                 "transform transition-all duration-200",
                 "shadow-lg",
                 isLive 
-                  ? "bg-destructive text-destructive-foreground scale-110" 
-                  : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
+                  ? "bg-muted text-muted-foreground cursor-default" 
+                  : isDiscoverable
+                    ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    : "bg-cyan-500 text-white hover:bg-cyan-600 hover:scale-105"
               )}>
-                {isLive ? (
-                  <span className="text-xs font-bold">End</span>
-                ) : (
-                  <span className="text-xs font-bold">Disc.</span>
-                )}
+                <Sparkles size={16} />
               </div>
             </button>
           </div>

@@ -12,6 +12,7 @@ export function useLive() {
   return {
     // Core state from store
     isLive: store.isLive,
+    isDiscoverable: store.isDiscoverable,
     state: store.state,
     startedAt: store.startedAt,
     callsTaken: store.callsTaken,
@@ -33,6 +34,7 @@ export function useLive() {
     
     // Actions
     goLive: store.goLive,
+    toggleDiscoverable: store.toggleDiscoverable,
     endLive: store.endLive,
     confirmJoin: store.confirmJoin,
     toggleRightDisplay: store.toggleEarningsDisplay,

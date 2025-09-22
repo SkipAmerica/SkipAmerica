@@ -33,26 +33,28 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
   const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { state, confirmJoin, endLive } = useLive();
+  const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware('lobby');
+
+  const isCreator = profile?.account_type === 'creator';
 
   // Redirect if not in correct state
   useEffect(() => {
-    if (state !== 'SESSION_PREP') {
+    if (live.state !== 'SESSION_PREP') {
       navigate('/');
     }
-  }, [state, navigate]);
+  }, [live.state, navigate]);
 
   const handleConfirmJoin = async () => {
     const videoEl = document.querySelector('#lobby-local-video') as HTMLVideoElement;
     const audioEl = document.querySelector('#lobby-local-audio') as HTMLAudioElement;
     
-    await confirmJoin(videoEl, audioEl);
+    await live.confirmJoin(videoEl, audioEl);
     // Navigation to Call page will happen via state change in router
   };
 
   const handleGoOffline = async () => {
-    await endLive();
+    await live.endLive();
     navigate('/');
   };
 
@@ -180,10 +182,11 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         onTabChange={() => {}} // Disabled during lobby
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
-        isLive={false} // Show as not live since we're in lobby
-        isTransitioning={false}
-        onGoLive={() => {}}
-        onEndLive={handleGoOffline}
+        isLive={live.isLive}
+        isDiscoverable={live.isDiscoverable}
+        isTransitioning={live.isTransitioning}
+        onToggleDiscoverable={handleGoOffline}
+        onEndCall={() => {}}
       />
     </div>
   );

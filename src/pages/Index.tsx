@@ -85,7 +85,7 @@ const Index = () => {
   
   const { user } = useAuth();
   const { profile } = useProfile();
-  const { isLive, goLive, endLive, isTransitioning } = useLive();
+  const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
 
@@ -392,22 +392,23 @@ const Index = () => {
       <LiveControlBar />
 
       {/* iOS Tab Bar */}
-      <IOSTabBar
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          if (tab === "discover") {
-            handleDiscoverTabClick();
-          } else {
-            setActiveTab(tab);
-          }
-        }}
-        showFollowing={!!user}
-        isCreator={profile?.account_type === 'creator'}
-        isLive={isLive}
-        isTransitioning={isTransitioning}
-        onGoLive={goLive}
-        onEndLive={endLive}
-      />
+        <IOSTabBar 
+          activeTab={activeTab} 
+          onTabChange={(tab) => {
+            if (tab === "discover") {
+              handleDiscoverTabClick();
+            } else {
+              setActiveTab(tab);
+            }
+          }}
+          showFollowing={!!user}
+          isCreator={profile?.account_type === 'creator'}
+          isLive={live.isLive}
+          isDiscoverable={live.isDiscoverable}
+          isTransitioning={live.isTransitioning}
+          onToggleDiscoverable={live.toggleDiscoverable}
+          onEndCall={live.endLive}
+        />
 
       {/* User Menu Action Sheet */}
       <IOSActionSheet

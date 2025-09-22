@@ -95,7 +95,7 @@ function LiveControlBarContent() {
             ) : (
               <>
                 <div className="w-2 h-2 bg-live rounded-full animate-pulse" />
-                <span className="text-sm font-medium text-live">Live</span>
+                <span className="text-sm font-medium text-live">Discoverable</span>
               </>
             )}
           </div>

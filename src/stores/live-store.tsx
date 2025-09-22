@@ -142,6 +142,7 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
 export interface LiveStoreContextValue {
   // State
   isLive: boolean
+  isDiscoverable: boolean
   state: LiveState
   startedAt: number
   sessionId: string | null
@@ -159,6 +160,7 @@ export interface LiveStoreContextValue {
   // Actions
   dispatch: (event: LiveEvent) => void
   goLive: () => Promise<void>
+  toggleDiscoverable: () => void
   confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
   startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
   endLive: () => Promise<void>
@@ -359,6 +361,15 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'TRIGGER_HAPTIC' })
   }, [])
 
+  const toggleDiscoverable = useCallback(() => {
+    if (state.inFlight.start || state.inFlight.end || isTransitioning(state.state)) return;
+    if (state.state === 'OFFLINE') {
+      goLive();
+    } else if (state.state === 'DISCOVERABLE') {
+      endLive();
+    }
+  }, [state.state, state.inFlight.start, state.inFlight.end, goLive, endLive])
+
   // Computed values
   const elapsedTime = useMemo(() => {
     if (state.state === 'DISCOVERABLE' && state.discoverableStartedAt) {
@@ -381,6 +392,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   const contextValue: LiveStoreContextValue = {
     // State
     isLive: state.state === 'SESSION_ACTIVE',
+    isDiscoverable: state.state === 'DISCOVERABLE',
     state: state.state,
     startedAt: state.startedAt,
     sessionId: state.sessionId,
@@ -398,6 +410,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     // Actions
     dispatch: handleDispatch,
     goLive,
+    toggleDiscoverable,
     confirmJoin,
     startNext,
     endLive,
