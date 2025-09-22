@@ -7,6 +7,7 @@ import { transition, canGoLive, canEndLive, LiveState, LiveEvent, isTransitionin
 import { ensureMediaSubscriptions, orchestrateInit, orchestrateStop, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
 import { useAuth } from '@/app/providers/auth-provider'
 import { supabase } from '@/integrations/supabase/client'
+import { Haptics, ImpactStyle } from '@capacitor/haptics'
 
 /* Prevent double-taps/races on discoverable toggle */
 let __discToggleInFlight = false;
@@ -51,7 +52,7 @@ export type Action =
   | { type: 'UPDATE_QUEUE_COUNT'; count: number }
   | { type: 'TOGGLE_EARNINGS' }
   | { type: 'SET_IN_FLIGHT'; operation: 'start' | 'end'; controller?: AbortController }
-  | { type: 'TRIGGER_HAPTIC' }
+  | { type: 'TRIGGER_HAPTIC'; payload?: { heavy?: boolean } }
   | { type: 'START_DISCOVERABLE_TIMER' }
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
@@ -201,11 +202,14 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
       }
     
     case 'TRIGGER_HAPTIC':
-      if (state.hapticsEnabled && 'vibrate' in navigator) {
+      if (state.hapticsEnabled) {
         try {
-          navigator.vibrate(100)
+          const impactStyle = action.payload?.heavy ? ImpactStyle.Heavy : ImpactStyle.Medium
+          Haptics.impact({ style: impactStyle }).catch(() => {
+            // Silently fail if haptics not available
+          })
         } catch (error) {
-          console.warn('[Haptic] Vibration not supported:', error)
+          console.warn('[Haptic] Haptic feedback not supported:', error)
         }
       }
       return state
@@ -533,8 +537,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'UPDATE_QUEUE_COUNT', count })
   }, [])
 
-  const triggerHaptic = useCallback(() => {
-    dispatch({ type: 'TRIGGER_HAPTIC' })
+  const triggerHaptic = useCallback((heavy?: boolean) => {
+    dispatch({ type: 'TRIGGER_HAPTIC', payload: { heavy } })
   }, [])
 
   const toggleDiscoverable = useCallback(async () => {
@@ -566,6 +570,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
         if (countdownValue <= 1) {
           clearInterval(timerId);
           dispatch({ type: 'COUNTDOWN_COMPLETE' });
+          // Heavy haptic for final activation
+          dispatch({ type: 'TRIGGER_HAPTIC', payload: { heavy: true } });
           // Now actually go discoverable
           goDiscoverable();
         } else {
