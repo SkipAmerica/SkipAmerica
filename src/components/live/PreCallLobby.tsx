@@ -301,34 +301,40 @@ export function PreCallLobby({}: PreCallLobbyProps) {
                 ))}
               </div>
               
-              {/* Confirmation UI */}
+              {/* Quick Words Input */}
               <div className="border-t pt-4">
-                <h3 className="text-sm font-medium mb-3">Confirm Guidelines</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Please confirm you understand and will follow these guidelines during your call:
+                <h3 className="text-sm font-medium mb-2">Quick Words</h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Type specific words or phrases and press Enter to add them as removable chips:
                 </p>
-                <div className="space-y-2 mb-4">
-                  {cannotSayList.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-2 border rounded bg-muted/30">
-                      <span className="text-sm">{item.label}</span>
-                      <Button
-                        size="sm"
-                        variant={confirmedItems.has(item.id) ? "default" : "outline"}
-                        onClick={() => toggleItemConfirmation(item.id)}
-                        className="h-6 px-2 text-xs"
+                <Input
+                  value={newItemText}
+                  onChange={(e) => setNewItemText(e.target.value)}
+                  placeholder="Type words and press Enter..."
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newItemText.trim()) {
+                      addNewItem()
+                    }
+                  }}
+                  className="mb-3"
+                />
+                
+                {/* Word Chips */}
+                {cannotSayList.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {cannotSayList.map((item) => (
+                      <Badge
+                        key={item.id}
+                        variant="secondary"
+                        className="cursor-pointer hover:bg-destructive/20 group"
+                        onClick={() => removeItem(item.id)}
                       >
-                        {confirmedItems.has(item.id) ? (
-                          <>
-                            <Check className="h-3 w-3 mr-1" />
-                            ✓
-                          </>
-                        ) : (
-                          'Confirm'
-                        )}
-                      </Button>
-                    </div>
-                  ))}
-                </div>
+                        {item.label}
+                        <X className="h-3 w-3 ml-1 group-hover:text-destructive" />
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -336,10 +342,9 @@ export function PreCallLobby({}: PreCallLobbyProps) {
             <div className="space-y-2">
               <Button
                 size="lg"
-                disabled={!allItemsConfirmed}
                 className="w-full"
               >
-                Confirm Rules ({confirmedItems.size}/{cannotSayList.length} confirmed)
+                Confirm Rules
               </Button>
               <Button
                 size="lg"
