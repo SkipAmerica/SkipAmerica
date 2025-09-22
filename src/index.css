@@ -537,3 +537,15 @@ body.live-active {
 .lsb-inner button {
   border-radius: 0.375rem; /* Tailwind default button radius */
 }
+
+/* Pre-Call Lobby Dimming - Dims DSB/CPB while preserving layout */
+html.precall-open [class*="dsb-"], 
+html.precall-open [class*="cpb-"],
+html.precall-open .live-control-bar,
+html.precall-open [class*="ios-tab-bar"],
+html.precall-open [class*="ios-nav-bar"],
+html.precall-open [class*="creator-post-prompt"] {
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
