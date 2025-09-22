@@ -94,6 +94,8 @@ const Index = () => {
   const isLive = live?.isLive || false;
   const isDiscoverable = live?.isDiscoverable || false;
   const isTransitioning = live?.isTransitioning || false;
+  const countdownActive = live?.countdownActive || false;
+  const countdownValue = live?.countdownValue || 0;
   const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
   const endLive = live?.endLive || (() => {});
 
@@ -414,6 +416,8 @@ const Index = () => {
           isLive={isLive}
           isDiscoverable={isDiscoverable}
           isTransitioning={isTransitioning}
+          countdownActive={countdownActive}
+          countdownValue={countdownValue}
           onToggleDiscoverable={toggleDiscoverable}
           onEndCall={endLive}
         />

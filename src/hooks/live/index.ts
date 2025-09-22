@@ -45,6 +45,10 @@ export function useLive() {
     discoverableStartedAt: store.discoverableStartedAt,
     accumulatedDiscoverableTime: store.accumulatedDiscoverableTime,
     
+    // Countdown fields
+    countdownActive: store.countdownActive,
+    countdownValue: store.countdownValue,
+    
     // Store reference for LiveControlBar
     store,
     

@@ -44,6 +44,8 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
   const isLive = live?.isLive || false;
   const isDiscoverable = live?.isDiscoverable || false;
   const isTransitioning = live?.isTransitioning || false;
+  const countdownActive = live?.countdownActive || false;
+  const countdownValue = live?.countdownValue || 0;
   const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
 
   const isCreator = profile?.account_type === 'creator';
@@ -195,6 +197,8 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         isLive={isLive}
         isDiscoverable={isDiscoverable}
         isTransitioning={isTransitioning}
+        countdownActive={countdownActive}
+        countdownValue={countdownValue}
         onToggleDiscoverable={toggleDiscoverable}
         onEndCall={() => {}}
       />

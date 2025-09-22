@@ -33,6 +33,10 @@ export interface LiveStoreState {
   sessionEarningsCents: number
   sessionStartedAt: number | null // ms since epoch when session began
   sessionElapsed: number // accumulated ms for THIS session
+  // Countdown state
+  countdownActive: boolean
+  countdownValue: number // 3, 2, 1, 0
+  countdownTimerId: number | null
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -51,6 +55,10 @@ export type Action =
   | { type: 'START_DISCOVERABLE_TIMER' }
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
+  | { type: 'START_COUNTDOWN' }
+  | { type: 'COUNTDOWN_TICK'; value: number }
+  | { type: 'COUNTDOWN_COMPLETE' }
+  | { type: 'CANCEL_COUNTDOWN' }
 
 // Helper to determine discoverable posture
 const inDiscoverablePosture = (state: string) =>
@@ -78,6 +86,10 @@ const initialState: LiveStoreState = {
   sessionEarningsCents: 0,
   sessionStartedAt: null,
   sessionElapsed: 0,
+  // Countdown state
+  countdownActive: false,
+  countdownValue: 0,
+  countdownTimerId: null,
   inFlight: {
     start: null,
     end: null
@@ -189,7 +201,13 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
       }
     
     case 'TRIGGER_HAPTIC':
-      // TODO: Implement haptic feedback logic
+      if (state.hapticsEnabled && 'vibrate' in navigator) {
+        try {
+          navigator.vibrate(100)
+        } catch (error) {
+          console.warn('[Haptic] Vibration not supported:', error)
+        }
+      }
       return state
     
     case 'START_DISCOVERABLE_TIMER':
@@ -212,6 +230,38 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         ...state,
         discoverableStartedAt: null,
         accumulatedDiscoverableTime: 0
+      }
+    
+    case 'START_COUNTDOWN':
+      return {
+        ...state,
+        countdownActive: true,
+        countdownValue: 3
+      }
+    
+    case 'COUNTDOWN_TICK':
+      return {
+        ...state,
+        countdownValue: action.value
+      }
+    
+    case 'COUNTDOWN_COMPLETE':
+      return {
+        ...state,
+        countdownActive: false,
+        countdownValue: 0,
+        countdownTimerId: null
+      }
+    
+    case 'CANCEL_COUNTDOWN':
+      if (state.countdownTimerId) {
+        clearInterval(state.countdownTimerId)
+      }
+      return {
+        ...state,
+        countdownActive: false,
+        countdownValue: 0,
+        countdownTimerId: null
       }
     
     default:
@@ -250,6 +300,9 @@ export interface LiveStoreContextValue {
   // Timer fields
   discoverableStartedAt: number | null
   accumulatedDiscoverableTime: number
+  // Countdown fields
+  countdownActive: boolean
+  countdownValue: number
   
   // Actions
   dispatch: (event: LiveEvent) => void
@@ -489,6 +542,12 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 
     const st = state.state;
 
+    // If countdown is active, cancel it
+    if (state.countdownActive) {
+      dispatch({ type: 'CANCEL_COUNTDOWN' });
+      return;
+    }
+
     // Ignore toggles while transitional states are in progress to prevent races
     if (st === 'TEARDOWN') {
       console.info('[DISCOVERABLE][ignored] state:', st);
@@ -496,7 +555,28 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     }
 
     if (st === 'OFFLINE') {
-      return goDiscoverable();
+      // Start countdown instead of going discoverable immediately
+      dispatch({ type: 'START_COUNTDOWN' });
+      
+      // Start countdown timer
+      let countdownValue = 3;
+      const timerId = setInterval(() => {
+        dispatch({ type: 'TRIGGER_HAPTIC' }); // Haptic on each tick
+        
+        if (countdownValue <= 1) {
+          clearInterval(timerId);
+          dispatch({ type: 'COUNTDOWN_COMPLETE' });
+          // Now actually go discoverable
+          goDiscoverable();
+        } else {
+          countdownValue--;
+          dispatch({ type: 'COUNTDOWN_TICK', value: countdownValue });
+        }
+      }, 1000);
+      
+      // Store timer ID in a way that doesn't require state update
+      (state as any).countdownTimerId = timerId;
+      return;
     }
 
     // Treat DISCOVERABLE posture (and lobby/joining) as "on"
@@ -506,7 +586,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
 
     // In an active call, center toggle is not responsible for ending; do nothing.
     console.info('[DISCOVERABLE][no-op] state:', st);
-  }, [state.state, goDiscoverable, goUndiscoverable])
+  }, [state.state, state.countdownActive, goDiscoverable, goUndiscoverable, dispatch])
 
   // Computed values
   const elapsedTime = useMemo(() => {
@@ -557,6 +637,9 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     // Timer fields
     discoverableStartedAt: state.discoverableStartedAt,
     accumulatedDiscoverableTime: state.accumulatedDiscoverableTime,
+    // Countdown fields
+    countdownActive: state.countdownActive,
+    countdownValue: state.countdownValue,
     
     // Actions
     dispatch: handleDispatch,
