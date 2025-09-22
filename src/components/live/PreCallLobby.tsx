@@ -1,9 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Mic, MicOff, Video, VideoOff } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Mic, MicOff, Video, VideoOff, Check } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager } from '@/media/MediaOrchestrator'
+
+// TODO: Replace with actual config/store source
+const DEV_CANNOT_SAY_LIST = [
+  { id: 'violence', label: 'No violent or threatening language' },
+  { id: 'hate', label: 'No hate speech or discriminatory content' },
+  { id: 'explicit', label: 'No explicit sexual content' },
+  { id: 'personal', label: 'No sharing of personal contact information' },
+  { id: 'harassment', label: 'No harassment or bullying behavior' }
+]
 
 interface PreCallLobbyProps {
   // Future: add activeInvite, device controls, etc.
@@ -13,6 +23,15 @@ export function PreCallLobby({}: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
+  const [confirmedItems, setConfirmedItems] = useState<Set<string>>(new Set())
+
+  // Reset confirmation state on mount
+  useEffect(() => {
+    setConfirmedItems(new Set())
+  }, [])
+
+  const cannotSayList = DEV_CANNOT_SAY_LIST // TODO: Replace with actual config/store
+  const allItemsConfirmed = confirmedItems.size === cannotSayList.length
 
   // Add/remove dimming class on mount/unmount
   useEffect(() => {
@@ -66,7 +85,18 @@ export function PreCallLobby({}: PreCallLobbyProps) {
     }
   }
 
-  // Handle mic toggle
+  // Handle confirmation toggle
+  const toggleItemConfirmation = (itemId: string) => {
+    setConfirmedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId)
+      } else {
+        newSet.add(itemId)
+      }
+      return newSet
+    })
+  }
   const toggleMic = async () => {
     try {
       const newMicState = !isMicEnabled
@@ -145,6 +175,47 @@ export function PreCallLobby({}: PreCallLobbyProps) {
                 </div>
               </Card>
             </div>
+          </div>
+
+          {/* Reconfirmation Section */}
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-sm font-medium mb-3">Community Guidelines</h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Please confirm you understand and will follow these guidelines during your call:
+              </p>
+              <div className="space-y-2">
+                {cannotSayList.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg bg-card">
+                    <span className="text-sm">{item.label}</span>
+                    <Button
+                      size="sm"
+                      variant={confirmedItems.has(item.id) ? "default" : "outline"}
+                      onClick={() => toggleItemConfirmation(item.id)}
+                      className="h-8 px-3"
+                    >
+                      {confirmedItems.has(item.id) ? (
+                        <>
+                          <Check className="h-3 w-3 mr-1" />
+                          Confirmed
+                        </>
+                      ) : (
+                        'Confirm'
+                      )}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Enter Call Button */}
+            <Button
+              size="lg"
+              disabled={!allItemsConfirmed}
+              className="w-full"
+            >
+              Enter Call ({confirmedItems.size}/{cannotSayList.length} confirmed)
+            </Button>
           </div>
 
           {/* Controls */}
