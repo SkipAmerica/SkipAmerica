@@ -6,7 +6,7 @@ import { AppRouter } from './router'
 import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
 import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { LiveControlBar } from '@/components/live/LiveControlBar'
-import { PreCallLobby } from '@/components/live/PreCallLobby'
+import PreCallLobby from '@/components/live/PreCallLobby'
 import { useLive } from '@/hooks/live'
 
 function App() {
