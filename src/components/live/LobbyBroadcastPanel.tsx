@@ -190,10 +190,17 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   useEffect(() => {
     if (chatOverlayRef.current) {
       const element = chatOverlayRef.current
-      const isScrolledToBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 5
-      if (isScrolledToBottom || lobbyChatMessages.length === 1) {
-        element.scrollTop = element.scrollHeight
-      }
+      
+      // Use requestAnimationFrame to ensure DOM updates are complete
+      requestAnimationFrame(() => {
+        const isScrolledToBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 15
+        if (isScrolledToBottom || lobbyChatMessages.length === 1) {
+          element.scrollTo({
+            top: element.scrollHeight,
+            behavior: 'smooth'
+          })
+        }
+      })
     }
   }, [lobbyChatMessages])
 
