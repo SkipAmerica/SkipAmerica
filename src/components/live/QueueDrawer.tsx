@@ -68,11 +68,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const fetchQueue = useCallback(async (isRetry = false) => {
     if (!user) return
 
-    // Abort previous request
-    if (abortControllerRef.current) {
+    // Clean abort of previous request if it exists
+    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
       abortControllerRef.current.abort()
     }
     
+    // Create new controller
     const abortController = new AbortController()
     abortControllerRef.current = abortController
 
@@ -86,6 +87,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     try {
       console.log('[QueueDrawer] Fetching queue entries for creator:', user.id)
       
+      // Check if we've been aborted before making request
+      if (abortController.signal.aborted) return
+      
       // First get queue entries, prioritizing by priority field first
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
@@ -96,9 +100,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 
+      // Check abort again after database call
+      if (abortController.signal.aborted) return
+
       console.log('[QueueDrawer] Raw queue data:', queueData)
 
-      if (queueError) {
+      if (queueError && queueError.code !== 'PGRST116') { // Ignore empty result errors
         const wrappedError = new Error(`Failed to fetch queue entries: ${queueError.message}`)
         wrappedError.name = 'DatabaseError'
         ;(wrappedError as any).code = queueError.code
@@ -107,7 +114,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
       // Then get profiles for each fan_id
       let enrichedEntries: QueueEntry[] = []
-      if (queueData?.length > 0) {
+      if (queueData?.length > 0 && !abortController.signal.aborted) {
         const fanIds = queueData.map(entry => entry.fan_id)
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
@@ -115,7 +122,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           .in('id', fanIds)
           .abortSignal(abortController.signal)
 
-        if (profilesError) {
+        // Final abort check
+        if (abortController.signal.aborted) return
+
+        if (profilesError && profilesError.code !== 'PGRST116') {
           console.warn('Error fetching profiles:', profilesError)
           // Continue with queue data even if profiles fail
         }
@@ -128,17 +138,24 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         console.log('[QueueDrawer] Enriched queue entries:', enrichedEntries)
       }
 
-      setLocalState(prev => ({
-        ...prev,
-        entries: enrichedEntries,
-        loading: false,
-        error: null,
-        retryCount: 0,
-        isConnected: true
-      }))
+      // Only update state if not aborted
+      if (!abortController.signal.aborted) {
+        setLocalState(prev => ({
+          ...prev,
+          entries: enrichedEntries,
+          loading: false,
+          error: null,
+          retryCount: 0,
+          isConnected: true
+        }))
+      }
 
     } catch (error: any) {
-      if (error.name === 'AbortError') return // Ignore aborted requests
+      // Ignore AbortError - this is normal when leaving queue or component cleanup
+      if (error.name === 'AbortError' || abortController.signal.aborted) {
+        console.log('[QueueDrawer] Request aborted (normal cleanup)')
+        return
+      }
       
       console.error('Error fetching queue:', error)
       
@@ -150,21 +167,32 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         isConnected: false
       }))
 
-      // Auto-retry with exponential backoff (max 3 retries)
-      if (state.retryCount < 3) {
-        const delay = Math.min(1000 * Math.pow(2, state.retryCount), 8000)
+      // Auto-retry with exponential backoff (max 2 retries)
+      if (state.retryCount < 2 && !abortController.signal.aborted) {
+        const delay = Math.min(2000 * Math.pow(2, state.retryCount), 6000)
         retryTimeoutRef.current = setTimeout(() => {
-          fetchQueue(true)
+          if (!abortController.signal.aborted) {
+            fetchQueue(true)
+          }
         }, delay)
       }
     }
   }, [user, state.retryCount])
 
-  // Setup real-time subscription for queue changes
+  // Setup real-time subscription for queue changes with debounced fetching
   useEffect(() => {
     if (!isOpen || !user) return
 
     console.log('[QueueDrawer] Setting up real-time subscription')
+    
+    let fetchTimeout: NodeJS.Timeout
+    
+    const debouncedFetch = () => {
+      clearTimeout(fetchTimeout)
+      fetchTimeout = setTimeout(() => {
+        fetchQueue()
+      }, 500) // Debounce multiple rapid changes
+    }
     
     const channel = supabase
       .channel('queue-entries-subscription')
@@ -178,8 +206,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         },
         (payload) => {
           console.log('[QueueDrawer] Real-time queue change:', payload)
-          // Refetch queue data when changes occur
-          fetchQueue()
+          // Debounced refetch to prevent rapid successive calls
+          debouncedFetch()
         }
       )
       .subscribe()
@@ -189,6 +217,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
     return () => {
       console.log('[QueueDrawer] Cleaning up real-time subscription')
+      clearTimeout(fetchTimeout)
       supabase.removeChannel(channel)
     }
   }, [isOpen, user, fetchQueue])

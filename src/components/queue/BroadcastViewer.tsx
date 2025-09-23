@@ -194,24 +194,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         </div>
       )}
 
-      {/* Placeholder overlay for development */}
-      <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-        <div className="text-center text-white p-4">
-          <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center mb-4 mx-auto">
-            <span className="text-white font-bold">🔴</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2">Live Broadcast</h3>
-          <p className="text-sm text-gray-300">
-            Creator's live video would appear here
-          </p>
-          <p className="text-xs text-gray-400 mt-2">
-            (Video streaming implementation pending)
-          </p>
-          {messages.length > 0 && (
-            <p className="text-xs text-blue-300 mt-2">
-              Chat messages are syncing live! ✨
-            </p>
-          )}
+      {/* Development indicator - non-blocking */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="bg-black/60 text-white px-2 py-1 rounded text-xs backdrop-blur-sm">
+          Dev Mode: Video streaming pending
         </div>
       </div>
     </div>

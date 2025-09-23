@@ -102,7 +102,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     }
   }, [isLive, isDiscoverable, user, toast, store])
 
-  // Fetch initial queue count with enhanced error recovery
+  // Fetch initial queue count with enhanced error recovery and proper abort handling
   useEffect(() => {
     if ((!isLive && !isDiscoverable) || !user) return
 
@@ -110,20 +110,20 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     const timeSinceLastFetch = now - state.lastFetchTime
     
     // Debounce rapid successive calls (prevent spam from render loops)
-    if (timeSinceLastFetch < 1000) {
+    if (timeSinceLastFetch < 2000) {
       console.log('[QueueManager] Debouncing fetch request')
       return
     }
 
     let mounted = true
-    const controller = new AbortController()
+    let currentController: AbortController | null = new AbortController()
 
     const fetchCount = async (attempt: number = 0) => {
-      if (!mounted) return
+      if (!mounted || !currentController) return
 
-      const maxRetries = 5
-      const baseDelay = 1000
-      const maxDelay = 30000
+      const maxRetries = 3
+      const baseDelay = 2000
+      const maxDelay = 10000
 
       try {
         setState(prev => ({ ...prev, lastFetchTime: now }))
@@ -135,12 +135,12 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           .eq('status', 'waiting')
           .order('priority', { ascending: false })
           .order('joined_at', { ascending: true })
-          .abortSignal(controller.signal)
+          .abortSignal(currentController.signal)
 
-        if (!mounted) return
+        if (!mounted || !currentController) return
 
-        if (error) {
-          throw new Error(`Database error: ${error.message} (${error.code})`)
+        if (error && error.code !== 'PGRST116') { // Ignore empty result errors
+          throw new Error(`Database error: ${error.message}`)
         }
 
         // Success - reset retry count and update state
@@ -153,18 +153,23 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         }))
         
       } catch (error: any) {
-        if (!mounted || error.name === 'AbortError') return
+        // Ignore AbortError - this is normal cleanup
+        if (!mounted || !currentController || error.name === 'AbortError') {
+          console.log('[QueueManager] Request aborted (normal cleanup)')
+          return
+        }
         
         console.warn(`[QueueManager] Fetch attempt ${attempt + 1} failed:`, error.message)
         
         const isNetworkError = error.message?.includes('503') || 
                               error.message?.includes('Failed to fetch') ||
-                              error.message?.includes('NetworkError')
+                              error.message?.includes('NetworkError') ||
+                              error.message?.includes('Connection')
         
         if (attempt < maxRetries && isNetworkError) {
           // Exponential backoff with jitter
           const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay)
-          const jitter = Math.random() * 1000
+          const jitter = Math.random() * 500
           const totalDelay = delay + jitter
           
           setState(prev => ({ 
@@ -175,13 +180,13 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           }))
           
           setTimeout(() => {
-            if (mounted) fetchCount(attempt + 1)
+            if (mounted && currentController) fetchCount(attempt + 1)
           }, totalDelay)
         } else {
           // Max retries reached or non-recoverable error
           setState(prev => ({ 
             ...prev, 
-            error: attempt >= maxRetries ? 'Connection failed after multiple attempts' : error.message,
+            error: attempt >= maxRetries ? 'Connection failed. Check your network.' : error.message,
             isConnected: false,
             retryCount: attempt + 1
           }))
@@ -193,7 +198,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     return () => {
       mounted = false
-      controller.abort()
+      if (currentController) {
+        currentController.abort()
+        currentController = null
+      }
     }
   }, [isLive, isDiscoverable, user?.id, store])
 
