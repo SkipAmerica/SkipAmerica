@@ -12,6 +12,7 @@ const ProfilePage = lazy(() => import('@/pages/Profile'))
 const FeedPage = lazy(() => import('@/pages/Feed'))
 const LobbyPage = lazy(() => import('@/pages/Lobby'))
 const CallPage = lazy(() => import('@/pages/Call'))
+const JoinQueuePage = lazy(() => import('@/pages/JoinQueue'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 
 // Route wrapper with error boundary and suspense
@@ -72,6 +73,12 @@ export function AppRouter() {
             <AuthGuard>
               <div>Call placeholder - TODO: implement proper routing</div>
             </AuthGuard>
+          </RouteWrapper>
+        } />
+        
+        <Route path="/join-queue/:creatorId" element={
+          <RouteWrapper>
+            <JoinQueuePage />
           </RouteWrapper>
         } />
         

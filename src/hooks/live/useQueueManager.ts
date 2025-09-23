@@ -133,6 +133,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           .select('*', { count: 'exact', head: true })
           .eq('creator_id', user.id)
           .eq('status', 'waiting')
+          .order('priority', { ascending: false })
+          .order('joined_at', { ascending: true })
           .abortSignal(controller.signal)
 
         if (!mounted) return

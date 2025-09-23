@@ -394,6 +394,7 @@ export type Database = {
           fan_id: string
           id: string
           joined_at: string
+          priority: number
           status: string
         }
         Insert: {
@@ -404,6 +405,7 @@ export type Database = {
           fan_id: string
           id?: string
           joined_at?: string
+          priority?: number
           status?: string
         }
         Update: {
@@ -414,6 +416,7 @@ export type Database = {
           fan_id?: string
           id?: string
           joined_at?: string
+          priority?: number
           status?: string
         }
         Relationships: []
@@ -1209,6 +1212,30 @@ export type Database = {
           started_at?: string
           total_earnings_cents?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      lobby_chat_messages: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          message?: string
+          user_id?: string
         }
         Relationships: []
       }
