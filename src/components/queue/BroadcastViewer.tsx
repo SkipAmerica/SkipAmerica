@@ -197,8 +197,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // WebRTC connection management
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
 
     let peerConnection: RTCPeerConnection | null = null;
     let signalChannel: any = null;
@@ -222,6 +220,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         peerConnection.ontrack = (event) => {
           console.log(`[BROADCAST_VIEWER:${viewerId}] Received remote stream`);
           const [remoteStream] = event.streams;
+          const video = videoRef.current;
           if (video && remoteStream) {
             video.srcObject = remoteStream;
             setConnectionState('connected');
@@ -387,6 +386,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         supabase.removeChannel(signalChannel);
         signalChannel = null;
       }
+      const video = videoRef.current;
       if (video) {
         video.srcObject = null;
       }
@@ -525,22 +525,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   return (
     <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-      {connectionState === 'connected' ? (
+      {/* Always render video element for WebRTC to work */}
+      <video
+        ref={videoRef}
+        className={`w-full h-full object-cover ${connectionState === 'connected' ? 'block' : 'hidden'}`}
+        autoPlay
+        playsInline
+        muted={isMuted}
+        onLoadedMetadata={() => {
+          // Ensure video starts muted for autoplay policies
+          if (videoRef.current) {
+            videoRef.current.muted = isMuted;
+          }
+        }}
+      />
+      
+      {connectionState === 'connected' && (
         <>
-          <video
-            ref={videoRef}
-            className="w-full h-full object-cover"
-            autoPlay
-            playsInline
-            muted={isMuted}
-            onLoadedMetadata={() => {
-              // Ensure video starts muted for autoplay policies
-              if (videoRef.current) {
-                videoRef.current.muted = isMuted;
-              }
-            }}
-          />
-          
           {/* Video Controls Overlay */}
           <div className="absolute bottom-4 right-4 flex gap-2">
             <Button
@@ -586,7 +587,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             </div>
           )}
         </>
-      ) : (
+      )}
+
+      {connectionState !== 'connected' && (
         <div className="w-full h-full flex items-center justify-center">
           {renderConnectionState()}
         </div>
