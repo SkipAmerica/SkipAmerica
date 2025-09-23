@@ -80,28 +80,57 @@ export default function JoinQueue() {
       if (!creatorId) return;
 
       try {
-        const { data, error } = await supabase
+        console.log('[JoinQueue] Looking up creator:', creatorId);
+        
+        // First try mock_creators table
+        const { data: mockCreator, error: mockError } = await supabase
           .from('mock_creators')
           .select('*')
           .eq('id', creatorId)
           .maybeSingle();
 
-        if (error) {
-          toast({
-            title: "Creator not found",
-            description: "The creator you're looking for doesn't exist.",
-            variant: "destructive"
-          });
-          navigate('/');
+        if (mockCreator) {
+          console.log('[JoinQueue] Found in mock_creators:', mockCreator);
+          setCreator(mockCreator);
           return;
         }
 
-        setCreator(data);
+        // If not found in mock_creators, try profiles table
+        console.log('[JoinQueue] Not found in mock_creators, trying profiles...');
+        const { data: profileCreator, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, full_name, account_type')
+          .eq('id', creatorId)
+          .eq('account_type', 'creator')
+          .maybeSingle();
+
+        if (profileCreator) {
+          console.log('[JoinQueue] Found in profiles:', profileCreator);
+          setCreator({
+            id: profileCreator.id,
+            full_name: profileCreator.full_name,
+            bio: 'Creator Profile',
+            avatar_url: undefined,
+            category: 'General',
+            rating: undefined
+          });
+          return;
+        }
+
+        // Creator not found in either table
+        console.warn('[JoinQueue] Creator not found in any table');
+        toast({
+          title: "Creator not found",
+          description: "The creator you're looking for doesn't exist or may have been removed.",
+          variant: "destructive"
+        });
+        navigate('/');
+
       } catch (error) {
-        console.error('Error fetching creator:', error);
+        console.error('[JoinQueue] Error fetching creator:', error);
         toast({
           title: "Error",
-          description: "Failed to load creator information.",
+          description: "Failed to load creator information. Please try again.",
           variant: "destructive"
         });
       } finally {

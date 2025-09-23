@@ -44,6 +44,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async (payload) => {
+          console.log('[QueueManager] INSERT event received:', payload)
+          
           // Fetch current queue count to avoid stale closure
           const { count } = await supabase
             .from('call_queue')
@@ -52,6 +54,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
+          console.log('[QueueManager] Updated queue count immediately:', currentCount)
           store.updateQueueCount(currentCount)
           store.triggerHaptic()
           
@@ -76,6 +79,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async () => {
+          console.log('[QueueManager] DELETE event received')
+          
           // Fetch current queue count to avoid stale closure
           const { count } = await supabase
             .from('call_queue')
@@ -84,6 +89,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
+          console.log('[QueueManager] Updated queue count immediately:', currentCount)
           store.updateQueueCount(currentCount)
           setState(prev => ({ ...prev, error: undefined, isConnected: true }))
         }
@@ -221,9 +227,6 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     }
   }, [user?.id, store])
 
-  // Debounce the queue count to prevent UI jitter
-  const debouncedQueueCount = useDebounce(store.queueCount, 300)
-
   const updateQueueCount = useCallback((count: number) => {
     store.updateQueueCount(count)
   }, [store])
@@ -240,7 +243,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   }, [toast, store])
 
   return {
-    queueCount: debouncedQueueCount,
+    queueCount: store.queueCount, // Remove debouncing for real-time updates
     updateQueueCount,
     incrementQueue,
     error: state.error,
