@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { useProfile } from '@/hooks/useProfile';
 import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LobbyChat } from '@/components/queue/LobbyChat';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
@@ -33,6 +34,7 @@ export default function JoinQueue() {
   const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading, signInAnonymously } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
 
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -45,6 +47,7 @@ export default function JoinQueue() {
   const [queueCount, setQueueCount] = useState(0);
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   const [autoLoginLoading, setAutoLoginLoading] = useState(false);
+  const [displayName, setDisplayName] = useState('');
 
   // Auto-login anonymous user if not authenticated
   useEffect(() => {
@@ -190,11 +193,29 @@ export default function JoinQueue() {
     };
   }, [creatorId, user]);
 
+  // Set initial display name from profile
+  useEffect(() => {
+    if (profile && !displayName) {
+      setDisplayName(profile.full_name || 'Anonymous Guest');
+    }
+  }, [profile, displayName]);
+
   const handleJoinQueue = async () => {
-    if (!user || !creatorId) return;
+    if (!user || !creatorId || !displayName.trim()) return;
 
     setJoining(true);
     try {
+      // Update profile name first
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ full_name: displayName.trim() })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Error updating profile:', profileError);
+      }
+
+      // Join the queue
       const { error } = await supabase
         .from('call_queue')
         .insert({
@@ -354,6 +375,20 @@ export default function JoinQueue() {
               {!isInQueue ? (
                 <div className="space-y-4">
                   <div>
+                    <label className="text-sm font-medium">Your Display Name</label>
+                    <Input
+                      placeholder="Enter your name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="mt-1"
+                      maxLength={50}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This name will appear in the lobby chat
+                    </p>
+                  </div>
+                  
+                  <div>
                     <label className="text-sm font-medium">Discussion Topic (Optional)</label>
                     <Textarea
                       placeholder="What would you like to discuss?"
@@ -365,12 +400,18 @@ export default function JoinQueue() {
                   
                   <Button
                     onClick={handleJoinQueue}
-                    disabled={joining || !user}
+                    disabled={joining || !user || !displayName.trim()}
                     className="w-full"
                     size="lg"
                   >
                     {joining ? "Joining..." : "Join Queue (Priority Access)"}
                   </Button>
+                  
+                  {!displayName.trim() && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Please enter your display name to join
+                    </p>
+                  )}
                   
                   {!user && (
                     <p className="text-sm text-muted-foreground text-center">
