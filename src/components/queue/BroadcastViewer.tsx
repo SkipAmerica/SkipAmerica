@@ -37,6 +37,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [offerRetryCount, setOfferRetryCount] = useState(0);
   const [channelResolution, setChannelResolution] = useState<ChannelResolution | null>(null);
   const [currentChannelAttempt, setCurrentChannelAttempt] = useState<'primary' | 'secondary'>('primary');
+  const [debugStats, setDebugStats] = useState({
+    signalingState: 'stable',
+    iceConnectionState: 'closed',
+    connectionState: 'closed',
+    remoteTrackCount: 0,
+    videoResolution: '0x0',
+    iceCandidateCount: 0
+  });
+  const debugIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const iceCandidateCountRef = useRef(0);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
 
   // Helper to get the effective creator ID for DB operations
   const getEffectiveCreatorId = () => {
@@ -286,6 +297,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             { urls: 'stun:stun1.l.google.com:19302' }
           ]
         });
+        peerConnectionRef.current = peerConnection;
 
         // Handle incoming remote stream
         peerConnection.ontrack = (event) => {
@@ -326,6 +338,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
           if (event.candidate && signalChannel) {
+            iceCandidateCountRef.current += 1;
+            console.log(`[RTC-DEBUG] ICE candidate generated (count: ${iceCandidateCountRef.current})`);
             console.log(`[BROADCAST_VIEWER:${viewerId}] Sending ICE candidate`);
             signalChannel.send({
               type: 'broadcast',
@@ -386,6 +400,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             if (!isLegacyFormat && !isNewFormat) return;
             if (!peerConnection || !peerConnection.remoteDescription) return;
             
+            iceCandidateCountRef.current += 1;
+            console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
             console.log(`[BROADCAST_VIEWER:${viewerId}] Received ICE candidate from creator`);
             try {
               await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
@@ -474,9 +490,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         clearInterval(connectionHealthCheck);
         connectionHealthCheck = null;
       }
+      if (debugIntervalRef.current) {
+        clearInterval(debugIntervalRef.current);
+        debugIntervalRef.current = null;
+      }
       if (peerConnection) {
         peerConnection.close();
         peerConnection = null;
+        peerConnectionRef.current = null;
       }
       if (signalChannel) {
         supabase.removeChannel(signalChannel);
@@ -512,6 +533,30 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Proceed with WebRTC connection
       await connectToCreatorBroadcast();
     };
+
+    // Setup debug stats monitoring if debug=1 is in URL
+    const isDebugMode = window.location.search.includes('debug=1');
+    if (isDebugMode && !debugIntervalRef.current) {
+      debugIntervalRef.current = setInterval(() => {
+        if (peerConnectionRef.current) {
+          const video = videoRef.current;
+          const videoResolution = video && video.videoWidth && video.videoHeight 
+            ? `${video.videoWidth}x${video.videoHeight}` 
+            : '0x0';
+          
+          const remoteStreams = video?.srcObject ? (video.srcObject as MediaStream).getTracks().length : 0;
+          
+          setDebugStats({
+            signalingState: peerConnectionRef.current.signalingState,
+            iceConnectionState: peerConnectionRef.current.iceConnectionState,
+            connectionState: peerConnectionRef.current.connectionState,
+            remoteTrackCount: remoteStreams,
+            videoResolution,
+            iceCandidateCount: iceCandidateCountRef.current
+          });
+        }
+      }, 1000);
+    }
 
     // Initialize connection when in appropriate states
     if (connectionState === 'checking' || connectionState === 'retry') {
@@ -558,7 +603,28 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
-      .slice(0, 2);
+    .slice(0, 2);
+  };
+
+  const handleDumpStats = async () => {
+    if (!peerConnectionRef.current) return;
+    
+    try {
+      const stats = await peerConnectionRef.current.getStats();
+      console.log('[RTC-DEBUG] === STATS DUMP ===');
+      
+      stats.forEach((report) => {
+        if (report.type === 'inbound-rtp' && report.mediaType === 'video') {
+          console.log(`[RTC-DEBUG] Inbound Video - bytes: ${report.bytesReceived}, frames: ${report.framesDecoded}, size: ${report.frameWidth}x${report.frameHeight}`);
+        } else if (report.type === 'outbound-rtp') {
+          console.log(`[RTC-DEBUG] Outbound - bytes: ${report.bytesSent}, packets: ${report.packetsSent}`);
+        }
+      });
+      
+      console.log('[RTC-DEBUG] === END STATS ===');
+    } catch (error) {
+      console.error('[RTC-DEBUG] Error getting stats:', error);
+    }
   };
 
   const renderConnectionState = () => {
@@ -691,6 +757,29 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       {connectionState !== 'connected' && (
         <div className="w-full h-full flex items-center justify-center">
           {renderConnectionState()}
+        </div>
+      )}
+
+      {/* Debug Overlay - Viewer (bottom-right) */}
+      {window.location.search.includes('debug=1') && (
+        <div 
+          className="fixed bottom-4 right-4 bg-black/80 text-white p-2 rounded text-xs font-mono z-[9999] max-w-xs"
+          style={{ fontFamily: 'monospace' }}
+        >
+          <div className="font-bold mb-1">VIEWER [{viewerIdRef.current.slice(-6)}]</div>
+          <div>Signal: {debugStats.signalingState}</div>
+          <div>ICE: {debugStats.iceConnectionState}</div>
+          <div>Conn: {debugStats.connectionState}</div>
+          <div>Tracks: {debugStats.remoteTrackCount}</div>
+          <div>Video: {debugStats.videoResolution}</div>
+          <div>ICE Candidates: {debugStats.iceCandidateCount}</div>
+          <Button
+            onClick={handleDumpStats}
+            size="sm"
+            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-6 px-2"
+          >
+            Dump Stats
+          </Button>
         </div>
       )}
     </div>

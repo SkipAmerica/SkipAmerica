@@ -45,6 +45,16 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const [chatInput, setChatInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sending, setSending] = useState(false)
+  const [debugStats, setDebugStats] = useState({
+    signalingState: 'stable',
+    iceConnectionState: 'closed',
+    connectionState: 'closed',
+    localTrackCount: 0,
+    iceCandidateCount: 0
+  });
+  const debugIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const iceCandidateCountRef = useRef(0);
+  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   
   const [mediaState, setMediaState] = useState<MediaState>({
     stream: null,
@@ -67,6 +77,10 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current)
+    }
+    if (debugIntervalRef.current) {
+      clearInterval(debugIntervalRef.current)
+      debugIntervalRef.current = null
     }
   }, [])
 
@@ -440,6 +454,9 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             ]
           });
 
+          // Store reference for debug monitoring
+          peerConnectionsRef.current.set(viewerId, pc);
+
           // Add local stream tracks
           if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
@@ -450,6 +467,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           // Handle ICE candidates for this viewer
           pc.onicecandidate = (event) => {
             if (event.candidate && signalChannel) {
+              iceCandidateCountRef.current += 1;
+              console.log(`[RTC-DEBUG] ICE candidate generated (count: ${iceCandidateCountRef.current})`);
               console.log(`[LOBBY_BROADCAST] Sending ICE candidate to viewer ${viewerId}`);
               signalChannel.send({
                 type: 'broadcast',
@@ -531,6 +550,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             if (!pc || !pc.remoteDescription) return;
             
             try {
+              iceCandidateCountRef.current += 1;
+              console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
               await pc.addIceCandidate(candidate);
             } catch (error) {
               console.error(`[LOBBY_BROADCAST] Error adding ICE candidate for viewer ${viewerId}:`, error);
@@ -576,10 +597,35 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
     setupBroadcasting();
 
+    // Setup debug stats monitoring if debug=1 is in URL
+    const isDebugMode = window.location.search.includes('debug=1');
+    if (isDebugMode && !debugIntervalRef.current) {
+      debugIntervalRef.current = setInterval(() => {
+        // Get first peer connection for stats (most representative)
+        const firstPc = peerConnectionsRef.current.values().next().value;
+        if (firstPc) {
+          const localTrackCount = streamRef.current ? streamRef.current.getTracks().length : 0;
+          
+          setDebugStats({
+            signalingState: firstPc.signalingState,
+            iceConnectionState: firstPc.iceConnectionState,
+            connectionState: firstPc.connectionState,
+            localTrackCount,
+            iceCandidateCount: iceCandidateCountRef.current
+          });
+        }
+      }, 1000);
+    }
+
     // Cleanup
     return () => {
       console.log('[LOBBY_BROADCAST] Cleaning up WebRTC broadcasting');
+      if (debugIntervalRef.current) {
+        clearInterval(debugIntervalRef.current);
+        debugIntervalRef.current = null;
+      }
       peerConnections.forEach(pc => pc.close());
+      peerConnectionsRef.current.clear();
       if (signalChannel) {
         supabase.removeChannel(signalChannel);
       }
@@ -758,6 +804,22 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           <Send className="h-3 w-3" />
         </Button>
       </form>
+
+      {/* Debug Overlay - Creator (bottom-left) */}
+      {window.location.search.includes('debug=1') && (
+        <div 
+          className="fixed bottom-4 left-4 bg-black/80 text-white p-2 rounded text-xs font-mono z-[9999] max-w-xs"
+          style={{ fontFamily: 'monospace' }}
+        >
+          <div className="font-bold mb-1">CREATOR</div>
+          <div>Signal: {debugStats.signalingState}</div>
+          <div>ICE: {debugStats.iceConnectionState}</div>
+          <div>Conn: {debugStats.connectionState}</div>
+          <div>Local Tracks: {debugStats.localTrackCount}</div>
+          <div>ICE Candidates: {debugStats.iceCandidateCount}</div>
+          <div>Peer Connections: {peerConnectionsRef.current.size}</div>
+        </div>
+      )}
     </div>
   )
 }
