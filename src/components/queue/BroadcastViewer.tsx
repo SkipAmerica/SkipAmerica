@@ -38,15 +38,21 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [channelResolution, setChannelResolution] = useState<ChannelResolution | null>(null);
   const [currentChannelAttempt, setCurrentChannelAttempt] = useState<'primary' | 'secondary'>('primary');
 
-  // Check if creator is broadcasting before attempting connection
+  // Helper to get the effective creator ID for DB operations
+  const getEffectiveCreatorId = () => {
+    return channelResolution?.resolvedCreatorId || creatorId;
+  };
+
+  // Check if creator is broadcasting - uses resolved creator ID if available
   const checkCreatorBroadcastStatus = async (): Promise<boolean> => {
     try {
-      console.log('[BROADCAST_VIEWER] Checking if creator is broadcasting:', creatorId);
+      const effectiveCreatorId = getEffectiveCreatorId();
+      console.log(`[BROADCAST_VIEWER] Checking if creator is broadcasting: ${effectiveCreatorId}`);
       
       const { data: liveSession } = await supabase
         .from('live_sessions')
         .select('*')
-        .eq('creator_id', creatorId)
+        .eq('creator_id', effectiveCreatorId)
         .is('ended_at', null)
         .order('started_at', { ascending: false })
         .limit(1)
@@ -58,7 +64,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       return isBroadcasting;
     } catch (error) {
       console.error('[BROADCAST_VIEWER] Error checking broadcast status:', error);
-      return false;
+      // If we can't verify, don't block the connection attempt
+      return true;
     }
   };
 
@@ -134,22 +141,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // Real-time subscription to live session changes
+  // Real-time subscription to live session changes - watch both raw and resolved creator IDs
   useEffect(() => {
     if (!creatorId) return;
 
-    console.log('[BROADCAST_VIEWER] Setting up live session subscription for creator:', creatorId);
+    const effectiveCreatorId = getEffectiveCreatorId();
+    console.log('[BROADCAST_VIEWER] Setting up live session subscription for creator:', effectiveCreatorId);
 
-    // Subscribe to live session changes for this creator
+    // Subscribe to live session changes for the effective creator ID
     const liveSessionChannel = supabase
-      .channel(`broadcast-live-session-${creatorId}`)
+      .channel(`broadcast-live-session-${effectiveCreatorId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public', 
           table: 'live_sessions',
-          filter: `creator_id=eq.${creatorId}`
+          filter: `creator_id=eq.${effectiveCreatorId}`
         },
         (payload) => {
           console.log('[BROADCAST_VIEWER] Live session change detected:', payload);
@@ -169,13 +177,42 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             setConnectionState('offline');
           }
         }
-      )
-      .subscribe();
+      );
+
+    // If we have both raw and resolved IDs and they're different, also watch the raw ID
+    if (channelResolution?.resolvedCreatorId && channelResolution.resolvedCreatorId !== creatorId) {
+      liveSessionChannel.on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_sessions',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        (payload) => {
+          console.log('[BROADCAST_VIEWER] Live session change detected (fallback):', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('[BROADCAST_VIEWER] Creator went live (fallback) - attempting connection');
+            setRetryCount(0);
+            setConnectionState('checking');
+          } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
+            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (fallback)');
+            setConnectionState('offline');
+          } else if (payload.eventType === 'DELETE') {
+            console.log('[BROADCAST_VIEWER] Live session deleted (fallback)');
+            setConnectionState('offline');
+          }
+        }
+      );
+    }
+
+    liveSessionChannel.subscribe();
 
     return () => {
       supabase.removeChannel(liveSessionChannel);
     };
-  }, [creatorId]);
+  }, [creatorId, channelResolution]);
 
   // Continuous monitoring with polling backup
   useEffect(() => {
@@ -449,13 +486,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Cleanup any existing connection first
       cleanup();
 
-      // Check if creator is currently broadcasting
+      // Check if creator is currently broadcasting - but don't hard-block on unknown status
       const isBroadcasting = await checkCreatorBroadcastStatus();
       
-      if (!isBroadcasting) {
-        console.log('[BROADCAST_VIEWER] Creator is not broadcasting');
+      if (!isBroadcasting && channelResolution?.resolvedCreatorId) {
+        // Only block if we successfully resolved the creator ID and they're definitely offline
+        console.log('[BROADCAST_VIEWER] Creator is not broadcasting, setting offline and will retry...');
         setConnectionState('offline');
         return;
+      } else if (!isBroadcasting) {
+        console.log('[BROADCAST_VIEWER] Could not verify broadcast status (unknown creator mapping), proceeding with connection attempt...');
       }
 
       // Proceed with WebRTC connection
