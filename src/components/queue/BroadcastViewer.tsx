@@ -2,16 +2,102 @@ import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BroadcastViewerProps {
   creatorId: string;
   sessionId: string;
 }
 
+interface ChatMessage {
+  id: string;
+  user_id: string;
+  message: string;
+  created_at: string;
+  profiles?: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
   const [isMuted, setIsMuted] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
+  // Fetch lobby chat messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const { data: messagesData } = await supabase
+          .from('lobby_chat_messages')
+          .select('id, user_id, message, created_at')
+          .eq('creator_id', creatorId)
+          .order('created_at', { ascending: true })
+          .limit(20);
+
+        if (messagesData && messagesData.length > 0) {
+          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+          const { data: profilesData } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', userIds);
+
+          const messagesWithProfiles = messagesData.map(msg => ({
+            ...msg,
+            profiles: profilesData?.find(p => p.id === msg.user_id)
+          }));
+
+          setMessages(messagesWithProfiles);
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+
+    fetchMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel('broadcast-chat-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'lobby_chat_messages',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        async (payload) => {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', payload.new.user_id)
+            .single();
+
+          const newMessage = {
+            ...payload.new,
+            profiles: profile
+          } as ChatMessage;
+
+          setMessages(prev => [...prev.slice(-19), newMessage]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [creatorId]);
+
+  // Auto-scroll chat
+  useEffect(() => {
+    if (chatRef.current) {
+      chatRef.current.scrollTop = chatRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   useEffect(() => {
     // This is a placeholder for the actual broadcast viewing implementation
@@ -32,6 +118,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       videoRef.current.muted = !videoRef.current.muted;
       setIsMuted(!isMuted);
     }
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -65,6 +160,30 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               LIVE
             </div>
           </div>
+
+          {/* Live Chat Overlay */}
+          {messages.length > 0 && (
+            <div 
+              ref={chatRef}
+              className="absolute bottom-16 left-2 right-2 max-h-32 overflow-y-auto space-y-1 scrollbar-hide"
+              style={{
+                maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)'
+              }}
+            >
+              {messages.slice(-10).map((message) => (
+                <div 
+                  key={message.id}
+                  className="bg-black/60 px-2 py-1 rounded text-white text-xs backdrop-blur-sm"
+                >
+                  <span className="font-medium text-blue-300">
+                    {message.profiles?.full_name || 'User'}:
+                  </span>{' '}
+                  {message.message}
+                </div>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         <div className="w-full h-full flex items-center justify-center">
@@ -88,6 +207,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           <p className="text-xs text-gray-400 mt-2">
             (Video streaming implementation pending)
           </p>
+          {messages.length > 0 && (
+            <p className="text-xs text-blue-300 mt-2">
+              Chat messages are syncing live! ✨
+            </p>
+          )}
         </div>
       </div>
     </div>

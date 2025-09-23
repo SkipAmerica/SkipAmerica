@@ -14,11 +14,15 @@ import {
   Settings,
   Upload,
   Video,
-  ArrowLeft
+  ArrowLeft,
+  Phone,
+  PhoneOff,
+  Users
 } from "lucide-react";
 
 interface CallLobbyProps {
   creator: {
+    id: string;
     name: string;
     avatar?: string;
     customLobbyMedia?: {
@@ -26,8 +30,11 @@ interface CallLobbyProps {
       url: string;
     };
     lobbyMessage?: string;
+    maxCallDuration?: number;
+    callRate?: number;
   };
   fan: {
+    id: string;
     name: string;
     avatar?: string;
   };
@@ -227,30 +234,35 @@ export function CallLobby({
                   <>
                     <Button 
                       onClick={handleStartEarly}
-                      className="min-w-32 rounded-full bg-gradient-primary hover:shadow-lg hover-scale"
+                      className="min-w-32 rounded-full bg-green-600 hover:bg-green-700 hover:shadow-lg hover-scale"
                     >
-                      <Play className="h-4 w-4 mr-2" />
-                      Start Now
+                      <Phone className="h-4 w-4 mr-2" />
+                      Start Pre-Call
                     </Button>
                     <Button 
                       variant="destructive" 
                       onClick={handleReject}
                       className="min-w-32 rounded-full hover-scale"
                     >
-                      <X className="h-4 w-4 mr-2" />
+                      <PhoneOff className="h-4 w-4 mr-2" />
                       End Call
                     </Button>
                   </>
                 ) : (
                   <div className="text-center space-y-4">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                      <Users className="w-4 h-4" />
+                      <span className="text-sm">Priority Queue Access</span>
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Please wait while {creator.name} reviews the connection
+                      Please wait while {creator.name} prepares for your priority call
                     </p>
                     <Button 
                       variant="outline" 
                       onClick={onRejectCall}
                       className="rounded-full px-8"
                     >
+                      <PhoneOff className="h-4 w-4 mr-2" />
                       Cancel Call
                     </Button>
                   </div>
@@ -262,10 +274,10 @@ export function CallLobby({
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3 animate-fade-in" style={{ animationDelay: '0.3s' }}>
                   <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
                   <div className="text-sm">
-                    <p className="font-medium text-amber-800">Safety Review</p>
+                    <p className="font-medium text-amber-800">Priority Queue User</p>
                     <p className="text-amber-700">
-                      Use this time to ensure the participant is appropriate for your content. 
-                      You can end the call immediately if you notice any concerning behavior.
+                      This user joined from your priority queue and will be first in line. 
+                      Review their topic and start the pre-call when ready.
                     </p>
                   </div>
                 </div>

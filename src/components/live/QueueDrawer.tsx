@@ -84,12 +84,13 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }))
 
     try {
-      // First get queue entries
+      // First get queue entries, prioritizing by priority field first
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic')
+        .select('*, discussion_topic, priority')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
+        .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 

@@ -2,12 +2,26 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Mic, MicOff, Camera, CameraOff, Wifi, RotateCcw, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useLiveStore } from '@/stores/live-store'
+import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/app/providers/auth-provider'
+import { useToast } from '@/hooks/use-toast'
 
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
+}
+
+interface ChatMessage {
+  id: string
+  user_id: string
+  message: string
+  created_at: string
+  profiles?: {
+    full_name: string
+    avatar_url: string | null
+  }
 }
 
 interface MediaState {
@@ -20,23 +34,15 @@ interface MediaState {
 }
 
 export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
-  const { lobbyChatMessages, addLobbyChatMessage } = useLiveStore()
+  const { user } = useAuth()
+  const { toast } = useToast()
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   const chatOverlayRef = useRef<HTMLDivElement>(null)
-  const mockTimeoutsRef = useRef<NodeJS.Timeout[]>([])
   const [chatInput, setChatInput] = useState('')
-
-  // Mock messages for testing
-  const mockMessages = [
-    "Hey everyone! Welcome to my lobby broadcast 👋",
-    "Testing out this new chat feature - looks pretty cool!",
-    "Let me know if you can see the video clearly",
-    "The quality looks good on my end",
-    "Ready to start some calls soon! Who's interested?",
-    "This overlay chat works really well with the video"
-  ]
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [sending, setSending] = useState(false)
   
   const [mediaState, setMediaState] = useState<MediaState>({
     stream: null,
@@ -58,19 +64,87 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current)
     }
-    // Clear mock message timeouts
-    mockTimeoutsRef.current.forEach(timeout => clearTimeout(timeout))
-    mockTimeoutsRef.current = []
   }, [])
 
-  const populateMockMessages = useCallback(() => {
-    mockMessages.forEach((message, index) => {
-      const timeout = setTimeout(() => {
-        addLobbyChatMessage(message)
-      }, (index + 1) * 2000) // 2 second delay between messages
-      mockTimeoutsRef.current.push(timeout)
-    })
-  }, [addLobbyChatMessage])
+  const fetchMessages = useCallback(async () => {
+    if (!user) return
+
+    try {
+      const { data: messagesData, error: messagesError } = await supabase
+        .from('lobby_chat_messages')
+        .select(`
+          id,
+          user_id,
+          message,
+          created_at
+        `)
+        .eq('creator_id', user.id)
+        .order('created_at', { ascending: true })
+        .limit(50)
+
+      if (messagesError) {
+        console.error('Error fetching lobby messages:', messagesError)
+        return
+      }
+
+      // Fetch profiles separately
+      if (messagesData && messagesData.length > 0) {
+        const userIds = [...new Set(messagesData.map(msg => msg.user_id))]
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds)
+
+        const messagesWithProfiles = messagesData.map(msg => ({
+          ...msg,
+          profiles: profilesData?.find(p => p.id === msg.user_id)
+        }))
+
+        setMessages(messagesWithProfiles)
+      } else {
+        setMessages([])
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error)
+    }
+  }, [user])
+
+  // Subscribe to new messages
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('lobby-chat-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'lobby_chat_messages',
+          filter: `creator_id=eq.${user.id}`
+        },
+        async (payload) => {
+          // Fetch the profile for the new message
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', payload.new.user_id)
+            .single()
+
+          const newMessage = {
+            ...payload.new,
+            profiles: profile
+          } as ChatMessage
+
+          setMessages(prev => [...prev, newMessage])
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
 
   const initMedia = useCallback(async () => {
     setMediaState(prev => ({ ...prev, loading: true, error: null }))
@@ -108,8 +182,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         video: stream.getVideoTracks().length > 0
       })
 
-      // Populate mock messages for testing
-      populateMockMessages()
+      // Fetch existing messages
+      fetchMessages()
 
     } catch (error: any) {
       console.error('[LOBBY_BROADCAST] Error:', error)
@@ -139,10 +213,10 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const delay = Math.min(1000 * Math.pow(2, mediaState.retryCount), 4000)
         retryTimeoutRef.current = setTimeout(() => {
           initMedia()
-        }, delay)
+    }, delay)
       }
     }
-  }, [mediaState.retryCount, populateMockMessages])
+  }, [mediaState.retryCount, fetchMessages])
 
   const toggleAudio = useCallback(() => {
     if (streamRef.current) {
@@ -178,13 +252,43 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
   }, [initMedia, mediaState.retryCount])
 
-  const handleSendMessage = useCallback((e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
-    if (chatInput.trim()) {
-      addLobbyChatMessage(chatInput.trim())
+    if (!chatInput.trim() || sending || !user) return
+
+    setSending(true)
+
+    try {
+      const { error } = await supabase
+        .from('lobby_chat_messages')
+        .insert({
+          creator_id: user.id,
+          user_id: user.id,
+          message: chatInput.trim()
+        })
+
+      if (error) {
+        console.error('Error sending message:', error)
+        toast({
+          title: "Failed to send message",
+          description: error.message,
+          variant: "destructive"
+        })
+        return
+      }
+
       setChatInput('')
+    } catch (error: any) {
+      console.error('Error sending message:', error)
+      toast({
+        title: "Failed to send message",
+        description: error.message || "Please try again",
+        variant: "destructive"
+      })
+    } finally {
+      setSending(false)
     }
-  }, [chatInput, addLobbyChatMessage])
+  }, [chatInput, sending, user, toast])
 
   // Auto-scroll chat overlay to bottom on new messages
   useEffect(() => {
@@ -194,7 +298,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       // Use requestAnimationFrame to ensure DOM updates are complete
       requestAnimationFrame(() => {
         const isScrolledToBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 15
-        if (isScrolledToBottom || lobbyChatMessages.length === 1) {
+        if (isScrolledToBottom || messages.length === 1) {
           element.scrollTo({
             top: element.scrollHeight,
             behavior: 'smooth'
@@ -202,7 +306,16 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         }
       })
     }
-  }, [lobbyChatMessages])
+  }, [messages])
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
 
   // Initialize media on mount
   useEffect(() => {
@@ -324,12 +437,23 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)'
             }}
           >
-            {lobbyChatMessages.map((message) => (
+            {messages.map((message) => (
               <div 
                 key={message.id}
-                className="bg-black/40 px-2 py-1 rounded text-white drop-shadow-sm"
+                className="bg-black/40 px-2 py-1 rounded text-white drop-shadow-sm flex items-center gap-2"
               >
-                <span className="font-medium">You:</span> {message.text}
+                <Avatar className="w-4 h-4">
+                  <AvatarFallback className="bg-primary/20 text-xs">
+                    {message.profiles?.full_name 
+                      ? getInitials(message.profiles.full_name)
+                      : 'U'
+                    }
+                  </AvatarFallback>
+                </Avatar>
+                <span className="font-medium">
+                  {message.user_id === user?.id ? 'You' : message.profiles?.full_name || 'User'}:
+                </span> 
+                {message.message}
               </div>
             ))}
           </div>
@@ -349,7 +473,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           type="submit"
           size="sm"
           variant="ghost"
-          disabled={!chatInput.trim()}
+          disabled={!chatInput.trim() || sending}
           className="h-6 w-6 p-0 ml-2"
         >
           <Send className="h-3 w-3" />
