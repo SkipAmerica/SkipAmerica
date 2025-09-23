@@ -28,6 +28,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(false)
   const [previewStarted, setPreviewStarted] = useState(false)
+  const [streamAvailable, setStreamAvailable] = useState(false)
   const [rulesConfirmed, setRulesConfirmed] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
   const [networkStatus, setNetworkStatus] = useState<'checking' | 'ok' | 'degraded'>('checking')
@@ -85,6 +86,33 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
     };
   }, [cleanupMedia]);
 
+  // Poll for stream availability after preview starts
+  useEffect(() => {
+    if (!previewStarted) {
+      setStreamAvailable(false)
+      return
+    }
+
+    const pollForStream = () => {
+      const hasStream = mediaManager.hasLocalStream()
+      setStreamAvailable(hasStream)
+      
+      if (hasStream) {
+        setNetworkStatus('ok')
+      } else if (previewStarted) {
+        setNetworkStatus('checking')
+      }
+    }
+
+    // Initial check
+    pollForStream()
+    
+    // Poll every 100ms until stream is available
+    const interval = setInterval(pollForStream, 100)
+    
+    return () => clearInterval(interval)
+  }, [previewStarted])
+
   // Handle preview start
   const startPreview = useCallback(async () => {
     if (previewStarted) return
@@ -109,7 +137,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   // Audio level monitoring
   useEffect(() => {
-    if (!isMicEnabled || !mediaManager.hasLocalStream()) return
+    if (!isMicEnabled || !streamAvailable) return
 
     const setupAudioAnalysis = () => {
       const stream = mediaManager.getLocalStream()
@@ -142,6 +170,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
         updateLevel()
       } catch (err) {
         console.warn('[PreCallLobby] Failed to setup audio analysis:', err)
+        setAudioLevel(0)
       }
     }
 
@@ -157,15 +186,9 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
         audioContextRef.current = null
       }
       analyserRef.current = null
+      setAudioLevel(0)
     }
-  }, [isMicEnabled, previewStarted])
-
-  // Network status monitoring
-  useEffect(() => {
-    if (mediaManager.hasLocalStream()) {
-      setNetworkStatus('ok')
-    }
-  }, [previewStarted])
+  }, [isMicEnabled, streamAvailable])
 
   // Handle video toggle
   const toggleVideo = async () => {
@@ -375,18 +398,24 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
                 {/* Audio Level Meter */}
                 <div className="flex items-center gap-2">
                   <Mic className="h-4 w-4 text-muted-foreground" />
-                  <div className="flex gap-1">
-                    {[...Array(8)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`w-1 h-3 rounded-full transition-colors ${
-                          audioLevel > (i * 12.5) 
-                            ? 'bg-primary' 
-                            : 'bg-muted'
-                        }`}
-                      />
-                    ))}
-                  </div>
+                  {streamAvailable && isMicEnabled ? (
+                    <div className="flex gap-1">
+                      {[...Array(8)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-1 h-3 rounded-full transition-colors ${
+                            audioLevel > (i * 12.5) 
+                              ? 'bg-primary' 
+                              : 'bg-muted'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">
+                      {!streamAvailable && previewStarted ? 'Checking...' : 'Off'}
+                    </span>
+                  )}
                 </div>
 
                 {/* Network Status */}
