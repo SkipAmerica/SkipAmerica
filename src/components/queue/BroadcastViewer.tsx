@@ -24,7 +24,7 @@ interface ChatMessage {
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true); // Start muted
   const [isConnected, setIsConnected] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -100,36 +100,104 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // Connect to remote stream from creator
+  // WebRTC connection for receiving broadcast
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    const connectToRemoteStream = async () => {
+    let peerConnection: RTCPeerConnection | null = null;
+    let signalChannel: any = null;
+
+    const connectToCreatorBroadcast = async () => {
       try {
-        // Check if mediaManager has a remote stream available
-        const checkForRemoteStream = () => {
-          // This would be connected to actual WebRTC signaling
-          // For now, we'll simulate getting a remote stream
-          const stream = mediaManager.getLocalStream(); // Temporarily use local for demo
-          if (stream && video.srcObject !== stream) {
-            console.log('[BROADCAST] Attaching remote stream to viewer');
-            mediaManager.attachRemote(stream, video, null); // Attach to video element
+        console.log('[BROADCAST_VIEWER] Setting up WebRTC connection');
+        
+        // Create peer connection
+        peerConnection = new RTCPeerConnection({
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+          ]
+        });
+
+        // Handle incoming remote stream
+        peerConnection.ontrack = (event) => {
+          console.log('[BROADCAST_VIEWER] Received remote stream');
+          const [remoteStream] = event.streams;
+          if (video && remoteStream) {
+            video.srcObject = remoteStream;
             setIsConnected(true);
           }
         };
 
-        // Check periodically for available streams
-        const interval = setInterval(checkForRemoteStream, 1000);
-        checkForRemoteStream(); // Check immediately
+        // Handle ICE candidates
+        peerConnection.onicecandidate = (event) => {
+          if (event.candidate && signalChannel) {
+            console.log('[BROADCAST_VIEWER] Sending ICE candidate');
+            signalChannel.send({
+              type: 'broadcast',
+              event: 'ice-candidate',
+              candidate: event.candidate,
+              sender: 'viewer'
+            });
+          }
+        };
 
-        return () => clearInterval(interval);
+        // Set up signaling channel
+        signalChannel = supabase.channel(`broadcast:${creatorId}`)
+          .on('broadcast', { event: 'offer' }, async (payload) => {
+            console.log('[BROADCAST_VIEWER] Received offer from creator');
+            try {
+              await peerConnection!.setRemoteDescription(new RTCSessionDescription(payload.offer));
+              
+              const answer = await peerConnection!.createAnswer();
+              await peerConnection!.setLocalDescription(answer);
+              
+              signalChannel.send({
+                type: 'broadcast',
+                event: 'answer',
+                answer: answer,
+                sender: 'viewer'
+              });
+            } catch (error) {
+              console.error('[BROADCAST_VIEWER] Error handling offer:', error);
+            }
+          })
+          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+            if (payload.sender === 'creator' && peerConnection && peerConnection.remoteDescription) {
+              console.log('[BROADCAST_VIEWER] Received ICE candidate from creator');
+              try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              } catch (error) {
+                console.error('[BROADCAST_VIEWER] Error adding ICE candidate:', error);
+              }
+            }
+          })
+          .subscribe();
+
+        console.log('[BROADCAST_VIEWER] WebRTC setup complete, waiting for creator offer');
+
       } catch (error) {
-        console.error('[BROADCAST] Error connecting to stream:', error);
+        console.error('[BROADCAST_VIEWER] Error setting up WebRTC:', error);
       }
     };
 
-    connectToRemoteStream();
+    connectToCreatorBroadcast();
+
+    // Cleanup
+    return () => {
+      console.log('[BROADCAST_VIEWER] Cleaning up WebRTC connection');
+      if (peerConnection) {
+        peerConnection.close();
+      }
+      if (signalChannel) {
+        supabase.removeChannel(signalChannel);
+      }
+      if (video) {
+        video.srcObject = null;
+      }
+      setIsConnected(false);
+    };
   }, [creatorId, sessionId]);
 
   const toggleMute = () => {
@@ -158,6 +226,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             autoPlay
             playsInline
             muted={isMuted}
+            onLoadedMetadata={() => {
+              // Ensure video starts muted for autoplay policies
+              if (videoRef.current) {
+                videoRef.current.muted = isMuted;
+              }
+            }}
           />
           
           {/* Video Controls Overlay */}
@@ -166,7 +240,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               onClick={toggleMute}
               size="sm"
               variant="secondary"
-              className="bg-black/50 hover:bg-black/70 text-white"
+              className="bg-black/50 hover:bg-black/70 text-white border-0"
+              title={isMuted ? "Unmute audio" : "Mute audio"}
             >
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>

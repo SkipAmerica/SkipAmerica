@@ -346,11 +346,14 @@ export default function JoinQueue() {
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Live Broadcast Viewer */}
+          {/* Live Broadcast Viewer - Always show when creator is live */}
           {liveSession && (
             <Card>
               <CardHeader>
-                <CardTitle>🔴 Live Broadcast</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  Live Broadcast
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <BroadcastViewer 

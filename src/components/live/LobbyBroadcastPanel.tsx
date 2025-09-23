@@ -317,6 +317,114 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       .slice(0, 2)
   }
 
+  // WebRTC broadcasting to viewers
+  useEffect(() => {
+    if (!user || !streamRef.current) return;
+
+    let peerConnections: Map<string, RTCPeerConnection> = new Map();
+    let signalChannel: any = null;
+
+    const setupBroadcasting = async () => {
+      try {
+        console.log('[LOBBY_BROADCAST] Setting up WebRTC broadcasting');
+        
+        // Set up signaling channel
+        signalChannel = supabase.channel(`broadcast:${user.id}`)
+          .on('broadcast', { event: 'answer' }, async (payload) => {
+            console.log('[LOBBY_BROADCAST] Received answer from viewer');
+            // In a real implementation, we'd handle multiple viewers
+            // For now, we'll create a single connection
+            const viewerId = 'viewer'; // In reality, this would be unique per viewer
+            const pc = peerConnections.get(viewerId);
+            if (pc && payload.sender === 'viewer') {
+              try {
+                await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
+              } catch (error) {
+                console.error('[LOBBY_BROADCAST] Error setting remote description:', error);
+              }
+            }
+          })
+          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+            if (payload.sender === 'viewer') {
+              console.log('[LOBBY_BROADCAST] Received ICE candidate from viewer');
+              const viewerId = 'viewer';
+              const pc = peerConnections.get(viewerId);
+              if (pc && pc.remoteDescription) {
+                try {
+                  await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
+                } catch (error) {
+                  console.error('[LOBBY_BROADCAST] Error adding ICE candidate:', error);
+                }
+              }
+            }
+          })
+          .subscribe();
+
+        // Create offer for viewers (simplified - in reality you'd do this per viewer)
+        const createOfferForViewer = async () => {
+          const viewerId = 'viewer';
+          const pc = new RTCPeerConnection({
+            iceServers: [
+              { urls: 'stun:stun.l.google.com:19302' },
+              { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+          });
+
+          peerConnections.set(viewerId, pc);
+
+          // Add local stream tracks
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => {
+              pc.addTrack(track, streamRef.current!);
+            });
+          }
+
+          // Handle ICE candidates
+          pc.onicecandidate = (event) => {
+            if (event.candidate && signalChannel) {
+              console.log('[LOBBY_BROADCAST] Sending ICE candidate to viewers');
+              signalChannel.send({
+                type: 'broadcast',
+                event: 'ice-candidate',
+                candidate: event.candidate,
+                sender: 'creator'
+              });
+            }
+          };
+
+          // Create and send offer
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          
+          console.log('[LOBBY_BROADCAST] Sending offer to viewers');
+          signalChannel.send({
+            type: 'broadcast',
+            event: 'offer',
+            offer: offer,
+            sender: 'creator'
+          });
+        };
+
+        // Wait a bit for the channel to be ready, then create offer
+        setTimeout(createOfferForViewer, 1000);
+
+      } catch (error) {
+        console.error('[LOBBY_BROADCAST] Error setting up broadcasting:', error);
+      }
+    };
+
+    setupBroadcasting();
+
+    // Cleanup
+    return () => {
+      console.log('[LOBBY_BROADCAST] Cleaning up WebRTC broadcasting');
+      peerConnections.forEach(pc => pc.close());
+      if (signalChannel) {
+        supabase.removeChannel(signalChannel);
+      }
+    };
+  }, [user, mediaState.stream]);
+
   // Initialize media on mount
   useEffect(() => {
     initMedia()
