@@ -71,12 +71,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Fetch lobby chat messages
   useEffect(() => {
+    const targetCreatorId = channelResolution?.resolvedCreatorId || creatorId;
+    if (!targetCreatorId) return;
+
     const fetchMessages = async () => {
       try {
         const { data: messagesData } = await supabase
           .from('lobby_chat_messages')
           .select('id, user_id, message, created_at')
-          .eq('creator_id', creatorId)
+          .eq('creator_id', targetCreatorId)
           .order('created_at', { ascending: true })
           .limit(20);
 
@@ -110,7 +113,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           event: 'INSERT',
           schema: 'public',
           table: 'lobby_chat_messages',
-          filter: `creator_id=eq.${creatorId}`
+          filter: `creator_id=eq.${targetCreatorId}`
         },
         async (payload) => {
           const { data: profile } = await supabase
@@ -132,7 +135,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [creatorId]);
+  }, [creatorId, channelResolution]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -141,82 +144,90 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // Real-time subscription to live session changes - watch both raw and resolved creator IDs
+  // Real-time subscription to live session changes - wait for channel resolution, then watch resolved and fallback IDs
   useEffect(() => {
-    if (!creatorId) return;
+    if (!creatorId || !channelResolution) return;
 
-    const effectiveCreatorId = getEffectiveCreatorId();
-    console.log('[BROADCAST_VIEWER] Setting up live session subscription for creator:', effectiveCreatorId);
+    const resolvedId = channelResolution.resolvedCreatorId || creatorId;
+    console.log('[BROADCAST_VIEWER] Setting up live session subscriptions for creator:', {
+      resolvedId,
+      rawId: creatorId
+    });
 
-    // Subscribe to live session changes for the effective creator ID
-    const liveSessionChannel = supabase
-      .channel(`broadcast-live-session-${effectiveCreatorId}`)
+    const channels: any[] = [];
+
+    // Primary subscription for resolved/effective creator ID
+    const resolvedChannel = supabase
+      .channel(`broadcast-live-session-${resolvedId}`)
       .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public', 
-          table: 'live_sessions',
-          filter: `creator_id=eq.${effectiveCreatorId}`
-        },
-        (payload) => {
-          console.log('[BROADCAST_VIEWER] Live session change detected:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Creator just went live
-            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection');
-            setRetryCount(0); // Reset retry count for new session
-            setConnectionState('checking');
-          } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
-            // Creator stopped broadcasting
-            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
-            setConnectionState('offline');
-          } else if (payload.eventType === 'DELETE') {
-            // Session was deleted
-            console.log('[BROADCAST_VIEWER] Live session deleted');
-            setConnectionState('offline');
-          }
-        }
-      );
-
-    // If we have both raw and resolved IDs and they're different, also watch the raw ID
-    if (channelResolution?.resolvedCreatorId && channelResolution.resolvedCreatorId !== creatorId) {
-      liveSessionChannel.on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'live_sessions',
-          filter: `creator_id=eq.${creatorId}`
+          filter: `creator_id=eq.${resolvedId}`
         },
         (payload) => {
-          console.log('[BROADCAST_VIEWER] Live session change detected (fallback):', payload);
-          
+          console.log('[BROADCAST_VIEWER] Live session change detected (resolved):', payload);
+
           if (payload.eventType === 'INSERT') {
-            console.log('[BROADCAST_VIEWER] Creator went live (fallback) - attempting connection');
+            console.log('[BROADCAST_VIEWER] Creator went live (resolved) - attempting connection');
             setRetryCount(0);
             setConnectionState('checking');
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
-            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (fallback)');
+            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (resolved)');
             setConnectionState('offline');
           } else if (payload.eventType === 'DELETE') {
-            console.log('[BROADCAST_VIEWER] Live session deleted (fallback)');
+            console.log('[BROADCAST_VIEWER] Live session deleted (resolved)');
             setConnectionState('offline');
           }
         }
-      );
+      )
+      .subscribe();
+
+    channels.push(resolvedChannel);
+
+    // If resolved differs from raw, also subscribe to raw as fallback
+    if (channelResolution.resolvedCreatorId && channelResolution.resolvedCreatorId !== creatorId) {
+      const rawChannel = supabase
+        .channel(`broadcast-live-session-${creatorId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'live_sessions',
+            filter: `creator_id=eq.${creatorId}`
+          },
+          (payload) => {
+            console.log('[BROADCAST_VIEWER] Live session change detected (raw fallback):', payload);
+
+            if (payload.eventType === 'INSERT') {
+              console.log('[BROADCAST_VIEWER] Creator went live (raw fallback) - attempting connection');
+              setRetryCount(0);
+              setConnectionState('checking');
+            } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
+              console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (raw fallback)');
+              setConnectionState('offline');
+            } else if (payload.eventType === 'DELETE') {
+              console.log('[BROADCAST_VIEWER] Live session deleted (raw fallback)');
+              setConnectionState('offline');
+            }
+          }
+        )
+        .subscribe();
+
+      channels.push(rawChannel);
     }
 
-    liveSessionChannel.subscribe();
-
     return () => {
-      supabase.removeChannel(liveSessionChannel);
+      channels.forEach((ch) => supabase.removeChannel(ch));
     };
   }, [creatorId, channelResolution]);
 
-  // Continuous monitoring with polling backup
+  // Continuous monitoring with polling backup (wait for channel resolution)
   useEffect(() => {
-    if (!creatorId) return;
+    if (!creatorId || !channelResolution) return;
 
     const pollInterval = setInterval(async () => {
       if (connectionState === 'connected') return; // Don't poll if already connected
@@ -233,7 +244,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }, 30000); // Poll every 30 seconds
 
     return () => clearInterval(pollInterval);
-  }, [creatorId, connectionState]);
+  }, [creatorId, channelResolution, connectionState]);
 
   // Resolve broadcast channels on mount
   useEffect(() => {
