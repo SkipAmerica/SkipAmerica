@@ -43,14 +43,22 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           table: 'call_queue',
           filter: `creator_id=eq.${user.id}`
         },
-        (payload) => {
-          store.updateQueueCount(store.queueCount + 1)
+        async (payload) => {
+          // Fetch current queue count to avoid stale closure
+          const { count } = await supabase
+            .from('call_queue')
+            .select('*', { count: 'exact', head: true })
+            .eq('creator_id', user.id)
+            .eq('status', 'waiting')
+          
+          const currentCount = count || 0
+          store.updateQueueCount(currentCount)
           store.triggerHaptic()
           
           setState(prev => ({ ...prev, error: undefined, isConnected: true }))
           
           // Check for overload (>3 joins in 10s) - simplified version
-          if (store.queueCount > 2) {
+          if (currentCount > 2) {
             toast({
               title: "Multiple joins",
               description: "Queue is heating up — haptics paused",
@@ -67,8 +75,16 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           table: 'call_queue',
           filter: `creator_id=eq.${user.id}`
         },
-        () => {
-          store.updateQueueCount(Math.max(0, store.queueCount - 1))
+        async () => {
+          // Fetch current queue count to avoid stale closure
+          const { count } = await supabase
+            .from('call_queue')
+            .select('*', { count: 'exact', head: true })
+            .eq('creator_id', user.id)
+            .eq('status', 'waiting')
+          
+          const currentCount = count || 0
+          store.updateQueueCount(currentCount)
           setState(prev => ({ ...prev, error: undefined, isConnected: true }))
         }
       )
