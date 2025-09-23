@@ -35,6 +35,8 @@ export interface LiveStoreState {
   sessionElapsed: number // accumulated ms for THIS session
   // Discoverability modal state
   showDiscoverabilityModal: boolean
+  // Lobby broadcasting state
+  isLobbyBroadcasting: boolean
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -54,6 +56,7 @@ export type Action =
   | { type: 'STOP_DISCOVERABLE_TIMER' }
   | { type: 'RESET_TIMER' }
   | { type: 'SET_DISCOVERABILITY_MODAL'; open: boolean }
+  | { type: 'SET_LOBBY_BROADCASTING'; broadcasting: boolean }
 
 // Helper to determine discoverable posture
 const inDiscoverablePosture = (state: string) =>
@@ -83,6 +86,8 @@ const initialState: LiveStoreState = {
   sessionElapsed: 0,
   // Discoverability modal state
   showDiscoverabilityModal: false,
+  // Lobby broadcasting state
+  isLobbyBroadcasting: false,
   inFlight: {
     start: null,
     end: null
@@ -237,6 +242,12 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         showDiscoverabilityModal: action.open
       }
     
+    case 'SET_LOBBY_BROADCASTING':
+      return {
+        ...state,
+        isLobbyBroadcasting: action.broadcasting
+      }
+    
     default:
       return state
   }
@@ -275,6 +286,8 @@ export interface LiveStoreContextValue {
   accumulatedDiscoverableTime: number
   // Modal fields
   showDiscoverabilityModal: boolean
+  // Lobby broadcasting
+  isLobbyBroadcasting: boolean
   
   // Actions
   dispatch: (event: LiveEvent) => void
@@ -290,6 +303,7 @@ export interface LiveStoreContextValue {
   updateQueueCount: (count: number) => void
   triggerHaptic: () => void
   setDiscoverabilityModal: (open: boolean) => void
+  setLobbyBroadcasting: (broadcasting: boolean) => void
 }
 
 const LiveStoreContext = createContext<LiveStoreContextValue | null>(null)
@@ -519,6 +533,10 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'SET_DISCOVERABILITY_MODAL', open })
   }, [])
 
+  const setLobbyBroadcasting = useCallback((broadcasting: boolean) => {
+    dispatch({ type: 'SET_LOBBY_BROADCASTING', broadcasting })
+  }, [])
+
   const toggleDiscoverable = useCallback(async () => {
     if (__discToggleInFlight) return;
 
@@ -599,6 +617,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     accumulatedDiscoverableTime: state.accumulatedDiscoverableTime,
     // Modal fields
     showDiscoverabilityModal: state.showDiscoverabilityModal,
+    // Lobby broadcasting
+    isLobbyBroadcasting: state.isLobbyBroadcasting,
     
     // Actions
     dispatch: handleDispatch,
@@ -613,7 +633,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     incrementCall,
     updateQueueCount,
     triggerHaptic,
-    setDiscoverabilityModal
+    setDiscoverabilityModal,
+    setLobbyBroadcasting
   }
   
   return (

@@ -3,12 +3,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff } from 'lucide-react'
+import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff, Video } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
+import { LobbyBroadcastPanel } from './LobbyBroadcastPanel'
 
 interface QueueEntry {
   id: string
@@ -235,7 +236,27 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           <p id="queue-description" className="text-sm text-muted-foreground">
             Manage your call queue and connect with waiting fans
           </p>
+          
+          {/* Broadcast Toggle Button */}
+          <Button
+            onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
+            variant={store.isLobbyBroadcasting ? "destructive" : "default"}
+            className="w-full mt-3"
+            aria-pressed={store.isLobbyBroadcasting}
+          >
+            <Video className="w-4 h-4 mr-2" />
+            {store.isLobbyBroadcasting ? "End Broadcast" : "Broadcast to Lobby"}
+          </Button>
         </SheetHeader>
+
+        {/* Broadcast Panel */}
+        {store.isLobbyBroadcasting && (
+          <div className="flex-shrink-0 px-6">
+            <LobbyBroadcastPanel 
+              onEnd={() => store.setLobbyBroadcasting(false)}
+            />
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Error State */}
