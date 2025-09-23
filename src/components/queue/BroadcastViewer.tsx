@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { mediaManager } from '@/media/MediaOrchestrator';
 
@@ -21,12 +21,40 @@ interface ChatMessage {
   };
 }
 
+type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'offline' | 'retry';
+
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
-  const [isMuted, setIsMuted] = useState(true); // Start muted
-  const [isConnected, setIsConnected] = useState(false);
+  const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isMuted, setIsMuted] = useState(true);
+  const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Check if creator is broadcasting before attempting connection
+  const checkCreatorBroadcastStatus = async (): Promise<boolean> => {
+    try {
+      console.log('[BROADCAST_VIEWER] Checking if creator is broadcasting:', creatorId);
+      
+      const { data: liveSession } = await supabase
+        .from('live_sessions')
+        .select('*')
+        .eq('creator_id', creatorId)
+        .is('ended_at', null)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const isBroadcasting = !!liveSession;
+      console.log('[BROADCAST_VIEWER] Creator broadcasting status:', isBroadcasting);
+      
+      return isBroadcasting;
+    } catch (error) {
+      console.error('[BROADCAST_VIEWER] Error checking broadcast status:', error);
+      return false;
+    }
+  };
 
   // Fetch lobby chat messages
   useEffect(() => {
@@ -110,7 +138,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     const connectToCreatorBroadcast = async () => {
       try {
-        console.log('[BROADCAST_VIEWER] Setting up WebRTC connection');
+        console.log('[BROADCAST_VIEWER] Starting connection attempt', retryCount + 1);
+        setConnectionState('connecting');
+        
+        // Set connection timeout
+        connectionTimeoutRef.current = setTimeout(() => {
+          console.log('[BROADCAST_VIEWER] Connection timeout reached');
+          setConnectionState('failed');
+          cleanup();
+        }, 10000); // 10 second timeout
         
         // Create peer connection
         peerConnection = new RTCPeerConnection({
@@ -126,7 +162,19 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const [remoteStream] = event.streams;
           if (video && remoteStream) {
             video.srcObject = remoteStream;
-            setIsConnected(true);
+            setConnectionState('connected');
+            if (connectionTimeoutRef.current) {
+              clearTimeout(connectionTimeoutRef.current);
+              connectionTimeoutRef.current = null;
+            }
+          }
+        };
+
+        // Handle connection state changes
+        peerConnection.onconnectionstatechange = () => {
+          console.log('[BROADCAST_VIEWER] Connection state:', peerConnection?.connectionState);
+          if (peerConnection?.connectionState === 'failed' || peerConnection?.connectionState === 'disconnected') {
+            setConnectionState('failed');
           }
         };
 
@@ -161,6 +209,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               });
             } catch (error) {
               console.error('[BROADCAST_VIEWER] Error handling offer:', error);
+              setConnectionState('failed');
             }
           })
           .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
@@ -179,14 +228,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
       } catch (error) {
         console.error('[BROADCAST_VIEWER] Error setting up WebRTC:', error);
+        setConnectionState('failed');
       }
     };
 
-    connectToCreatorBroadcast();
-
-    // Cleanup
-    return () => {
+    const cleanup = () => {
       console.log('[BROADCAST_VIEWER] Cleaning up WebRTC connection');
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
       if (peerConnection) {
         peerConnection.close();
       }
@@ -196,9 +247,34 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       if (video) {
         video.srcObject = null;
       }
-      setIsConnected(false);
     };
-  }, [creatorId, sessionId]);
+
+    const startConnection = async () => {
+      // First check if creator is broadcasting
+      const isBroadcasting = await checkCreatorBroadcastStatus();
+      
+      if (!isBroadcasting) {
+        console.log('[BROADCAST_VIEWER] Creator is not broadcasting');
+        setConnectionState('offline');
+        return;
+      }
+
+      await connectToCreatorBroadcast();
+    };
+
+    startConnection();
+
+    // Cleanup
+    return () => {
+      cleanup();
+    };
+  }, [creatorId, sessionId, retryCount]);
+
+  const handleRetry = async () => {
+    console.log('[BROADCAST_VIEWER] Retrying connection...');
+    setRetryCount(prev => prev + 1);
+    setConnectionState('checking');
+  };
 
   const toggleMute = () => {
     if (videoRef.current) {
@@ -216,9 +292,70 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       .slice(0, 2);
   };
 
+  const renderConnectionState = () => {
+    switch (connectionState) {
+      case 'checking':
+        return (
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p className="text-sm">Checking broadcast status...</p>
+          </div>
+        );
+      
+      case 'connecting':
+        return (
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <p className="text-sm">Connecting to broadcast...</p>
+          </div>
+        );
+      
+      case 'failed':
+        return (
+          <div className="text-center text-white space-y-3">
+            <div className="text-red-400">
+              <p className="text-sm mb-2">Failed to connect to broadcast</p>
+              <p className="text-xs opacity-75">The creator may not be broadcasting</p>
+            </div>
+            <Button
+              onClick={handleRetry}
+              size="sm"
+              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        );
+      
+      case 'offline':
+        return (
+          <div className="text-center text-white space-y-3">
+            <div>
+              <p className="text-sm mb-2">Creator is not broadcasting</p>
+              <p className="text-xs opacity-75">Check back later when they go live</p>
+            </div>
+            <Button
+              onClick={handleRetry}
+              size="sm"
+              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Check Again
+            </Button>
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-      {isConnected ? (
+      {connectionState === 'connected' ? (
         <>
           <video
             ref={videoRef}
@@ -281,13 +418,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         </>
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <div className="text-center text-white">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
-            <p className="text-sm">Connecting to broadcast...</p>
-          </div>
+          {renderConnectionState()}
         </div>
       )}
-
     </div>
   );
 }
