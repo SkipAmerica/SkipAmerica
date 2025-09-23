@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Mic, MicOff, Camera, CameraOff, Wifi, RotateCcw, Send } from 'lucide-react'
+import { Mic, MicOff, Camera, CameraOff, Wifi, RotateCcw, Send, Square, Video } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
@@ -31,6 +31,8 @@ interface MediaState {
   audioEnabled: boolean
   videoEnabled: boolean
   retryCount: number
+  currentSession: any | null
+  isStreaming: boolean
 }
 
 export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
@@ -50,7 +52,9 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     loading: true,
     audioEnabled: true,
     videoEnabled: true,
-    retryCount: 0
+    retryCount: 0,
+    currentSession: null,
+    isStreaming: false
   })
 
   const cleanup = useCallback(() => {
@@ -146,6 +150,105 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
   }, [user])
 
+  const startBroadcast = async () => {
+    try {
+      console.log('Starting broadcast...')
+      setMediaState(prev => ({ ...prev, isStreaming: true }))
+
+      // Create live session record
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('live_sessions')
+        .insert({
+          creator_id: user?.id,
+          started_at: new Date().toISOString(),
+          calls_taken: 0,
+          total_earnings_cents: 0
+        })
+        .select()
+        .single()
+
+      if (sessionError) {
+        console.error('Error creating live session:', sessionError)
+        throw sessionError
+      }
+
+      setMediaState(prev => ({ ...prev, currentSession: sessionData }))
+      console.log('Live session created:', sessionData.id)
+
+      // Initialize media
+      await initMedia()
+
+    } catch (error) {
+      console.error('Error starting broadcast:', error)
+      setMediaState(prev => ({ ...prev, isStreaming: false }))
+      toast({
+        title: "Failed to start broadcast",
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const stopBroadcast = async () => {
+    console.log('Stopping broadcast...')
+    
+    // Update live session record
+    if (mediaState.currentSession) {
+      const { error: updateError } = await supabase
+        .from('live_sessions')
+        .update({
+          ended_at: new Date().toISOString(),
+          session_duration_minutes: Math.floor((Date.now() - new Date(mediaState.currentSession.started_at).getTime()) / 60000)
+        })
+        .eq('id', mediaState.currentSession.id)
+
+      if (updateError) {
+        console.error('Error updating live session:', updateError)
+      } else {
+        console.log('Live session ended:', mediaState.currentSession.id)
+      }
+    }
+    
+    cleanup()
+    setMediaState(prev => ({ 
+      ...prev, 
+      currentSession: null, 
+      isStreaming: false,
+      loading: true
+    }))
+    onEnd()
+  }
+
+  const clearLobbyChat = async () => {
+    try {
+      const { error } = await supabase
+        .from('lobby_chat_messages')
+        .delete()
+        .eq('creator_id', user?.id)
+
+      if (error) {
+        console.error('Error clearing lobby chat:', error)
+        toast({
+          title: "Failed to clear chat",
+          description: "Please try again",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Chat cleared",
+          description: "Lobby chat has been cleared"
+        })
+      }
+    } catch (error) {
+      console.error('Error clearing lobby chat:', error)
+      toast({
+        title: "Failed to clear chat", 
+        description: "Please try again",
+        variant: "destructive"
+      })
+    }
+  }
+
   const initMedia = useCallback(async () => {
     setMediaState(prev => ({ ...prev, loading: true, error: null }))
     
@@ -213,7 +316,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const delay = Math.min(1000 * Math.pow(2, mediaState.retryCount), 4000)
         retryTimeoutRef.current = setTimeout(() => {
           initMedia()
-    }, delay)
+        }, delay)
       }
     }
   }, [mediaState.retryCount, fetchMessages])
@@ -332,9 +435,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         signalChannel = supabase.channel(`broadcast:${user.id}`)
           .on('broadcast', { event: 'answer' }, async (payload) => {
             console.log('[LOBBY_BROADCAST] Received answer from viewer');
-            // In a real implementation, we'd handle multiple viewers
-            // For now, we'll create a single connection
-            const viewerId = 'viewer'; // In reality, this would be unique per viewer
+            const viewerId = 'viewer';
             const pc = peerConnections.get(viewerId);
             if (pc && payload.sender === 'viewer') {
               try {
@@ -360,7 +461,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           })
           .subscribe();
 
-        // Create offer for viewers (simplified - in reality you'd do this per viewer)
+        // Create offer for viewers
         const createOfferForViewer = async () => {
           const viewerId = 'viewer';
           const pc = new RTCPeerConnection({
@@ -521,14 +622,24 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               </div>
 
               {/* End Broadcast Button */}
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleEnd}
-                aria-label="End broadcast"
-              >
-                End Broadcast
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={clearLobbyChat}
+                  className="text-white border-white/20 hover:bg-white/10"
+                >
+                  Clear Chat
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={handleEnd}
+                  aria-label="End broadcast"
+                >
+                  End Broadcast
+                </Button>
+              </div>
             </div>
           </div>
         )}

@@ -316,148 +316,119 @@ export default function JoinQueue() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        {/* Creator Info Header */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-4 mb-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
-                <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold">{creator.full_name}</h1>
-                <p className="text-muted-foreground">{creator.bio}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  {getStatusBadge()}
-                  {creator.rating && (
-                    <Badge variant="outline">⭐ {creator.rating}</Badge>
-                  )}
-                </div>
+      <div className="max-w-md mx-auto relative h-screen overflow-y-auto">
+        {/* Header */}
+        <div className="bg-card p-4 border-b">
+          <h1 className="text-xl font-semibold">Join Queue</h1>
+        </div>
+
+        {/* Creator Info */}
+        <div className="p-4 bg-card border-b">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
+              <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h2 className="font-semibold">{creator.full_name}</h2>
+              <p className="text-sm text-muted-foreground">{creator.bio}</p>
+              <div className="flex items-center gap-2 mt-1">
+                {getStatusBadge()}
+                {creator.rating && (
+                  <Badge variant="outline">⭐ {creator.rating}</Badge>
+                )}
               </div>
             </div>
+          </div>
+        </div>
 
-            {creator.category && (
-              <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">{creator.category}</Badge>
+        {/* Live Broadcast Card - Always show to establish WebRTC connection */}
+        <Card className="m-4">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Live Broadcast</CardTitle>
+              {liveSession && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-red-500">LIVE</span>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <BroadcastViewer 
+              creatorId={creatorId!} 
+              sessionId={liveSession?.id || 'connecting'}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Queue Status & Actions */}
+        <Card className="m-4">
+          <CardHeader>
+            <CardTitle>Queue Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="text-center p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">People in queue</p>
+              <p className="text-3xl font-bold">{queueCount}</p>
+            </div>
+
+            {!isInQueue ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Your Display Name</label>
+                  <Input
+                    placeholder="Enter your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="mt-1"
+                    maxLength={50}
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium">Discussion Topic (Optional)</label>
+                  <Textarea
+                    placeholder="What would you like to discuss?"
+                    value={discussionTopic}
+                    onChange={(e) => setDiscussionTopic(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                
+                <Button
+                  onClick={handleJoinQueue}
+                  disabled={joining || !user || !displayName.trim()}
+                  className="w-full"
+                  size="lg"
+                >
+                  {joining ? "Joining..." : "Join Queue (Priority Access)"}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
+                  <p className="font-medium text-green-800 dark:text-green-200">
+                    🎉 You're in the queue!
+                  </p>
+                </div>
+                
+                <Button
+                  onClick={handleLeaveQueue}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Leave Queue
+                </Button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Live Broadcast Viewer - Always show when creator is live */}
-          {liveSession && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  Live Broadcast
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BroadcastViewer 
-                  creatorId={creatorId!} 
-                  sessionId={liveSession.id}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Queue Status & Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Queue Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center p-4 bg-muted rounded-lg">
-                <p className="text-sm text-muted-foreground">People in queue</p>
-                <p className="text-3xl font-bold">{queueCount}</p>
-              </div>
-
-              {!isInQueue ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Your Display Name</label>
-                    <Input
-                      placeholder="Enter your name"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="mt-1"
-                      maxLength={50}
-                    />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      This name will appear in the lobby chat
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <label className="text-sm font-medium">Discussion Topic (Optional)</label>
-                    <Textarea
-                      placeholder="What would you like to discuss?"
-                      value={discussionTopic}
-                      onChange={(e) => setDiscussionTopic(e.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <Button
-                    onClick={handleJoinQueue}
-                    disabled={joining || !user || !displayName.trim()}
-                    className="w-full"
-                    size="lg"
-                  >
-                    {joining ? "Joining..." : "Join Queue (Priority Access)"}
-                  </Button>
-                  
-                  {!displayName.trim() && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Please enter your display name to join
-                    </p>
-                  )}
-                  
-                  {!user && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Setting up your connection...
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                    <p className="font-medium text-green-800 dark:text-green-200">
-                      🎉 You're in the queue!
-                    </p>
-                    <p className="text-sm text-green-600 dark:text-green-300">
-                      Priority access - First in line
-                    </p>
-                  </div>
-                  
-                  {discussionTopic && (
-                    <div>
-                      <p className="text-sm font-medium">Your topic:</p>
-                      <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                        {discussionTopic}
-                      </p>
-                    </div>
-                  )}
-                  
-                  <Button
-                    onClick={handleLeaveQueue}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Leave Queue
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Lobby Chat - Only show when user is in queue */}
         {isInQueue && (
-          <Card className="mt-6">
+          <Card className="m-4">
             <CardHeader>
               <CardTitle>Lobby Chat</CardTitle>
             </CardHeader>
