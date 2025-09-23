@@ -342,6 +342,17 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
           </div>
       </div>
 
+      {/* Safety Notice */}
+      <div className="flex-shrink-0 bg-muted/30 border-b">
+        <div className="p-4">
+          <div className="max-w-2xl mx-auto text-center">
+            <p className="text-sm text-foreground leading-relaxed">
+              This is your private space to observe the user before the call begins. The user cannot see or hear you yet. Use this time to review your 'cannot-say' rules, adjust your mic and camera, and make sure you feel safe before starting.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Camera Preview Tiles */}
       <main className="flex-1 overflow-auto">
         <div className="p-4 space-y-6">
