@@ -84,6 +84,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }))
 
     try {
+      console.log('[QueueDrawer] Fetching queue entries for creator:', user.id)
+      
       // First get queue entries, prioritizing by priority field first
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
@@ -93,6 +95,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
+
+      console.log('[QueueDrawer] Raw queue data:', queueData)
 
       if (queueError) {
         const wrappedError = new Error(`Failed to fetch queue entries: ${queueError.message}`)
@@ -120,6 +124,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           ...entry,
           profiles: profilesData?.find(profile => profile.id === entry.fan_id)
         }))
+
+        console.log('[QueueDrawer] Enriched queue entries:', enrichedEntries)
       }
 
       setLocalState(prev => ({
@@ -154,9 +160,37 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }
   }, [user, state.retryCount])
 
+  // Setup real-time subscription for queue changes
   useEffect(() => {
     if (!isOpen || !user) return
+
+    console.log('[QueueDrawer] Setting up real-time subscription')
+    
+    const channel = supabase
+      .channel('queue-entries-subscription')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[QueueDrawer] Real-time queue change:', payload)
+          // Refetch queue data when changes occur
+          fetchQueue()
+        }
+      )
+      .subscribe()
+
+    // Initial fetch
     fetchQueue()
+
+    return () => {
+      console.log('[QueueDrawer] Cleaning up real-time subscription')
+      supabase.removeChannel(channel)
+    }
   }, [isOpen, user, fetchQueue])
 
   const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
