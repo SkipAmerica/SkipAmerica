@@ -420,7 +420,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       .slice(0, 2)
   }
 
-  // WebRTC broadcasting to viewers
+  // WebRTC broadcasting to viewers with request/response handshake
   useEffect(() => {
     if (!user || !streamRef.current) return;
 
@@ -429,49 +429,16 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
     const setupBroadcasting = async () => {
       try {
-        console.log('[LOBBY_BROADCAST] Setting up WebRTC broadcasting');
+        console.log('[LOBBY_BROADCAST] Setting up WebRTC broadcasting with handshake support');
         
-        // Set up signaling channel
-        signalChannel = supabase.channel(`broadcast:${user.id}`)
-          .on('broadcast', { event: 'answer' }, async (payload) => {
-            console.log('[LOBBY_BROADCAST] Received answer from viewer');
-            const viewerId = 'viewer';
-            const pc = peerConnections.get(viewerId);
-            if (pc && payload.sender === 'viewer') {
-              try {
-                await pc.setRemoteDescription(new RTCSessionDescription(payload.answer));
-              } catch (error) {
-                console.error('[LOBBY_BROADCAST] Error setting remote description:', error);
-              }
-            }
-          })
-          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
-            if (payload.sender === 'viewer') {
-              console.log('[LOBBY_BROADCAST] Received ICE candidate from viewer');
-              const viewerId = 'viewer';
-              const pc = peerConnections.get(viewerId);
-              if (pc && pc.remoteDescription) {
-                try {
-                  await pc.addIceCandidate(new RTCIceCandidate(payload.candidate));
-                } catch (error) {
-                  console.error('[LOBBY_BROADCAST] Error adding ICE candidate:', error);
-                }
-              }
-            }
-          })
-          .subscribe();
-
-        // Create offer for viewers
-        const createOfferForViewer = async () => {
-          const viewerId = 'viewer';
+        // Helper to create peer connection for a viewer
+        const createPeerForViewer = (viewerId: string): RTCPeerConnection => {
           const pc = new RTCPeerConnection({
             iceServers: [
               { urls: 'stun:stun.l.google.com:19302' },
               { urls: 'stun:stun1.l.google.com:19302' }
             ]
           });
-
-          peerConnections.set(viewerId, pc);
 
           // Add local stream tracks
           if (streamRef.current) {
@@ -480,34 +447,125 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             });
           }
 
-          // Handle ICE candidates
+          // Handle ICE candidates for this viewer
           pc.onicecandidate = (event) => {
             if (event.candidate && signalChannel) {
-              console.log('[LOBBY_BROADCAST] Sending ICE candidate to viewers');
+              console.log(`[LOBBY_BROADCAST] Sending ICE candidate to viewer ${viewerId}`);
               signalChannel.send({
                 type: 'broadcast',
                 event: 'ice-candidate',
-                candidate: event.candidate,
-                sender: 'creator'
+                viewerId,
+                candidate: event.candidate
               });
             }
           };
 
-          // Create and send offer
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
-          
-          console.log('[LOBBY_BROADCAST] Sending offer to viewers');
-          signalChannel.send({
-            type: 'broadcast',
-            event: 'offer',
-            offer: offer,
-            sender: 'creator'
+          // Monitor connection state
+          pc.onconnectionstatechange = () => {
+            console.log(`[LOBBY_BROADCAST] Viewer ${viewerId} connection state:`, pc.connectionState);
+            if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+              console.log(`[LOBBY_BROADCAST] Cleaning up failed connection for viewer ${viewerId}`);
+              setTimeout(() => {
+                pc.close();
+                peerConnections.delete(viewerId);
+              }, 1000);
+            }
+          };
+
+          return pc;
+        };
+        
+        // Set up signaling channel with request/response handlers
+        signalChannel = supabase.channel(`broadcast:${user.id}`)
+          .on('broadcast', { event: 'request-offer' }, async (payload) => {
+            const { viewerId } = payload;
+            if (!viewerId) return;
+            
+            console.log(`[LOBBY_BROADCAST] Received offer request from viewer ${viewerId}`);
+            
+            try {
+              // Get or create peer connection for this viewer
+              let pc = peerConnections.get(viewerId);
+              if (!pc) {
+                pc = createPeerForViewer(viewerId);
+                peerConnections.set(viewerId, pc);
+              }
+
+              // Create offer for this viewer
+              const offer = await pc.createOffer({ 
+                offerToReceiveAudio: true, 
+                offerToReceiveVideo: true 
+              });
+              await pc.setLocalDescription(offer);
+              
+              console.log(`[LOBBY_BROADCAST] Sending offer to viewer ${viewerId}`);
+              signalChannel.send({
+                type: 'broadcast',
+                event: 'offer',
+                viewerId,
+                sdp: offer.sdp
+              });
+            } catch (error) {
+              console.error(`[LOBBY_BROADCAST] Error creating offer for viewer ${viewerId}:`, error);
+            }
+          })
+          .on('broadcast', { event: 'answer' }, async (payload) => {
+            const { viewerId, sdp } = payload;
+            if (!viewerId || !sdp) return;
+            
+            console.log(`[LOBBY_BROADCAST] Received answer from viewer ${viewerId}`);
+            const pc = peerConnections.get(viewerId);
+            if (!pc) return;
+            
+            try {
+              await pc.setRemoteDescription({ type: 'answer', sdp });
+              console.log(`[LOBBY_BROADCAST] Successfully set remote description for viewer ${viewerId}`);
+            } catch (error) {
+              console.error(`[LOBBY_BROADCAST] Error setting remote description for viewer ${viewerId}:`, error);
+            }
+          })
+          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+            const { viewerId, candidate } = payload;
+            if (!viewerId || !candidate) return;
+            
+            console.log(`[LOBBY_BROADCAST] Received ICE candidate from viewer ${viewerId}`);
+            const pc = peerConnections.get(viewerId);
+            if (!pc || !pc.remoteDescription) return;
+            
+            try {
+              await pc.addIceCandidate(candidate);
+            } catch (error) {
+              console.error(`[LOBBY_BROADCAST] Error adding ICE candidate for viewer ${viewerId}:`, error);
+            }
+          })
+          .subscribe((status) => {
+            console.log('[LOBBY_BROADCAST] Subscription status:', status);
           });
+
+        // Legacy support: Send initial offer for immediate viewers
+        const createInitialOffer = async () => {
+          const legacyViewerId = 'viewer';
+          const pc = createPeerForViewer(legacyViewerId);
+          peerConnections.set(legacyViewerId, pc);
+
+          try {
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+          
+            console.log('[LOBBY_BROADCAST] Sending legacy offer to viewers');
+            signalChannel.send({
+              type: 'broadcast',
+              event: 'offer',
+              offer: offer,
+              sender: 'creator'
+            });
+          } catch (error) {
+            console.error('[LOBBY_BROADCAST] Error creating legacy offer:', error);
+          }
         };
 
-        // Wait a bit for the channel to be ready, then create offer
-        setTimeout(createOfferForViewer, 1000);
+        // Wait a bit for the channel to be ready, then create initial offer
+        setTimeout(createInitialOffer, 1000);
 
       } catch (error) {
         console.error('[LOBBY_BROADCAST] Error setting up broadcasting:', error);
