@@ -25,7 +25,18 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const streamRef = useRef<MediaStream | null>(null)
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   const chatOverlayRef = useRef<HTMLDivElement>(null)
+  const mockTimeoutsRef = useRef<NodeJS.Timeout[]>([])
   const [chatInput, setChatInput] = useState('')
+
+  // Mock messages for testing
+  const mockMessages = [
+    "Hey everyone! Welcome to my lobby broadcast 👋",
+    "Testing out this new chat feature - looks pretty cool!",
+    "Let me know if you can see the video clearly",
+    "The quality looks good on my end",
+    "Ready to start some calls soon! Who's interested?",
+    "This overlay chat works really well with the video"
+  ]
   
   const [mediaState, setMediaState] = useState<MediaState>({
     stream: null,
@@ -47,7 +58,19 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current)
     }
+    // Clear mock message timeouts
+    mockTimeoutsRef.current.forEach(timeout => clearTimeout(timeout))
+    mockTimeoutsRef.current = []
   }, [])
+
+  const populateMockMessages = useCallback(() => {
+    mockMessages.forEach((message, index) => {
+      const timeout = setTimeout(() => {
+        addLobbyChatMessage(message)
+      }, (index + 1) * 2000) // 2 second delay between messages
+      mockTimeoutsRef.current.push(timeout)
+    })
+  }, [addLobbyChatMessage])
 
   const initMedia = useCallback(async () => {
     setMediaState(prev => ({ ...prev, loading: true, error: null }))
@@ -85,6 +108,9 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         video: stream.getVideoTracks().length > 0
       })
 
+      // Populate mock messages for testing
+      populateMockMessages()
+
     } catch (error: any) {
       console.error('[LOBBY_BROADCAST] Error:', error)
       
@@ -116,7 +142,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         }, delay)
       }
     }
-  }, [mediaState.retryCount])
+  }, [mediaState.retryCount, populateMockMessages])
 
   const toggleAudio = useCallback(() => {
     if (streamRef.current) {
