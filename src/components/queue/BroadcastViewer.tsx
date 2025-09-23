@@ -128,13 +128,78 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // WebRTC connection for receiving broadcast
+  // Real-time subscription to live session changes
+  useEffect(() => {
+    if (!creatorId) return;
+
+    console.log('[BROADCAST_VIEWER] Setting up live session subscription for creator:', creatorId);
+
+    // Subscribe to live session changes for this creator
+    const liveSessionChannel = supabase
+      .channel(`broadcast-live-session-${creatorId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public', 
+          table: 'live_sessions',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        (payload) => {
+          console.log('[BROADCAST_VIEWER] Live session change detected:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            // Creator just went live
+            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection');
+            setRetryCount(0); // Reset retry count for new session
+            setConnectionState('checking');
+          } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
+            // Creator stopped broadcasting
+            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
+            setConnectionState('offline');
+          } else if (payload.eventType === 'DELETE') {
+            // Session was deleted
+            console.log('[BROADCAST_VIEWER] Live session deleted');
+            setConnectionState('offline');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(liveSessionChannel);
+    };
+  }, [creatorId]);
+
+  // Continuous monitoring with polling backup
+  useEffect(() => {
+    if (!creatorId) return;
+
+    const pollInterval = setInterval(async () => {
+      if (connectionState === 'connected') return; // Don't poll if already connected
+      
+      const isBroadcasting = await checkCreatorBroadcastStatus();
+      
+      if (isBroadcasting && (connectionState === 'offline' || connectionState === 'failed')) {
+        console.log('[BROADCAST_VIEWER] Polling detected creator is broadcasting - reconnecting');
+        setConnectionState('checking');
+      } else if (!isBroadcasting && connectionState !== 'offline') {
+        console.log('[BROADCAST_VIEWER] Polling detected creator stopped broadcasting');
+        setConnectionState('offline');
+      }
+    }, 30000); // Poll every 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [creatorId, connectionState]);
+
+  // WebRTC connection management
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     let peerConnection: RTCPeerConnection | null = null;
     let signalChannel: any = null;
+    let connectionHealthCheck: NodeJS.Timeout | null = null;
 
     const connectToCreatorBroadcast = async () => {
       try {
@@ -163,10 +228,22 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (video && remoteStream) {
             video.srcObject = remoteStream;
             setConnectionState('connected');
+            setRetryCount(0); // Reset retry count on successful connection
+            
             if (connectionTimeoutRef.current) {
               clearTimeout(connectionTimeoutRef.current);
               connectionTimeoutRef.current = null;
             }
+            
+            // Start connection health monitoring
+            connectionHealthCheck = setInterval(async () => {
+              const isStillBroadcasting = await checkCreatorBroadcastStatus();
+              if (!isStillBroadcasting) {
+                console.log('[BROADCAST_VIEWER] Health check: Creator stopped broadcasting');
+                setConnectionState('offline');
+                cleanup();
+              }
+            }, 15000); // Check every 15 seconds
           }
         };
 
@@ -238,19 +315,33 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
       }
+      if (connectionHealthCheck) {
+        clearInterval(connectionHealthCheck);
+        connectionHealthCheck = null;
+      }
       if (peerConnection) {
         peerConnection.close();
+        peerConnection = null;
       }
       if (signalChannel) {
         supabase.removeChannel(signalChannel);
+        signalChannel = null;
       }
       if (video) {
         video.srcObject = null;
       }
     };
 
-    const startConnection = async () => {
-      // First check if creator is broadcasting
+    const initConnection = async () => {
+      // Only attempt connection in 'checking' or 'retry' state
+      if (connectionState !== 'checking' && connectionState !== 'retry') {
+        return;
+      }
+
+      // Cleanup any existing connection first
+      cleanup();
+
+      // Check if creator is currently broadcasting
       const isBroadcasting = await checkCreatorBroadcastStatus();
       
       if (!isBroadcasting) {
@@ -259,21 +350,38 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         return;
       }
 
+      // Proceed with WebRTC connection
       await connectToCreatorBroadcast();
     };
 
-    startConnection();
+    // Initialize connection when in appropriate states
+    if (connectionState === 'checking' || connectionState === 'retry') {
+      initConnection();
+    }
 
-    // Cleanup
+    // Cleanup when component unmounts or creatorId changes
     return () => {
       cleanup();
     };
-  }, [creatorId, sessionId, retryCount]);
+  }, [creatorId, sessionId, connectionState, retryCount]);
 
   const handleRetry = async () => {
-    console.log('[BROADCAST_VIEWER] Retrying connection...');
+    console.log('[BROADCAST_VIEWER] Manual retry triggered');
+    const maxRetries = 5;
+    
+    if (retryCount >= maxRetries) {
+      console.log('[BROADCAST_VIEWER] Max retries reached, showing offline');
+      setConnectionState('offline');
+      return;
+    }
+    
     setRetryCount(prev => prev + 1);
-    setConnectionState('checking');
+    setConnectionState('retry');
+    
+    // Add exponential backoff for automatic retries
+    setTimeout(() => {
+      setConnectionState('checking');
+    }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Max 10 second delay
   };
 
   const toggleMute = () => {
