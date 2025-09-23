@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Mic, MicOff, Camera, CameraOff, Wifi, RotateCcw } from 'lucide-react'
+import { Mic, MicOff, Camera, CameraOff, Wifi, RotateCcw, Send } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLiveStore } from '@/stores/live-store'
 
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
@@ -18,9 +20,12 @@ interface MediaState {
 }
 
 export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
+  const { lobbyChatMessages, addLobbyChatMessage } = useLiveStore()
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
+  const chatOverlayRef = useRef<HTMLDivElement>(null)
+  const [chatInput, setChatInput] = useState('')
   
   const [mediaState, setMediaState] = useState<MediaState>({
     stream: null,
@@ -147,6 +152,25 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
   }, [initMedia, mediaState.retryCount])
 
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
+    e.preventDefault()
+    if (chatInput.trim()) {
+      addLobbyChatMessage(chatInput.trim())
+      setChatInput('')
+    }
+  }, [chatInput, addLobbyChatMessage])
+
+  // Auto-scroll chat overlay to bottom on new messages
+  useEffect(() => {
+    if (chatOverlayRef.current) {
+      const element = chatOverlayRef.current
+      const isScrolledToBottom = element.scrollTop >= element.scrollHeight - element.clientHeight - 5
+      if (isScrolledToBottom || lobbyChatMessages.length === 1) {
+        element.scrollTop = element.scrollHeight
+      }
+    }
+  }, [lobbyChatMessages])
+
   // Initialize media on mount
   useEffect(() => {
     initMedia()
@@ -254,7 +278,50 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             </div>
           </div>
         )}
+
+        {/* Chat Overlay */}
+        {!mediaState.loading && !mediaState.error && (
+          <div 
+            ref={chatOverlayRef}
+            className="absolute bottom-16 left-2 right-2 flex flex-col space-y-1 overflow-hidden text-xs text-white max-h-32 overflow-y-auto scrollbar-hide"
+            role="log" 
+            aria-live="polite"
+            style={{
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%, black 100%)'
+            }}
+          >
+            {lobbyChatMessages.map((message) => (
+              <div 
+                key={message.id}
+                className="bg-black/40 px-2 py-1 rounded text-white drop-shadow-sm"
+              >
+                <span className="font-medium">You:</span> {message.text}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Chat Input */}
+      <form onSubmit={handleSendMessage} className="w-full mt-2 flex items-center border rounded-full px-3 py-2 text-sm bg-white shadow">
+        <Input
+          value={chatInput}
+          onChange={(e) => setChatInput(e.target.value)}
+          placeholder="Say something to the lobby…"
+          className="flex-1 border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+          aria-label="Send chat message to lobby"
+        />
+        <Button
+          type="submit"
+          size="sm"
+          variant="ghost"
+          disabled={!chatInput.trim()}
+          className="h-6 w-6 p-0 ml-2"
+        >
+          <Send className="h-3 w-3" />
+        </Button>
+      </form>
     </div>
   )
 }

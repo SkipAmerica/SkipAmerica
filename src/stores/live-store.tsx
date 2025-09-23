@@ -37,6 +37,8 @@ export interface LiveStoreState {
   showDiscoverabilityModal: boolean
   // Lobby broadcasting state
   isLobbyBroadcasting: boolean
+  // Lobby chat state
+  lobbyChatMessages: Array<{ id: string; text: string; from: "creator" }>
   inFlight: {
     start: AbortController | null
     end: AbortController | null
@@ -57,6 +59,7 @@ export type Action =
   | { type: 'RESET_TIMER' }
   | { type: 'SET_DISCOVERABILITY_MODAL'; open: boolean }
   | { type: 'SET_LOBBY_BROADCASTING'; broadcasting: boolean }
+  | { type: 'ADD_LOBBY_CHAT_MESSAGE'; text: string }
 
 // Helper to determine discoverable posture
 const inDiscoverablePosture = (state: string) =>
@@ -88,6 +91,8 @@ const initialState: LiveStoreState = {
   showDiscoverabilityModal: false,
   // Lobby broadcasting state
   isLobbyBroadcasting: false,
+  // Lobby chat state
+  lobbyChatMessages: [],
   inFlight: {
     start: null,
     end: null
@@ -248,6 +253,19 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
         isLobbyBroadcasting: action.broadcasting
       }
     
+    case 'ADD_LOBBY_CHAT_MESSAGE':
+      const newMessage = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        text: action.text,
+        from: "creator" as const
+      }
+      // Keep only last 50 messages
+      const updatedMessages = [...state.lobbyChatMessages, newMessage].slice(-50)
+      return {
+        ...state,
+        lobbyChatMessages: updatedMessages
+      }
+    
     default:
       return state
   }
@@ -288,6 +306,8 @@ export interface LiveStoreContextValue {
   showDiscoverabilityModal: boolean
   // Lobby broadcasting
   isLobbyBroadcasting: boolean
+  // Lobby chat
+  lobbyChatMessages: Array<{ id: string; text: string; from: "creator" }>
   
   // Actions
   dispatch: (event: LiveEvent) => void
@@ -304,6 +324,7 @@ export interface LiveStoreContextValue {
   triggerHaptic: () => void
   setDiscoverabilityModal: (open: boolean) => void
   setLobbyBroadcasting: (broadcasting: boolean) => void
+  addLobbyChatMessage: (text: string) => void
 }
 
 const LiveStoreContext = createContext<LiveStoreContextValue | null>(null)
@@ -537,6 +558,10 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     dispatch({ type: 'SET_LOBBY_BROADCASTING', broadcasting })
   }, [])
 
+  const addLobbyChatMessage = useCallback((text: string) => {
+    dispatch({ type: 'ADD_LOBBY_CHAT_MESSAGE', text })
+  }, [])
+
   const toggleDiscoverable = useCallback(async () => {
     if (__discToggleInFlight) return;
 
@@ -619,6 +644,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     showDiscoverabilityModal: state.showDiscoverabilityModal,
     // Lobby broadcasting
     isLobbyBroadcasting: state.isLobbyBroadcasting,
+    // Lobby chat
+    lobbyChatMessages: state.lobbyChatMessages,
     
     // Actions
     dispatch: handleDispatch,
@@ -634,7 +661,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     updateQueueCount,
     triggerHaptic,
     setDiscoverabilityModal,
-    setLobbyBroadcasting
+    setLobbyBroadcasting,
+    addLobbyChatMessage
   }
   
   return (
