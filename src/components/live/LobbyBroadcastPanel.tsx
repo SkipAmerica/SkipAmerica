@@ -454,8 +454,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               signalChannel.send({
                 type: 'broadcast',
                 event: 'ice-candidate',
-                viewerId,
-                candidate: event.candidate
+                payload: { viewerId, candidate: event.candidate }
               });
             }
           };
@@ -477,8 +476,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         
         // Set up signaling channel with request/response handlers
         signalChannel = supabase.channel(`broadcast:${user.id}`)
-          .on('broadcast', { event: 'request-offer' }, async (payload) => {
-            const { viewerId } = payload;
+          .on('broadcast', { event: 'request-offer' }, async ({ payload }) => {
+            const { viewerId } = payload || {};
             if (!viewerId) return;
             
             console.log(`[LOBBY_BROADCAST] Received offer request from viewer ${viewerId}`);
@@ -502,15 +501,14 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               signalChannel.send({
                 type: 'broadcast',
                 event: 'offer',
-                viewerId,
-                sdp: offer.sdp
+                payload: { viewerId, sdp: offer.sdp }
               });
             } catch (error) {
               console.error(`[LOBBY_BROADCAST] Error creating offer for viewer ${viewerId}:`, error);
             }
           })
-          .on('broadcast', { event: 'answer' }, async (payload) => {
-            const { viewerId, sdp } = payload;
+          .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+            const { viewerId, sdp } = payload || {};
             if (!viewerId || !sdp) return;
             
             console.log(`[LOBBY_BROADCAST] Received answer from viewer ${viewerId}`);
@@ -524,8 +522,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               console.error(`[LOBBY_BROADCAST] Error setting remote description for viewer ${viewerId}:`, error);
             }
           })
-          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
-            const { viewerId, candidate } = payload;
+          .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+            const { viewerId, candidate } = payload || {};
             if (!viewerId || !candidate) return;
             
             console.log(`[LOBBY_BROADCAST] Received ICE candidate from viewer ${viewerId}`);
@@ -540,9 +538,17 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           })
           .subscribe((status) => {
             console.log('[LOBBY_BROADCAST] Subscription status:', status);
+            
+            // Only proceed with legacy offer after subscription is ready
+            if (status === 'SUBSCRIBED') {
+              // Create legacy offer after a short delay
+              setTimeout(() => {
+                createInitialOffer();
+              }, 1000);
+            }
           });
 
-        // Legacy support: Send initial offer for immediate viewers
+        // Legacy support: Send initial offer for immediate viewers (called after subscription)
         const createInitialOffer = async () => {
           const legacyViewerId = 'viewer';
           const pc = createPeerForViewer(legacyViewerId);
@@ -556,16 +562,12 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             signalChannel.send({
               type: 'broadcast',
               event: 'offer',
-              offer: offer,
-              sender: 'creator'
+              payload: { offer: offer, sender: 'creator' }
             });
           } catch (error) {
             console.error('[LOBBY_BROADCAST] Error creating legacy offer:', error);
           }
         };
-
-        // Wait a bit for the channel to be ready, then create initial offer
-        setTimeout(createInitialOffer, 1000);
 
       } catch (error) {
         console.error('[LOBBY_BROADCAST] Error setting up broadcasting:', error);

@@ -5,6 +5,7 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { mediaManager } from '@/media/MediaOrchestrator';
 import { generateViewerId } from '@/utils/viewer-id';
+import { resolveBroadcastChannels, type ChannelResolution } from '@/utils/broadcast-resolver';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -34,6 +35,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [offerRetryCount, setOfferRetryCount] = useState(0);
+  const [channelResolution, setChannelResolution] = useState<ChannelResolution | null>(null);
+  const [currentChannelAttempt, setCurrentChannelAttempt] = useState<'primary' | 'secondary'>('primary');
 
   // Check if creator is broadcasting before attempting connection
   const checkCreatorBroadcastStatus = async (): Promise<boolean> => {
@@ -195,8 +198,28 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return () => clearInterval(pollInterval);
   }, [creatorId, connectionState]);
 
+  // Resolve broadcast channels on mount
+  useEffect(() => {
+    const resolveChannels = async () => {
+      if (!creatorId) return;
+      
+      console.log(`[BROADCAST_VIEWER] Resolving channels for creatorId: ${creatorId}`);
+      const resolution = await resolveBroadcastChannels(creatorId);
+      setChannelResolution(resolution);
+      
+      console.log(`[BROADCAST_VIEWER] Channel resolution:`, {
+        primary: resolution.primaryChannel,
+        secondary: resolution.secondaryChannel,
+        resolvedCreatorId: resolution.resolvedCreatorId
+      });
+    };
+    
+    resolveChannels();
+  }, [creatorId]);
+
   // WebRTC connection management
   useEffect(() => {
+    if (!channelResolution) return;
 
     let peerConnection: RTCPeerConnection | null = null;
     let signalChannel: any = null;
@@ -259,20 +282,34 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             signalChannel.send({
               type: 'broadcast',
               event: 'ice-candidate',
-              viewerId,
-              candidate: event.candidate
+              payload: { viewerId, candidate: event.candidate }
             });
           }
         };
 
+        // Get current channel to use
+        const currentChannel = currentChannelAttempt === 'primary' 
+          ? channelResolution.primaryChannel 
+          : channelResolution.secondaryChannel;
+        
+        if (!currentChannel) {
+          console.log(`[BROADCAST_VIEWER:${viewerId}] No ${currentChannelAttempt} channel available`);
+          setConnectionState('failed');
+          return;
+        }
+
+        console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${currentChannelAttempt} channel: ${currentChannel}`);
+
         // Set up signaling channel with request/response handshake
-        signalChannel = supabase.channel(`broadcast:${creatorId}`)
-          .on('broadcast', { event: 'offer' }, async (payload) => {
-            // Handle both new format (with viewerId) and legacy format (without viewerId)
-            if (payload.viewerId && payload.viewerId !== viewerId) return;
-            if (!payload.viewerId && !payload.offer) return; // Skip if neither new nor legacy format
+        signalChannel = supabase.channel(currentChannel)
+          .on('broadcast', { event: 'offer' }, async ({ payload }) => {
+            // Only process offers for this viewer
+            if (!payload || payload.viewerId !== viewerId) {
+              // Also handle legacy format without viewerId for backward compatibility
+              if (!payload || (!payload.viewerId && !payload.offer)) return;
+            }
             
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Received offer from creator`);
+            console.log(`[BROADCAST_VIEWER:${viewerId}] Received offer from creator on ${currentChannelAttempt} channel`);
             try {
               const offer = payload.sdp ? { type: 'offer', sdp: payload.sdp } : payload.offer;
               await peerConnection!.setRemoteDescription(new RTCSessionDescription(offer));
@@ -280,22 +317,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               const answer = await peerConnection!.createAnswer();
               await peerConnection!.setLocalDescription(answer);
               
-              // Send answer in new format with viewerId
+              // Send answer with proper payload structure
               signalChannel.send({
                 type: 'broadcast',
                 event: 'answer',
-                viewerId,
-                sdp: answer.sdp
+                payload: { viewerId, sdp: answer.sdp }
               });
+              
+              console.log(`[BROADCAST_VIEWER:${viewerId}] Sent answer to creator`);
             } catch (error) {
               console.error(`[BROADCAST_VIEWER:${viewerId}] Error handling offer:`, error);
               setConnectionState('failed');
             }
           })
-          .on('broadcast', { event: 'ice-candidate' }, async (payload) => {
+          .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
             // Handle both new format (with viewerId) and legacy format (with sender)
-            const isLegacyFormat = payload.sender === 'creator';
-            const isNewFormat = payload.viewerId === viewerId;
+            const isLegacyFormat = payload?.sender === 'creator';
+            const isNewFormat = payload?.viewerId === viewerId;
             
             if (!isLegacyFormat && !isNewFormat) return;
             if (!peerConnection || !peerConnection.remoteDescription) return;
@@ -308,15 +346,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             }
           })
           .subscribe((status) => {
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Subscription status:`, status);
+            console.log(`[BROADCAST_VIEWER:${viewerId}] ${currentChannelAttempt} channel subscription status:`, status);
             
             // Only send request-offer after successful subscription
             if (status === 'SUBSCRIBED') {
-              console.log(`[BROADCAST_VIEWER:${viewerId}] Channel subscribed, requesting offer`);
+              console.log(`[BROADCAST_VIEWER:${viewerId}] ${currentChannelAttempt} channel subscribed, requesting offer`);
               signalChannel.send({
                 type: 'broadcast',
                 event: 'request-offer',
-                viewerId
+                payload: { viewerId }
               });
               
               // Set up offer timeout with retry logic
@@ -325,7 +363,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               }
               
               connectionTimeoutRef.current = setTimeout(() => {
-                console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] No offer received, retrying...`);
+                console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] No offer received on ${currentChannelAttempt} channel, retrying...`);
                 handleOfferRetry();
               }, 5000); // 5 second timeout for offer
             }
@@ -342,7 +380,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const handleOfferRetry = () => {
       const maxOfferRetries = 3;
       if (offerRetryCount >= maxOfferRetries) {
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached`);
+        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached on ${currentChannelAttempt} channel`);
+        
+        // Try secondary channel if available and we're still on primary
+        if (currentChannelAttempt === 'primary' && channelResolution.secondaryChannel) {
+          console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Switching to secondary channel`);
+          setCurrentChannelAttempt('secondary');
+          setOfferRetryCount(0);
+          setConnectionState('retry');
+          return;
+        }
+        
         setConnectionState('failed');
         return;
       }
@@ -350,14 +398,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       setOfferRetryCount(prev => prev + 1);
       const retryDelay = [5000, 8000, 13000][offerRetryCount] || 13000; // Exponential backoff: 5s, 8s, 13s
       
-      console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1})`);
+      console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1}) on ${currentChannelAttempt} channel`);
       
       setTimeout(() => {
         if (signalChannel) {
           signalChannel.send({
             type: 'broadcast',
             event: 'request-offer',
-            viewerId: viewerIdRef.current
+            payload: { viewerId: viewerIdRef.current }
           });
           
           // Set up timeout for next retry
@@ -419,11 +467,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       initConnection();
     }
 
-    // Cleanup when component unmounts or creatorId changes
+    // Cleanup when component unmounts or dependencies change
     return () => {
       cleanup();
     };
-  }, [creatorId, sessionId, connectionState, retryCount]);
+  }, [channelResolution, connectionState, retryCount, currentChannelAttempt]);
 
   const handleRetry = async () => {
     console.log('[BROADCAST_VIEWER] Manual retry triggered');
