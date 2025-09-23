@@ -31,7 +31,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
   // Real-time subscription for queue changes
   useEffect(() => {
-    if ((!isLive && !isDiscoverable) || !user) return
+    if (!user) return
 
     const channel = supabase
       .channel('queue-changes')
@@ -100,11 +100,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       }
       setState(prev => ({ ...prev, isConnected: false }))
     }
-  }, [isLive, isDiscoverable, user, toast, store])
+  }, [user, toast, store])
 
   // Fetch initial queue count with enhanced error recovery and proper abort handling
   useEffect(() => {
-    if ((!isLive && !isDiscoverable) || !user) return
+    if (!user) return
 
     const now = Date.now()
     const timeSinceLastFetch = now - state.lastFetchTime
@@ -203,7 +203,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         currentController = null
       }
     }
-  }, [isLive, isDiscoverable, user?.id, store])
+  }, [user?.id, store])
 
   // Debounce the queue count to prevent UI jitter
   const debouncedQueueCount = useDebounce(store.queueCount, 300)
