@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, Settings } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
-import { mediaManager, orchestrateStop } from '@/media/MediaOrchestrator'
+import { mediaManager, orchestrateStop, orchestrateInit } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
 import { useLive } from '@/hooks/live'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -26,7 +26,8 @@ interface PreCallLobbyProps {
 export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
-  const [isInitializing, setIsInitializing] = useState(true)
+  const [isInitializing, setIsInitializing] = useState(false)
+  const [previewStarted, setPreviewStarted] = useState(false)
   const [rulesConfirmed, setRulesConfirmed] = useState(false)
   const [audioLevel, setAudioLevel] = useState(0)
   const [networkStatus, setNetworkStatus] = useState<'checking' | 'ok' | 'degraded'>('checking')
@@ -84,21 +85,31 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
     };
   }, [cleanupMedia]);
 
-  // Set not initializing once media is available  
-  useEffect(() => {
-    const checkMediaReady = () => {
-      setIsInitializing(!mediaManager.hasLocalStream())
+  // Handle preview start
+  const startPreview = useCallback(async () => {
+    if (previewStarted) return
+    
+    setIsInitializing(true)
+    setPreviewStarted(true)
+    
+    try {
+      await orchestrateInit({
+        targetState: 'SESSION_PREP',
+        previewOnly: true,
+        video: true,
+        audio: true
+      })
+      setIsInitializing(false)
+    } catch (error) {
+      console.error('[PreCallLobby] Failed to start preview:', error)
+      setIsInitializing(false)
+      setPreviewStarted(false)
     }
-    
-    checkMediaReady()
-    const interval = setInterval(checkMediaReady, 500)
-    
-    return () => clearInterval(interval)
-  }, [])
+  }, [previewStarted])
 
   // Audio level monitoring
   useEffect(() => {
-    if (!isMicEnabled || isInitializing) return
+    if (!isMicEnabled || !mediaManager.hasLocalStream()) return
 
     const setupAudioAnalysis = () => {
       const stream = mediaManager.getLocalStream()
@@ -147,14 +158,14 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
       }
       analyserRef.current = null
     }
-  }, [isMicEnabled, isInitializing])
+  }, [isMicEnabled, previewStarted])
 
   // Network status monitoring
   useEffect(() => {
-    if (!isInitializing && mediaManager.getLocalStream()) {
+    if (mediaManager.hasLocalStream()) {
       setNetworkStatus('ok')
     }
-  }, [isInitializing])
+  }, [previewStarted])
 
   // Handle video toggle
   const toggleVideo = async () => {
@@ -281,28 +292,31 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
       {/* Preflight Status Bar */}
       <div className="flex-shrink-0 bg-background border-b">
-        <div className="p-3 flex items-center justify-center">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {isInitializing && (
-              <>
-                <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
-                <span>Requesting camera & mic…</span>
-              </>
-            )}
-            {!isInitializing && mediaManager.hasLocalStream() && (
-              <>
-                <div className="flex items-center gap-1">
-                  <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span>Ready</span>
-                </div>
-                <div className="flex items-center gap-1 ml-4">
-                  <Wifi className="h-3 w-3" />
-                  <span className="capitalize">{networkStatus}</span>
-                </div>
-              </>
-            )}
+          <div className="p-3 flex items-center justify-center">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              {isInitializing && previewStarted && (
+                <>
+                  <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
+                  <span>Requesting camera & mic…</span>
+                </>
+              )}
+              {!isInitializing && mediaManager.hasLocalStream() && (
+                <>
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span>Ready</span>
+                  </div>
+                  <div className="flex items-center gap-1 ml-4">
+                    <Wifi className="h-3 w-3" />
+                    <span className="capitalize">{networkStatus}</span>
+                  </div>
+                </>
+              )}
+              {!previewStarted && (
+                <span>Click "Start Preview" to begin</span>
+              )}
+            </div>
           </div>
-        </div>
       </div>
 
       {/* Camera Preview Tiles */}
@@ -313,7 +327,21 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
             <div className="flex-1 flex flex-col">
               <h2 className="text-sm font-medium mb-2">Your Preview</h2>
               <Card className="flex-1 min-h-[300px] overflow-hidden relative">
-                <MediaPreview className="w-full h-full" />
+                {previewStarted ? (
+                  <MediaPreview className="w-full h-full" />
+                ) : (
+                  <div className="w-full h-full bg-muted/50 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-3">
+                        <Video className="h-6 w-6" />
+                      </div>
+                      <Button onClick={startPreview} variant="default" className="mb-2">
+                        Start Preview
+                      </Button>
+                      <p className="text-sm text-muted-foreground">Click to request camera access</p>
+                    </div>
+                  </div>
+                )}
               </Card>
               
               {/* Camera Controls */}
@@ -333,7 +361,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
                   size="lg"
                   variant={isVideoEnabled ? "default" : "destructive"}
                   onClick={toggleVideo}
-                  disabled={isInitializing}
+                  disabled={!previewStarted || isInitializing}
                   aria-pressed={isVideoEnabled}
                   aria-label={isVideoEnabled ? "Turn off camera" : "Turn on camera"}
                   className="h-12 w-12 rounded-full p-0"
