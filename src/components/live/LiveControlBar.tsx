@@ -23,16 +23,35 @@ const LiveControlBarContent: React.FC = () => {
 
   const live = useLive();
   
-  // Safely access live store values
+  // Safely access live store values with debugging
   const isLive = live?.isLive || false;
   const isDiscoverable = live?.isDiscoverable || false;
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
+
+  // Add custom event listener for queue count updates to force re-render
+  useEffect(() => {
+    const handleQueueUpdate = (event: CustomEvent) => {
+      console.log('[LiveControlBar] Custom queue event received:', event.detail);
+      // Force component re-render by updating a state value
+      setCurrentTime(Date.now());
+    };
+
+    window.addEventListener('queue-count-updated', handleQueueUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('queue-count-updated', handleQueueUpdate as EventListener);
+    };
+  }, []);
+
+  // Force re-render key based on queueCount to ensure visual updates
+  const renderKey = useMemo(() => `queue-${queueCount}`, [queueCount]);
   
   // Compute discoverable posture using same predicate as store
   const isInDiscoverablePosture = state === 'DISCOVERABLE' || state === 'SESSION_PREP' || state === 'SESSION_JOINING';
 
   const handleQueueClick = useCallback(() => {
+    console.log('[LiveControlBar] Queue button clicked, count:', queueCount);
     if (queueCount > 0) {
       setShowQueueDrawer(true);
     }
@@ -217,17 +236,19 @@ const LiveControlBarContent: React.FC = () => {
         >
           {/* Left - Queue button */}
           <Button
+            key={renderKey}
             variant="ghost"
             size="sm"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
             className={cn(
               "flex items-center gap-2 px-3 py-2 h-auto text-white justify-self-start",
-              "disabled:opacity-50"
+              "disabled:opacity-50",
+              "transition-all duration-200"
             )}
           >
             <Users size={16} />
-            <span className="text-sm font-medium">{queueCount}</span>
+            <span key={`count-${queueCount}`} className="text-sm font-medium tabular-nums">{queueCount}</span>
           </Button>
 
           {/* Center - Live Status */}

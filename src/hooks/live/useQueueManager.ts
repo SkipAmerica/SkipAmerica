@@ -54,8 +54,14 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
-          console.log('[QueueManager] Updated queue count immediately:', currentCount)
+          console.log('[QueueManager] Person joined - Updated queue count immediately:', currentCount)
           store.updateQueueCount(currentCount)
+          
+          // Force immediate visual update by dispatching a custom event
+          window.dispatchEvent(new CustomEvent('queue-count-updated', { 
+            detail: { count: currentCount, type: 'join' }
+          }))
+          
           store.triggerHaptic()
           
           setState(prev => ({ ...prev, error: undefined, isConnected: true }))
@@ -89,8 +95,14 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
-          console.log('[QueueManager] Updated queue count immediately:', currentCount)
+          console.log('[QueueManager] Person left - Updated queue count immediately:', currentCount)
           store.updateQueueCount(currentCount)
+          
+          // Force immediate visual update by dispatching a custom event
+          window.dispatchEvent(new CustomEvent('queue-count-updated', { 
+            detail: { count: currentCount, type: 'leave' }
+          }))
+          
           setState(prev => ({ ...prev, error: undefined, isConnected: true }))
         }
       )
@@ -166,7 +178,15 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         }
 
         // Success - reset retry count and update state
-        store.updateQueueCount(count || 0)
+        const currentCount = count || 0
+        console.log('[QueueManager] Fetched initial count from DB:', currentCount)
+        store.updateQueueCount(currentCount)
+        
+        // Force immediate visual update
+        window.dispatchEvent(new CustomEvent('queue-count-updated', { 
+          detail: { count: currentCount, type: 'initial' }
+        }))
+        
         setState(prev => ({ 
           ...prev, 
           error: undefined, 
