@@ -19,8 +19,8 @@ interface Creator {
   full_name: string;
   bio?: string;
   avatar_url?: string;
-  categories?: string[];
-  verification_status?: string;
+  category?: string;
+  rating?: number;
 }
 
 interface LiveSession {
@@ -51,10 +51,10 @@ export default function JoinQueue() {
 
       try {
         const { data, error } = await supabase
-          .from('creators')
+          .from('mock_creators')
           .select('*')
           .eq('id', creatorId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           toast({
@@ -282,18 +282,16 @@ export default function JoinQueue() {
                 <p className="text-muted-foreground">{creator.bio}</p>
                 <div className="flex items-center gap-2 mt-2">
                   {getStatusBadge()}
-                  {creator.verification_status === 'verified' && (
-                    <Badge variant="outline">✓ Verified</Badge>
+                  {creator.rating && (
+                    <Badge variant="outline">⭐ {creator.rating}</Badge>
                   )}
                 </div>
               </div>
             </div>
 
-            {creator.categories && creator.categories.length > 0 && (
+            {creator.category && (
               <div className="flex flex-wrap gap-2">
-                {creator.categories.map((category, index) => (
-                  <Badge key={index} variant="outline">{category}</Badge>
-                ))}
+                <Badge variant="outline">{creator.category}</Badge>
               </div>
             )}
           </CardContent>
