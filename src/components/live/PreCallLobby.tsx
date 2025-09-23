@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight, Settings } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, AlertCircle, ChevronDown, ChevronRight, Settings, Camera, CameraOff } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateInit, orchestrateStop, routeMediaError } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
@@ -28,6 +28,13 @@ interface PreCallLobbyProps {
 }
 
 export function PreCallLobby({ onBack }: PreCallLobbyProps) {
+  // NEW: gate media init behind an explicit user gesture
+  const [previewRequested, setPreviewRequested] = useState(false);
+  const [phase, setPhase] = useState<"idle"|"initializing"|"ready"|"error">("idle");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(true)
@@ -35,8 +42,6 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const [audioLevel, setAudioLevel] = useState(0)
   const [networkStatus, setNetworkStatus] = useState<'checking' | 'ok' | 'degraded'>('checking')
   
-  // Preflight state machine
-  const [phase, setPhase] = useState<PreflightPhase>('idle')
   const [error, setError] = useState<{code: string; message: string; hint?: string} | null>(null)
   const [showErrorDetails, setShowErrorDetails] = useState(false)
   const [isAudioOnlyMode, setIsAudioOnlyMode] = useState(false)
@@ -73,14 +78,61 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setEditableList(editableList.filter(item => item.id !== itemId))
   }
 
-  // Media initialization using MediaOrchestrator
-  const cleanupMedia = async () => {
+  // Ensure any previous tracks are closed before (re)starting
+  const cleanupMedia = useCallback(async () => {
+    const s = localStreamRef.current;
+    if (s) {
+      s.getTracks().forEach(t => t.stop());
+      localStreamRef.current = null;
+    }
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = null;
+    }
+    
+    // Also cleanup orchestrator media
     try {
       await orchestrateStop('precall_cleanup')
     } catch (error) {
       console.warn('[PreCallLobby] Failed to cleanup media:', error)
     }
-  }
+  }, [])
+
+  // Basic local preview init for explicit user gesture
+  const initLocalPreview = useCallback(async () => {
+    setPhase("initializing");
+    setErrorMsg(null);
+    try {
+      // Basic, safe constraints (adjust to your defaults)
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+      });
+      cleanupMedia();
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        await localVideoRef.current.play().catch(() => {});
+      }
+      setPhase("ready");
+    } catch (e: any) {
+      const name = e?.name || "";
+      if (name === "NotAllowedError" || name === "SecurityError") {
+        setErrorMsg("Camera/Microphone permission denied. Please enable and try again.");
+      } else if (name === "NotReadableError") {
+        setErrorMsg("Camera or microphone appears to be in use by another app. Close it and try again.");
+      } else {
+        setErrorMsg("Could not start preview. Please try again.");
+      }
+      setPhase("error");
+    }
+  }, [cleanupMedia]);
+
+  // The only way to start preview now: explicit click
+  const startPreview = useCallback(async () => {
+    if (previewRequested) return;
+    setPreviewRequested(true);
+    await initLocalPreview();
+  }, [previewRequested, initLocalPreview]);
 
   // Analytics tracking (non-PII)
   const trackEvent = (eventName: string, properties?: Record<string, any>) => {
@@ -88,168 +140,14 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     console.log(`[Analytics] ${eventName}`, properties)
   }
 
-  async function initMedia() {
-    setError(null)
-    setPhase('initializing-media')
-    setIsAudioOnlyMode(false)
-    
-    try {
-      // Enumerate devices first
-      const devices = await navigator.mediaDevices.enumerateDevices()
-      const audioDevices = devices.filter(d => d.kind === 'audioinput' && d.deviceId)
-      const videoDevices = devices.filter(d => d.kind === 'videoinput' && d.deviceId)
-      
-      setAvailableDevices({audio: audioDevices, video: videoDevices})
-      
-      // Set default selected devices if not already set
-      if (!selectedAudioDevice && audioDevices.length > 0) {
-        setSelectedAudioDevice(audioDevices[0].deviceId)
-      }
-      if (!selectedVideoDevice && videoDevices.length > 0) {
-        setSelectedVideoDevice(videoDevices[0].deviceId)
-      }
-
-      let stream: MediaStream | null = null
-      
-      // First attempt: Use preferred constraints
-      const audioConstraints = audioDevices.length > 0 ? { 
-        deviceId: selectedAudioDevice || audioDevices[0]?.deviceId,
-        echoCancellation: true, 
-        noiseSuppression: true, 
-        autoGainControl: true 
-      } : true
-      
-      const videoConstraints = videoDevices.length > 0 && isVideoEnabled ? { 
-        deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
-        facingMode: 'user', 
-        width: { ideal: 1280 }, 
-        height: { ideal: 720 } 
-      } : isVideoEnabled
-
-      try {
-        stream = await orchestrateInit({
-          targetState: 'SESSION_PREP',
-          previewOnly: true,
-          audio: isMicEnabled ? audioConstraints : false,
-          video: videoConstraints
-        })
-      } catch (error) {
-        console.warn('[PreCallLobby] Primary attempt failed, trying fallbacks:', error)
-        
-        // Fallback 1: Remove facingMode if it was causing issues
-        if (isVideoEnabled && videoConstraints && typeof videoConstraints === 'object' && 'facingMode' in videoConstraints) {
-          try {
-            const fallbackVideoConstraints = {
-              deviceId: selectedVideoDevice || videoDevices[0]?.deviceId,
-              width: { ideal: 1280 }, 
-              height: { ideal: 720 }
-            }
-            
-            stream = await orchestrateInit({
-              targetState: 'SESSION_PREP',
-              previewOnly: true,
-              audio: isMicEnabled ? audioConstraints : false,
-              video: fallbackVideoConstraints
-            })
-          } catch (fallbackError) {
-            console.warn('[PreCallLobby] Fallback 1 failed, trying basic video:', fallbackError)
-            
-            // Fallback 2: Use basic video constraints
-            try {
-              stream = await orchestrateInit({
-                targetState: 'SESSION_PREP',
-                previewOnly: true,
-                audio: isMicEnabled ? audioConstraints : false,
-                video: isVideoEnabled
-              })
-            } catch (basicError) {
-              console.warn('[PreCallLobby] Basic video failed, trying audio-only:', basicError)
-              
-              // Fallback 3: Audio-only if video completely fails
-              if (isMicEnabled) {
-                stream = await orchestrateInit({
-                  targetState: 'SESSION_PREP',
-                  previewOnly: true,
-                  audio: audioConstraints,
-                  video: false
-                })
-                setIsAudioOnlyMode(true)
-                setIsVideoEnabled(false)
-              } else {
-                throw basicError
-              }
-            }
-          }
-        } else {
-          throw error
-        }
-      }
-
-      if (stream) {
-        // Track successful initialization
-        const hasAudio = stream.getAudioTracks().length > 0
-        const hasVideo = stream.getVideoTracks().length > 0
-        trackEvent('creator_precall_media_initialized', { 
-          audio: hasAudio, 
-          video: hasVideo,
-          audioOnly: isAudioOnlyMode 
-        })
-        
-        setPhase('ready')
-      }
-    } catch (e: any) {
-      const { code, name, message } = e || {}
-      
-      // Track media error
-      trackEvent('creator_precall_media_error', { 
-        code: code || name, 
-        name: name || 'UNKNOWN', 
-        message 
-      })
-      
-      // Handle errors with MediaOrchestrator error routing
-      routeMediaError(e)
-      
-      // Map to local error state for UI
-      if (code === 'PERMISSION_DENIED' || name === 'NotAllowedError') {
-        trackEvent('creator_precall_permissions_denied', { code: name })
-        setError({ 
-          code: 'PERMISSION_DENIED', 
-          message: 'Permission needed', 
-          hint: 'Enable camera & mic in Settings > Privacy.' 
-        })
-      } else if (code === 'DEVICE_NOT_FOUND' || name === 'NotFoundError') {
-        setError({ 
-          code: 'DEVICE_UNAVAILABLE', 
-          message: 'No devices found', 
-          hint: 'Try switching devices or reconnecting your camera.' 
-        })
-      } else if (code === 'HARDWARE_ERROR' || name === 'NotReadableError') {
-        setError({ 
-          code: 'DEVICE_IN_USE', 
-          message: 'Camera/Mic busy', 
-          hint: 'Close other apps using your camera or microphone, then try again.' 
-        })
-      } else {
-        setError({ 
-          code: 'UNKNOWN', 
-          message: 'Couldn\'t start preview', 
-          hint: 'Try switching devices or reconnecting your camera.' 
-        })
-      }
-      setPhase('error')
-    }
-  }
-
-  // Add/remove dimming class on mount/unmount
+  // Clean up tracks when leaving the lobby (or when re-trying)
   useEffect(() => {
-    document.documentElement.classList.add('precall-open')
     return () => {
-      document.documentElement.classList.remove('precall-open')
-      cleanupMedia().catch(console.warn)
-    }
-  }, [])
+      cleanupMedia().catch(console.warn);
+    };
+  }, [cleanupMedia]);
 
+  // IMPORTANT: Disable any previous auto-init on mount.
   // Initialize on component mount - wait for user gesture
   useEffect(() => {
     // Start in idle phase for all browsers - only initialize after user clicks "Start Preview"
@@ -259,7 +157,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Attach stream to video element (simplified - no polling)
   useEffect(() => {
     // Only set isInitializing to false when phase changes
-    setIsInitializing(phase !== 'initializing-media' && phase !== 'requesting-permissions')
+    setIsInitializing(phase !== 'initializing')
   }, [phase])
 
   // Audio level monitoring
@@ -333,7 +231,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
       
       // Only restart if we're in ready state
       if (phase === 'ready') {
-        await initMedia()
+        await startPreview()
       }
     } catch (error) {
       console.error('[PreCallLobby] Failed to toggle video:', error)
@@ -402,14 +300,14 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
     setSelectedAudioDevice(deviceId)
     trackEvent('creator_precall_device_switched', { audioId: deviceId })
     await cleanupMedia()
-    await initMedia()
+    await startPreview()
   }
 
   const handleVideoDeviceChange = async (deviceId: string) => {
     setSelectedVideoDevice(deviceId)
     trackEvent('creator_precall_device_switched', { videoId: deviceId })
     await cleanupMedia()
-    await initMedia()
+    await startPreview()
   }
 
   // Enter Call availability logic
@@ -422,7 +320,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
   const getCallButtonText = () => {
     if (!canEnterCall()) {
       if (phase === 'error') return 'Fix issues to continue'
-      if (phase === 'requesting-permissions' || phase === 'initializing-media') return 'Preparing...'
+      if (phase === 'initializing') return 'Preparing...'
       return 'No inputs available'
     }
     return 'Enter Call'
@@ -430,17 +328,17 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   const retryPreflight = async () => {
     trackEvent('creator_precall_retry_clicked')
-    setPhase('requesting-permissions')
+    setPreviewRequested(false);
+    setPhase('idle')
     setError(null)
     setShowErrorDetails(false)
     await cleanupMedia()
-    await initMedia()
+    await startPreview()
   }
 
   const startPreviewWithGesture = () => {
-    setPhase('requesting-permissions')
     trackEvent('creator_precall_permissions_requested')
-    initMedia()
+    startPreview()
   }
 
   return (
@@ -523,7 +421,7 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                             onClick={() => {
                               setShowDeviceHelper(false)
                               cleanupMedia()
-                              initMedia()
+                              startPreview()
                             }}
                             className="w-full text-xs"
                           >
@@ -560,13 +458,13 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
         ) : (
           <div className="p-3 flex items-center justify-center">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              {phase === 'requesting-permissions' && (
+              {phase === 'initializing' && (
                 <>
                   <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
                   <span>Requesting camera & mic…</span>
                 </>
               )}
-              {phase === 'initializing-media' && (
+              {phase === 'initializing' && (
                 <>
                   <div className="animate-spin rounded-full h-3 w-3 border-b border-primary"></div>
                   <span>Starting preview…</span>
@@ -624,25 +522,64 @@ export function PreCallLobby({ onBack }: PreCallLobbyProps) {
                 )}
               </div>
               <Card className="flex-1 min-h-[200px] overflow-hidden relative">
-                {isVideoEnabled && !isInitializing && !isAudioOnlyMode ? (
-                  <MediaPreview 
+                {/* Show manual start button if preview not requested */}
+                {!previewRequested && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted z-10">
+                    <div className="text-center">
+                      <Button
+                        onClick={startPreview}
+                        size="lg"
+                        className="mb-2"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Start Preview
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        Click to enable camera and microphone
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error state */}
+                {phase === 'error' && previewRequested && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-destructive/10 z-10">
+                    <div className="text-center p-4">
+                      <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+                      <p className="text-sm text-destructive mb-2">{errorMsg}</p>
+                      <Button
+                        onClick={startPreview}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Video preview or fallback */}
+                {previewRequested && phase === 'ready' && localStreamRef.current ? (
+                  <video
+                    ref={localVideoRef}
+                    playsInline
+                    muted
                     className="w-full h-full object-cover"
-                    muted={true}
-                    autoPlay={true}
+                    aria-label="Your camera preview"
                   />
                 ) : (
                   <div className="w-full h-full bg-muted flex items-center justify-center">
                     <div className="text-center text-muted-foreground">
-                      {isInitializing ? (
+                      {phase === 'initializing' && previewRequested ? (
                         <div className="space-y-2">
                           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                          <p className="text-sm">Initializing camera...</p>
+                          <p className="text-sm">Starting preview...</p>
                         </div>
-                      ) : isAudioOnlyMode ? (
+                      ) : !previewRequested ? (
                         <div className="space-y-2">
-                          <Mic className="h-12 w-12 mx-auto" />
-                          <p className="text-sm">Audio-only mode</p>
-                          <p className="text-xs opacity-80">Camera unavailable</p>
+                          <CameraOff className="h-12 w-12 mx-auto" />
+                          <p className="text-sm">Preview ready</p>
+                          <p className="text-xs opacity-80">Click "Start Preview" to begin</p>
                         </div>
                       ) : (
                         <div className="space-y-2">
