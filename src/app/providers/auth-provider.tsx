@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<{ error: any }>
   resetPassword: (email: string) => Promise<{ error: any }>
   resendConfirmation: (email: string) => Promise<{ error: any }>
+  signInAnonymously: () => Promise<{ error: any }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -113,6 +114,46 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { error }
   }
 
+  const signInAnonymously = async () => {
+    try {
+      // Generate unique anonymous credentials
+      const timestamp = Date.now()
+      const random = Math.random().toString(36).substring(2, 8)
+      const email = `guest-${timestamp}-${random}@temp.local`
+      const password = `temp-${timestamp}-${random}`
+
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: 'Anonymous Guest',
+            account_type: 'fan',
+          },
+        },
+      })
+
+      if (error) {
+        // If email already exists (rare), try again with new timestamp
+        if (error.message.includes('already registered')) {
+          return await signInAnonymously()
+        }
+        return { error }
+      }
+
+      // Auto sign in the anonymous user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      return { error: signInError }
+    } catch (error) {
+      return { error }
+    }
+  }
+
   const value: AuthContextType = {
     user,
     session,
@@ -122,6 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     signOut,
     resetPassword,
     resendConfirmation,
+    signInAnonymously,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

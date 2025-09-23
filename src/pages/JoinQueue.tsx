@@ -32,7 +32,7 @@ interface LiveSession {
 export default function JoinQueue() {
   const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signInAnonymously } = useAuth();
   const { toast } = useToast();
 
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -43,6 +43,33 @@ export default function JoinQueue() {
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
   const [queueCount, setQueueCount] = useState(0);
+  const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
+  const [autoLoginLoading, setAutoLoginLoading] = useState(false);
+
+  // Auto-login anonymous user if not authenticated
+  useEffect(() => {
+    if (authLoading || autoLoginAttempted) return;
+
+    if (!user) {
+      setAutoLoginAttempted(true);
+      setAutoLoginLoading(true);
+      
+      signInAnonymously()
+        .then(({ error }) => {
+          if (error) {
+            console.error('Auto-login failed:', error);
+            toast({
+              title: "Connection Error",
+              description: "Unable to connect to the service. Please refresh and try again.",
+              variant: "destructive",
+            });
+          }
+        })
+        .finally(() => {
+          setAutoLoginLoading(false);
+        });
+    }
+  }, [user, authLoading, autoLoginAttempted, signInAnonymously, toast]);
 
   // Fetch creator info
   useEffect(() => {
@@ -164,12 +191,7 @@ export default function JoinQueue() {
   }, [creatorId, user]);
 
   const handleJoinQueue = async () => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    if (!creatorId) return;
+    if (!user || !creatorId) return;
 
     setJoining(true);
     try {
@@ -239,10 +261,15 @@ export default function JoinQueue() {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || autoLoginLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner />
+        <div className="text-center space-y-4">
+          <LoadingSpinner />
+          <p className="text-muted-foreground">
+            {autoLoginLoading ? 'Setting up your session...' : 'Loading creator information...'}
+          </p>
+        </div>
       </div>
     );
   }
@@ -338,7 +365,7 @@ export default function JoinQueue() {
                   
                   <Button
                     onClick={handleJoinQueue}
-                    disabled={joining}
+                    disabled={joining || !user}
                     className="w-full"
                     size="lg"
                   >
@@ -347,7 +374,7 @@ export default function JoinQueue() {
                   
                   {!user && (
                     <p className="text-sm text-muted-foreground text-center">
-                      You'll need to sign in to join the queue
+                      Setting up your connection...
                     </p>
                   )}
                 </div>
