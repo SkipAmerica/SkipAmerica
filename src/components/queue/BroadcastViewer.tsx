@@ -10,6 +10,7 @@ import { isQueueFallbackEnabled } from '@/lib/env';
 import { isDebug } from '@/lib/debugFlag';
 import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
+import DebugHUD from '@/components/dev/DebugHUD';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -35,6 +36,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   if (!queueId) {
     return <div className="p-4 text-red-500">No queue ID provided</div>;
   }
+
+  // Debug flag from URL params
+  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const DEBUG = params.get('debug') === '1';
 
   // Create a single persistent remote MediaStream and never replace it
   const remoteMsRef = useRef<MediaStream>(new MediaStream());
@@ -68,6 +73,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const closedStrikesRef = useRef(0);
   const fallbackChannelRef = useRef<any | null>(null);
   // allowTeardownRef removed - using global guard now
+  
+  // Debug counters and state
+  const offerRequestCountRef = useRef(0);
+  const offersReceivedRef = useRef(0);
+  const answersSentRef = useRef(0);
+  const iceRxCountRef = useRef(0);
+  const [lastChannelStatus, setLastChannelStatus] = useState<string>('—');
 
   // ICE server configuration for peer connections
   const iceConfig = {
@@ -495,6 +507,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         const t = setTimeout(() => resolve('TIMED_OUT'), 8000);
         channelToSetup.subscribe((status) => {
           console.log('[VIEWER', viewerIdRef.current, '] channel status=', status, 'on', channelName);
+          setLastChannelStatus(status); // Update debug state
           
           if (status === 'CLOSED' && !isFallback) {
             closedStrikesRef.current++;
@@ -539,6 +552,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const requestOfferWithRetries = async (ch: any, max = 3) => {
       for (let i = 1; i <= max; i++) {
         ch.send({ type: 'broadcast', event: 'request-offer', payload: { viewerId: viewerIdRef.current } });
+        offerRequestCountRef.current++; // Debug counter
         console.log('[VIEWER', viewerIdRef.current, `] REQUEST-OFFER TX (#${i})`);
         
         const gotOffer = await waitForOfferOrDelay(5000);
@@ -580,6 +594,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const { viewerId: vid, sdp } = p;
           if (vid !== viewerIdRef.current || !sdp) return;
           
+          offersReceivedRef.current++; // Debug counter
+          
           // Signal that we got an offer
           if (offerPromiseRef.current) {
             offerPromiseRef.current.resolve();
@@ -607,6 +623,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             event: 'answer',
             payload: { viewerId: viewerIdRef.current, sdp: answer.sdp }
           });
+          answersSentRef.current++; // Debug counter
           console.log('[VIEWER', viewerIdRef.current, '] ANSWER TX len=', answer.sdp.length);
         })
         .on('broadcast', { event: 'ice-candidate' }, async (e: any) => {
@@ -614,6 +631,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const { viewerId: vid, candidate } = p;
           if (vid !== viewerIdRef.current || !candidate) return;
           
+          iceRxCountRef.current++; // Debug counter
           const pc = ensureOpenPc();
           try { 
             await pc.addIceCandidate(candidate); 
@@ -1035,6 +1053,34 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         <div className="w-full h-full flex items-center justify-center">
           {renderConnectionState()}
         </div>
+      )}
+
+      {DEBUG && (
+        <DebugHUD
+          title="PQ Viewer"
+          rows={[
+            ['Viewer ID', viewerIdRef.current],
+            ['Channel', channelRef.current?.topic || '—'],
+            ['Ch Status', lastChannelStatus],
+            ['PC State', pcRef.current?.connectionState || '—'],
+            ['ICE State', pcRef.current?.iceConnectionState || '—'],
+            ['Signal', pcRef.current?.signalingState || '—'],
+            ['Tracks', String((() => {
+              try {
+                const ms = remoteMsRef.current as MediaStream;
+                return ms ? ms.getTracks().length : 0;
+              } catch { return 0; }
+            })())],
+            ['Video Ready', String(!!videoRef.current && videoRef.current.readyState)],
+            ['Paused', String(!!videoRef.current?.paused)],
+          ]}
+          bottomLeft={[
+            ['Requests', `offerReq# ${offerRequestCountRef.current}`],
+            ['Offers Rx', `offers# ${offersReceivedRef.current}`],
+            ['Answers Tx', `answers# ${answersSentRef.current}`],
+            ['ICE Rx', `cands# ${iceRxCountRef.current}`],
+          ]}
+        />
       )}
 
     </div>
