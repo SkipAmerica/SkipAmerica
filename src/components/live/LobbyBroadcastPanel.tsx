@@ -266,26 +266,31 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       return msg?.viewerId ?? msg?.payload?.viewerId ?? msg?.data?.viewerId ?? msg?.record?.viewerId ?? null;
     }
 
+    // Helper function to extract viewerId from various payload shapes
+    function extractViewerId(m: any) {
+      return m?.payload?.viewerId ?? m?.viewerId ?? m?.data?.viewerId ?? m?.record?.viewerId ?? null;
+    }
+
     // Set up signaling channel with handlers
     const channel = supabase.channel(canonicalChannel)
       .on('system', { event: 'phx_reply' }, (m) => 
         console.log('[CREATOR] system phx_reply:', m))
-      .on('broadcast', { event: 'request-offer' }, async (msg: any) => {
-        const viewerId = getViewerId(msg);
-        console.log('[CREATOR] request-offer received', {viewerId, raw: msg});
+      .on('broadcast', { event: 'request-offer' }, async (m: any) => {
+        const viewerId = extractViewerId(m);
+        console.log('[CREATOR] request-offer received', { viewerId, m });
         if (!viewerId) return;
         
         waitingViewersRef.current.add(viewerId);
         await issueOffer(viewerId);
       })
-      .on('broadcast', { event: 'ping' }, (msg: any) => {
-        const viewerId = getViewerId(msg);
+      .on('broadcast', { event: 'ping' }, (m: any) => {
+        const viewerId = extractViewerId(m);
         if (!viewerId) return;
         console.log('[CREATOR] ping received from viewer', viewerId);
         signalingChannelRef.current?.send({ 
           type: 'broadcast', 
           event: 'pong', 
-          payload: { viewerId } 
+          payload: { viewerId, ts: Date.now() } 
         });
       })
       .on('broadcast', { event: 'answer' }, async ({ payload }) => {
@@ -320,10 +325,12 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
     console.log('[CREATOR] signaling topic=', canonicalChannel);
 
+    console.log('[CREATOR] signaling topic=', canonicalChannel);
+
     // Subscribe and wait for SUBSCRIBED status
     return new Promise((resolve, reject) => {
       channel.subscribe((status) => {
-        console.log('[CREATOR] channel status:', status);
+        console.log('[CREATOR] channel status:', status, 'topic=', channel.topic);
         
         if (status === 'SUBSCRIBED') {
           signalingChannelRef.current = channel;
@@ -421,7 +428,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       if (signalingChannelRef.current) {
         signalingChannelRef.current.send({
           type: 'broadcast',
-          event: 'announce-live'
+          event: 'announce-live',
+          payload: { ts: Date.now() }
         });
         
         // Start the nudge loop immediately if we have waiting viewers

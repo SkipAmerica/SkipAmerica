@@ -99,23 +99,30 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const pongCountRef = useRef(0);
   const [lastChannelStatus, setLastChannelStatus] = useState<string>('—');
 
-  // send REQUEST-OFFER in *both* shapes to be compatible
+  // Normalize our broadcast send to the canonical shape everywhere
   function sendRequestOffer(reason: string) {
     const payload = { viewerId: viewerIdRef.current, reason, ts: Date.now() };
-    channelRef.current?.send({ type: 'broadcast', event: 'request-offer', ...payload });
-    channelRef.current?.send({ type: 'broadcast', event: 'request-offer', payload }); // nested too
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'request-offer',
+      payload: payload
+    });
     offerRequestCountRef.current = (offerRequestCountRef.current ?? 0) + 1;
   }
 
   // ping/pong instrumentation
   function sendPing() {
     const payload = { viewerId: viewerIdRef.current, ts: Date.now() };
-    channelRef.current?.send({ type: 'broadcast', event: 'ping', ...payload });
-    channelRef.current?.send({ type: 'broadcast', event: 'ping', payload }); // nested too
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'ping',
+      payload: payload
+    });
   }
 
   // Offer burst functionality
   const offerBurstRef = useRef<{timer?: any, count: number}>({ count: 0 });
+  const slowRetryRef = useRef<any>(null);
 
   function startOfferBurst(reason: string) {
     if (!channelRef.current) return;
@@ -128,17 +135,33 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         clearInterval(offerBurstRef.current.timer);
         return;
       }
-      offerRequestCountRef.current = (offerRequestCountRef.current ?? 0) + 1;
-      channelRef.current?.send({
-        type: 'broadcast',
-        event: 'request-offer',
-        payload: { viewerId: viewerIdRef.current, reason }
-      });
+      sendRequestOffer(reason);
+      sendPing();
       offerBurstRef.current.count++;
       if (offerBurstRef.current.count >= 8) { // stop after ~8s
         clearInterval(offerBurstRef.current.timer);
+        // After the burst ends, if we got no offers, start slow retry
+        if ((offersReceivedRef.current ?? 0) === 0 && (pcRef.current?.connectionState === 'closed' || pcRef.current?.connectionState === 'failed' || !pcRef.current)) {
+          startSlowRetry('post-burst');
+        }
       }
     }, 1000);
+  }
+
+  function startSlowRetry(reason: string) {
+    if (slowRetryRef.current) return;
+    slowRetryRef.current = setInterval(() => {
+      if ((offersReceivedRef.current ?? 0) > 0 || pcRef.current?.connectionState === 'connected') {
+        clearInterval(slowRetryRef.current); 
+        slowRetryRef.current = null; 
+        return;
+      }
+      channelRef.current?.send({
+        type: 'broadcast', 
+        event: 'request-offer',
+        payload: { viewerId: viewerIdRef.current, reason, ts: Date.now() }
+      });
+    }, 5000);
   }
 
   // ICE server configuration for peer connections
@@ -596,7 +619,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     // Request offer with retries without tearing down channel
     const requestOfferWithRetries = async (ch: any, max = 3) => {
       for (let i = 1; i <= max; i++) {
-        ch.send({ type: 'broadcast', event: 'request-offer', payload: { viewerId: viewerIdRef.current } });
+        ch.send({ 
+          type: 'broadcast', 
+          event: 'request-offer', 
+          payload: { viewerId: viewerIdRef.current, ts: Date.now() } 
+        });
         offerRequestCountRef.current++; // Debug counter
         console.log('[VIEWER', viewerIdRef.current, `] REQUEST-OFFER TX (#${i})`);
         
@@ -639,9 +666,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const { viewerId: vid, sdp } = p;
           if (vid !== viewerIdRef.current || !sdp) return;
           
-          // Stop the burst when we receive an offer
+          // Stop the burst and slow retry when we receive an offer
           if (offerBurstRef.current?.timer) {
             clearInterval(offerBurstRef.current.timer);
+          }
+          if (slowRetryRef.current) {
+            clearInterval(slowRetryRef.current);
+            slowRetryRef.current = null;
           }
           
           console.log('[VIEWER] Received offer, processing...');
@@ -705,6 +736,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         })
         .on('broadcast', { event: 'announce-live' }, () => {
           console.log('[VIEWER] Received announce-live, starting offer burst');
+          // Stop slow retry if running and start fast burst
+          if (slowRetryRef.current) {
+            clearInterval(slowRetryRef.current);
+            slowRetryRef.current = null;
+          }
           startOfferBurst('announce-live');
         })
         .on('broadcast', { event: 'offer-retry' }, ({ payload }) => {
@@ -721,7 +757,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         })
         .on('broadcast', { event: 'pong' }, () => { 
           pongCountRef.current++; 
-          console.log('[VIEWER] Received pong, count:', pongCountRef.current);
         })
         .on('broadcast', { event: 'creator-offline' }, (e: any) => {
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
