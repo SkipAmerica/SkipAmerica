@@ -528,6 +528,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       if (video) {
         video.srcObject = null;
       }
+      
+      // Cleanup queue entry when connection fails or disconnects
+      if (connectionState === 'failed' || connectionState === 'offline') {
+        cleanupQueueEntry();
+      }
     };
 
     const initConnection = async () => {
