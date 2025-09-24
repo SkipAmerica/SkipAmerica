@@ -261,15 +261,32 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       }
     };
 
+    // Helper function to extract viewerId from various payload shapes
+    function getViewerId(msg: any) {
+      return msg?.viewerId ?? msg?.payload?.viewerId ?? msg?.data?.viewerId ?? msg?.record?.viewerId ?? null;
+    }
+
     // Set up signaling channel with handlers
     const channel = supabase.channel(canonicalChannel)
-      .on('broadcast', { event: 'request-offer' }, async ({ payload }) => {
-        const { viewerId } = payload || {};
+      .on('system', { event: 'phx_reply' }, (m) => 
+        console.log('[CREATOR] system phx_reply:', m))
+      .on('broadcast', { event: 'request-offer' }, async (msg: any) => {
+        const viewerId = getViewerId(msg);
+        console.log('[CREATOR] request-offer received', {viewerId, raw: msg});
         if (!viewerId) return;
         
-        console.log(`[CREATOR] Received offer request from viewer ${viewerId}`);
         waitingViewersRef.current.add(viewerId);
         await issueOffer(viewerId);
+      })
+      .on('broadcast', { event: 'ping' }, (msg: any) => {
+        const viewerId = getViewerId(msg);
+        if (!viewerId) return;
+        console.log('[CREATOR] ping received from viewer', viewerId);
+        signalingChannelRef.current?.send({ 
+          type: 'broadcast', 
+          event: 'pong', 
+          payload: { viewerId } 
+        });
       })
       .on('broadcast', { event: 'answer' }, async ({ payload }) => {
         const { viewerId, sdp } = payload || {};
@@ -301,52 +318,54 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         }
       });
 
-      // Subscribe and wait for SUBSCRIBED status
-      return new Promise((resolve, reject) => {
-        channel.subscribe((status) => {
-          console.log('[CREATOR] Signaling channel status:', status);
+    console.log('[CREATOR] signaling topic=', canonicalChannel);
+
+    // Subscribe and wait for SUBSCRIBED status
+    return new Promise((resolve, reject) => {
+      channel.subscribe((status) => {
+        console.log('[CREATOR] channel status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          signalingChannelRef.current = channel;
           
-          if (status === 'SUBSCRIBED') {
-            signalingChannelRef.current = channel;
+          // Proactive nudge loop for 5 seconds to catch race conditions
+          let nudgeCount = 0;
+          const maxNudges = 6; // ~5 seconds (6 * 800ms)
+          
+          const nudgeLoop = async () => {
+            if (nudgeCount >= maxNudges) return;
             
-            // Proactive nudge loop for 5 seconds to catch race conditions
-            let nudgeCount = 0;
-            const maxNudges = 6; // ~5 seconds (6 * 800ms)
-            
-            const nudgeLoop = async () => {
-              if (nudgeCount >= maxNudges) return;
+            const currentWaitingViewers = Array.from(waitingViewersRef.current);
+            if (currentWaitingViewers.length > 0) {
+              console.log(`[CREATOR] Nudge #${nudgeCount + 1}: re-offering to ${currentWaitingViewers.length} viewers`);
               
-              const currentWaitingViewers = Array.from(waitingViewersRef.current);
-              if (currentWaitingViewers.length > 0) {
-                console.log(`[CREATOR] Nudge #${nudgeCount + 1}: re-offering to ${currentWaitingViewers.length} viewers`);
-                
-                for (const viewerId of currentWaitingViewers) {
-                  const pc = peerConnectionsRef.current.get(viewerId);
-                  const needsOffer = !pc || pc.connectionState !== 'connected';
-                  if (needsOffer) {
-                    await issueOffer(viewerId);
-                  }
+              for (const viewerId of currentWaitingViewers) {
+                const pc = peerConnectionsRef.current.get(viewerId);
+                const needsOffer = !pc || pc.connectionState !== 'connected';
+                if (needsOffer) {
+                  await issueOffer(viewerId);
                 }
               }
-              
-              nudgeCount++;
-              if (nudgeCount < maxNudges) {
-                proactiveOfferTimeoutRef.current = setTimeout(nudgeLoop, 800);
-              } else {
-                // Clear waiting viewers after nudging is complete
-                waitingViewersRef.current.clear();
-              }
-            };
+            }
             
-            // Store the nudge function for use after announce-live
-            (signalingChannelRef.current as any).__nudgeLoop = nudgeLoop;
-            
-            resolve(channel);
-          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-            reject(new Error(`Signaling setup failed: ${status}`));
-          }
-        });
+            nudgeCount++;
+            if (nudgeCount < maxNudges) {
+              proactiveOfferTimeoutRef.current = setTimeout(nudgeLoop, 800);
+            } else {
+              // Clear waiting viewers after nudging is complete
+              waitingViewersRef.current.clear();
+            }
+          };
+          
+          // Store the nudge function for use after announce-live
+          (signalingChannelRef.current as any).__nudgeLoop = nudgeLoop;
+          
+          resolve(channel);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          reject(new Error(`Signaling setup failed: ${status}`));
+        }
       });
+    });
   }, [user]);
 
   const startBroadcast = async () => {

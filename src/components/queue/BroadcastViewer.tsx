@@ -57,6 +57,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         <div>Tracks: {ms ? ms.getTracks().length : 0}</div>
         <div>VideoReady: {v ? v.readyState : '—'} Paused: {String(!!v?.paused)}</div>
         <div>Req#: {offerRequestCountRef?.current ?? 0} OfferRx#: {offersReceivedRef?.current ?? 0} AnsTx#: {answersSentRef?.current ?? 0}</div>
+        <div>Pong#: {pongCountRef?.current ?? 0}</div>
       </div>
     );
   };
@@ -95,7 +96,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const offersReceivedRef = useRef(0);
   const answersSentRef = useRef(0);
   const iceRxCountRef = useRef(0);
+  const pongCountRef = useRef(0);
   const [lastChannelStatus, setLastChannelStatus] = useState<string>('—');
+
+  // send REQUEST-OFFER in *both* shapes to be compatible
+  function sendRequestOffer(reason: string) {
+    const payload = { viewerId: viewerIdRef.current, reason, ts: Date.now() };
+    channelRef.current?.send({ type: 'broadcast', event: 'request-offer', ...payload });
+    channelRef.current?.send({ type: 'broadcast', event: 'request-offer', payload }); // nested too
+    offerRequestCountRef.current = (offerRequestCountRef.current ?? 0) + 1;
+  }
+
+  // ping/pong instrumentation
+  function sendPing() {
+    const payload = { viewerId: viewerIdRef.current, ts: Date.now() };
+    channelRef.current?.send({ type: 'broadcast', event: 'ping', ...payload });
+    channelRef.current?.send({ type: 'broadcast', event: 'ping', payload }); // nested too
+  }
 
   // Offer burst functionality
   const offerBurstRef = useRef<{timer?: any, count: number}>({ count: 0 });
@@ -701,6 +718,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             });
             offerRequestCountRef.current++;
           }
+        })
+        .on('broadcast', { event: 'pong' }, () => { 
+          pongCountRef.current++; 
+          console.log('[VIEWER] Received pong, count:', pongCountRef.current);
         })
         .on('broadcast', { event: 'creator-offline' }, (e: any) => {
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
