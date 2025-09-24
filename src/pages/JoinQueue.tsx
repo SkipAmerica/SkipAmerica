@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,9 +49,13 @@ export default function JoinQueue() {
   const [autoLoginLoading, setAutoLoginLoading] = useState(false);
   const [displayName, setDisplayName] = useState('');
 
-  // Queue cleanup function
-  const cleanupQueue = async () => {
-    if (!user || !creatorId || !isInQueue) return;
+  const isUnloadingRef = useRef(false);
+
+  // Stable cleanup function using useCallback
+  const cleanupQueue = useCallback(async (reason: string = 'unknown') => {
+    if (!user || !creatorId || !isInQueue || isUnloadingRef.current) return;
+    
+    console.log(`[JoinQueue] Cleanup triggered - reason: ${reason}`);
     
     try {
       await supabase
@@ -59,11 +63,11 @@ export default function JoinQueue() {
         .delete()
         .eq('creator_id', creatorId)
         .eq('fan_id', user.id);
-      console.log('[JoinQueue] Queue cleanup completed');
+      console.log('[JoinQueue] Queue cleanup completed for reason:', reason);
     } catch (error) {
       console.error('[JoinQueue] Error during queue cleanup:', error);
     }
-  };
+  }, [user, creatorId, isInQueue]);
 
   // Auto-login anonymous user if not authenticated
   useEffect(() => {
@@ -249,21 +253,32 @@ export default function JoinQueue() {
   useEffect(() => {
     if (!user || !creatorId || !isInQueue) return;
 
+    console.log('[JoinQueue] Setting up heartbeat and cleanup for user:', user.id, 'creator:', creatorId);
+
     // Heartbeat to update last_seen timestamp every 30 seconds
     const heartbeatInterval = setInterval(async () => {
       try {
-        await supabase
+        const { error } = await supabase
           .from('call_queue')
           .update({ last_seen: new Date().toISOString() })
           .eq('creator_id', creatorId)
           .eq('fan_id', user.id);
+        
+        if (error) {
+          console.error('[JoinQueue] Heartbeat update failed:', error);
+        } else {
+          console.log('[JoinQueue] Heartbeat updated successfully');
+        }
       } catch (error) {
         console.error('[JoinQueue] Heartbeat update failed:', error);
       }
     }, 30000); // 30 seconds
 
-    // Browser event listeners for cleanup
-    const handleBeforeUnload = () => {
+    // Only cleanup on actual page unload, not tab switching
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      console.log('[JoinQueue] Page unloading - cleaning up queue');
+      isUnloadingRef.current = true;
+      
       // Use sendBeacon for reliable cleanup on page unload
       if (navigator.sendBeacon) {
         const payload = JSON.stringify({
@@ -272,14 +287,28 @@ export default function JoinQueue() {
         });
         navigator.sendBeacon('/api/cleanup-queue', payload);
       } else {
-        // Fallback for browsers without sendBeacon
-        cleanupQueue();
+        // Synchronous cleanup for browsers without sendBeacon
+        cleanupQueue('beforeunload');
       }
     };
 
+    // More conservative visibility change handling
+    let visibilityTimer: NodeJS.Timeout;
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        cleanupQueue();
+        // Wait 5 seconds before cleanup to avoid accidental cleanups from tab switching
+        visibilityTimer = setTimeout(() => {
+          if (document.visibilityState === 'hidden') {
+            console.log('[JoinQueue] Page hidden for 5s - cleaning up queue');
+            cleanupQueue('visibility-hidden');
+          }
+        }, 5000);
+      } else {
+        // Page became visible again, cancel any pending cleanup
+        if (visibilityTimer) {
+          console.log('[JoinQueue] Page visible again - canceling cleanup timer');
+          clearTimeout(visibilityTimer);
+        }
       }
     };
 
@@ -289,17 +318,25 @@ export default function JoinQueue() {
 
     // Cleanup on component unmount
     return () => {
+      console.log('[JoinQueue] Component unmounting - cleaning up');
       clearInterval(heartbeatInterval);
+      if (visibilityTimer) clearTimeout(visibilityTimer);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      cleanupQueue();
+      
+      // Only cleanup if not already unloading
+      if (!isUnloadingRef.current) {
+        cleanupQueue('component-unmount');
+      }
     };
-  }, [user, creatorId, isInQueue, cleanupQueue]);
+  }, [user, creatorId, isInQueue]); // Removed cleanupQueue from dependencies
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;
 
     setJoining(true);
+    console.log('[JoinQueue] Attempting to join queue for creator:', creatorId, 'user:', user.id);
+    
     try {
       // Update profile name first
       const { error: profileError } = await supabase
@@ -324,14 +361,17 @@ export default function JoinQueue() {
 
       if (error) {
         if (error.code === '23505') {
+          console.log('[JoinQueue] User already in queue');
           toast({
             title: "Already in queue",
             description: "You're already in this creator's queue.",
           });
+          setIsInQueue(true); // Update state to reflect reality
         } else {
           throw error;
         }
       } else {
+        console.log('[JoinQueue] Successfully joined queue');
         setIsInQueue(true);
         toast({
           title: "Joined queue!",
@@ -353,6 +393,8 @@ export default function JoinQueue() {
   const handleLeaveQueue = async () => {
     if (!user || !creatorId) return;
 
+    console.log('[JoinQueue] User manually leaving queue');
+    
     try {
       const { error } = await supabase
         .from('call_queue')
@@ -364,6 +406,7 @@ export default function JoinQueue() {
 
       setIsInQueue(false);
       setDiscussionTopic('');
+      console.log('[JoinQueue] Successfully left queue');
       toast({
         title: "Left queue",
         description: "You've been removed from the queue.",
