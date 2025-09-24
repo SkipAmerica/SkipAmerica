@@ -328,6 +328,26 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
       ensureRealtimeConnected();
 
+      // Patch client-level teardown methods (once per component mount)
+      const _rt: any = (supabase as any)?.realtime;
+      if (_rt && !_rt.__patched) {
+        _rt.__patched = true;
+        const origDisconnect = _rt.disconnect?.bind(_rt);
+        if (origDisconnect) {
+          _rt.disconnect = (...args: any[]) => {
+            console.warn('[VIEWER', viewerIdRef.current, '] supabase.realtime.disconnect CALLED! stack:\n', new Error().stack);
+            return origDisconnect(...args);
+          };
+        }
+        const origRemove = (supabase as any).removeChannel?.bind(supabase);
+        if (origRemove) {
+          (supabase as any).removeChannel = (...args: any[]) => {
+            console.warn('[VIEWER', viewerIdRef.current, '] supabase.removeChannel CALLED! args=', args, 'stack:\n', new Error().stack);
+            return origRemove(...args);
+          };
+        }
+      }
+
       // Log existing channels before creating new one
       console.log('[VIEWER', viewerIdRef.current, '] existing channels:', 
         (supabase.getChannels?.() || []).map(c => (c as any).topic));
@@ -342,6 +362,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
       // Create a fresh channel and attach handlers BEFORE subscribe
       const newCh = supabase.channel(channelName);
+      
+      // Monkey-patch unsubscribe to log stack traces
+      const __origUnsub = newCh.unsubscribe.bind(newCh);
+      (newCh as any).__origUnsub = __origUnsub;
+      newCh.unsubscribe = (...args: any[]) => {
+        console.warn('[VIEWER', viewerIdRef.current, '] ch.unsubscribe CALLED on', newCh.topic, 'stack:\n', new Error().stack);
+        return __origUnsub(...args);
+      };
+      
       if (isFallback) {
         fallbackChannelRef.current = newCh;
       } else {
@@ -664,6 +693,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
 
     const cleanup = () => {
+      console.warn('[VIEWER', viewerIdRef.current, '] cleanup() called - checking if appropriate');
+      
+      // Only allow cleanup on unmount or explicit creator-offline
+      const isUnmounting = resolvedCreatorId === undefined; // Component is unmounting
+      const isExplicitOffline = connectionState === 'offline' || connectionState === 'failed';
+      
+      if (!isUnmounting && !isExplicitOffline) {
+        console.warn('[VIEWER', viewerIdRef.current, '] prevented teardown during runtime path - cleanup blocked');
+        return;
+      }
+      
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
