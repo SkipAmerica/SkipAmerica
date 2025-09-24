@@ -548,7 +548,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               });
               await pc.setLocalDescription(offer);
               
-            console.log('[CREATOR] sending offer for viewerId', viewerId, 'len=', offer.sdp.length);
+            console.log('[CREATOR] sending offer event with payload', { viewerId, sdp: offer.sdp });
             signalChannel.send({
               type: 'broadcast',
               event: 'offer',
@@ -611,12 +611,12 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
           
-            console.log('[CREATOR] sending offer for viewerId', legacyViewerId, 'len=', offer.sdp.length);
-            signalChannel.send({
-              type: 'broadcast',
-              event: 'offer',
-              payload: { offer: offer, sender: 'creator' }
-            });
+          console.log('[CREATOR] sending offer event with payload', { viewerId: legacyViewerId, sdp: offer.sdp });
+          signalChannel.send({
+            type: 'broadcast',
+            event: 'offer',
+            payload: { viewerId: legacyViewerId, sdp: offer.sdp }
+          });
           } catch (error) {
             console.error('[LOBBY_BROADCAST] Error creating legacy offer:', error);
           }
@@ -659,6 +659,15 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       peerConnections.forEach(pc => pc.close());
       peerConnectionsRef.current.clear();
       if (signalChannel) {
+        // Send creator-offline event before closing
+        const queueId = mediaState.currentSession?.queueId;
+        if (queueId) {
+          signalChannel.send({
+            type: 'broadcast',
+            event: 'creator-offline',
+            payload: { queueId }
+          });
+        }
         supabase.removeChannel(signalChannel);
       }
     };

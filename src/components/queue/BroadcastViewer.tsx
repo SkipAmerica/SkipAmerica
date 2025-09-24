@@ -399,11 +399,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         // Set up signaling channel with request/response handshake
         signalChannel = supabase.channel(channelToUse)
           .on('broadcast', { event: 'offer' }, async (e) => {
-            const { viewerId: vid, sdp } = fromSignal(e);
-            if (!vid || vid !== viewerId) return;
-            
-            const channelTypeUsed = usingFallback ? 'fallback' : 'primary';
-            console.log(`[VIEWER ${viewerId}] OFFER RX via ${channelTypeUsed} (payload=${!!e?.payload})`);
+            const p = e.payload ?? e;
+            const { viewerId: vid, sdp } = p;
+            if (!vid || vid !== viewerId || !sdp) return;
+            console.log('[VIEWER', viewerId, '] OFFER handler received payload', p);
             
             if (!ensureViewerPc()) return;
             
@@ -427,8 +426,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             }
           })
           .on('broadcast', { event: 'ice-candidate' }, async (e) => {
-            const { viewerId: vid, candidate } = fromSignal(e);
+            const p = e.payload ?? e;
+            const { viewerId: vid, candidate } = p;
             if (!vid || vid !== viewerId || !candidate) return;
+            console.log('[VIEWER', viewerId, '] ICE handler received payload', p);
             
             if (!ensureViewerPc()) return;
             if (!peerConnection!.remoteDescription) return;
