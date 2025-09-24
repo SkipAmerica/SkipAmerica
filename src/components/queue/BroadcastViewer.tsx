@@ -97,6 +97,33 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const iceRxCountRef = useRef(0);
   const [lastChannelStatus, setLastChannelStatus] = useState<string>('—');
 
+  // Offer burst functionality
+  const offerBurstRef = useRef<{timer?: any, count: number}>({ count: 0 });
+
+  function startOfferBurst(reason: string) {
+    if (!channelRef.current) return;
+    // don't run if already connected or we already got an offer
+    if (pcRef.current?.connectionState === 'connected') return;
+    offerBurstRef.current.count = 0;
+    clearInterval(offerBurstRef.current.timer);
+    offerBurstRef.current.timer = setInterval(() => {
+      if (pcRef.current?.connectionState === 'connected' || (offersReceivedRef.current ?? 0) > 0) {
+        clearInterval(offerBurstRef.current.timer);
+        return;
+      }
+      offerRequestCountRef.current = (offerRequestCountRef.current ?? 0) + 1;
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'request-offer',
+        payload: { viewerId: viewerIdRef.current, reason }
+      });
+      offerBurstRef.current.count++;
+      if (offerBurstRef.current.count >= 8) { // stop after ~8s
+        clearInterval(offerBurstRef.current.timer);
+      }
+    }, 1000);
+  }
+
   // ICE server configuration for peer connections
   const iceConfig = {
     iceServers: [
@@ -335,16 +362,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             setRetryCount(0);
             debouncedStateUpdate('checking');
             
-            // Immediately request offer when creator goes live
-            if (channelRef.current) {
-              channelRef.current.send({
-                type: 'broadcast',
-                event: 'request-offer',
-                payload: { viewerId: viewerIdRef.current }
-              });
-              offerRequestCountRef.current++;
-              console.log('[VIEWER] Immediate REQUEST-OFFER on live session INSERT');
-            }
+            // Start offer burst when creator goes live
+            startOfferBurst('db-insert');
+            console.log('[VIEWER] Started offer burst on live session INSERT');
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
             console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
             debouncedStateUpdate('offline');
@@ -530,7 +550,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             }
           }
           
-          if (status === 'SUBSCRIBED') { clearTimeout(t); resolve('SUBSCRIBED'); }
+          if (status === 'SUBSCRIBED') { 
+            clearTimeout(t); 
+            resolve('SUBSCRIBED');
+            // Start offer burst when channel becomes subscribed
+            startOfferBurst('subscribed');
+          }
           if (status === 'CLOSED') { clearTimeout(t); resolve('CLOSED'); }
         });
       });
@@ -597,6 +622,18 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const { viewerId: vid, sdp } = p;
           if (vid !== viewerIdRef.current || !sdp) return;
           
+          // Stop the burst when we receive an offer
+          if (offerBurstRef.current?.timer) {
+            clearInterval(offerBurstRef.current.timer);
+          }
+          
+          console.log('[VIEWER] Received offer, processing...');
+          
+          // Resolve offer promise if waiting
+          if (offerPromiseRef.current) {
+            offerPromiseRef.current.resolve();
+          }
+          
           // payload: { sdp, viewerId }
           try {
             const pc = getOpenPc(pcRef.current?.signalingState === 'closed');
@@ -650,16 +687,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           }
         })
         .on('broadcast', { event: 'announce-live' }, () => {
-          console.log('[VIEWER] Received announce-live, requesting offer immediately');
-          if (channelRef.current) {
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'request-offer',
-              payload: { viewerId: viewerIdRef.current }
-            });
-            offerRequestCountRef.current++;
-            console.log('[VIEWER] REQUEST-OFFER on announce-live');
-          }
+          console.log('[VIEWER] Received announce-live, starting offer burst');
+          startOfferBurst('announce-live');
         })
         .on('broadcast', { event: 'offer-retry' }, ({ payload }) => {
           const { viewerId } = payload || {};
@@ -881,12 +910,21 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     // No cleanup here - let unmount-only effect handle it
   }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
 
-  // Add a tiny visibility resume (helps iOS Safari/background tab)
+  // Add visibility change handler for offer burst and video rebind
   useEffect(() => {
-    const onVis = () => { if (document.visibilityState === 'visible') rebindVideo(); };
+    const onVis = () => { 
+      if (document.visibilityState === 'visible') {
+        rebindVideo();
+        // Start offer burst when tab becomes visible if not connected
+        if (connectionState !== 'connected') {
+          console.log('[VIEWER] Tab became visible, starting offer burst');
+          startOfferBurst('visible');
+        }
+      }
+    };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
-  }, []);
+  }, [connectionState]);
 
   // Ensure video is always mounted and bound to the persistent stream
   useEffect(() => {

@@ -301,19 +301,52 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         }
       });
 
-    // Subscribe and wait for SUBSCRIBED status
-    return new Promise((resolve, reject) => {
-      channel.subscribe((status) => {
-        console.log('[CREATOR] Signaling channel status:', status);
-        
-        if (status === 'SUBSCRIBED') {
-          signalingChannelRef.current = channel;
-          resolve(channel);
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          reject(new Error(`Signaling setup failed: ${status}`));
-        }
+      // Subscribe and wait for SUBSCRIBED status
+      return new Promise((resolve, reject) => {
+        channel.subscribe((status) => {
+          console.log('[CREATOR] Signaling channel status:', status);
+          
+          if (status === 'SUBSCRIBED') {
+            signalingChannelRef.current = channel;
+            
+            // Proactive nudge loop for 5 seconds to catch race conditions
+            let nudgeCount = 0;
+            const maxNudges = 6; // ~5 seconds (6 * 800ms)
+            
+            const nudgeLoop = async () => {
+              if (nudgeCount >= maxNudges) return;
+              
+              const currentWaitingViewers = Array.from(waitingViewersRef.current);
+              if (currentWaitingViewers.length > 0) {
+                console.log(`[CREATOR] Nudge #${nudgeCount + 1}: re-offering to ${currentWaitingViewers.length} viewers`);
+                
+                for (const viewerId of currentWaitingViewers) {
+                  const pc = peerConnectionsRef.current.get(viewerId);
+                  const needsOffer = !pc || pc.connectionState !== 'connected';
+                  if (needsOffer) {
+                    await issueOffer(viewerId);
+                  }
+                }
+              }
+              
+              nudgeCount++;
+              if (nudgeCount < maxNudges) {
+                proactiveOfferTimeoutRef.current = setTimeout(nudgeLoop, 800);
+              } else {
+                // Clear waiting viewers after nudging is complete
+                waitingViewersRef.current.clear();
+              }
+            };
+            
+            // Store the nudge function for use after announce-live
+            (signalingChannelRef.current as any).__nudgeLoop = nudgeLoop;
+            
+            resolve(channel);
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            reject(new Error(`Signaling setup failed: ${status}`));
+          }
+        });
       });
-    });
   }, [user]);
 
   const startBroadcast = async () => {
@@ -365,35 +398,17 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       setMediaState(prev => ({ ...prev, currentSession: { ...sessionData, queueId } }))
       console.log('Live session created:', sessionData.id)
 
-      // STEP 5: Announce going live and handle waiting viewers
+      // STEP 5: Announce going live and start proactive nudging
       if (signalingChannelRef.current) {
         signalingChannelRef.current.send({
           type: 'broadcast',
           event: 'announce-live'
         });
         
-        // Proactively re-offer to any waiting viewers for 5 seconds
-        if (waitingViewersRef.current.size > 0) {
-          const waitingViewers = Array.from(waitingViewersRef.current);
-          console.log(`[CREATOR] Re-offering to ${waitingViewers.length} waiting viewers`);
-          
-          for (const viewerId of waitingViewers) {
-            setTimeout(() => {
-              if (signalingChannelRef.current) {
-                console.log(`[CREATOR] Proactive re-offer to ${viewerId}`);
-                signalingChannelRef.current.send({
-                  type: 'broadcast',
-                  event: 'offer-retry',
-                  payload: { viewerId }
-                });
-              }
-            }, 100);
-          }
-          
-          // Clear waiting viewers after 5 seconds
-          proactiveOfferTimeoutRef.current = setTimeout(() => {
-            waitingViewersRef.current.clear();
-          }, 5000);
+        // Start the nudge loop immediately if we have waiting viewers
+        const nudgeLoop = (signalingChannelRef.current as any).__nudgeLoop;
+        if (nudgeLoop && waitingViewersRef.current.size > 0) {
+          setTimeout(nudgeLoop, 100);
         }
       }
 
