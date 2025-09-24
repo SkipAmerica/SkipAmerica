@@ -7,6 +7,7 @@ import { mediaManager } from '@/media/MediaOrchestrator';
 import { generateViewerId } from '@/utils/viewer-id';
 import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from '@/lib/queueResolver';
 import { isQueueFallbackEnabled } from '@/lib/env';
+import { isDebug } from '@/lib/debugFlag';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -59,6 +60,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const attemptRef = useRef(0);
   const subscribedRef = useRef(false);
   const offerPromiseRef = useRef<{ resolve: () => void; reject: () => void } | null>(null);
+  const closedStrikesRef = useRef(0);
+  const fallbackChannelRef = useRef<any | null>(null);
 
   // Helper to get the effective creator ID for DB operations
   const getEffectiveCreatorId = () => {
@@ -305,10 +308,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       }
     };
 
-    // Serialized subscription with channel reuse
-    const ensureSubscribed = async (channelName: string) => {
+    // Safe unsubscribe wrapper to prevent runtime teardowns
+    const safeUnsubscribe = (reason: string) => {
+      console.log('[VIEWER', viewerIdRef.current, '] safeUnsubscribe called:', reason);
+      // NO-OP at runtime; only run on unmount
+    };
+
+    // Serialized subscription with channel reuse and deep logging
+    const ensureSubscribed = async (channelName: string, isFallback = false) => {
       // If we already have a channel that is alive, return it
-      const ch = channelRef.current;
+      const ch = isFallback ? fallbackChannelRef.current : channelRef.current;
       if (ch && !['closed', 'errored'].includes((ch as any).state || '')) {
         return ch;
       }
@@ -319,18 +328,59 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
       ensureRealtimeConnected();
 
+      // Log existing channels before creating new one
+      console.log('[VIEWER', viewerIdRef.current, '] existing channels:', 
+        (supabase.getChannels?.() || []).map(c => (c as any).topic));
+
+      // Ensure auth is ready
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess?.session) {
+        const { error } = await supabase.auth.signInAnonymously();
+        if (error) console.error('[VIEWER', viewerIdRef.current, '] anon sign-in fail:', error);
+      }
+      console.log('[VIEWER', viewerIdRef.current, '] auth ready:', !!(await supabase.auth.getSession()).data.session);
+
       // Create a fresh channel and attach handlers BEFORE subscribe
       const newCh = supabase.channel(channelName);
-      channelRef.current = newCh;
+      if (isFallback) {
+        fallbackChannelRef.current = newCh;
+      } else {
+        channelRef.current = newCh;
+      }
+
+      // Add deep lifecycle logging BEFORE attaching handlers
+      newCh.on('system', { event: 'phx_error' }, (e) => 
+        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_error on', newCh.topic, e));
+      newCh.on('system', { event: 'phx_close' }, (e) => 
+        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_close on', newCh.topic, e));
+      newCh.on('system', { event: 'phx_reply' }, (e) => 
+        console.log('[VIEWER', viewerIdRef.current, '] SYSTEM phx_reply on', newCh.topic, e?.status, e?.response));
 
       attachOfferAndIceHandlers(newCh);
-      console.log('[VIEWER', viewerIdRef.current, '] subscribing to', channelName, 'attempt', myAttempt);
+      console.log('[VIEWER', viewerIdRef.current, '] subscribing to', channelName, 'attempt', myAttempt, isFallback ? '(fallback)' : '');
 
       // Await SUBSCRIBED (with timeout)
       const result = await new Promise<'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED'>(resolve => {
         const t = setTimeout(() => resolve('TIMED_OUT'), 8000);
         newCh.subscribe((status) => {
-          console.log('[VIEWER', viewerIdRef.current, '] channel status=', status);
+          console.log('[VIEWER', viewerIdRef.current, '] channel status=', status, 'on', channelName);
+          
+          if (status === 'CLOSED' && !isFallback) {
+            closedStrikesRef.current++;
+            console.warn('[VIEWER', viewerIdRef.current, `] canonical CLOSED (strike ${closedStrikesRef.current}) on`, channelName);
+            
+            // Fallback logic after 3 strikes
+            if (closedStrikesRef.current >= 3) {
+              const fallbackEnabled = String(import.meta.env.VITE_ENABLE_QUEUE_FALLBACK) === 'true';
+              if (fallbackEnabled && !fallbackChannelRef.current) {
+                const legacy = legacyQueueChannelFor(queueId);
+                console.warn('[DEPRECATED] Also subscribing to legacy due to repeated CLOSED on canonical:', legacy);
+                // Trigger fallback subscription in background
+                setTimeout(() => ensureSubscribed(legacy, true), 100);
+              }
+            }
+          }
+          
           if (status === 'SUBSCRIBED') { clearTimeout(t); resolve('SUBSCRIBED'); }
           if (status === 'CLOSED') { clearTimeout(t); resolve('CLOSED'); }
         });
@@ -339,11 +389,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // If another attempt started while we waited, mark this one stale and do nothing
       if (myAttempt !== attemptRef.current) {
         console.warn('[VIEWER', viewerIdRef.current, '] stale subscribe attempt', myAttempt, 'ignoring');
-        return channelRef.current!;
+        return (isFallback ? fallbackChannelRef.current : channelRef.current)!;
       }
 
       if (result === 'SUBSCRIBED') {
         subscribedRef.current = true;
+        console.log('[VIEWER', viewerIdRef.current, '] SUBSCRIBED on', channelName);
         return newCh;
       }
 
@@ -527,10 +578,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);
 
+        // Prove Realtime works with debug channel first
+        if (isDebug()) {
+          const dbg = supabase.channel('debug:ping:' + viewerId);
+          dbg.subscribe((s) => {
+            if (s === 'SUBSCRIBED') {
+              console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
+              // Immediately leave to avoid clutter
+              dbg.unsubscribe();
+            }
+            if (s === 'CLOSED') {
+              console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
+            }
+          });
+        }
+
         // Subscribe with channel reuse
         const ch = await ensureSubscribed(channelToUse);
         if (ch && subscribedRef.current) {
-          console.log(`[VIEWER ${viewerId}] SUBSCRIBED on ${channelToUse}`);
           const ok = await requestOfferWithRetries(ch, 3);
           if (!ok) {
             console.warn('[VIEWER', viewerId, '] No offer after retries; staying subscribed.');
@@ -670,6 +735,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       try { 
         channelRef.current?.unsubscribe(); 
         channelRef.current = null;
+      } catch {}
+      try { 
+        fallbackChannelRef.current?.unsubscribe(); 
+        fallbackChannelRef.current = null;
       } catch {}
       try { 
         peerConnection?.close(); 
