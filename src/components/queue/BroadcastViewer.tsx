@@ -8,6 +8,7 @@ import { generateViewerId } from '@/utils/viewer-id';
 import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from '@/lib/queueResolver';
 import { isQueueFallbackEnabled } from '@/lib/env';
 import { isDebug } from '@/lib/debugFlag';
+import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -62,7 +63,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const offerPromiseRef = useRef<{ resolve: () => void; reject: () => void } | null>(null);
   const closedStrikesRef = useRef(0);
   const fallbackChannelRef = useRef<any | null>(null);
-  const allowTeardownRef = useRef(false);
+  // allowTeardownRef removed - using global guard now
 
   // ICE server configuration for peer connections
   const iceConfig = {
@@ -72,16 +73,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     ]
   };
 
-  // Guarded unsubscribe helper
-  function guardedUnsubscribe(ch: any | null, reason: string) {
-    if (!ch) return;
-    if (!allowTeardownRef.current) {
-      console.warn('[VIEWER', viewerIdRef.current, '] prevented unsubscribe (runtime guard) at', reason, 'topic=', (ch as any).topic);
-      return; // NO-OP during runtime
-    }
-    console.log('[VIEWER', viewerIdRef.current, '] unsubscribe ALLOWED at', reason, 'topic=', (ch as any).topic);
-    try { (ch as any).__origUnsub ? (ch as any).__origUnsub() : (ch as any).unsubscribe(); } catch {}
-  }
+  // Remove local guard - using global guard now
 
   // Ensure we have an open RTCPeerConnection
   function ensureOpenPc(): RTCPeerConnection {
@@ -204,8 +196,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     fetchMessages();
 
     // Subscribe to new messages
-    const channel = supabase
-      .channel('broadcast-chat-messages')
+    const channel = guardChannelUnsubscribe(
+      supabase.channel('broadcast-chat-messages'),
+      'chat-messages'
+    )
       .on(
         'postgres_changes',
         {
@@ -231,13 +225,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       )
       .subscribe();
 
-    return () => {
-      if (allowTeardownRef.current) {
-        try { supabase.removeChannel(channel); } catch {}
-      } else {
-        console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime removeChannel at chat cleanup');
-      }
-    };
+    // Remove cleanup - unsubscribe only on unmount
   }, [queueId, resolvedCreatorId]);
 
   // Auto-scroll chat
@@ -260,8 +248,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const channels: any[] = [];
 
     // Primary subscription for resolved/effective creator ID
-    const resolvedChannel = supabase
-      .channel(`broadcast-live-session-${resolvedId}`)
+    const resolvedChannel = guardChannelUnsubscribe(
+      supabase.channel(`broadcast-live-session-${resolvedId}`),
+      `live-session-${resolvedId}`
+    )
       .on(
         'postgres_changes',
         {
@@ -292,8 +282,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // If resolved differs from raw, also subscribe to raw as fallback
     if (resolvedCreatorId && resolvedCreatorId !== queueId) {
-      const rawChannel = supabase
-        .channel(`broadcast-live-session-${queueId}`)
+      const rawChannel = guardChannelUnsubscribe(
+        supabase.channel(`broadcast-live-session-${queueId}`),
+        `live-session-${queueId}`
+      )
         .on(
           'postgres_changes',
           {
@@ -324,13 +316,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
 
     return () => {
-      channels.forEach((ch) => {
-        if (allowTeardownRef.current) {
-          try { supabase.removeChannel(ch); } catch {}
-        } else {
-          console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime removeChannel at session cleanup');
-        }
-      });
+      // Remove cleanup - unsubscribe only on unmount  
     };
   }, [queueId, resolvedCreatorId]);
 
@@ -437,18 +423,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log('[VIEWER', viewerIdRef.current, '] auth ready:', !!(await supabase.auth.getSession()).data.session);
 
       // Create a fresh channel and attach handlers BEFORE subscribe
-      const newCh = supabase.channel(channelName);
-      
-      // Monkey-patch unsubscribe to respect guard flag
-      const __origUnsub = newCh.unsubscribe.bind(newCh);
-      (newCh as any).__origUnsub = __origUnsub;
-      newCh.unsubscribe = (...args: any[]) => {
-        if (!allowTeardownRef.current) {
-          console.warn('[VIEWER', viewerIdRef.current, '] blocked ch.unsubscribe on', newCh.topic, 'stack:\n', new Error().stack);
-          return; // BLOCK during runtime
-        }
-        return __origUnsub(...args);
-      };
+      const newCh = guardChannelUnsubscribe(
+        supabase.channel(channelName),
+        `viewer-signaling-${channelName}`
+      );
       
       if (isFallback) {
         fallbackChannelRef.current = newCh;
@@ -598,11 +576,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
           setConnectionState('offline');
           // Allow teardown ONLY for explicit creator-offline
-          allowTeardownRef.current = true;
-          guardedUnsubscribe(channelRef.current, 'creator-offline');
-          guardedUnsubscribe(fallbackChannelRef.current, 'creator-offline');
+          allowTeardownOnce(() => {
+            try { channelRef.current?.unsubscribe?.(); } catch {}
+            try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+          });
           try { pcRef.current?.close(); pcRef.current = null; } catch {}
-          allowTeardownRef.current = false; // reset after explicit teardown
         });
     };
 
@@ -641,16 +619,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         // Prove Realtime works with debug channel first
         if (isDebug()) {
-          const dbg = supabase.channel('debug:ping:' + viewerId);
+          const dbg = guardChannelUnsubscribe(
+            supabase.channel('debug:ping:' + viewerId),
+            'debug-ping'
+          );
           dbg.subscribe((s) => {
             if (s === 'SUBSCRIBED') {
               console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
-              // Attempt to leave debug channel, but guard against runtime teardown
-              if (allowTeardownRef.current) {
-                try { (dbg as any).unsubscribe?.(); } catch {}
-              } else {
-                console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe at debug-channel immediate leave');
-              }
+              // Attempt to leave debug channel, but use global guard
+              allowTeardownOnce(() => {
+                try { dbg.unsubscribe?.(); } catch {}
+              });
             }
             if (s === 'CLOSED') {
               console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
@@ -799,8 +778,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   // UNMOUNT-only cleanup effect
   useEffect(() => {
     return () => {
-      allowTeardownRef.current = true;         // allow teardown ONLY now
-      try { channelRef.current?.unsubscribe?.(); } catch {}
+      allowTeardownOnce(() => {
+        try { channelRef.current?.unsubscribe?.(); } catch {}
+        try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+      });
       try { pcRef.current?.close?.(); } catch {}
     };
   }, []);
