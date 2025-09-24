@@ -62,6 +62,18 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const offerPromiseRef = useRef<{ resolve: () => void; reject: () => void } | null>(null);
   const closedStrikesRef = useRef(0);
   const fallbackChannelRef = useRef<any | null>(null);
+  const allowTeardownRef = useRef(false);
+
+  // Guarded unsubscribe helper
+  function guardedUnsubscribe(ch: any | null, reason: string) {
+    if (!ch) return;
+    if (!allowTeardownRef.current) {
+      console.warn('[VIEWER', viewerIdRef.current, '] prevented unsubscribe (runtime guard) at', reason, 'topic=', (ch as any).topic);
+      return; // NO-OP during runtime
+    }
+    console.log('[VIEWER', viewerIdRef.current, '] unsubscribe ALLOWED at', reason, 'topic=', (ch as any).topic);
+    try { (ch as any).unsubscribe(); } catch {}
+  }
 
   // Helper to get the effective creator ID for DB operations
   const getEffectiveCreatorId = () => {
@@ -525,19 +537,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         .on('broadcast', { event: 'creator-offline' }, (e: any) => {
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
           setConnectionState('offline');
-          // Unsubscribe on explicit creator-offline event
-          try { 
-            channelRef.current?.unsubscribe(); 
-            channelRef.current = null;
-          } catch {}
-          try { 
-            fallbackChannelRef.current?.unsubscribe(); 
-            fallbackChannelRef.current = null;
-          } catch {}
-          try { 
-            peerConnection?.close(); 
-            peerConnectionRef.current = null;
-          } catch {}
+          // Allow teardown ONLY for explicit creator-offline
+          allowTeardownRef.current = true;
+          guardedUnsubscribe(channelRef.current, 'creator-offline');
+          guardedUnsubscribe(fallbackChannelRef.current, 'creator-offline');
+          try { peerConnection?.close(); peerConnectionRef.current = null; } catch {}
+          allowTeardownRef.current = false; // reset after explicit teardown
         });
     };
 
@@ -630,8 +635,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           dbg.subscribe((s) => {
             if (s === 'SUBSCRIBED') {
               console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
-              // Immediately leave debug channel to avoid clutter (debug only exception)
-              dbg.unsubscribe();
+              // Attempt to leave debug channel, but guard against runtime teardown
+              guardedUnsubscribe(dbg as any, 'debug-channel immediate leave');
             }
             if (s === 'CLOSED') {
               console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
@@ -785,8 +790,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   useEffect(() => {
     return () => {
       console.log('[VIEWER', viewerIdRef.current, '] Component unmounting - cleaning up all resources');
-      try { channelRef.current?.unsubscribe(); channelRef.current = null; } catch {}
-      try { fallbackChannelRef.current?.unsubscribe(); fallbackChannelRef.current = null; } catch {}
+      allowTeardownRef.current = true;
+      guardedUnsubscribe(channelRef.current, 'unmount');
+      guardedUnsubscribe(fallbackChannelRef.current, 'unmount');
       try { peerConnectionRef.current?.close(); peerConnectionRef.current = null; } catch {}
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
