@@ -169,12 +169,165 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
   }, [user])
 
+  // WebRTC signaling setup - moved here to be available before broadcast starts
+  const signalingChannelRef = useRef<any>(null);
+  const waitingViewersRef = useRef<Set<string>>(new Set());
+  const proactiveOfferTimeoutRef = useRef<NodeJS.Timeout>();
+
+  const setupSignalingChannel = useCallback(async () => {
+    if (!user || signalingChannelRef.current) return signalingChannelRef.current;
+
+    const creatorUserId = user.id;
+    const canonicalChannel = canonicalSignalChannel(creatorUserId);
+    console.log('[CREATOR] Setting up signaling channel:', canonicalChannel);
+    
+    // Get ICE servers configuration
+    const iceServers = (() => {
+      try {
+        return JSON.parse(import.meta.env.VITE_ICE_SERVERS || '[]');
+      } catch {
+        return [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ];
+      }
+    })();
+
+    // Helper to create peer connection for a viewer
+    const createPeerForViewer = (viewerId: string): RTCPeerConnection => {
+      const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
+      peerConnectionsRef.current.set(viewerId, pc);
+
+      // Add local stream tracks if available
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => {
+          pc.addTrack(track, streamRef.current!);
+        });
+      }
+
+      // Handle ICE candidates for this viewer
+      pc.onicecandidate = (event) => {
+        if (event.candidate && signalingChannelRef.current) {
+          iceCandidateCountRef.current += 1;
+          console.log(`[CREATOR] Sending ICE candidate to viewer ${viewerId}`);
+          signalingChannelRef.current.send({
+            type: 'broadcast',
+            event: 'ice-candidate',
+            payload: { viewerId, candidate: event.candidate }
+          });
+        }
+      };
+
+      // Monitor connection state
+      pc.onconnectionstatechange = () => {
+        console.log(`[CREATOR] Viewer ${viewerId} connection state:`, pc.connectionState);
+        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+          setTimeout(() => {
+            pc.close();
+            peerConnectionsRef.current.delete(viewerId);
+          }, 1000);
+        }
+      };
+
+      return pc;
+    };
+
+    // Issue offer to a specific viewer
+    const issueOffer = async (viewerId: string) => {
+      console.log(`[CREATOR] Issuing offer to viewer ${viewerId}`);
+      
+      try {
+        // Get or create peer connection for this viewer
+        let pc = peerConnectionsRef.current.get(viewerId);
+        if (!pc) {
+          pc = createPeerForViewer(viewerId);
+        }
+
+        // Create and send offer
+        const offer = await pc.createOffer({ 
+          offerToReceiveAudio: true, 
+          offerToReceiveVideo: true 
+        });
+        await pc.setLocalDescription(offer);
+        
+        console.log('[CREATOR] Sending offer to viewer', viewerId);
+        signalingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'offer',
+          payload: { viewerId, sdp: offer.sdp }
+        });
+      } catch (error) {
+        console.error(`[CREATOR] Error creating offer for viewer ${viewerId}:`, error);
+      }
+    };
+
+    // Set up signaling channel with handlers
+    const channel = supabase.channel(canonicalChannel)
+      .on('broadcast', { event: 'request-offer' }, async ({ payload }) => {
+        const { viewerId } = payload || {};
+        if (!viewerId) return;
+        
+        console.log(`[CREATOR] Received offer request from viewer ${viewerId}`);
+        waitingViewersRef.current.add(viewerId);
+        await issueOffer(viewerId);
+      })
+      .on('broadcast', { event: 'answer' }, async ({ payload }) => {
+        const { viewerId, sdp } = payload || {};
+        if (!viewerId || !sdp) return;
+        
+        console.log(`[CREATOR] Received answer from viewer ${viewerId}`);
+        const pc = peerConnectionsRef.current.get(viewerId);
+        if (!pc) return;
+        
+        try {
+          await pc.setRemoteDescription({ type: 'answer', sdp });
+          console.log(`[CREATOR] Successfully set remote description for viewer ${viewerId}`);
+        } catch (error) {
+          console.error(`[CREATOR] Error setting remote description for viewer ${viewerId}:`, error);
+        }
+      })
+      .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
+        const { viewerId, candidate } = payload || {};
+        if (!viewerId || !candidate) return;
+        
+        console.log(`[CREATOR] Received ICE candidate from viewer ${viewerId}`);
+        const pc = peerConnectionsRef.current.get(viewerId);
+        if (!pc || !pc.remoteDescription) return;
+        
+        try {
+          await pc.addIceCandidate(candidate);
+        } catch (error) {
+          console.error(`[CREATOR] Error adding ICE candidate for viewer ${viewerId}:`, error);
+        }
+      });
+
+    // Subscribe and wait for SUBSCRIBED status
+    return new Promise((resolve, reject) => {
+      channel.subscribe((status) => {
+        console.log('[CREATOR] Signaling channel status:', status);
+        
+        if (status === 'SUBSCRIBED') {
+          signalingChannelRef.current = channel;
+          resolve(channel);
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          reject(new Error(`Signaling setup failed: ${status}`));
+        }
+      });
+    });
+  }, [user]);
+
   const startBroadcast = async () => {
     try {
       console.log('Starting broadcast...')
       setMediaState(prev => ({ ...prev, isStreaming: true }))
 
-      // Generate queue ID and upsert queue mapping
+      // STEP 1: Initialize media first
+      await initMedia()
+      
+      // STEP 2: Set up signaling channel and handlers BEFORE going live
+      await setupSignalingChannel()
+
+      // STEP 3: Generate queue ID and upsert queue mapping
       const queueId = crypto.randomUUID();
       const creatorUserId = user?.id;
       
@@ -192,7 +345,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         console.log('[CREATOR] Queue mapping created:', { queueId, creatorUserId });
       }
 
-      // Create live session record
+      // STEP 4: Create live session record
       const { data: sessionData, error: sessionError } = await supabase
         .from('live_sessions')
         .insert({
@@ -212,8 +365,37 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       setMediaState(prev => ({ ...prev, currentSession: { ...sessionData, queueId } }))
       console.log('Live session created:', sessionData.id)
 
-      // Initialize media
-      await initMedia()
+      // STEP 5: Announce going live and handle waiting viewers
+      if (signalingChannelRef.current) {
+        signalingChannelRef.current.send({
+          type: 'broadcast',
+          event: 'announce-live'
+        });
+        
+        // Proactively re-offer to any waiting viewers for 5 seconds
+        if (waitingViewersRef.current.size > 0) {
+          const waitingViewers = Array.from(waitingViewersRef.current);
+          console.log(`[CREATOR] Re-offering to ${waitingViewers.length} waiting viewers`);
+          
+          for (const viewerId of waitingViewers) {
+            setTimeout(() => {
+              if (signalingChannelRef.current) {
+                console.log(`[CREATOR] Proactive re-offer to ${viewerId}`);
+                signalingChannelRef.current.send({
+                  type: 'broadcast',
+                  event: 'offer-retry',
+                  payload: { viewerId }
+                });
+              }
+            }, 100);
+          }
+          
+          // Clear waiting viewers after 5 seconds
+          proactiveOfferTimeoutRef.current = setTimeout(() => {
+            waitingViewersRef.current.clear();
+          }, 5000);
+        }
+      }
 
     } catch (error) {
       console.error('Error starting broadcast:', error)
@@ -228,6 +410,26 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
   const stopBroadcast = async () => {
     console.log('Stopping broadcast...')
+    
+    // Clear proactive offer timeout
+    if (proactiveOfferTimeoutRef.current) {
+      clearTimeout(proactiveOfferTimeoutRef.current);
+    }
+    
+    // Announce creator going offline
+    if (signalingChannelRef.current) {
+      signalingChannelRef.current.send({
+        type: 'broadcast',
+        event: 'creator-offline'
+      });
+    }
+    
+    // Close all peer connections
+    peerConnectionsRef.current.forEach((pc, viewerId) => {
+      console.log(`[CREATOR] Closing connection to viewer ${viewerId}`);
+      pc.close();
+    });
+    peerConnectionsRef.current.clear();
     
     // Close queue mapping
     if (mediaState.currentSession?.queueId) {

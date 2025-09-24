@@ -116,9 +116,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const prev = pcRef.current;
     if (!prev || prev.connectionState === 'closed' || prev.signalingState === 'closed') {
       const cfg: RTCConfiguration = {
-        iceServers: (import.meta.env.VITE_ICE_SERVERS
-          ? JSON.parse(import.meta.env.VITE_ICE_SERVERS)
-          : [{ urls: ['stun:stun.l.google.com:19302'] }])
+        iceServers: (() => {
+          try {
+            return JSON.parse(import.meta.env.VITE_ICE_SERVERS || '[]');
+          } catch {
+            return [{ urls: 'stun:stun.l.google.com:19302' }];
+          }
+        })(),
+        iceTransportPolicy: 'all'
       };
       const pc = new RTCPeerConnection(cfg);
       // reattach existing handlers
@@ -339,9 +344,20 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           console.log('[BROADCAST_VIEWER] Live session change (consolidated):', payload.eventType);
 
           if (payload.eventType === 'INSERT') {
-            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection');
+            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection immediately');
             setRetryCount(0);
             debouncedStateUpdate('checking');
+            
+            // Immediately request offer when creator goes live
+            if (channelRef.current) {
+              channelRef.current.send({
+                type: 'broadcast',
+                event: 'request-offer',
+                payload: { viewerId: viewerIdRef.current }
+              });
+              offerRequestCountRef.current++;
+              console.log('[VIEWER] Immediate REQUEST-OFFER on live session INSERT');
+            }
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
             console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
             debouncedStateUpdate('offline');
@@ -640,6 +656,30 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             console.log(`[VIEWER ${viewerIdRef.current}] REMOTE ICE RX`);
           } catch (err) {
             console.warn('[VIEWER', viewerIdRef.current, '] addIceCandidate failed', err);
+          }
+        })
+        .on('broadcast', { event: 'announce-live' }, () => {
+          console.log('[VIEWER] Received announce-live, requesting offer immediately');
+          if (channelRef.current) {
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'request-offer',
+              payload: { viewerId: viewerIdRef.current }
+            });
+            offerRequestCountRef.current++;
+            console.log('[VIEWER] REQUEST-OFFER on announce-live');
+          }
+        })
+        .on('broadcast', { event: 'offer-retry' }, ({ payload }) => {
+          const { viewerId } = payload || {};
+          if (viewerId === viewerIdRef.current && channelRef.current) {
+            console.log('[VIEWER] Received offer-retry, requesting offer');
+            channelRef.current.send({
+              type: 'broadcast',
+              event: 'request-offer',
+              payload: { viewerId: viewerIdRef.current }
+            });
+            offerRequestCountRef.current++;
           }
         })
         .on('broadcast', { event: 'creator-offline' }, (e: any) => {
