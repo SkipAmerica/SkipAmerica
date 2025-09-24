@@ -977,28 +977,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         </div>
       )}
 
-      {/* Debug Overlay - Viewer (bottom-right) */}
-      {false && (
-        <div 
-          className="fixed bottom-4 right-4 bg-black/80 text-white p-2 rounded text-xs font-mono z-[9999] max-w-xs"
-          style={{ fontFamily: 'monospace' }}
-        >
-          <div className="font-bold mb-1">VIEWER [{viewerIdRef.current.slice(-6)}]</div>
-          <div>Signal: {debugStats.signalingState}</div>
-          <div>ICE: {debugStats.iceConnectionState}</div>
-          <div>Conn: {debugStats.connectionState}</div>
-          <div>Tracks: {debugStats.remoteTrackCount}</div>
-          <div>Video: {debugStats.videoResolution}</div>
-          <div>ICE Candidates: {debugStats.iceCandidateCount}</div>
-          <Button
-            onClick={handleDumpStats}
-            size="sm"
-            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs h-6 px-2"
-          >
-            Dump Stats
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
