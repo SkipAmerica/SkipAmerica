@@ -9,6 +9,7 @@ import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from
 import { isQueueFallbackEnabled } from '@/lib/env';
 import { isDebug } from '@/lib/debugFlag';
 import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
+import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -577,9 +578,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
           setConnectionState('offline');
           // Allow teardown ONLY for explicit creator-offline
-          allowTeardownOnce(() => {
+          console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for creator-offline', channelRef.current?.topic);
+          runWithTeardownAllowed(() => {
             try { channelRef.current?.unsubscribe?.(); } catch {}
+            try { supabase.removeChannel(channelRef.current!); } catch {}
             try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+            try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
           });
           try { pcRef.current?.close(); pcRef.current = null; } catch {}
         });
@@ -628,8 +632,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             if (s === 'SUBSCRIBED') {
               console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
               // Attempt to leave debug channel, but use global guard
-              allowTeardownOnce(() => {
+              console.log('[VIEWER', viewerId, '] removeChannel attempted for debug channel', dbg.topic);
+              runWithTeardownAllowed(() => {
                 try { dbg.unsubscribe?.(); } catch {}
+                try { supabase.removeChannel(dbg); } catch {}
               });
             }
             if (s === 'CLOSED') {
@@ -779,13 +785,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   // UNMOUNT-only cleanup effect
   useEffect(() => {
     return () => {
-      // @ts-ignore
-      (window as any).__allow_ch_teardown = true;
-      try { channelRef.current?.unsubscribe?.(); } catch {}
-      try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
-      try { pcRef.current?.close?.(); } catch {}
-      // @ts-ignore
-      (window as any).__allow_ch_teardown = false;
+      console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for', channelRef.current?.topic);
+      runWithTeardownAllowed(() => {
+        try { channelRef.current?.unsubscribe?.(); } catch {}
+        try { supabase.removeChannel(channelRef.current!); } catch {}
+        try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+        try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
+        try { pcRef.current?.close?.(); } catch {}
+      });
     };
   }, []);
 

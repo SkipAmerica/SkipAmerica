@@ -237,8 +237,12 @@ export default function JoinQueue() {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(queueChannel);
-      supabase.removeChannel(liveChannel);
+      if ((window as any).__allow_ch_teardown) {
+        try { supabase.removeChannel(queueChannel); } catch {}
+        try { supabase.removeChannel(liveChannel); } catch {}
+      } else {
+        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+      }
     };
   }, [creatorId, user]);
 

@@ -116,7 +116,11 @@ export function LobbyChat({ creatorId }: LobbyChatProps) {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if ((window as any).__allow_ch_teardown) {
+        try { supabase.removeChannel(channel); } catch {}
+      } else {
+        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+      }
     };
   }, [creatorId]);
 

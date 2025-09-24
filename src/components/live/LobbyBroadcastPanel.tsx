@@ -161,7 +161,11 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       .subscribe()
 
     return () => {
-      supabase.removeChannel(channel)
+      if ((window as any).__allow_ch_teardown) {
+        try { supabase.removeChannel(channel); } catch {}
+      } else {
+        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+      }
     }
   }, [user])
 
@@ -668,7 +672,11 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             payload: { queueId }
           });
         }
-        supabase.removeChannel(signalChannel);
+        if ((window as any).__allow_ch_teardown) {
+          try { supabase.removeChannel(signalChannel); } catch {}
+        } else {
+          console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+        }
       }
     };
   }, [user, mediaState.stream]);

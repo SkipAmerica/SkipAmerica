@@ -125,7 +125,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     return () => {
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
+        if ((window as any).__allow_ch_teardown) {
+          try { supabase.removeChannel(channelRef.current); } catch {}
+        } else {
+          console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+        }
         channelRef.current = null
       }
       if (retryTimeoutRef.current) {

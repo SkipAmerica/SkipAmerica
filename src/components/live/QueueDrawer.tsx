@@ -218,7 +218,11 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     return () => {
       console.log('[QueueDrawer] Cleaning up real-time subscription')
       clearTimeout(fetchTimeout)
-      supabase.removeChannel(channel)
+      if ((window as any).__allow_ch_teardown) {
+        try { supabase.removeChannel(channel); } catch {}
+      } else {
+        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+      }
     }
   }, [isOpen, user, fetchQueue])
 
