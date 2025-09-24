@@ -356,11 +356,11 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
       {/* Camera Preview Tiles */}
       <main className="flex-1 overflow-auto">
         <div className="p-4 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Your Preview */}
-            <div className="flex-1 flex flex-col">
+          <div className="space-y-4">
+            {/* Your Preview - Full Width and 2.5x Height */}
+            <div className="flex flex-col">
               <h2 className="text-sm font-medium mb-2">Your Preview</h2>
-              <Card className="flex-1 min-h-[300px] overflow-hidden relative">
+              <Card className="w-full min-h-[750px] overflow-hidden relative">
                 {previewStarted ? (
                   <MediaPreview className="w-full h-full" />
                 ) : (
@@ -482,41 +482,8 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
                 </div>
               )}
             </div>
-
-            {/* Participant Preview */}
-            <div className="flex-1 flex flex-col">
-              <h2 className="text-sm font-medium mb-2">Participant</h2>
-              <Card className="flex-1 min-h-[200px] overflow-hidden">
-                <div className="w-full h-full bg-muted/50 flex items-center justify-center">
-                  <div className="text-center text-muted-foreground">
-                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-2">
-                      <Video className="h-6 w-6" />
-                    </div>
-                    <p className="text-sm">Waiting for participant preview...</p>
-                  </div>
-                </div>
-              </Card>
-              
-              {/* Report User Control */}
-              <div className="flex justify-center py-3">
-                <ReportDialog
-                  reportedUserId="participant_id" // TODO: Replace with actual participant ID
-                  reportedUserName="Participant" // TODO: Replace with actual participant name
-                  trigger={
-                    <Button
-                      size="lg"
-                      variant="destructive"
-                      aria-label="Report user"
-                      className="h-12 w-12 rounded-full p-0 bg-red-600 hover:bg-red-700"
-                    >
-                      <Flag className="h-5 w-5" />
-                    </Button>
-                  }
-                />
-              </div>
-            </div>
           </div>
-
+          
           {/* Quick Words Section */}
           <div className="space-y-4">
             <div>
