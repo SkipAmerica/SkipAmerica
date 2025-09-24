@@ -11,6 +11,7 @@ import { isDebug } from '@/lib/debugFlag';
 import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
+import { createSFU } from '@/lib/sfu';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -32,6 +33,7 @@ type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'off
 
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
   const queueId = creatorId; // The creatorId parameter is actually the queueId from URL
+  const USE_SFU = true; // Feature flag for LiveKit SFU
   
   if (!queueId) {
     return <div className="p-4 text-red-500">No queue ID provided</div>;
@@ -820,6 +822,55 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
 
     const connectToCreatorBroadcast = async () => {
+      // SFU path (bypass legacy P2P)
+      if (USE_SFU) {
+        console.log('[VIEWER] Using LiveKit SFU');
+        try {
+          const sfu = createSFU();
+          
+          // Hook remote track into existing video element
+          sfu.onRemoteVideo((el) => {
+            // Replace the element's srcObject
+            if (videoRef.current) {
+              // Easiest: swap nodes
+              const parent = videoRef.current.parentElement;
+              if (parent) {
+                el.className = videoRef.current.className;
+                parent.replaceChild(el, videoRef.current);
+                // @ts-ignore
+                videoRef.current = el;
+              }
+            }
+          });
+          
+          // Identity and creatorId  
+          const { data } = await supabase.auth.getUser();
+          const identity = data?.user?.id ?? crypto.randomUUID();
+          const creatorId = resolvedCreatorId || queueId; // use resolved creator ID
+          
+          const resp = await supabase.functions.invoke('get_livekit_token', {
+            body: { role: 'viewer', creatorId, identity }
+          });
+          
+          if (resp.error) throw new Error(resp.error.message);
+          
+          const { token, host } = resp.data;
+          await sfu.connect(host, token);
+          
+          setConnectionState('connected');
+          console.log('[VIEWER] SFU connected successfully');
+          
+          // Store cleanup function for unmount
+          (window as any).__viewerSFU = sfu;
+          
+          return; // stop legacy P2P setup
+        } catch (e) {
+          console.error('[VIEWER] SFU connect failed', e);
+          setConnectionState('failed');
+          return;
+        }
+      }
+
       try {
         const viewerId = viewerIdRef.current;
         console.log(`[BROADCAST_VIEWER:${viewerId}] Starting connection attempt`, retryCount + 1);
@@ -1037,6 +1088,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   useEffect(() => {
     return () => {
       console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for', channelRef.current?.topic);
+      
+      // Cleanup SFU on unmount
+      if (USE_SFU && (window as any).__viewerSFU) {
+        try {
+          (window as any).__viewerSFU.disconnect();
+          (window as any).__viewerSFU = null;
+        } catch (e) {
+          console.error('[VIEWER] SFU cleanup error', e);
+        }
+      }
+      
       runWithTeardownAllowed(() => {
         try { channelRef.current?.unsubscribe?.(); } catch {}
         try { supabase.removeChannel(channelRef.current!); } catch {}

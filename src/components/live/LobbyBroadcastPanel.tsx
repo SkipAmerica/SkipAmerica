@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { canonicalSignalChannel } from '@/lib/queueResolver'
+import { createSFU } from '@/lib/sfu'
 
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
@@ -39,6 +40,7 @@ interface MediaState {
 export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const { user } = useAuth()
   const { toast } = useToast()
+  const USE_SFU = true // Feature flag for LiveKit SFU
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
@@ -376,6 +378,43 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   }, [user]);
 
   const startBroadcast = async () => {
+    // SFU path (skip P2P setup)
+    if (USE_SFU) {
+      console.log('[CREATOR] Using LiveKit SFU');
+      try {
+        const sfu = createSFU();
+        const identity = user?.id!;
+        const creatorId = user?.id!;
+        
+        const resp = await supabase.functions.invoke('get_livekit_token', {
+          body: { role: 'creator', creatorId, identity }
+        });
+        
+        if (resp.error) throw new Error(resp.error.message);
+        
+        const { token, host } = resp.data;
+        await sfu.connect(host, token);
+        await sfu.publishCameraMic();
+        
+        setMediaState(prev => ({ ...prev, isStreaming: true }));
+        
+        // Store sfu handle for cleanup
+        (window as any).__creatorSFU = sfu;
+        
+        console.log('[CREATOR] SFU broadcast started successfully');
+        return; // skip legacy P2P
+      } catch (e) {
+        console.error('[CREATOR] SFU publish failed', e);
+        setMediaState(prev => ({ ...prev, isStreaming: false }));
+        toast({
+          title: "Failed to start SFU broadcast",
+          description: "Please try again",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
     try {
       console.log('Starting broadcast...')
       setMediaState(prev => ({ ...prev, isStreaming: true }))
@@ -452,6 +491,17 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
   const stopBroadcast = async () => {
     console.log('Stopping broadcast...')
+    
+    // SFU cleanup
+    if (USE_SFU && (window as any).__creatorSFU) {
+      try {
+        await (window as any).__creatorSFU.disconnect();
+        (window as any).__creatorSFU = null;
+        console.log('[CREATOR] SFU disconnected');
+      } catch (e) {
+        console.error('[CREATOR] SFU disconnect error', e);
+      }
+    }
     
     // Clear proactive offer timeout
     if (proactiveOfferTimeoutRef.current) {
