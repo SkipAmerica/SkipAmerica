@@ -516,7 +516,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               });
               await pc.setLocalDescription(offer);
               
-              console.log(`[LOBBY_BROADCAST] Sending offer to viewer ${viewerId}`);
+              console.log('[CREATOR] sending offer for viewerId', viewerId, 'len=', offer.sdp.length);
               signalChannel.send({
                 type: 'broadcast',
                 event: 'offer',
@@ -579,7 +579,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
             const offer = await pc.createOffer();
             await pc.setLocalDescription(offer);
           
-            console.log('[LOBBY_BROADCAST] Sending legacy offer to viewers');
+            console.log('[CREATOR] sending offer for viewerId', legacyViewerId, 'len=', offer.sdp.length);
             signalChannel.send({
               type: 'broadcast',
               event: 'offer',

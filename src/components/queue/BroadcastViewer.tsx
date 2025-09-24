@@ -339,8 +339,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         peerConnection.onicecandidate = (event) => {
           if (event.candidate && signalChannel) {
             iceCandidateCountRef.current += 1;
-            console.log(`[RTC-DEBUG] ICE candidate generated (count: ${iceCandidateCountRef.current})`);
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Sending ICE candidate`);
+            console.log(`[RTC-DEBUG] ICE candidate generated locally (count: ${iceCandidateCountRef.current})`);
+            console.log(`[VIEWER ${viewerId}] LOCAL ICE TX`);
             signalChannel.send({
               type: 'broadcast',
               event: 'ice-candidate',
@@ -362,64 +362,89 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${currentChannelAttempt} channel: ${currentChannel}`);
 
+        // Helper to normalize both payload shapes
+        const fromSignal = (e: any) => {
+          const p = e?.payload ?? e ?? {};
+          return {
+            viewerId: p.viewerId,
+            sdp: p.sdp,
+            candidate: p.candidate
+          };
+        };
+
+        // Ensure viewer PeerConnection setup
+        const ensureViewerPc = () => {
+          if (!peerConnection) {
+            console.error(`[BROADCAST_VIEWER:${viewerId}] PeerConnection not initialized`);
+            setConnectionState('failed');
+            return false;
+          }
+          return true;
+        };
+
         // Set up signaling channel with request/response handshake
         signalChannel = supabase.channel(currentChannel)
-          .on('broadcast', { event: 'offer' }, async ({ payload }) => {
-            // Only process offers for this viewer
-            if (!payload || payload.viewerId !== viewerId) {
-              // Also handle legacy format without viewerId for backward compatibility
-              if (!payload || (!payload.viewerId && !payload.offer)) return;
-            }
+          .on('broadcast', { event: 'offer' }, async (e) => {
+            const { viewerId: vid, sdp } = fromSignal(e);
+            if (!vid || vid !== viewerId) return;
             
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Received offer from creator on ${currentChannelAttempt} channel`);
+            console.log(`[VIEWER ${viewerId}] OFFER RX (payload=${!!e?.payload})`);
+            
+            if (!ensureViewerPc()) return;
+            
             try {
-              const offer = payload.sdp ? { type: 'offer', sdp: payload.sdp } : payload.offer;
-              await peerConnection!.setRemoteDescription(new RTCSessionDescription(offer));
+              await peerConnection!.setRemoteDescription({ type: 'offer', sdp });
+              console.log(`[VIEWER ${viewerId}] Remote description set, SDP len=${sdp?.length || 0}`);
               
               const answer = await peerConnection!.createAnswer();
               await peerConnection!.setLocalDescription(answer);
               
-              // Send answer with proper payload structure
               signalChannel.send({
                 type: 'broadcast',
                 event: 'answer',
                 payload: { viewerId, sdp: answer.sdp }
               });
               
-              console.log(`[BROADCAST_VIEWER:${viewerId}] Sent answer to creator`);
+              console.log(`[VIEWER ${viewerId}] ANSWER TX len=${answer.sdp.length}`);
             } catch (error) {
               console.error(`[BROADCAST_VIEWER:${viewerId}] Error handling offer:`, error);
               setConnectionState('failed');
             }
           })
-          .on('broadcast', { event: 'ice-candidate' }, async ({ payload }) => {
-            // Handle both new format (with viewerId) and legacy format (with sender)
-            const isLegacyFormat = payload?.sender === 'creator';
-            const isNewFormat = payload?.viewerId === viewerId;
+          .on('broadcast', { event: 'ice-candidate' }, async (e) => {
+            const { viewerId: vid, candidate } = fromSignal(e);
+            if (!vid || vid !== viewerId || !candidate) return;
             
-            if (!isLegacyFormat && !isNewFormat) return;
-            if (!peerConnection || !peerConnection.remoteDescription) return;
+            if (!ensureViewerPc()) return;
+            if (!peerConnection!.remoteDescription) return;
             
-            iceCandidateCountRef.current += 1;
-            console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Received ICE candidate from creator`);
             try {
-              await peerConnection.addIceCandidate(new RTCIceCandidate(payload.candidate));
+              await peerConnection!.addIceCandidate(candidate);
+              iceCandidateCountRef.current += 1;
+              console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
+              console.log(`[VIEWER ${viewerId}] REMOTE ICE RX`);
             } catch (error) {
               console.error(`[BROADCAST_VIEWER:${viewerId}] Error adding ICE candidate:`, error);
             }
+          })
+          .on('broadcast', { event: 'creator-offline' }, (e) => {
+            const { /* viewerId unused here */ } = fromSignal(e);
+            console.log(`[VIEWER ${viewerId}] Creator went offline`);
+            setConnectionState('offline');
           })
           .subscribe((status) => {
             console.log(`[BROADCAST_VIEWER:${viewerId}] ${currentChannelAttempt} channel subscription status:`, status);
             
             // Only send request-offer after successful subscription
             if (status === 'SUBSCRIBED') {
-              console.log(`[BROADCAST_VIEWER:${viewerId}] ${currentChannelAttempt} channel subscribed, requesting offer`);
+              console.log(`[VIEWER ${viewerId}] SUBSCRIBED channel=${currentChannel}`);
               signalChannel.send({
                 type: 'broadcast',
                 event: 'request-offer',
                 payload: { viewerId }
               });
+              
+              console.log(`[VIEWER ${viewerId}] REQUEST-OFFER TX`);
               
               // Set up offer timeout with retry logic
               if (connectionTimeoutRef.current) {
