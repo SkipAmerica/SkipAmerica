@@ -37,12 +37,29 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return <div className="p-4 text-red-500">No queue ID provided</div>;
   }
 
-  // Debug flag from URL params
-  const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const DEBUG = params.get('debug') === '1';
+  const DEBUG =
+    typeof window !== 'undefined' &&
+    /(?:^|[?&])debug=1(?:&|$)/.test(window.location.search);
 
-  // Create a single persistent remote MediaStream and never replace it
-  const remoteMsRef = useRef<MediaStream>(new MediaStream());
+  const InlineHUD = () => {
+    if (!DEBUG) return null;
+    const pc = pcRef.current;
+    const v = videoRef.current;
+    const ms = (remoteMsRef?.current as MediaStream | undefined);
+    return (
+      <div style={{position:'fixed',top:8,right:8,zIndex:9999,background:'rgba(0,0,0,0.7)',color:'#fff',fontFamily:'ui-monospace,Menlo,monospace',fontSize:12,lineHeight:1.35,padding:'10px 12px',borderRadius:8,pointerEvents:'none',maxWidth:360}}>
+        <div style={{fontWeight:700,marginBottom:6}}>PQ Viewer (inline HUD)</div>
+        <div>Viewer: {viewerIdRef.current}</div>
+        <div>Channel: {channelRef.current?.topic || '—'}</div>
+        <div>Ch Status: {lastChannelStatus || '—'}</div>
+        <div>PC: {pc?.connectionState || '—'} | Signal: {pc?.signalingState || '—'}</div>
+        <div>ICE: {pc?.iceConnectionState || '—'}</div>
+        <div>Tracks: {ms ? ms.getTracks().length : 0}</div>
+        <div>VideoReady: {v ? v.readyState : '—'} Paused: {String(!!v?.paused)}</div>
+        <div>Req#: {offerRequestCountRef?.current ?? 0} OfferRx#: {offersReceivedRef?.current ?? 0} AnsTx#: {answersSentRef?.current ?? 0}</div>
+      </div>
+    );
+  };
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
@@ -72,7 +89,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const offerPromiseRef = useRef<{ resolve: () => void; reject: () => void } | null>(null);
   const closedStrikesRef = useRef(0);
   const fallbackChannelRef = useRef<any | null>(null);
-  // allowTeardownRef removed - using global guard now
   
   // Debug counters and state
   const offerRequestCountRef = useRef(0);
@@ -89,106 +105,77 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     ]
   };
 
-  // Remove local guard - using global guard now
+  // Ensure we have a persistent MediaStream
+  const remoteMsRef = useRef<MediaStream>(new MediaStream());
 
-  // Helper functions for resilient video attachment
+  function addTrackOnce(track: MediaStreamTrack) {
+    const ms: MediaStream = remoteMsRef.current;
+    if (!track) return;
+    if (!ms.getTracks().some(t => t.id === track.id)) ms.addTrack(track);
+  }
+
   function rebindVideo(tag?: HTMLVideoElement | null) {
     const v = tag ?? videoRef.current;
     if (!v) return;
     const ms = remoteMsRef.current as MediaStream;
-    // Force rebind even if the same object (Safari/iOS can ignore identical refs)
     try { (v as any).srcObject = null; } catch {}
     (v as any).srcObject = ms;
-    v.muted = true; // autoplay
-    v.setAttribute('playsinline', '');
-    v.autoplay = true;
+    v.muted = true; v.autoplay = true; v.setAttribute('playsinline','');
     try { v.play?.(); } catch (e) { console.warn('[VIEWER', viewerIdRef.current, '] play() rejected', e); }
   }
 
-  function addTrackOnce(track: MediaStreamTrack) {
-    const ms: MediaStream = remoteMsRef.current;
-    const has = ms.getTracks().some(t => t.id === track.id);
-    if (!has) ms.addTrack(track);
+  function makePc(): RTCPeerConnection {
+    const iceServers = import.meta.env.VITE_ICE_SERVERS
+      ? JSON.parse(import.meta.env.VITE_ICE_SERVERS)
+      : [{ urls: 'stun:stun.l.google.com:19302' }];
+    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
+
+    // Pre-create recvonly m-lines so SRD succeeds even if ontrack is late.
+    try {
+      pc.addTransceiver('video', { direction: 'recvonly' });
+      pc.addTransceiver('audio', { direction: 'recvonly' });
+    } catch {}
+
+    pc.ontrack = (e) => {
+      const s = e.streams?.[0];
+      if (s) s.getTracks().forEach(t => addTrackOnce(t));
+      else if (e.track) addTrackOnce(e.track);
+      rebindVideo();
+    };
+
+    pc.onconnectionstatechange = () => {
+      const st = pc.connectionState;
+      console.log('[VIEWER', viewerIdRef.current, '] PC=', st, 'signal=', pc.signalingState);
+      if (st === 'connected') {
+        queueMicrotask(() => rebindVideo());
+        setTimeout(() => rebindVideo(), 200);
+      }
+    };
+
+    pc.onicecandidate = (ev) => {
+      if (!ev.candidate) return;
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'ice-candidate',
+        payload: { viewerId: viewerIdRef.current, candidate: ev.candidate }
+      });
+    };
+
+    rebindVideo();
+    return pc;
   }
 
-  // Ensure we have an open RTCPeerConnection
-  function ensureOpenPc(): RTCPeerConnection {
-    const prev = pcRef.current;
-    if (!prev || prev.connectionState === 'closed' || prev.signalingState === 'closed') {
-      const cfg: RTCConfiguration = {
-        iceServers: (() => {
-          try {
-            return JSON.parse(import.meta.env.VITE_ICE_SERVERS || '[]');
-          } catch {
-            return [{ urls: 'stun:stun.l.google.com:19302' }];
-          }
-        })(),
-        iceTransportPolicy: 'all'
-      };
-      const pc = new RTCPeerConnection(cfg);
-      // reattach existing handlers
-      pc.ontrack = (e) => {
-        const track = e.track;
-        // Some senders don't include e.streams; handle both cases.
-        if (e.streams && e.streams[0]) {
-          // Add each track from the incoming stream to our persistent stream
-          for (const t of e.streams[0].getTracks()) addTrackOnce(t);
-        } else {
-          addTrackOnce(track);
-        }
-
-        // For Safari/iOS and late DOM availability:
-        if (track) {
-          track.onunmute = () => {
-            addTrackOnce(track);
-            rebindVideo(); // force rebind after track becomes live
-          };
-        }
-
-        rebindVideo(); // immediate bind
-        
-        setConnectionState('connected');
-        setRetryCount(0);
-        setOfferRetryCount(0);
-        
-        if (connectionTimeoutRef.current) {
-          clearTimeout(connectionTimeoutRef.current);
-          connectionTimeoutRef.current = null;
-        }
-        
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Stream connected successfully`);
-      };
-      pc.onicecandidate = (e) => {
-        if (e.candidate && channelRef.current) {
-          iceCandidateCountRef.current += 1;
-          console.log(`[RTC-DEBUG] ICE candidate generated locally (count: ${iceCandidateCountRef.current})`);
-          console.log(`[VIEWER ${viewerIdRef.current}] LOCAL ICE TX`);
-          channelRef.current.send({
-            type: 'broadcast',
-            event: 'ice-candidate',
-            payload: { viewerId: viewerIdRef.current, candidate: e.candidate }
-          });
-        }
-      };
-      pc.onconnectionstatechange = () => {
-        console.log('[VIEWER', viewerIdRef.current, '] PC state=', pc.connectionState, 'signal=', pc.signalingState);
-        if (pc.connectionState === 'connected') {
-          // microtask + small timeout to allow tracks to settle
-          queueMicrotask(() => rebindVideo());
-          setTimeout(() => rebindVideo(), 200);
-        }
-        if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
-          console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe on connection state change');
-          // DO NOT unsubscribe here - let retry logic handle reconnection
-          setConnectionState('failed');
-        }
-      };
-      pcRef.current = pc;
-      console.log('[VIEWER', viewerIdRef.current, '] created fresh RTCPeerConnection');
-      return pc;
+  function getOpenPc(forceNew = false): RTCPeerConnection {
+    const cur = pcRef.current;
+    const closed = !cur || cur.signalingState === 'closed' || cur.connectionState === 'failed';
+    if (forceNew || closed) {
+      try { cur?.close?.(); } catch {}
+      pcRef.current = makePc();
     }
-    return prev;
+    return pcRef.current!;
   }
+
+  useEffect(() => { if (videoRef.current) rebindVideo(videoRef.current); }, [videoRef.current]);
 
   // Memoized effective creator ID to prevent unnecessary re-computations
   const effectiveCreatorId = useMemo(() => {
@@ -610,37 +597,41 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const { viewerId: vid, sdp } = p;
           if (vid !== viewerIdRef.current || !sdp) return;
           
-          offersReceivedRef.current++; // Debug counter
-          
-          // Signal that we got an offer
-          if (offerPromiseRef.current) {
-            offerPromiseRef.current.resolve();
+          // payload: { sdp, viewerId }
+          try {
+            const pc = getOpenPc(pcRef.current?.signalingState === 'closed');
+            await pc.setRemoteDescription({ type: 'offer', sdp: p.sdp });
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
+            channelRef.current?.send({
+              type: 'broadcast',
+              event: 'answer',
+              payload: { viewerId: viewerIdRef.current, sdp: answer.sdp }
+            });
+            pc.getReceivers?.().forEach(r => r.track && addTrackOnce(r.track));
+            rebindVideo();
+            offersReceivedRef.current = (offersReceivedRef.current || 0) + 1;
+            answersSentRef.current = (answersSentRef.current || 0) + 1;
+          } catch (e) {
+            console.error('[VIEWER] offer handling failed (retrying with fresh PC)', e);
+            try {
+              const pc = getOpenPc(true);
+              await pc.setRemoteDescription({ type: 'offer', sdp: p.sdp });
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              channelRef.current?.send({
+                type:'broadcast',
+                event:'answer',
+                payload:{ viewerId: viewerIdRef.current, sdp: answer.sdp }
+              });
+              pc.getReceivers?.().forEach(r => r.track && addTrackOnce(r.track));
+              rebindVideo();
+              offersReceivedRef.current = (offersReceivedRef.current || 0) + 1;
+              answersSentRef.current = (answersSentRef.current || 0) + 1;
+            } catch (e2) {
+              console.error('[VIEWER] retry with fresh PC failed', e2);
+            }
           }
-          
-          const pc = ensureOpenPc();
-          
-          // If we already set a local offer earlier, rollback first
-          if (pc.signalingState === 'have-local-offer' || pc.signalingState === 'have-local-pranswer') {
-            try { await pc.setLocalDescription({ type: 'rollback' } as any); } catch {}
-          }
-          
-          await pc.setRemoteDescription({ type: 'offer', sdp });
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          
-          // Late-binding pass: collect any existing receivers
-          pc.getReceivers?.().forEach(r => {
-            if (r.track && r.track.readyState !== 'ended') addTrackOnce(r.track);
-          });
-          rebindVideo();
-          
-          signalChannel.send({
-            type: 'broadcast',
-            event: 'answer',
-            payload: { viewerId: viewerIdRef.current, sdp: answer.sdp }
-          });
-          answersSentRef.current++; // Debug counter
-          console.log('[VIEWER', viewerIdRef.current, '] ANSWER TX len=', answer.sdp.length);
         })
         .on('broadcast', { event: 'ice-candidate' }, async (e: any) => {
           const p = e.payload ?? e ?? {};
@@ -648,7 +639,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (vid !== viewerIdRef.current || !candidate) return;
           
           iceRxCountRef.current++; // Debug counter
-          const pc = ensureOpenPc();
+          const pc = getOpenPc();
           try { 
             await pc.addIceCandidate(candidate); 
             iceCandidateCountRef.current += 1;
@@ -704,7 +695,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         setConnectionState('connecting');
         
         // Ensure we have an open peer connection (creates fresh if needed)
-        const peerConnection = ensureOpenPc();
+        const peerConnection = getOpenPc();
 
         // Determine channels to use
         const primaryChannel = resolvedCreatorId ? canonicalChannelFor(resolvedCreatorId) : null;
@@ -1095,33 +1086,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         </div>
       )}
 
-      {DEBUG && (
-        <DebugHUD
-          title="PQ Viewer"
-          rows={[
-            ['Viewer ID', viewerIdRef.current],
-            ['Channel', channelRef.current?.topic || '—'],
-            ['Ch Status', lastChannelStatus],
-            ['PC State', pcRef.current?.connectionState || '—'],
-            ['ICE State', pcRef.current?.iceConnectionState || '—'],
-            ['Signal', pcRef.current?.signalingState || '—'],
-            ['Tracks', String((() => {
-              try {
-                const ms = remoteMsRef.current as MediaStream;
-                return ms ? ms.getTracks().length : 0;
-              } catch { return 0; }
-            })())],
-            ['Video Ready', String(!!videoRef.current && videoRef.current.readyState)],
-            ['Paused', String(!!videoRef.current?.paused)],
-          ]}
-          bottomLeft={[
-            ['Requests', `offerReq# ${offerRequestCountRef.current}`],
-            ['Offers Rx', `offers# ${offersReceivedRef.current}`],
-            ['Answers Tx', `answers# ${answersSentRef.current}`],
-            ['ICE Rx', `cands# ${iceRxCountRef.current}`],
-          ]}
-        />
-      )}
+      {DEBUG && <InlineHUD />}
 
     </div>
   );
