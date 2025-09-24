@@ -241,7 +241,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (allowTeardownRef.current) {
+        try { supabase.removeChannel(channel); } catch {}
+      } else {
+        console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime removeChannel at chat cleanup');
+      }
     };
   }, [queueId, resolvedCreatorId]);
 
@@ -329,7 +333,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
 
     return () => {
-      channels.forEach((ch) => supabase.removeChannel(ch));
+      channels.forEach((ch) => {
+        if (allowTeardownRef.current) {
+          try { supabase.removeChannel(ch); } catch {}
+        } else {
+          console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime removeChannel at session cleanup');
+        }
+      });
     };
   }, [queueId, resolvedCreatorId]);
 
@@ -814,22 +824,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     // No cleanup here - let unmount-only effect handle it
   }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
 
-  // Separate effect for unmount-only cleanup
+  // UNMOUNT-only cleanup effect
   useEffect(() => {
     return () => {
-      console.log('[VIEWER', viewerIdRef.current, '] Component unmounting - cleaning up all resources');
-      allowTeardownRef.current = true;
-      guardedUnsubscribe(channelRef.current, 'unmount');
-      guardedUnsubscribe(fallbackChannelRef.current, 'unmount');
-      try { peerConnectionRef.current?.close(); peerConnectionRef.current = null; } catch {}
-      if (connectionTimeoutRef.current) {
-        clearTimeout(connectionTimeoutRef.current);
-        connectionTimeoutRef.current = null;
-      }
-      if (debugIntervalRef.current) {
-        clearInterval(debugIntervalRef.current);
-        debugIntervalRef.current = null;
-      }
+      allowTeardownRef.current = true;         // allow teardown ONLY now
+      try { channelRef.current?.unsubscribe?.(); } catch {}
+      try { peerConnectionRef.current?.close?.(); } catch {}
     };
   }, []);
 
