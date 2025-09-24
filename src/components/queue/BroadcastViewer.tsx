@@ -5,7 +5,8 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { mediaManager } from '@/media/MediaOrchestrator';
 import { generateViewerId } from '@/utils/viewer-id';
-import { resolveCreatorFromQueueId, canonicalSignalChannel, deprecatedQueueChannel } from '@/lib/queueResolver';
+import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from '@/lib/queueResolver';
+import { isQueueFallbackEnabled } from '@/lib/env';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -269,8 +270,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       if (!queueId) return;
       
       console.log(`[QUEUE_RESOLVER] Resolving queueId: ${queueId}`);
-      const { creatorUserId, via } = await resolveCreatorFromQueueId(queueId);
-      console.log(`[QUEUE_RESOLVER] Resolved via ${via}:`, creatorUserId ? `creator_user_id=${creatorUserId}` : 'no mapping');
+      const creatorUserId = await resolveCreatorUserId(queueId);
+      console.log(`[QUEUE_RESOLVER] Resolved:`, creatorUserId ? `creator_user_id=${creatorUserId}` : 'no mapping');
       
       setResolvedCreatorId(creatorUserId);
     };
@@ -352,18 +353,25 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         };
 
         // Determine channels to use
-        const primaryChannel = resolvedCreatorId ? canonicalSignalChannel(resolvedCreatorId) : null;
-        const fallbackChannel = deprecatedQueueChannel(queueId);
+        const primaryChannel = resolvedCreatorId ? canonicalChannelFor(resolvedCreatorId) : null;
+        const fallbackChannel = legacyQueueChannelFor(queueId);
+        const fallbackEnabled = isQueueFallbackEnabled();
         
-        // Start with primary channel if available, otherwise use fallback
-        const channelToUse = primaryChannel || fallbackChannel;
-        const usingFallback = !primaryChannel;
+        let channelToUse: string | null = null;
+        let usingFallback = false;
         
-        if (usingFallback) {
-          console.warn('[DEPRECATED] fallback queue channel used:', fallbackChannel);
+        if (primaryChannel) {
+          channelToUse = primaryChannel;
+          setChannelType('primary');
+        } else if (fallbackEnabled) {
+          channelToUse = fallbackChannel;
+          usingFallback = true;
+          console.warn('[DEPRECATED] Fallback queue channel used:', fallbackChannel);
           setChannelType('fallback');
         } else {
-          setChannelType('primary');
+          console.warn('[VIEWER] No mapping for queueId and fallback disabled:', queueId);
+          setConnectionState('failed');
+          return;
         }
 
         console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);

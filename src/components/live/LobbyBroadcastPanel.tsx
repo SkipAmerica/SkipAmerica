@@ -170,6 +170,24 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       console.log('Starting broadcast...')
       setMediaState(prev => ({ ...prev, isStreaming: true }))
 
+      // Generate queue ID and upsert queue mapping
+      const queueId = crypto.randomUUID();
+      const creatorUserId = user?.id;
+      
+      if (creatorUserId) {
+        // Close any existing open queue for this creator
+        await supabase.from('queues')
+          .update({ status: 'closed' })
+          .eq('creator_user_id', creatorUserId)
+          .eq('status', 'open');
+        
+        // Insert the new active queue
+        await supabase.from('queues')
+          .upsert({ id: queueId, creator_user_id: creatorUserId, status: 'open' }, { onConflict: 'id' });
+        
+        console.log('[CREATOR] Queue mapping created:', { queueId, creatorUserId });
+      }
+
       // Create live session record
       const { data: sessionData, error: sessionError } = await supabase
         .from('live_sessions')
@@ -187,7 +205,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         throw sessionError
       }
 
-      setMediaState(prev => ({ ...prev, currentSession: sessionData }))
+      setMediaState(prev => ({ ...prev, currentSession: { ...sessionData, queueId } }))
       console.log('Live session created:', sessionData.id)
 
       // Initialize media
@@ -206,6 +224,14 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
   const stopBroadcast = async () => {
     console.log('Stopping broadcast...')
+    
+    // Close queue mapping
+    if (mediaState.currentSession?.queueId) {
+      await supabase.from('queues')
+        .update({ status: 'closed' })
+        .eq('id', mediaState.currentSession.queueId);
+      console.log('[CREATOR] Queue closed:', mediaState.currentSession.queueId);
+    }
     
     // Update live session record
     if (mediaState.currentSession) {
