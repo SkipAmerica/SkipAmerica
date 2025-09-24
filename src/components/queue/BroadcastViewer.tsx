@@ -427,6 +427,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log('[VIEWER', viewerIdRef.current, '] canonical channel new?', !channelRef.current, 'topic=', newCh.topic,
                   'patched=', !!(newCh as any).__origUnsub);
       
+      // HARD safety net: block unsubscribe unless we explicitly allow during unmount/offline.
+      // @ts-ignore
+      if (!(newCh as any).__origUnsub) {
+        // @ts-ignore
+        (newCh as any).__origUnsub = newCh.unsubscribe.bind(newCh);
+        newCh.unsubscribe = (...args: any[]) => {
+          // Only allow during unmount/creator-offline where we set window.__allow_ch_teardown = true
+          // @ts-ignore
+          if (!(window as any).__allow_ch_teardown) {
+            console.warn('[HARD-BLOCK] prevented unsubscribe on', newCh.topic, 'stack:\n', new Error().stack);
+            return newCh; // NO-OP
+          }
+          // @ts-ignore
+          return (newCh as any).__origUnsub(...args);
+        };
+        console.log('[HARD-BLOCK] patch applied to', newCh.topic);
+      }
+      
       // Ensure we reuse a single instance
       if (!channelRef.current || channelRef.current.topic !== newCh.topic) {
         if (isFallback) {
@@ -783,11 +801,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   // UNMOUNT-only cleanup effect
   useEffect(() => {
     return () => {
-      allowTeardownOnce(() => {
-        try { channelRef.current?.unsubscribe?.(); } catch {}
-        try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
-      });
+      // @ts-ignore
+      (window as any).__allow_ch_teardown = true;
+      try { channelRef.current?.unsubscribe?.(); } catch {}
+      try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
       try { pcRef.current?.close?.(); } catch {}
+      // @ts-ignore
+      (window as any).__allow_ch_teardown = false;
     };
   }, []);
 
