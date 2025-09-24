@@ -243,28 +243,29 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
   }, [queueId, resolvedCreatorId]);
 
-  // Continuous monitoring with polling backup (wait for resolution)
+  // Continuous monitoring with polling backup (wait for resolution) - UI only
   useEffect(() => {
     if (!queueId || resolvedCreatorId === undefined) return;
 
     const pollInterval = setInterval(async () => {
-      if (connectionState === 'connected') return; // Don't poll if already connected
-      
       const isBroadcasting = await checkCreatorBroadcastStatus();
       
       if (isBroadcasting && (connectionState === 'offline' || connectionState === 'failed')) {
         console.log('[BROADCAST_VIEWER] Polling detected creator is broadcasting - reconnecting');
         setConnectionState('checking');
-      } else if (!isBroadcasting && connectionState !== 'offline') {
-        console.log('[BROADCAST_VIEWER] Polling detected creator stopped broadcasting');
-        setConnectionState('offline');
+      } else if (!isBroadcasting) {
+        console.log('[BROADCAST_VIEWER] Polling detected creator not broadcasting (UI only)');
+        // Keep connection active - only update UI state, don't tear down
+        if (connectionState !== 'offline' && connectionState !== 'failed') {
+          setConnectionState('offline');
+        }
       }
     }, 30000); // Poll every 30 seconds
 
     return () => clearInterval(pollInterval);
   }, [queueId, resolvedCreatorId, connectionState]);
 
-  // Resolve queueId to creator_user_id on mount
+  // Resolve queueId to creator_user_id on mount and auto-connect
   useEffect(() => {
     const resolveCreator = async () => {
       if (!queueId) return;
@@ -274,18 +275,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log(`[QUEUE_RESOLVER] Resolved:`, creatorUserId ? `creator_user_id=${creatorUserId}` : 'no mapping');
       
       setResolvedCreatorId(creatorUserId);
+      
+      // Auto-connect after resolution completes
+      if (connectionState === 'checking' || connectionState === 'offline') {
+        console.log(`[QUEUE_RESOLVER] Auto-triggering connection after resolution`);
+        setConnectionState('checking');
+      }
     };
     
     resolveCreator();
-  }, [queueId]);
+  }, [queueId, connectionState]);
 
-  // WebRTC connection management
+  // WebRTC connection management - subscribe immediately after resolution
   useEffect(() => {
     if (resolvedCreatorId === undefined) return;
 
     let peerConnection: RTCPeerConnection | null = null;
     let signalChannel: any = null;
-    let connectionHealthCheck: NodeJS.Timeout | null = null;
 
     const connectToCreatorBroadcast = async () => {
       try {
@@ -318,15 +324,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               connectionTimeoutRef.current = null;
             }
             
-            // Start connection health monitoring
-            connectionHealthCheck = setInterval(async () => {
-              const isStillBroadcasting = await checkCreatorBroadcastStatus();
-              if (!isStillBroadcasting) {
-                console.log(`[BROADCAST_VIEWER:${viewerId}] Health check: Creator stopped broadcasting`);
-                setConnectionState('offline');
-                cleanup();
-              }
-            }, 15000); // Check every 15 seconds
+            // Health monitoring for UI only - no teardown
+            console.log(`[BROADCAST_VIEWER:${viewerId}] Stream connected successfully`);
           }
         };
 
@@ -454,7 +453,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             // Only send request-offer after successful subscription
             if (status === 'SUBSCRIBED') {
               const channelTypeUsed = usingFallback ? 'fallback' : 'primary';
-              console.log(`[VIEWER ${viewerId}] SUBSCRIBED to ${channelTypeUsed} channel: ${channelToUse}`);
+              console.log(`[VIEWER ${viewerId}] SUBSCRIBED on ${channelToUse}`);
               
               signalChannel.send({
                 type: 'broadcast',
@@ -470,7 +469,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               }
               
               connectionTimeoutRef.current = setTimeout(() => {
-                console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] No offer received, retrying...`);
+                console.log(`[VIEWER ${viewerId}] No offer after 5s -> re-request ${offerRetryCount + 1}`);
                 handleOfferRetry();
               }, 5000); // 5 second timeout for offer
             }
@@ -535,14 +534,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
 
     const cleanup = () => {
-      console.log('[BROADCAST_VIEWER] Cleaning up WebRTC connection');
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
-      }
-      if (connectionHealthCheck) {
-        clearInterval(connectionHealthCheck);
-        connectionHealthCheck = null;
       }
       if (debugIntervalRef.current) {
         clearInterval(debugIntervalRef.current);
@@ -577,17 +571,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Cleanup any existing connection first
       cleanup();
 
-      // Check if creator is currently broadcasting - but don't hard-block on unknown status
-      const isBroadcasting = await checkCreatorBroadcastStatus();
-      
-      if (!isBroadcasting && resolvedCreatorId) {
-        // Only block if we successfully resolved the creator ID and they're definitely offline
-        console.log('[BROADCAST_VIEWER] Creator is not broadcasting, setting offline and will retry...');
-        setConnectionState('offline');
-        return;
-      } else if (!isBroadcasting) {
-        console.log('[BROADCAST_VIEWER] Could not verify broadcast status (unknown creator mapping), proceeding with connection attempt...');
-      }
+      // Subscribe immediately regardless of broadcast status
+      console.log('[BROADCAST_VIEWER] Subscribing to channel regardless of broadcast status');
 
       // Proceed with WebRTC connection
       await connectToCreatorBroadcast();
