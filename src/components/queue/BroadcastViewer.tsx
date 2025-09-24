@@ -427,6 +427,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         supabase.channel(channelName),
         `viewer-signaling-${channelName}`
       );
+      console.log('[VIEWER', viewerIdRef.current, '] guard check:', typeof window.__allow_ch_teardown, !!(newCh as any).__origUnsub);
       
       if (isFallback) {
         fallbackChannelRef.current = newCh;
