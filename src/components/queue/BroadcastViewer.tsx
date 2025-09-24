@@ -55,6 +55,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const debugIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const iceCandidateCountRef = useRef(0);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const channelRef = useRef<any | null>(null);
+  const attemptRef = useRef(0);
+  const subscribedRef = useRef(false);
+  const offerPromiseRef = useRef<{ resolve: () => void; reject: () => void } | null>(null);
 
   // Helper to get the effective creator ID for DB operations
   const getEffectiveCreatorId = () => {
@@ -291,7 +295,156 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (resolvedCreatorId === undefined) return;
 
     let peerConnection: RTCPeerConnection | null = null;
-    let signalChannel: any = null;
+
+    // Ensure websocket connection before subscribing
+    const ensureRealtimeConnected = () => {
+      try {
+        (supabase as any)?.realtime?.connect?.();
+      } catch (error) {
+        console.warn('[BROADCAST_VIEWER] Could not ensure realtime connection:', error);
+      }
+    };
+
+    // Serialized subscription with channel reuse
+    const ensureSubscribed = async (channelName: string) => {
+      // If we already have a channel that is alive, return it
+      const ch = channelRef.current;
+      if (ch && !['closed', 'errored'].includes((ch as any).state || '')) {
+        return ch;
+      }
+
+      // Bump attempt id and capture it
+      const myAttempt = ++attemptRef.current;
+      subscribedRef.current = false;
+
+      ensureRealtimeConnected();
+
+      // Create a fresh channel and attach handlers BEFORE subscribe
+      const newCh = supabase.channel(channelName);
+      channelRef.current = newCh;
+
+      attachOfferAndIceHandlers(newCh);
+      console.log('[VIEWER', viewerIdRef.current, '] subscribing to', channelName, 'attempt', myAttempt);
+
+      // Await SUBSCRIBED (with timeout)
+      const result = await new Promise<'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED'>(resolve => {
+        const t = setTimeout(() => resolve('TIMED_OUT'), 8000);
+        newCh.subscribe((status) => {
+          console.log('[VIEWER', viewerIdRef.current, '] channel status=', status);
+          if (status === 'SUBSCRIBED') { clearTimeout(t); resolve('SUBSCRIBED'); }
+          if (status === 'CLOSED') { clearTimeout(t); resolve('CLOSED'); }
+        });
+      });
+
+      // If another attempt started while we waited, mark this one stale and do nothing
+      if (myAttempt !== attemptRef.current) {
+        console.warn('[VIEWER', viewerIdRef.current, '] stale subscribe attempt', myAttempt, 'ignoring');
+        return channelRef.current!;
+      }
+
+      if (result === 'SUBSCRIBED') {
+        subscribedRef.current = true;
+        return newCh;
+      }
+
+      console.warn('[VIEWER', viewerIdRef.current, `] subscribe result=${result} on`, channelName);
+      return null;
+    };
+
+    // Request offer with retries without tearing down channel
+    const requestOfferWithRetries = async (ch: any, max = 3) => {
+      for (let i = 1; i <= max; i++) {
+        ch.send({ type: 'broadcast', event: 'request-offer', payload: { viewerId: viewerIdRef.current } });
+        console.log('[VIEWER', viewerIdRef.current, `] REQUEST-OFFER TX (#${i})`);
+        
+        const gotOffer = await waitForOfferOrDelay(5000);
+        if (gotOffer) return true;
+      }
+      return false;
+    };
+
+    // Wait for offer or timeout
+    const waitForOfferOrDelay = (timeoutMs: number): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const timeout = setTimeout(() => {
+          if (offerPromiseRef.current) {
+            offerPromiseRef.current = null;
+          }
+          resolve(false);
+        }, timeoutMs);
+
+        offerPromiseRef.current = {
+          resolve: () => {
+            clearTimeout(timeout);
+            offerPromiseRef.current = null;
+            resolve(true);
+          },
+          reject: () => {
+            clearTimeout(timeout);
+            offerPromiseRef.current = null;
+            resolve(false);
+          }
+        };
+      });
+    };
+
+    // Attach handlers to channel (extracted for reuse)
+    const attachOfferAndIceHandlers = (signalChannel: any) => {
+      signalChannel
+        .on('broadcast', { event: 'offer' }, async (e: any) => {
+          const p = e.payload ?? e;
+          const { viewerId: vid, sdp } = p;
+          if (!vid || vid !== viewerIdRef.current || !sdp) return;
+          console.log('[VIEWER', viewerIdRef.current, '] OFFER handler received payload', p);
+          
+          // Signal that we got an offer
+          if (offerPromiseRef.current) {
+            offerPromiseRef.current.resolve();
+          }
+          
+          if (!peerConnection) return;
+          
+          try {
+            await peerConnection.setRemoteDescription({ type: 'offer', sdp });
+            console.log(`[VIEWER ${viewerIdRef.current}] Remote description set, SDP len=${sdp?.length || 0}`);
+            
+            const answer = await peerConnection.createAnswer();
+            await peerConnection.setLocalDescription(answer);
+            
+            signalChannel.send({
+              type: 'broadcast',
+              event: 'answer',
+              payload: { viewerId: viewerIdRef.current, sdp: answer.sdp }
+            });
+            
+            console.log(`[VIEWER ${viewerIdRef.current}] ANSWER TX len=${answer.sdp.length}`);
+          } catch (error) {
+            console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Error handling offer:`, error);
+            setConnectionState('failed');
+          }
+        })
+        .on('broadcast', { event: 'ice-candidate' }, async (e: any) => {
+          const p = e.payload ?? e;
+          const { viewerId: vid, candidate } = p;
+          if (!vid || vid !== viewerIdRef.current || !candidate) return;
+          console.log('[VIEWER', viewerIdRef.current, '] ICE handler received payload', p);
+          
+          if (!peerConnection || !peerConnection.remoteDescription) return;
+          
+          try {
+            await peerConnection.addIceCandidate(candidate);
+            iceCandidateCountRef.current += 1;
+            console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
+            console.log(`[VIEWER ${viewerIdRef.current}] REMOTE ICE RX`);
+          } catch (error) {
+            console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Error adding ICE candidate:`, error);
+          }
+        })
+        .on('broadcast', { event: 'creator-offline' }, (e: any) => {
+          console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
+          setConnectionState('offline');
+        });
+    };
 
     const connectToCreatorBroadcast = async () => {
       try {
@@ -316,15 +469,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (video && remoteStream) {
             video.srcObject = remoteStream;
             setConnectionState('connected');
-            setRetryCount(0); // Reset retry count on successful connection
-            setOfferRetryCount(0); // Reset offer retry count
+            setRetryCount(0);
+            setOfferRetryCount(0);
             
             if (connectionTimeoutRef.current) {
               clearTimeout(connectionTimeoutRef.current);
               connectionTimeoutRef.current = null;
             }
             
-            // Health monitoring for UI only - no teardown
             console.log(`[BROADCAST_VIEWER:${viewerId}] Stream connected successfully`);
           }
         };
@@ -339,11 +491,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
-          if (event.candidate && signalChannel) {
+          if (event.candidate && channelRef.current) {
             iceCandidateCountRef.current += 1;
             console.log(`[RTC-DEBUG] ICE candidate generated locally (count: ${iceCandidateCountRef.current})`);
             console.log(`[VIEWER ${viewerId}] LOCAL ICE TX`);
-            signalChannel.send({
+            channelRef.current.send({
               type: 'broadcast',
               event: 'ice-candidate',
               payload: { viewerId, candidate: event.candidate }
@@ -375,107 +527,20 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);
 
-        // Helper to normalize both payload shapes
-        const fromSignal = (e: any) => {
-          const p = e?.payload ?? e ?? {};
-          return {
-            viewerId: p.viewerId,
-            sdp: p.sdp,
-            candidate: p.candidate
-          };
-        };
-
-        // Ensure viewer PeerConnection setup
-        const ensureViewerPc = () => {
-          if (!peerConnection) {
-            console.error(`[BROADCAST_VIEWER:${viewerId}] PeerConnection not initialized`);
-            setConnectionState('failed');
-            return false;
+        // Subscribe with channel reuse
+        const ch = await ensureSubscribed(channelToUse);
+        if (ch && subscribedRef.current) {
+          console.log(`[VIEWER ${viewerId}] SUBSCRIBED on ${channelToUse}`);
+          const ok = await requestOfferWithRetries(ch, 3);
+          if (!ok) {
+            console.warn('[VIEWER', viewerId, '] No offer after retries; staying subscribed.');
           }
-          return true;
-        };
+        } else {
+          console.error('[VIEWER', viewerId, '] Failed to subscribe; will retry later without teardown.');
+          setConnectionState('failed');
+        }
 
-        // Set up signaling channel with request/response handshake
-        signalChannel = supabase.channel(channelToUse)
-          .on('broadcast', { event: 'offer' }, async (e) => {
-            const p = e.payload ?? e;
-            const { viewerId: vid, sdp } = p;
-            if (!vid || vid !== viewerId || !sdp) return;
-            console.log('[VIEWER', viewerId, '] OFFER handler received payload', p);
-            
-            if (!ensureViewerPc()) return;
-            
-            try {
-              await peerConnection!.setRemoteDescription({ type: 'offer', sdp });
-              console.log(`[VIEWER ${viewerId}] Remote description set, SDP len=${sdp?.length || 0}`);
-              
-              const answer = await peerConnection!.createAnswer();
-              await peerConnection!.setLocalDescription(answer);
-              
-              signalChannel.send({
-                type: 'broadcast',
-                event: 'answer',
-                payload: { viewerId, sdp: answer.sdp }
-              });
-              
-              console.log(`[VIEWER ${viewerId}] ANSWER TX len=${answer.sdp.length}`);
-            } catch (error) {
-              console.error(`[BROADCAST_VIEWER:${viewerId}] Error handling offer:`, error);
-              setConnectionState('failed');
-            }
-          })
-          .on('broadcast', { event: 'ice-candidate' }, async (e) => {
-            const p = e.payload ?? e;
-            const { viewerId: vid, candidate } = p;
-            if (!vid || vid !== viewerId || !candidate) return;
-            console.log('[VIEWER', viewerId, '] ICE handler received payload', p);
-            
-            if (!ensureViewerPc()) return;
-            if (!peerConnection!.remoteDescription) return;
-            
-            try {
-              await peerConnection!.addIceCandidate(candidate);
-              iceCandidateCountRef.current += 1;
-              console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
-              console.log(`[VIEWER ${viewerId}] REMOTE ICE RX`);
-            } catch (error) {
-              console.error(`[BROADCAST_VIEWER:${viewerId}] Error adding ICE candidate:`, error);
-            }
-          })
-          .on('broadcast', { event: 'creator-offline' }, (e) => {
-            const { /* viewerId unused here */ } = fromSignal(e);
-            console.log(`[VIEWER ${viewerId}] Creator went offline`);
-            setConnectionState('offline');
-          })
-          .subscribe((status) => {
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Channel subscription status:`, status);
-            
-            // Only send request-offer after successful subscription
-            if (status === 'SUBSCRIBED') {
-              const channelTypeUsed = usingFallback ? 'fallback' : 'primary';
-              console.log(`[VIEWER ${viewerId}] SUBSCRIBED on ${channelToUse}`);
-              
-              signalChannel.send({
-                type: 'broadcast',
-                event: 'request-offer',
-                payload: { viewerId }
-              });
-              
-              console.log(`[VIEWER ${viewerId}] REQUEST-OFFER TX`);
-              
-              // Set up offer timeout with retry logic
-              if (connectionTimeoutRef.current) {
-                clearTimeout(connectionTimeoutRef.current);
-              }
-              
-              connectionTimeoutRef.current = setTimeout(() => {
-                console.log(`[VIEWER ${viewerId}] No offer after 5s -> re-request ${offerRetryCount + 1}`);
-                handleOfferRetry();
-              }, 5000); // 5 second timeout for offer
-            }
-          });
-
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] WebRTC setup complete, waiting for subscription`);
+        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] WebRTC setup complete`);
 
       } catch (error) {
         console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Error setting up WebRTC:`, error);
@@ -497,8 +562,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1})`);
       
       setTimeout(() => {
-        if (signalChannel) {
-          signalChannel.send({
+        if (channelRef.current) {
+          channelRef.current.send({
             type: 'broadcast',
             event: 'request-offer',
             payload: { viewerId: viewerIdRef.current }
@@ -547,10 +612,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         peerConnection = null;
         peerConnectionRef.current = null;
       }
-      if (signalChannel) {
-        supabase.removeChannel(signalChannel);
-        signalChannel = null;
-      }
       const video = videoRef.current;
       if (video) {
         video.srcObject = null;
@@ -568,11 +629,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         return;
       }
 
-      // Cleanup any existing connection first
-      cleanup();
-
       // Subscribe immediately regardless of broadcast status
-      console.log('[BROADCAST_VIEWER] Subscribing to channel regardless of broadcast status');
+      console.log('[BROADCAST_VIEWER] Connecting without teardown');
 
       // Proceed with WebRTC connection
       await connectToCreatorBroadcast();
@@ -607,9 +665,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       initConnection();
     }
 
-    // Cleanup when component unmounts or dependencies change
+    // Cleanup ONLY on unmount
     return () => {
-      cleanup();
+      try { 
+        channelRef.current?.unsubscribe(); 
+        channelRef.current = null;
+      } catch {}
+      try { 
+        peerConnection?.close(); 
+        peerConnectionRef.current = null;
+      } catch {}
+      if (connectionTimeoutRef.current) {
+        clearTimeout(connectionTimeoutRef.current);
+        connectionTimeoutRef.current = null;
+      }
+      if (debugIntervalRef.current) {
+        clearInterval(debugIntervalRef.current);
+        debugIntervalRef.current = null;
+      }
     };
   }, [resolvedCreatorId, connectionState, retryCount]);
 
