@@ -1214,11 +1214,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         className="w-full h-full object-cover"
         autoPlay
         playsInline
-        muted={isMuted}
+        muted
         onLoadedMetadata={() => {
           // Ensure video starts muted for autoplay policies
           if (videoRef.current) {
-            videoRef.current.muted = isMuted;
+            videoRef.current.muted = true;
           }
         }}
       />
