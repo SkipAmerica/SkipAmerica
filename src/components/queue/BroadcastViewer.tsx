@@ -947,7 +947,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       )}
 
       {/* Debug Overlay - Viewer (bottom-right) */}
-      {window.location.search.includes('debug=1') && (
+      {false && (
         <div 
           className="fixed bottom-4 right-4 bg-black/80 text-white p-2 rounded text-xs font-mono z-[9999] max-w-xs"
           style={{ fontFamily: 'monospace' }}
