@@ -693,16 +693,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
 
     const cleanup = () => {
-      console.warn('[VIEWER', viewerIdRef.current, '] cleanup() called - checking if appropriate');
-      
-      // Only allow cleanup on unmount or explicit creator-offline
-      const isUnmounting = resolvedCreatorId === undefined; // Component is unmounting
-      const isExplicitOffline = connectionState === 'offline' || connectionState === 'failed';
-      
-      if (!isUnmounting && !isExplicitOffline) {
-        console.warn('[VIEWER', viewerIdRef.current, '] prevented teardown during runtime path - cleanup blocked');
-        return;
-      }
+      console.warn('[VIEWER', viewerIdRef.current, '] cleanup() called from:', new Error().stack);
       
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
