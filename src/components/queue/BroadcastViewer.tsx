@@ -425,9 +425,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Create a fresh channel and attach handlers BEFORE subscribe
       const newCh = guardChannelUnsubscribe(
         supabase.channel(channelName),
-        `viewer-signaling-${channelName}`
+        'viewer-signaling'
       );
-      console.log('[VIEWER', viewerIdRef.current, '] guard check:', typeof window.__allow_ch_teardown, !!(newCh as any).__origUnsub);
+      console.log('[VIEWER', viewerIdRef.current, '] guard attached to', newCh.topic, 
+                  'patched=', !!(newCh as any).__origUnsub,
+                  'allowFlagType=', typeof window.__allow_ch_teardown);
       
       if (isFallback) {
         fallbackChannelRef.current = newCh;
