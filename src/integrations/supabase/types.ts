@@ -394,6 +394,7 @@ export type Database = {
           fan_id: string
           id: string
           joined_at: string
+          last_seen: string | null
           priority: number
           status: string
         }
@@ -405,6 +406,7 @@ export type Database = {
           fan_id: string
           id?: string
           joined_at?: string
+          last_seen?: string | null
           priority?: number
           status?: string
         }
@@ -416,6 +418,7 @@ export type Database = {
           fan_id?: string
           id?: string
           joined_at?: string
+          last_seen?: string | null
           priority?: number
           status?: string
         }
@@ -2040,7 +2043,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      cleanup_stale_queue_entries: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       account_type: "fan" | "creator" | "agency" | "industry_resource"

@@ -49,6 +49,22 @@ export default function JoinQueue() {
   const [autoLoginLoading, setAutoLoginLoading] = useState(false);
   const [displayName, setDisplayName] = useState('');
 
+  // Queue cleanup function
+  const cleanupQueue = async () => {
+    if (!user || !creatorId || !isInQueue) return;
+    
+    try {
+      await supabase
+        .from('call_queue')
+        .delete()
+        .eq('creator_id', creatorId)
+        .eq('fan_id', user.id);
+      console.log('[JoinQueue] Queue cleanup completed');
+    } catch (error) {
+      console.error('[JoinQueue] Error during queue cleanup:', error);
+    }
+  };
+
   // Auto-login anonymous user if not authenticated
   useEffect(() => {
     if (authLoading || autoLoginAttempted) return;
@@ -228,6 +244,57 @@ export default function JoinQueue() {
       setDisplayName(profile.full_name || 'Anonymous Guest');
     }
   }, [profile, displayName]);
+
+  // Browser event cleanup and heartbeat system
+  useEffect(() => {
+    if (!user || !creatorId || !isInQueue) return;
+
+    // Heartbeat to update last_seen timestamp every 30 seconds
+    const heartbeatInterval = setInterval(async () => {
+      try {
+        await supabase
+          .from('call_queue')
+          .update({ last_seen: new Date().toISOString() })
+          .eq('creator_id', creatorId)
+          .eq('fan_id', user.id);
+      } catch (error) {
+        console.error('[JoinQueue] Heartbeat update failed:', error);
+      }
+    }, 30000); // 30 seconds
+
+    // Browser event listeners for cleanup
+    const handleBeforeUnload = () => {
+      // Use sendBeacon for reliable cleanup on page unload
+      if (navigator.sendBeacon) {
+        const payload = JSON.stringify({
+          creator_id: creatorId,
+          fan_id: user.id
+        });
+        navigator.sendBeacon('/api/cleanup-queue', payload);
+      } else {
+        // Fallback for browsers without sendBeacon
+        cleanupQueue();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        cleanupQueue();
+      }
+    };
+
+    // Add event listeners
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup on component unmount
+    return () => {
+      clearInterval(heartbeatInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      cleanupQueue();
+    };
+  }, [user, creatorId, isInQueue, cleanupQueue]);
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;

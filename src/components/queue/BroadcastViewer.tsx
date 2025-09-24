@@ -480,6 +480,27 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       }, retryDelay);
     };
 
+    // Queue cleanup helper
+    const cleanupQueueEntry = async () => {
+      if (!channelResolution?.resolvedCreatorId) return;
+      
+      try {
+        // Get current user from Supabase auth
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        await supabase
+          .from('call_queue')
+          .delete()
+          .eq('creator_id', channelResolution.resolvedCreatorId)
+          .eq('fan_id', user.id);
+        
+        console.log('[BROADCAST_VIEWER] Removed user from queue due to connection failure');
+      } catch (error) {
+        console.error('[BROADCAST_VIEWER] Error cleaning up queue:', error);
+      }
+    };
+
     const cleanup = () => {
       console.log('[BROADCAST_VIEWER] Cleaning up WebRTC connection');
       if (connectionTimeoutRef.current) {
