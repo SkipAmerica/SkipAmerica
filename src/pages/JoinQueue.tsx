@@ -503,7 +503,7 @@ export default function JoinQueue() {
         </Card>
 
         {/* Queue Status & Actions */}
-        <Card className="m-4">
+        <Card className="m-4 mb-[150px]">
           <CardHeader>
             <CardTitle>Queue Status</CardTitle>
           </CardHeader>
