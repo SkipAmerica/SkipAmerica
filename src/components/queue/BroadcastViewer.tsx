@@ -423,35 +423,37 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log('[VIEWER', viewerIdRef.current, '] auth ready:', !!(await supabase.auth.getSession()).data.session);
 
       // Create a fresh channel and attach handlers BEFORE subscribe
-      const newCh = guardChannelUnsubscribe(
-        supabase.channel(channelName),
-        'viewer-signaling'
-      );
-      console.log('[VIEWER', viewerIdRef.current, '] guard attached to', newCh.topic, 
-                  'patched=', !!(newCh as any).__origUnsub,
-                  'allowFlagType=', typeof window.__allow_ch_teardown);
+      const newCh = supabase.channel(channelName);
+      console.log('[VIEWER', viewerIdRef.current, '] canonical channel new?', !channelRef.current, 'topic=', newCh.topic,
+                  'patched=', !!(newCh as any).__origUnsub);
       
-      if (isFallback) {
-        fallbackChannelRef.current = newCh;
-      } else {
-        channelRef.current = newCh;
+      // Ensure we reuse a single instance
+      if (!channelRef.current || channelRef.current.topic !== newCh.topic) {
+        if (isFallback) {
+          fallbackChannelRef.current = newCh;
+        } else {
+          channelRef.current = newCh;
+        }
       }
 
-      // Add deep lifecycle logging BEFORE attaching handlers
-      newCh.on('system', { event: 'phx_error' }, (e) => 
-        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_error on', newCh.topic, e));
-      newCh.on('system', { event: 'phx_close' }, (e) => 
-        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_close on', newCh.topic, e));
-      newCh.on('system', { event: 'phx_reply' }, (e) => 
-        console.log('[VIEWER', viewerIdRef.current, '] SYSTEM phx_reply on', newCh.topic, e?.status, e?.response));
+      // Use the stored channel for handlers
+      const channelToSetup = isFallback ? fallbackChannelRef.current : channelRef.current;
 
-      attachOfferAndIceHandlers(newCh);
+      // Add deep lifecycle logging BEFORE attaching handlers
+      channelToSetup.on('system', { event: 'phx_error' }, (e) => 
+        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_error on', channelToSetup.topic, e));
+      channelToSetup.on('system', { event: 'phx_close' }, (e) => 
+        console.warn('[VIEWER', viewerIdRef.current, '] SYSTEM phx_close on', channelToSetup.topic, e));
+      channelToSetup.on('system', { event: 'phx_reply' }, (e) => 
+        console.log('[VIEWER', viewerIdRef.current, '] SYSTEM phx_reply on', channelToSetup.topic, e?.status, e?.response));
+
+      attachOfferAndIceHandlers(channelToSetup);
       console.log('[VIEWER', viewerIdRef.current, '] subscribing to', channelName, 'attempt', myAttempt, isFallback ? '(fallback)' : '');
 
       // Await SUBSCRIBED (with timeout)
       const result = await new Promise<'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED'>(resolve => {
         const t = setTimeout(() => resolve('TIMED_OUT'), 8000);
-        newCh.subscribe((status) => {
+        channelToSetup.subscribe((status) => {
           console.log('[VIEWER', viewerIdRef.current, '] channel status=', status, 'on', channelName);
           
           if (status === 'CLOSED' && !isFallback) {
