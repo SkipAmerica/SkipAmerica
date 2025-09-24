@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast'
 import { canonicalSignalChannel } from '@/lib/queueResolver'
 import { createSFU } from '@/lib/sfu'
 
+const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
 }
@@ -386,13 +388,16 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const identity = user?.id!;
         const creatorId = user?.id!;
         
-        const resp = await supabase.functions.invoke('get_livekit_token', {
-          body: { role: 'creator', creatorId, identity }
+        const resp = await fetch(TOKEN_URL, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ role: 'creator', creatorId, identity })
         });
         
-        if (resp.error) throw new Error(resp.error.message);
+        const responseData = await resp.json();
+        if (responseData.error) throw new Error(responseData.error);
         
-        const { token, host } = resp.data;
+        const { token, host } = responseData;
         await sfu.connect(host, token);
         await sfu.publishCameraMic();
         

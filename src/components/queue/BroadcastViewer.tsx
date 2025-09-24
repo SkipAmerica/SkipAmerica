@@ -13,6 +13,8 @@ import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
 
+const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+
 interface BroadcastViewerProps {
   creatorId: string;
   sessionId: string;
@@ -848,13 +850,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const identity = data?.user?.id ?? crypto.randomUUID();
           const creatorId = resolvedCreatorId || queueId; // use resolved creator ID
           
-          const resp = await supabase.functions.invoke('get_livekit_token', {
-            body: { role: 'viewer', creatorId, identity }
+          const resp = await fetch(TOKEN_URL, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ role: 'viewer', creatorId, identity })
           });
           
-          if (resp.error) throw new Error(resp.error.message);
+          const responseData = await resp.json();
           
-          const { token, host } = resp.data;
+          if (responseData.error) throw new Error(responseData.error);
+          
+          const { token, host } = responseData;
           await sfu.connect(host, token);
           
           setConnectionState('connected');
