@@ -778,20 +778,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       initConnection();
     }
 
-    // Cleanup ONLY on unmount
+    // No cleanup here - let unmount-only effect handle it
+  }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
+
+  // Separate effect for unmount-only cleanup
+  useEffect(() => {
     return () => {
-      try { 
-        channelRef.current?.unsubscribe(); 
-        channelRef.current = null;
-      } catch {}
-      try { 
-        fallbackChannelRef.current?.unsubscribe(); 
-        fallbackChannelRef.current = null;
-      } catch {}
-      try { 
-        peerConnection?.close(); 
-        peerConnectionRef.current = null;
-      } catch {}
+      console.log('[VIEWER', viewerIdRef.current, '] Component unmounting - cleaning up all resources');
+      try { channelRef.current?.unsubscribe(); channelRef.current = null; } catch {}
+      try { fallbackChannelRef.current?.unsubscribe(); fallbackChannelRef.current = null; } catch {}
+      try { peerConnectionRef.current?.close(); peerConnectionRef.current = null; } catch {}
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
@@ -801,7 +797,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         debugIntervalRef.current = null;
       }
     };
-  }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
+  }, []);
 
   const handleRetry = async () => {
     console.log('[BROADCAST_VIEWER] Manual retry triggered');
