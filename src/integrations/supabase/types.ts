@@ -1769,6 +1769,27 @@ export type Database = {
         }
         Relationships: []
       }
+      queues: {
+        Row: {
+          created_at: string | null
+          creator_user_id: string
+          id: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_user_id: string
+          id?: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_user_id?: string
+          id?: string
+          status?: string | null
+        }
+        Relationships: []
+      }
       referral_codes: {
         Row: {
           code: string

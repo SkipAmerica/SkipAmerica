@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
+import { canonicalSignalChannel } from '@/lib/queueResolver'
 
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
@@ -493,8 +494,13 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
           return pc;
         };
         
+        // Get creator user ID and use canonical channel
+        const creatorUserId = user.id;
+        const canonicalChannel = canonicalSignalChannel(creatorUserId);
+        console.log('[CREATOR] using canonical channel', canonicalChannel);
+        
         // Set up signaling channel with request/response handlers
-        signalChannel = supabase.channel(`broadcast:${user.id}`)
+        signalChannel = supabase.channel(canonicalChannel)
           .on('broadcast', { event: 'request-offer' }, async ({ payload }) => {
             const { viewerId } = payload || {};
             if (!viewerId) return;
@@ -516,12 +522,12 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
               });
               await pc.setLocalDescription(offer);
               
-              console.log('[CREATOR] sending offer for viewerId', viewerId, 'len=', offer.sdp.length);
-              signalChannel.send({
-                type: 'broadcast',
-                event: 'offer',
-                payload: { viewerId, sdp: offer.sdp }
-              });
+            console.log('[CREATOR] sending offer for viewerId', viewerId, 'len=', offer.sdp.length);
+            signalChannel.send({
+              type: 'broadcast',
+              event: 'offer',
+              payload: { viewerId, sdp: offer.sdp }
+            });
             } catch (error) {
               console.error(`[LOBBY_BROADCAST] Error creating offer for viewer ${viewerId}:`, error);
             }

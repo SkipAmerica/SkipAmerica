@@ -5,7 +5,7 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { mediaManager } from '@/media/MediaOrchestrator';
 import { generateViewerId } from '@/utils/viewer-id';
-import { resolveBroadcastChannels, type ChannelResolution } from '@/utils/broadcast-resolver';
+import { resolveCreatorFromQueueId, canonicalSignalChannel, deprecatedQueueChannel } from '@/lib/queueResolver';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -26,6 +26,12 @@ interface ChatMessage {
 type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'offline' | 'retry';
 
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
+  const queueId = creatorId; // The creatorId parameter is actually the queueId from URL
+  
+  if (!queueId) {
+    return <div className="p-4 text-red-500">No queue ID provided</div>;
+  }
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,8 +41,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [retryCount, setRetryCount] = useState(0);
   const [offerRetryCount, setOfferRetryCount] = useState(0);
-  const [channelResolution, setChannelResolution] = useState<ChannelResolution | null>(null);
-  const [currentChannelAttempt, setCurrentChannelAttempt] = useState<'primary' | 'secondary'>('primary');
+  const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
+  const [channelType, setChannelType] = useState<'primary' | 'fallback' | null>(null);
   const [debugStats, setDebugStats] = useState({
     signalingState: 'stable',
     iceConnectionState: 'closed',
@@ -51,7 +57,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Helper to get the effective creator ID for DB operations
   const getEffectiveCreatorId = () => {
-    return channelResolution?.resolvedCreatorId || creatorId;
+    return resolvedCreatorId || queueId;
   };
 
   // Check if creator is broadcasting - uses resolved creator ID if available
@@ -82,7 +88,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Fetch lobby chat messages
   useEffect(() => {
-    const targetCreatorId = channelResolution?.resolvedCreatorId || creatorId;
+    const targetCreatorId = resolvedCreatorId || queueId;
     if (!targetCreatorId) return;
 
     const fetchMessages = async () => {
@@ -146,7 +152,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [creatorId, channelResolution]);
+  }, [queueId, resolvedCreatorId]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -155,14 +161,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // Real-time subscription to live session changes - wait for channel resolution, then watch resolved and fallback IDs
+  // Real-time subscription to live session changes - wait for resolution, then watch resolved and fallback IDs
   useEffect(() => {
-    if (!creatorId || !channelResolution) return;
+    if (!queueId || resolvedCreatorId === undefined) return;
 
-    const resolvedId = channelResolution.resolvedCreatorId || creatorId;
+    const resolvedId = resolvedCreatorId || queueId;
     console.log('[BROADCAST_VIEWER] Setting up live session subscriptions for creator:', {
       resolvedId,
-      rawId: creatorId
+      rawId: queueId
     });
 
     const channels: any[] = [];
@@ -199,16 +205,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     channels.push(resolvedChannel);
 
     // If resolved differs from raw, also subscribe to raw as fallback
-    if (channelResolution.resolvedCreatorId && channelResolution.resolvedCreatorId !== creatorId) {
+    if (resolvedCreatorId && resolvedCreatorId !== queueId) {
       const rawChannel = supabase
-        .channel(`broadcast-live-session-${creatorId}`)
+        .channel(`broadcast-live-session-${queueId}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'live_sessions',
-            filter: `creator_id=eq.${creatorId}`
+            filter: `creator_id=eq.${queueId}`
           },
           (payload) => {
             console.log('[BROADCAST_VIEWER] Live session change detected (raw fallback):', payload);
@@ -234,11 +240,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return () => {
       channels.forEach((ch) => supabase.removeChannel(ch));
     };
-  }, [creatorId, channelResolution]);
+  }, [queueId, resolvedCreatorId]);
 
-  // Continuous monitoring with polling backup (wait for channel resolution)
+  // Continuous monitoring with polling backup (wait for resolution)
   useEffect(() => {
-    if (!creatorId || !channelResolution) return;
+    if (!queueId || resolvedCreatorId === undefined) return;
 
     const pollInterval = setInterval(async () => {
       if (connectionState === 'connected') return; // Don't poll if already connected
@@ -255,30 +261,26 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }, 30000); // Poll every 30 seconds
 
     return () => clearInterval(pollInterval);
-  }, [creatorId, channelResolution, connectionState]);
+  }, [queueId, resolvedCreatorId, connectionState]);
 
-  // Resolve broadcast channels on mount
+  // Resolve queueId to creator_user_id on mount
   useEffect(() => {
-    const resolveChannels = async () => {
-      if (!creatorId) return;
+    const resolveCreator = async () => {
+      if (!queueId) return;
       
-      console.log(`[BROADCAST_VIEWER] Resolving channels for creatorId: ${creatorId}`);
-      const resolution = await resolveBroadcastChannels(creatorId);
-      setChannelResolution(resolution);
+      console.log(`[QUEUE_RESOLVER] Resolving queueId: ${queueId}`);
+      const { creatorUserId, via } = await resolveCreatorFromQueueId(queueId);
+      console.log(`[QUEUE_RESOLVER] Resolved via ${via}:`, creatorUserId ? `creator_user_id=${creatorUserId}` : 'no mapping');
       
-      console.log(`[BROADCAST_VIEWER] Channel resolution:`, {
-        primary: resolution.primaryChannel,
-        secondary: resolution.secondaryChannel,
-        resolvedCreatorId: resolution.resolvedCreatorId
-      });
+      setResolvedCreatorId(creatorUserId);
     };
     
-    resolveChannels();
-  }, [creatorId]);
+    resolveCreator();
+  }, [queueId]);
 
   // WebRTC connection management
   useEffect(() => {
-    if (!channelResolution) return;
+    if (resolvedCreatorId === undefined) return;
 
     let peerConnection: RTCPeerConnection | null = null;
     let signalChannel: any = null;
@@ -349,18 +351,22 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           }
         };
 
-        // Get current channel to use
-        const currentChannel = currentChannelAttempt === 'primary' 
-          ? channelResolution.primaryChannel 
-          : channelResolution.secondaryChannel;
+        // Determine channels to use
+        const primaryChannel = resolvedCreatorId ? canonicalSignalChannel(resolvedCreatorId) : null;
+        const fallbackChannel = deprecatedQueueChannel(queueId);
         
-        if (!currentChannel) {
-          console.log(`[BROADCAST_VIEWER:${viewerId}] No ${currentChannelAttempt} channel available`);
-          setConnectionState('failed');
-          return;
+        // Start with primary channel if available, otherwise use fallback
+        const channelToUse = primaryChannel || fallbackChannel;
+        const usingFallback = !primaryChannel;
+        
+        if (usingFallback) {
+          console.warn('[DEPRECATED] fallback queue channel used:', fallbackChannel);
+          setChannelType('fallback');
+        } else {
+          setChannelType('primary');
         }
 
-        console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${currentChannelAttempt} channel: ${currentChannel}`);
+        console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);
 
         // Helper to normalize both payload shapes
         const fromSignal = (e: any) => {
@@ -383,12 +389,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         };
 
         // Set up signaling channel with request/response handshake
-        signalChannel = supabase.channel(currentChannel)
+        signalChannel = supabase.channel(channelToUse)
           .on('broadcast', { event: 'offer' }, async (e) => {
             const { viewerId: vid, sdp } = fromSignal(e);
             if (!vid || vid !== viewerId) return;
             
-            console.log(`[VIEWER ${viewerId}] OFFER RX (payload=${!!e?.payload})`);
+            const channelTypeUsed = usingFallback ? 'fallback' : 'primary';
+            console.log(`[VIEWER ${viewerId}] OFFER RX via ${channelTypeUsed} (payload=${!!e?.payload})`);
             
             if (!ensureViewerPc()) return;
             
@@ -433,11 +440,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             setConnectionState('offline');
           })
           .subscribe((status) => {
-            console.log(`[BROADCAST_VIEWER:${viewerId}] ${currentChannelAttempt} channel subscription status:`, status);
+            console.log(`[BROADCAST_VIEWER:${viewerId}] Channel subscription status:`, status);
             
             // Only send request-offer after successful subscription
             if (status === 'SUBSCRIBED') {
-              console.log(`[VIEWER ${viewerId}] SUBSCRIBED channel=${currentChannel}`);
+              const channelTypeUsed = usingFallback ? 'fallback' : 'primary';
+              console.log(`[VIEWER ${viewerId}] SUBSCRIBED to ${channelTypeUsed} channel: ${channelToUse}`);
+              
               signalChannel.send({
                 type: 'broadcast',
                 event: 'request-offer',
@@ -452,7 +461,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               }
               
               connectionTimeoutRef.current = setTimeout(() => {
-                console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] No offer received on ${currentChannelAttempt} channel, retrying...`);
+                console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] No offer received, retrying...`);
                 handleOfferRetry();
               }, 5000); // 5 second timeout for offer
             }
@@ -469,17 +478,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const handleOfferRetry = () => {
       const maxOfferRetries = 3;
       if (offerRetryCount >= maxOfferRetries) {
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached on ${currentChannelAttempt} channel`);
-        
-        // Try secondary channel if available and we're still on primary
-        if (currentChannelAttempt === 'primary' && channelResolution.secondaryChannel) {
-          console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Switching to secondary channel`);
-          setCurrentChannelAttempt('secondary');
-          setOfferRetryCount(0);
-          setConnectionState('retry');
-          return;
-        }
-        
+        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached`);
         setConnectionState('failed');
         return;
       }
@@ -487,7 +486,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       setOfferRetryCount(prev => prev + 1);
       const retryDelay = [5000, 8000, 13000][offerRetryCount] || 13000; // Exponential backoff: 5s, 8s, 13s
       
-      console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1}) on ${currentChannelAttempt} channel`);
+      console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1})`);
       
       setTimeout(() => {
         if (signalChannel) {
@@ -507,7 +506,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Queue cleanup helper
     const cleanupQueueEntry = async () => {
-      if (!channelResolution?.resolvedCreatorId) return;
+      if (!resolvedCreatorId) return;
       
       try {
         // Get current user from Supabase auth
@@ -517,7 +516,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         await supabase
           .from('call_queue')
           .delete()
-          .eq('creator_id', channelResolution.resolvedCreatorId)
+          .eq('creator_id', resolvedCreatorId)
           .eq('fan_id', user.id);
         
         console.log('[BROADCAST_VIEWER] Removed user from queue due to connection failure');
@@ -572,7 +571,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Check if creator is currently broadcasting - but don't hard-block on unknown status
       const isBroadcasting = await checkCreatorBroadcastStatus();
       
-      if (!isBroadcasting && channelResolution?.resolvedCreatorId) {
+      if (!isBroadcasting && resolvedCreatorId) {
         // Only block if we successfully resolved the creator ID and they're definitely offline
         console.log('[BROADCAST_VIEWER] Creator is not broadcasting, setting offline and will retry...');
         setConnectionState('offline');
@@ -618,7 +617,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return () => {
       cleanup();
     };
-  }, [channelResolution, connectionState, retryCount, currentChannelAttempt]);
+  }, [resolvedCreatorId, connectionState, retryCount]);
 
   const handleRetry = async () => {
     console.log('[BROADCAST_VIEWER] Manual retry triggered');
