@@ -58,6 +58,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         <div>VideoReady: {v ? v.readyState : '—'} Paused: {String(!!v?.paused)}</div>
         <div>Req#: {offerRequestCountRef?.current ?? 0} OfferRx#: {offersReceivedRef?.current ?? 0} AnsTx#: {answersSentRef?.current ?? 0}</div>
         <div>Pong#: {pongCountRef?.current ?? 0}</div>
+        <div>KeepAlive: {!!slowRetryRef.current.timer} ticks={slowRetryRef.current.ticks}</div>
       </div>
     );
   };
@@ -99,30 +100,50 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const pongCountRef = useRef(0);
   const [lastChannelStatus, setLastChannelStatus] = useState<string>('—');
 
-  // Normalize our broadcast send to the canonical shape everywhere
+  function stopSlowRetry(reason?: string) {
+    if (slowRetryRef.current.timer) {
+      clearInterval(slowRetryRef.current.timer);
+      slowRetryRef.current.timer = null;
+    }
+    slowRetryRef.current.ticks = 0;
+    if (DEBUG && reason) console.log('[VIEWER', viewerIdRef.current, '] slow-retry STOP', reason);
+  }
+
   function sendRequestOffer(reason: string) {
-    const payload = { viewerId: viewerIdRef.current, reason, ts: Date.now() };
-    channelRef.current?.send({
-      type: 'broadcast',
-      event: 'request-offer',
-      payload: payload
-    });
+    const payload = { viewerId: viewerIdRef.current, ts: Date.now(), reason };
+    channelRef.current?.send({ type: 'broadcast', event: 'request-offer', payload });
+    // Optional: ping (if creator does pong)
+    channelRef.current?.send({ type: 'broadcast', event: 'ping', payload });
     offerRequestCountRef.current = (offerRequestCountRef.current ?? 0) + 1;
   }
 
-  // ping/pong instrumentation
-  function sendPing() {
-    const payload = { viewerId: viewerIdRef.current, ts: Date.now() };
-    channelRef.current?.send({
-      type: 'broadcast',
-      event: 'ping',
-      payload: payload
-    });
+  function startSlowRetry(reason: string, intervalMs = 5000) {
+    if (!channelRef.current) return;
+    // If already connected or offer received, don't start.
+    if (pcRef.current?.connectionState === 'connected' || (offersReceivedRef.current ?? 0) > 0) return;
+    if (slowRetryRef.current.timer) return; // already running
+
+    if (DEBUG) console.log('[VIEWER', viewerIdRef.current, `] slow-retry START (${reason}) every ${intervalMs}ms`);
+
+    slowRetryRef.current.timer = setInterval(() => {
+      const connected = pcRef.current?.connectionState === 'connected';
+      const gotOffer = (offersReceivedRef.current ?? 0) > 0;
+      if (connected || gotOffer) {
+        stopSlowRetry(connected ? 'connected' : 'offer-received');
+        return;
+      }
+      // If channel drops to CLOSED, don't increment; just wait for re-subscribe to restart.
+      if (lastChannelStatus === 'CLOSED' || lastChannelStatus === 'TIMED_OUT' || lastChannelStatus === 'ERROR') return;
+
+      slowRetryRef.current.ticks++;
+      sendRequestOffer('slow-retry');
+    }, intervalMs);
   }
 
   // Offer burst functionality
   const offerBurstRef = useRef<{timer?: any, count: number}>({ count: 0 });
-  const slowRetryRef = useRef<any>(null);
+  const slowRetryRef = useRef<{ timer: any | null; ticks: number }>({ timer: null, ticks: 0 });
+  const lastAnnounceTsRef = useRef<number>(0);
 
   function startOfferBurst(reason: string) {
     if (!channelRef.current) return;
@@ -136,32 +157,17 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         return;
       }
       sendRequestOffer(reason);
-      sendPing();
       offerBurstRef.current.count++;
       if (offerBurstRef.current.count >= 8) { // stop after ~8s
         clearInterval(offerBurstRef.current.timer);
         // After the burst ends, if we got no offers, start slow retry
-        if ((offersReceivedRef.current ?? 0) === 0 && (pcRef.current?.connectionState === 'closed' || pcRef.current?.connectionState === 'failed' || !pcRef.current)) {
-          startSlowRetry('post-burst');
-        }
+        setTimeout(() => {
+          if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+            startSlowRetry('post-burst');
+          }
+        }, 100);
       }
     }, 1000);
-  }
-
-  function startSlowRetry(reason: string) {
-    if (slowRetryRef.current) return;
-    slowRetryRef.current = setInterval(() => {
-      if ((offersReceivedRef.current ?? 0) > 0 || pcRef.current?.connectionState === 'connected') {
-        clearInterval(slowRetryRef.current); 
-        slowRetryRef.current = null; 
-        return;
-      }
-      channelRef.current?.send({
-        type: 'broadcast', 
-        event: 'request-offer',
-        payload: { viewerId: viewerIdRef.current, reason, ts: Date.now() }
-      });
-    }, 5000);
   }
 
   // ICE server configuration for peer connections
@@ -214,6 +220,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       const st = pc.connectionState;
       console.log('[VIEWER', viewerIdRef.current, '] PC=', st, 'signal=', pc.signalingState);
       if (st === 'connected') {
+        stopSlowRetry('pc-connected');
         queueMicrotask(() => rebindVideo());
         setTimeout(() => rebindVideo(), 200);
       }
@@ -404,6 +411,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             
             // Start offer burst when creator goes live
             startOfferBurst('db-insert');
+            // also arm slow retry to persist beyond the burst if needed  
+            setTimeout(() => {
+              if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+                startSlowRetry('after-db-insert');
+              }
+            }, 2000);
             console.log('[VIEWER] Started offer burst on live session INSERT');
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
             console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
@@ -459,6 +472,34 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     
     resolveCreator();
   }, [queueId]); // FIXED: Remove connectionState dependency to break loop
+
+  // Tab visibility and network online event handlers
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === 'visible') {
+        startOfferBurst('visible');
+        setTimeout(() => {
+          if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+            startSlowRetry('visible');
+          }
+        }, 1500);
+      }
+    }
+    function onOnline() {
+      startOfferBurst('online');
+      setTimeout(() => {
+        if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+          startSlowRetry('online');
+        }
+      }, 1500);
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('online', onOnline);
+    };
+  }, []);
 
   // WebRTC connection management - subscribe immediately after resolution
   useEffect(() => {
@@ -595,6 +636,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             resolve('SUBSCRIBED');
             // Start offer burst when channel becomes subscribed
             startOfferBurst('subscribed');
+            // also arm slow retry to persist beyond the burst if needed
+            setTimeout(() => {
+              if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+                startSlowRetry('after-subscribed');
+              }
+            }, 1500);
           }
           if (status === 'CLOSED') { clearTimeout(t); resolve('CLOSED'); }
         });
@@ -670,10 +717,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (offerBurstRef.current?.timer) {
             clearInterval(offerBurstRef.current.timer);
           }
-          if (slowRetryRef.current) {
-            clearInterval(slowRetryRef.current);
-            slowRetryRef.current = null;
-          }
+          stopSlowRetry('offer-received');
           
           console.log('[VIEWER] Received offer, processing...');
           
@@ -736,12 +780,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         })
         .on('broadcast', { event: 'announce-live' }, () => {
           console.log('[VIEWER] Received announce-live, starting offer burst');
-          // Stop slow retry if running and start fast burst
-          if (slowRetryRef.current) {
-            clearInterval(slowRetryRef.current);
-            slowRetryRef.current = null;
-          }
-          startOfferBurst('announce-live');
+          lastAnnounceTsRef.current = Date.now();
+          startOfferBurst('announce-live');  // fast immediately
+          // also arm slow retry to persist beyond the burst if needed
+          setTimeout(() => {
+            if ((offersReceivedRef.current ?? 0) === 0 && pcRef.current?.connectionState !== 'connected') {
+              startSlowRetry('after-announce');
+            }
+          }, 2000);
         })
         .on('broadcast', { event: 'offer-retry' }, ({ payload }) => {
           const { viewerId } = payload || {};
