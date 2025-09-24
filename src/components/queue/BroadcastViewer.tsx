@@ -36,6 +36,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return <div className="p-4 text-red-500">No queue ID provided</div>;
   }
 
+  // Create a single persistent remote MediaStream and never replace it
+  const remoteMsRef = useRef<MediaStream>(new MediaStream());
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const chatRef = useRef<HTMLDivElement>(null);
   const connectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -77,27 +80,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   // Remove local guard - using global guard now
 
   // Helper functions for resilient video attachment
-  function bindVideoStreamFromPc(pc: RTCPeerConnection) {
-    const v = videoRef.current;
+  function rebindVideo(tag?: HTMLVideoElement | null) {
+    const v = tag ?? videoRef.current;
     if (!v) return;
-    // Build a MediaStream from current receivers (covers Missed-ontrack cases)
-    const tracks = pc.getReceivers().map(r => r.track).filter(Boolean);
-    if (tracks.length) {
-      const ms = new MediaStream(tracks as MediaStreamTrack[]);
-      if (v.srcObject !== ms) v.srcObject = ms;
-      try { v.play?.(); } catch (e) { console.warn('[VIEWER', viewerIdRef.current, '] video.play() rejected', e); }
-    }
+    const ms = remoteMsRef.current as MediaStream;
+    // Force rebind even if the same object (Safari/iOS can ignore identical refs)
+    try { (v as any).srcObject = null; } catch {}
+    (v as any).srcObject = ms;
+    v.muted = true; // autoplay
+    v.setAttribute('playsinline', '');
+    v.autoplay = true;
+    try { v.play?.(); } catch (e) { console.warn('[VIEWER', viewerIdRef.current, '] play() rejected', e); }
   }
 
-  function ensureAutoplayWorkarounds() {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = true; // iOS/Safari autoplay requirement
-    v.setAttribute('playsinline', '');
-    const onLoaded = () => { try { v.play?.(); } catch {} };
-    v.removeEventListener('loadedmetadata', onLoaded);
-    v.addEventListener('loadedmetadata', onLoaded);
-    if (v.readyState >= 1) { try { v.play?.(); } catch {} }
+  function addTrackOnce(track: MediaStreamTrack) {
+    const ms: MediaStream = remoteMsRef.current;
+    const has = ms.getTracks().some(t => t.id === track.id);
+    if (!has) ms.addTrack(track);
   }
 
   // Ensure we have an open RTCPeerConnection
@@ -112,13 +111,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       const pc = new RTCPeerConnection(cfg);
       // reattach existing handlers
       pc.ontrack = (e) => {
-        const v = videoRef.current;
-        const stream = e.streams?.[0] ?? new MediaStream([e.track]);
-        if (v && v.srcObject !== stream) v.srcObject = stream;
-        ensureAutoplayWorkarounds();
-        try { v?.play?.(); } catch {}
-        // Also bind from receivers in case multiple tracks arrive
-        bindVideoStreamFromPc(pc);
+        const track = e.track;
+        // Some senders don't include e.streams; handle both cases.
+        if (e.streams && e.streams[0]) {
+          // Add each track from the incoming stream to our persistent stream
+          for (const t of e.streams[0].getTracks()) addTrackOnce(t);
+        } else {
+          addTrackOnce(track);
+        }
+
+        // For Safari/iOS and late DOM availability:
+        if (track) {
+          track.onunmute = () => {
+            addTrackOnce(track);
+            rebindVideo(); // force rebind after track becomes live
+          };
+        }
+
+        rebindVideo(); // immediate bind
         
         setConnectionState('connected');
         setRetryCount(0);
@@ -146,8 +156,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       pc.onconnectionstatechange = () => {
         console.log('[VIEWER', viewerIdRef.current, '] PC state=', pc.connectionState, 'signal=', pc.signalingState);
         if (pc.connectionState === 'connected') {
-          bindVideoStreamFromPc(pc);
-          ensureAutoplayWorkarounds();
+          // microtask + small timeout to allow tracks to settle
+          queueMicrotask(() => rebindVideo());
+          setTimeout(() => rebindVideo(), 200);
         }
         if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
           console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe on connection state change');
@@ -585,9 +596,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
           
-          // Immediately bind video stream and ensure autoplay workarounds
-          bindVideoStreamFromPc(pc);
-          ensureAutoplayWorkarounds();
+          // Late-binding pass: collect any existing receivers
+          pc.getReceivers?.().forEach(r => {
+            if (r.track && r.track.readyState !== 'ended') addTrackOnce(r.track);
+          });
+          rebindVideo();
           
           signalChannel.send({
             type: 'broadcast',
@@ -821,14 +834,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Add a tiny visibility resume (helps iOS Safari/background tab)
   useEffect(() => {
-    const onVis = () => {
-      if (document.visibilityState === 'visible' && pcRef.current) {
-        bindVideoStreamFromPc(pcRef.current);
-        ensureAutoplayWorkarounds();
-      }
-    };
+    const onVis = () => { if (document.visibilityState === 'visible') rebindVideo(); };
     document.addEventListener('visibilitychange', onVis);
     return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
+  // Ensure video is always mounted and bound to the persistent stream
+  useEffect(() => {
+    if (videoRef.current) rebindVideo(videoRef.current);
   }, []);
 
   // UNMOUNT-only cleanup effect
@@ -967,6 +980,22 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
             </Button>
           </div>
+
+          {/* Tap to play overlay if video is paused */}
+          {videoRef.current?.paused && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+              <Button
+                onClick={() => { 
+                  try { videoRef.current?.play?.(); } catch {} 
+                }}
+                size="lg"
+                variant="secondary"
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              >
+                Tap to Play
+              </Button>
+            </div>
+          )}
 
           {/* Live Indicator */}
           <div className="absolute top-4 left-4">
