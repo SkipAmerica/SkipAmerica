@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Clock, DollarSign, Settings, Plus, Trash2, Sparkles, AlertCircle, Save, Zap, TrendingUp, TrendingDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/lib/supabaseClient';
 import { MarketRatePricing } from './MarketRatePricing';
 
 interface CallSettingsProps {

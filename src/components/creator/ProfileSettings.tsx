@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useAuth } from "@/app/providers/auth-provider";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from '@/lib/supabaseClient';
 import { useToast } from "@/hooks/use-toast";
 import { Upload, User, Save, Link, ExternalLink, Camera } from "lucide-react";
 
