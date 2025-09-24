@@ -646,7 +646,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             if (s === 'SUBSCRIBED') {
               console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
               // Attempt to leave debug channel, but guard against runtime teardown
-              guardedUnsubscribe(dbg as any, 'debug-channel immediate leave');
+              if (allowTeardownRef.current) {
+                try { (dbg as any).unsubscribe?.(); } catch {}
+              } else {
+                console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe at debug-channel immediate leave');
+              }
             }
             if (s === 'CLOSED') {
               console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
