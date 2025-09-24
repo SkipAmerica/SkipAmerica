@@ -397,6 +397,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (status === 'CLOSED' && !isFallback) {
             closedStrikesRef.current++;
             console.warn('[VIEWER', viewerIdRef.current, `] canonical CLOSED (strike ${closedStrikesRef.current}) on`, channelName);
+            console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe on CLOSED status');
+            // DO NOT unsubscribe here - keep channel alive for retry
             
             // Fallback logic after 3 strikes
             if (closedStrikesRef.current >= 3) {
@@ -523,6 +525,19 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         .on('broadcast', { event: 'creator-offline' }, (e: any) => {
           console.log(`[VIEWER ${viewerIdRef.current}] Creator went offline`);
           setConnectionState('offline');
+          // Unsubscribe on explicit creator-offline event
+          try { 
+            channelRef.current?.unsubscribe(); 
+            channelRef.current = null;
+          } catch {}
+          try { 
+            fallbackChannelRef.current?.unsubscribe(); 
+            fallbackChannelRef.current = null;
+          } catch {}
+          try { 
+            peerConnection?.close(); 
+            peerConnectionRef.current = null;
+          } catch {}
         });
     };
 
@@ -565,6 +580,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         peerConnection.onconnectionstatechange = () => {
           console.log(`[BROADCAST_VIEWER:${viewerId}] Connection state:`, peerConnection?.connectionState);
           if (peerConnection?.connectionState === 'failed' || peerConnection?.connectionState === 'disconnected') {
+            console.warn('[VIEWER', viewerId, '] prevented runtime unsubscribe on connection state change');
+            // DO NOT unsubscribe here - let retry logic handle reconnection
             setConnectionState('failed');
           }
         };
@@ -613,7 +630,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           dbg.subscribe((s) => {
             if (s === 'SUBSCRIBED') {
               console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
-              // Immediately leave to avoid clutter
+              // Immediately leave debug channel to avoid clutter (debug only exception)
               dbg.unsubscribe();
             }
             if (s === 'CLOSED') {
@@ -784,7 +801,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         debugIntervalRef.current = null;
       }
     };
-  }, [resolvedCreatorId, connectionState, retryCount]);
+  }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
 
   const handleRetry = async () => {
     console.log('[BROADCAST_VIEWER] Manual retry triggered');
