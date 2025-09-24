@@ -64,6 +64,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const fallbackChannelRef = useRef<any | null>(null);
   const allowTeardownRef = useRef(false);
 
+  // ICE server configuration for peer connections
+  const iceConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+  };
+
   // Guarded unsubscribe helper
   function guardedUnsubscribe(ch: any | null, reason: string) {
     if (!ch) return;
@@ -72,7 +80,70 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       return; // NO-OP during runtime
     }
     console.log('[VIEWER', viewerIdRef.current, '] unsubscribe ALLOWED at', reason, 'topic=', (ch as any).topic);
-    try { (ch as any).unsubscribe(); } catch {}
+    try { (ch as any).__origUnsub ? (ch as any).__origUnsub() : (ch as any).unsubscribe(); } catch {}
+  }
+
+  // Ensure we have an open RTCPeerConnection
+  function ensureOpenPc(): RTCPeerConnection {
+    const pc = peerConnectionRef.current;
+    if (!pc || pc.connectionState === 'closed' || pc.signalingState === 'closed') {
+      // Create a fresh PC with ICE config
+      const newPc = new RTCPeerConnection(iceConfig);
+      attachPcHandlers(newPc);
+      peerConnectionRef.current = newPc;
+      console.log('[VIEWER', viewerIdRef.current, '] created fresh RTCPeerConnection');
+      return newPc;
+    }
+    return pc;
+  }
+
+  // Attach standard handlers to peer connection
+  function attachPcHandlers(pc: RTCPeerConnection) {
+    const viewerId = viewerIdRef.current;
+    
+    // Handle incoming remote stream
+    pc.ontrack = (event) => {
+      console.log(`[BROADCAST_VIEWER:${viewerId}] Received remote stream`);
+      const [remoteStream] = event.streams;
+      const video = videoRef.current;
+      if (video && remoteStream) {
+        video.srcObject = remoteStream;
+        setConnectionState('connected');
+        setRetryCount(0);
+        setOfferRetryCount(0);
+        
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
+        }
+        
+        console.log(`[BROADCAST_VIEWER:${viewerId}] Stream connected successfully`);
+      }
+    };
+
+    // Handle connection state changes
+    pc.onconnectionstatechange = () => {
+      console.log(`[BROADCAST_VIEWER:${viewerId}] Connection state:`, pc.connectionState);
+      if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+        console.warn('[VIEWER', viewerId, '] prevented runtime unsubscribe on connection state change');
+        // DO NOT unsubscribe here - let retry logic handle reconnection
+        setConnectionState('failed');
+      }
+    };
+
+    // Handle ICE candidates
+    pc.onicecandidate = (event) => {
+      if (event.candidate && channelRef.current) {
+        iceCandidateCountRef.current += 1;
+        console.log(`[RTC-DEBUG] ICE candidate generated locally (count: ${iceCandidateCountRef.current})`);
+        console.log(`[VIEWER ${viewerId}] LOCAL ICE TX`);
+        channelRef.current.send({
+          type: 'broadcast',
+          event: 'ice-candidate',
+          payload: { viewerId, candidate: event.candidate }
+        });
+      }
+    };
   }
 
   // Helper to get the effective creator ID for DB operations
@@ -309,8 +380,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   useEffect(() => {
     if (resolvedCreatorId === undefined) return;
 
-    let peerConnection: RTCPeerConnection | null = null;
-
     // Ensure websocket connection before subscribing
     const ensureRealtimeConnected = () => {
       try {
@@ -318,12 +387,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       } catch (error) {
         console.warn('[BROADCAST_VIEWER] Could not ensure realtime connection:', error);
       }
-    };
-
-    // Safe unsubscribe wrapper to prevent runtime teardowns
-    const safeUnsubscribe = (reason: string) => {
-      console.log('[VIEWER', viewerIdRef.current, '] safeUnsubscribe called:', reason);
-      // NO-OP at runtime; only run on unmount
     };
 
     // Serialized subscription with channel reuse and deep logging
@@ -375,11 +438,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // Create a fresh channel and attach handlers BEFORE subscribe
       const newCh = supabase.channel(channelName);
       
-      // Monkey-patch unsubscribe to log stack traces
+      // Monkey-patch unsubscribe to respect guard flag
       const __origUnsub = newCh.unsubscribe.bind(newCh);
       (newCh as any).__origUnsub = __origUnsub;
       newCh.unsubscribe = (...args: any[]) => {
-        console.warn('[VIEWER', viewerIdRef.current, '] ch.unsubscribe CALLED on', newCh.topic, 'stack:\n', new Error().stack);
+        if (!allowTeardownRef.current) {
+          console.warn('[VIEWER', viewerIdRef.current, '] blocked ch.unsubscribe on', newCh.topic, 'stack:\n', new Error().stack);
+          return; // BLOCK during runtime
+        }
         return __origUnsub(...args);
       };
       
@@ -496,14 +562,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             offerPromiseRef.current.resolve();
           }
           
-          if (!peerConnection) return;
+          // Ensure we have an open peer connection
+          const pc = ensureOpenPc();
           
           try {
-            await peerConnection.setRemoteDescription({ type: 'offer', sdp });
+            // Handle signaling state conflicts
+            if (pc.signalingState === 'have-local-offer' || pc.signalingState === 'have-local-pranswer') {
+              try { 
+                await pc.setLocalDescription({ type: 'rollback' } as any); 
+              } catch (rollbackError) {
+                console.warn('[VIEWER', viewerIdRef.current, '] Rollback failed:', rollbackError);
+              }
+            }
+            
+            await pc.setRemoteDescription({ type: 'offer', sdp });
             console.log(`[VIEWER ${viewerIdRef.current}] Remote description set, SDP len=${sdp?.length || 0}`);
             
-            const answer = await peerConnection.createAnswer();
-            await peerConnection.setLocalDescription(answer);
+            const answer = await pc.createAnswer();
+            await pc.setLocalDescription(answer);
             
             signalChannel.send({
               type: 'broadcast',
@@ -523,10 +599,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (!vid || vid !== viewerIdRef.current || !candidate) return;
           console.log('[VIEWER', viewerIdRef.current, '] ICE handler received payload', p);
           
-          if (!peerConnection || !peerConnection.remoteDescription) return;
+          // Ensure we have an open peer connection
+          const pc = ensureOpenPc();
+          
+          if (!pc.remoteDescription) {
+            console.warn('[VIEWER', viewerIdRef.current, '] Ignoring ICE candidate - no remote description yet');
+            return;
+          }
           
           try {
-            await peerConnection.addIceCandidate(candidate);
+            await pc.addIceCandidate(candidate);
             iceCandidateCountRef.current += 1;
             console.log(`[RTC-DEBUG] ICE candidate received (count: ${iceCandidateCountRef.current})`);
             console.log(`[VIEWER ${viewerIdRef.current}] REMOTE ICE RX`);
@@ -541,7 +623,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           allowTeardownRef.current = true;
           guardedUnsubscribe(channelRef.current, 'creator-offline');
           guardedUnsubscribe(fallbackChannelRef.current, 'creator-offline');
-          try { peerConnection?.close(); peerConnectionRef.current = null; } catch {}
+          try { peerConnectionRef.current?.close(); peerConnectionRef.current = null; } catch {}
           allowTeardownRef.current = false; // reset after explicit teardown
         });
     };
@@ -552,58 +634,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         console.log(`[BROADCAST_VIEWER:${viewerId}] Starting connection attempt`, retryCount + 1);
         setConnectionState('connecting');
         
-        // Create peer connection
-        peerConnection = new RTCPeerConnection({
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' }
-          ]
-        });
-        peerConnectionRef.current = peerConnection;
-
-        // Handle incoming remote stream
-        peerConnection.ontrack = (event) => {
-          console.log(`[BROADCAST_VIEWER:${viewerId}] Received remote stream`);
-          const [remoteStream] = event.streams;
-          const video = videoRef.current;
-          if (video && remoteStream) {
-            video.srcObject = remoteStream;
-            setConnectionState('connected');
-            setRetryCount(0);
-            setOfferRetryCount(0);
-            
-            if (connectionTimeoutRef.current) {
-              clearTimeout(connectionTimeoutRef.current);
-              connectionTimeoutRef.current = null;
-            }
-            
-            console.log(`[BROADCAST_VIEWER:${viewerId}] Stream connected successfully`);
-          }
-        };
-
-        // Handle connection state changes
-        peerConnection.onconnectionstatechange = () => {
-          console.log(`[BROADCAST_VIEWER:${viewerId}] Connection state:`, peerConnection?.connectionState);
-          if (peerConnection?.connectionState === 'failed' || peerConnection?.connectionState === 'disconnected') {
-            console.warn('[VIEWER', viewerId, '] prevented runtime unsubscribe on connection state change');
-            // DO NOT unsubscribe here - let retry logic handle reconnection
-            setConnectionState('failed');
-          }
-        };
-
-        // Handle ICE candidates
-        peerConnection.onicecandidate = (event) => {
-          if (event.candidate && channelRef.current) {
-            iceCandidateCountRef.current += 1;
-            console.log(`[RTC-DEBUG] ICE candidate generated locally (count: ${iceCandidateCountRef.current})`);
-            console.log(`[VIEWER ${viewerId}] LOCAL ICE TX`);
-            channelRef.current.send({
-              type: 'broadcast',
-              event: 'ice-candidate',
-              payload: { viewerId, candidate: event.candidate }
-            });
-          }
-        };
+        // Ensure we have an open peer connection (creates fresh if needed)
+        const peerConnection = ensureOpenPc();
 
         // Determine channels to use
         const primaryChannel = resolvedCreatorId ? canonicalChannelFor(resolvedCreatorId) : null;
@@ -725,11 +757,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         clearInterval(debugIntervalRef.current);
         debugIntervalRef.current = null;
       }
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-        peerConnectionRef.current = null;
-      }
+      
       const video = videoRef.current;
       if (video) {
         video.srcObject = null;
