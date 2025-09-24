@@ -496,7 +496,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     if (USE_SFU && (window as any).__creatorSFU) {
       try {
         await (window as any).__creatorSFU.disconnect();
-        (window as any).__creatorSFU = null;
+        (window as any).__creatorSFU = undefined;
         console.log('[CREATOR] SFU disconnected');
       } catch (e) {
         console.error('[CREATOR] SFU disconnect error', e);
