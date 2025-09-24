@@ -76,6 +76,30 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Remove local guard - using global guard now
 
+  // Helper functions for resilient video attachment
+  function bindVideoStreamFromPc(pc: RTCPeerConnection) {
+    const v = videoRef.current;
+    if (!v) return;
+    // Build a MediaStream from current receivers (covers Missed-ontrack cases)
+    const tracks = pc.getReceivers().map(r => r.track).filter(Boolean);
+    if (tracks.length) {
+      const ms = new MediaStream(tracks as MediaStreamTrack[]);
+      if (v.srcObject !== ms) v.srcObject = ms;
+      try { v.play?.(); } catch (e) { console.warn('[VIEWER', viewerIdRef.current, '] video.play() rejected', e); }
+    }
+  }
+
+  function ensureAutoplayWorkarounds() {
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = true; // iOS/Safari autoplay requirement
+    v.setAttribute('playsinline', '');
+    const onLoaded = () => { try { v.play?.(); } catch {} };
+    v.removeEventListener('loadedmetadata', onLoaded);
+    v.addEventListener('loadedmetadata', onLoaded);
+    if (v.readyState >= 1) { try { v.play?.(); } catch {} }
+  }
+
   // Ensure we have an open RTCPeerConnection
   function ensureOpenPc(): RTCPeerConnection {
     const prev = pcRef.current;
@@ -88,20 +112,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       const pc = new RTCPeerConnection(cfg);
       // reattach existing handlers
       pc.ontrack = (e) => {
-        if (videoRef.current) {
-          const stream = e.streams?.[0] ?? new MediaStream([e.track]);
-          videoRef.current.srcObject = stream;
-          setConnectionState('connected');
-          setRetryCount(0);
-          setOfferRetryCount(0);
-          
-          if (connectionTimeoutRef.current) {
-            clearTimeout(connectionTimeoutRef.current);
-            connectionTimeoutRef.current = null;
-          }
-          
-          console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Stream connected successfully`);
+        const v = videoRef.current;
+        const stream = e.streams?.[0] ?? new MediaStream([e.track]);
+        if (v && v.srcObject !== stream) v.srcObject = stream;
+        ensureAutoplayWorkarounds();
+        try { v?.play?.(); } catch {}
+        // Also bind from receivers in case multiple tracks arrive
+        bindVideoStreamFromPc(pc);
+        
+        setConnectionState('connected');
+        setRetryCount(0);
+        setOfferRetryCount(0);
+        
+        if (connectionTimeoutRef.current) {
+          clearTimeout(connectionTimeoutRef.current);
+          connectionTimeoutRef.current = null;
         }
+        
+        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Stream connected successfully`);
       };
       pc.onicecandidate = (e) => {
         if (e.candidate && channelRef.current) {
@@ -117,6 +145,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       };
       pc.onconnectionstatechange = () => {
         console.log('[VIEWER', viewerIdRef.current, '] PC state=', pc.connectionState, 'signal=', pc.signalingState);
+        if (pc.connectionState === 'connected') {
+          bindVideoStreamFromPc(pc);
+          ensureAutoplayWorkarounds();
+        }
         if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
           console.warn('[VIEWER', viewerIdRef.current, '] prevented runtime unsubscribe on connection state change');
           // DO NOT unsubscribe here - let retry logic handle reconnection
@@ -552,6 +584,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           await pc.setRemoteDescription({ type: 'offer', sdp });
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
+          
+          // Immediately bind video stream and ensure autoplay workarounds
+          bindVideoStreamFromPc(pc);
+          ensureAutoplayWorkarounds();
+          
           signalChannel.send({
             type: 'broadcast',
             event: 'answer',
@@ -782,6 +819,18 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     // No cleanup here - let unmount-only effect handle it
   }, [resolvedCreatorId, viewerIdRef.current]); // Only re-run when creatorUserId changes, not on UI state
 
+  // Add a tiny visibility resume (helps iOS Safari/background tab)
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible' && pcRef.current) {
+        bindVideoStreamFromPc(pcRef.current);
+        ensureAutoplayWorkarounds();
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+
   // UNMOUNT-only cleanup effect
   useEffect(() => {
     return () => {
@@ -892,7 +941,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       {/* Always render video element for WebRTC to work */}
       <video
         ref={videoRef}
-        className={`w-full h-full object-cover ${connectionState === 'connected' ? 'block' : 'hidden'}`}
+        className="w-full h-full object-cover"
         autoPlay
         playsInline
         muted={isMuted}
