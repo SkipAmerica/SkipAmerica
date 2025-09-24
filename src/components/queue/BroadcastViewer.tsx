@@ -832,6 +832,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           
           // Hook remote track into existing video element
           sfu.onRemoteVideo((el) => {
+            console.log("[SFU] remote video attached");
             // Replace the element's srcObject
             if (videoRef.current) {
               // Easiest: swap nodes
@@ -850,6 +851,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const identity = data?.user?.id ?? crypto.randomUUID();
           const creatorId = resolvedCreatorId || queueId; // use resolved creator ID
           
+          console.log("[SFU] requesting token (viewer)", { creatorId: resolvedCreatorId });
+          
           const resp = await fetch(TOKEN_URL, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
@@ -861,7 +864,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (responseData.error) throw new Error(responseData.error);
           
           const { token, host } = responseData;
+          
+          console.log("[SFU] token ok, connecting", { url: host });
+          
           await sfu.connect(host, token);
+          
+          console.log("[SFU] connected, waiting for remote tracks");
           
           setConnectionState('connected');
           console.log('[VIEWER] SFU connected successfully');
