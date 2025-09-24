@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
@@ -129,15 +129,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return prev;
   }
 
-  // Helper to get the effective creator ID for DB operations
-  const getEffectiveCreatorId = () => {
+  // Memoized effective creator ID to prevent unnecessary re-computations
+  const effectiveCreatorId = useMemo(() => {
     return resolvedCreatorId || queueId;
-  };
+  }, [resolvedCreatorId, queueId]);
 
-  // Check if creator is broadcasting - uses resolved creator ID if available
-  const checkCreatorBroadcastStatus = async (): Promise<boolean> => {
+  // Stable callback for checking broadcast status
+  const checkCreatorBroadcastStatus = useCallback(async (): Promise<boolean> => {
     try {
-      const effectiveCreatorId = getEffectiveCreatorId();
       console.log(`[BROADCAST_VIEWER] Checking if creator is broadcasting: ${effectiveCreatorId}`);
       
       const { data: liveSession } = await supabase
@@ -158,40 +157,58 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       // If we can't verify, don't block the connection attempt
       return true;
     }
-  };
+  }, [effectiveCreatorId]);
 
-  // Fetch lobby chat messages
-  useEffect(() => {
-    const targetCreatorId = resolvedCreatorId || queueId;
+  // Stable retry handler
+  const handleRetry = useCallback(() => {
+    console.log('[BROADCAST_VIEWER] Manual retry triggered');
+    setRetryCount(prev => prev + 1);
+    setConnectionState('checking');
+  }, []);
+
+  // Stable mute toggle handler
+  const toggleMute = useCallback(() => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
+
+  // Stable fetch messages callback
+  const fetchMessages = useCallback(async () => {
+    const targetCreatorId = effectiveCreatorId;
     if (!targetCreatorId) return;
 
-    const fetchMessages = async () => {
-      try {
-        const { data: messagesData } = await supabase
-          .from('lobby_chat_messages')
-          .select('id, user_id, message, created_at')
-          .eq('creator_id', targetCreatorId)
-          .order('created_at', { ascending: true })
-          .limit(20);
+    try {
+      const { data: messagesData } = await supabase
+        .from('lobby_chat_messages')
+        .select('id, user_id, message, created_at')
+        .eq('creator_id', targetCreatorId)
+        .order('created_at', { ascending: true })
+        .limit(20);
 
-        if (messagesData && messagesData.length > 0) {
-          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .in('id', userIds);
+      if (messagesData && messagesData.length > 0) {
+        const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+        const { data: profilesData } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
 
-          const messagesWithProfiles = messagesData.map(msg => ({
-            ...msg,
-            profiles: profilesData?.find(p => p.id === msg.user_id)
-          }));
+        const messagesWithProfiles = messagesData.map(msg => ({
+          ...msg,
+          profiles: profilesData?.find(p => p.id === msg.user_id)
+        }));
 
-          setMessages(messagesWithProfiles);
-        }
-      } catch (error) {
-        console.error('Error fetching messages:', error);
+        setMessages(messagesWithProfiles);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    }
+  }, [effectiveCreatorId]);
+
+  // Fetch lobby chat messages - optimized with stable callback
+  useEffect(() => {
+    if (!effectiveCreatorId) return;
 
     fetchMessages();
 
@@ -206,7 +223,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           event: 'INSERT',
           schema: 'public',
           table: 'lobby_chat_messages',
-          filter: `creator_id=eq.${targetCreatorId}`
+          filter: `creator_id=eq.${effectiveCreatorId}`
         },
         async (payload) => {
           const { data: profile } = await supabase
@@ -226,7 +243,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       .subscribe();
 
     // Remove cleanup - unsubscribe only on unmount
-  }, [queueId, resolvedCreatorId]);
+  }, [effectiveCreatorId, fetchMessages]);
 
   // Auto-scroll chat
   useEffect(() => {
@@ -235,22 +252,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [messages]);
 
-  // Real-time subscription to live session changes - wait for resolution, then watch resolved and fallback IDs
+  // CONSOLIDATED Real-time subscription to live session changes - single subscription with stability
   useEffect(() => {
     if (!queueId || resolvedCreatorId === undefined) return;
 
-    const resolvedId = resolvedCreatorId || queueId;
-    console.log('[BROADCAST_VIEWER] Setting up live session subscriptions for creator:', {
-      resolvedId,
-      rawId: queueId
-    });
+    console.log('[BROADCAST_VIEWER] Setting up consolidated live session subscription for:', effectiveCreatorId);
 
-    const channels: any[] = [];
+    // Single subscription channel with debounced state updates
+    let stateUpdateTimeout: NodeJS.Timeout | null = null;
+    const debouncedStateUpdate = (newState: ConnectionState) => {
+      if (stateUpdateTimeout) clearTimeout(stateUpdateTimeout);
+      stateUpdateTimeout = setTimeout(() => {
+        setConnectionState(newState);
+      }, 100); // Debounce rapid state changes
+    };
 
-    // Primary subscription for resolved/effective creator ID
-    const resolvedChannel = guardChannelUnsubscribe(
-      supabase.channel(`broadcast-live-session-${resolvedId}`),
-      `live-session-${resolvedId}`
+    const channel = guardChannelUnsubscribe(
+      supabase.channel(`broadcast-live-session-consolidated-${effectiveCreatorId}`),
+      `live-session-consolidated-${effectiveCreatorId}`
     )
       .on(
         'postgres_changes',
@@ -258,71 +277,38 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           event: '*',
           schema: 'public',
           table: 'live_sessions',
-          filter: `creator_id=eq.${resolvedId}`
+          filter: `creator_id=eq.${effectiveCreatorId}`
         },
         (payload) => {
-          console.log('[BROADCAST_VIEWER] Live session change detected (resolved):', payload);
+          console.log('[BROADCAST_VIEWER] Live session change (consolidated):', payload.eventType);
 
           if (payload.eventType === 'INSERT') {
-            console.log('[BROADCAST_VIEWER] Creator went live (resolved) - attempting connection');
+            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection');
             setRetryCount(0);
-            setConnectionState('checking');
+            debouncedStateUpdate('checking');
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
-            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (resolved)');
-            setConnectionState('offline');
+            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
+            debouncedStateUpdate('offline');
           } else if (payload.eventType === 'DELETE') {
-            console.log('[BROADCAST_VIEWER] Live session deleted (resolved)');
-            setConnectionState('offline');
+            console.log('[BROADCAST_VIEWER] Live session deleted');
+            debouncedStateUpdate('offline');
           }
         }
       )
       .subscribe();
 
-    channels.push(resolvedChannel);
-
-    // If resolved differs from raw, also subscribe to raw as fallback
-    if (resolvedCreatorId && resolvedCreatorId !== queueId) {
-      const rawChannel = guardChannelUnsubscribe(
-        supabase.channel(`broadcast-live-session-${queueId}`),
-        `live-session-${queueId}`
-      )
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'live_sessions',
-            filter: `creator_id=eq.${queueId}`
-          },
-          (payload) => {
-            console.log('[BROADCAST_VIEWER] Live session change detected (raw fallback):', payload);
-
-            if (payload.eventType === 'INSERT') {
-              console.log('[BROADCAST_VIEWER] Creator went live (raw fallback) - attempting connection');
-              setRetryCount(0);
-              setConnectionState('checking');
-            } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
-              console.log('[BROADCAST_VIEWER] Creator stopped broadcasting (raw fallback)');
-              setConnectionState('offline');
-            } else if (payload.eventType === 'DELETE') {
-              console.log('[BROADCAST_VIEWER] Live session deleted (raw fallback)');
-              setConnectionState('offline');
-            }
-          }
-        )
-        .subscribe();
-
-      channels.push(rawChannel);
-    }
-
     return () => {
-      // Remove cleanup - unsubscribe only on unmount  
+      if (stateUpdateTimeout) clearTimeout(stateUpdateTimeout);
+      // Cleanup handled in unmount effect
     };
-  }, [queueId, resolvedCreatorId]);
+  }, [queueId, resolvedCreatorId, effectiveCreatorId]);
 
-  // Continuous monitoring with polling backup (wait for resolution) - UI only
+  // Conditional monitoring with reduced polling (wait for resolution) - UI only
   useEffect(() => {
     if (!queueId || resolvedCreatorId === undefined) return;
+    
+    // Only poll if we're in a failed/offline state to detect recovery
+    if (connectionState !== 'offline' && connectionState !== 'failed') return;
 
     const pollInterval = setInterval(async () => {
       const isBroadcasting = await checkCreatorBroadcastStatus();
@@ -330,19 +316,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       if (isBroadcasting && (connectionState === 'offline' || connectionState === 'failed')) {
         console.log('[BROADCAST_VIEWER] Polling detected creator is broadcasting - reconnecting');
         setConnectionState('checking');
-      } else if (!isBroadcasting) {
-        console.log('[BROADCAST_VIEWER] Polling detected creator not broadcasting (UI only)');
-        // Keep connection active - only update UI state, don't tear down
-        if (connectionState !== 'offline' && connectionState !== 'failed') {
-          setConnectionState('offline');
-        }
       }
-    }, 30000); // Poll every 30 seconds
+    }, 60000); // Reduced to poll every 60 seconds only when needed
 
     return () => clearInterval(pollInterval);
   }, [queueId, resolvedCreatorId, connectionState]);
 
-  // Resolve queueId to creator_user_id on mount and auto-connect
+  // Resolve queueId to creator_user_id on mount - DEPENDENCY LOOP FIX: Remove connectionState dependency
   useEffect(() => {
     const resolveCreator = async () => {
       if (!queueId) return;
@@ -353,15 +333,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       
       setResolvedCreatorId(creatorUserId);
       
-      // Auto-connect after resolution completes
-      if (connectionState === 'checking' || connectionState === 'offline') {
-        console.log(`[QUEUE_RESOLVER] Auto-triggering connection after resolution`);
-        setConnectionState('checking');
-      }
+      // Initial connection trigger only on mount/queueId change
+      console.log(`[QUEUE_RESOLVER] Setting initial checking state after resolution`);
+      setConnectionState('checking');
     };
     
     resolveCreator();
-  }, [queueId, connectionState]);
+  }, [queueId]); // FIXED: Remove connectionState dependency to break loop
 
   // WebRTC connection management - subscribe immediately after resolution
   useEffect(() => {
@@ -810,34 +788,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       (window as any).__allow_ch_teardown = false;
     };
   }, []);
-
-  const handleRetry = async () => {
-    console.log('[BROADCAST_VIEWER] Manual retry triggered');
-    const maxRetries = 5;
-    
-    if (retryCount >= maxRetries) {
-      console.log('[BROADCAST_VIEWER] Max retries reached, showing offline');
-      setConnectionState('offline');
-      return;
-    }
-    
-    // Reset both retry counts for a fresh start
-    setRetryCount(prev => prev + 1);
-    setOfferRetryCount(0);
-    setConnectionState('retry');
-    
-    // Add exponential backoff for automatic retries
-    setTimeout(() => {
-      setConnectionState('checking');
-    }, Math.min(1000 * Math.pow(2, retryCount), 10000)); // Max 10 second delay
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(!isMuted);
-    }
-  };
 
   const getInitials = (name: string) => {
     return name
