@@ -111,46 +111,39 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
 
   // always render the overlay so we can click it no matter what the rest of the UI does
   return (
-    <>
-      {/* Local Preview Video */}
-      <video 
-        id="creatorPreview" 
-        muted 
-        playsInline 
-        autoPlay 
-        className="w-full rounded-lg bg-black" 
-        style={{
-          position: "fixed", 
-          top: 12, 
-          right: 12, 
-          zIndex: 99998,
-          width: 320, 
-          height: 240,
-          boxShadow: "0 8px 20px rgba(0,0,0,.35)"
-        }}
-      />
+    <div className="fixed inset-4 z-[99998] flex flex-col gap-4 max-w-sm ml-auto">
+      {/* Creator camera preview (always rendered) */}
+      <div className="w-full max-w-xl aspect-video bg-black/80 rounded-xl overflow-hidden">
+        <video
+          id="creatorPreview"
+          className="w-full h-full object-cover"
+          muted
+          playsInline
+          autoPlay
+        />
+      </div>
       
-      <div style={{
-        position: "fixed", right: 12, bottom: 12, zIndex: 99999,
-        background: "rgba(0,0,0,.85)", color: "#fff",
-        padding: "12px 14px", borderRadius: 12, fontFamily: "monospace",
-        width: 320, boxShadow: "0 8px 20px rgba(0,0,0,.35)"
-      }}>
-        <div style={{fontWeight: 700, marginBottom: 6}}>SFU Control</div>
-        <div style={{fontSize: 12, lineHeight: "18px", minHeight: 36, whiteSpace: "pre-wrap"}}>
+      {/* SFU Control Panel */}
+      <div className="bg-black/85 text-white p-3 rounded-xl font-mono text-sm">
+        <div className="font-bold mb-2">SFU Control</div>
+        <div className="text-xs leading-relaxed min-h-9 whitespace-pre-wrap mb-3">
           {__sfuMsg}
         </div>
-        <div style={{display: "flex", gap: 8, marginTop: 8}}>
-          <button onClick={startSfuBroadcast}
-            style={{flex:1, padding:"8px 10px", borderRadius:8, border:"1px solid #3fa", background:"#124", color:"#3fa", cursor:"pointer"}}>
+        <div className="flex gap-2">
+          <button 
+            onClick={startSfuBroadcast}
+            className="flex-1 px-3 py-2 rounded-lg border border-green-400 bg-green-900/40 text-green-400 hover:bg-green-900/60 cursor-pointer"
+          >
             Start SFU
           </button>
-          <button onClick={stopSfuBroadcast}
-            style={{flex:1, padding:"8px 10px", borderRadius:8, border:"1px solid #f66", background:"#411", color:"#f66", cursor:"pointer"}}>
+          <button 
+            onClick={stopSfuBroadcast}
+            className="flex-1 px-3 py-2 rounded-lg border border-red-400 bg-red-900/40 text-red-400 hover:bg-red-900/60 cursor-pointer"
+          >
             Stop
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
