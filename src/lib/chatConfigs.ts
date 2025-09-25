@@ -1,0 +1,67 @@
+import type { ChatConfig } from '@/shared/types/chat';
+import { sendLobbyMessage } from '@/lib/lobbyChat';
+
+// Lobby Chat Configuration (PQ system)
+export const createLobbyConfig = (creatorId: string): ChatConfig => ({
+  tableName: 'lobby_chat_messages',
+  channelPrefix: 'lobby-chat',
+  filterField: 'creator_id',
+  filterValue: creatorId,
+  appearance: {
+    height: 'h-80',
+    showProfiles: true,
+    emptyStateText: 'No messages yet. Start the conversation!'
+  },
+  messaging: {
+    enabled: true,
+    placeholder: 'Type a message...',
+    requireAuth: true,
+    showSendButton: true
+  },
+  sendMessage: async ({ filterValue, userId, username, text }) => {
+    await sendLobbyMessage({
+      creatorId: filterValue,
+      userId,
+      username,
+      text
+    });
+  }
+});
+
+// Creator Overlay Configuration (read-only overlay)
+export const createOverlayConfig = (creatorId: string): ChatConfig => ({
+  tableName: 'lobby_chat_messages',
+  channelPrefix: 'lobby-chat-db',
+  filterField: 'creator_id',
+  filterValue: creatorId,
+  appearance: {
+    height: 'h-64',
+    showProfiles: false,
+    compact: true,
+    reverseOrder: true,
+    emptyStateText: 'No messages yet…',
+    className: 'pointer-events-none absolute inset-0 z-20'
+  },
+  messaging: {
+    enabled: false
+  }
+});
+
+// Future: General Chat Configuration
+export const createGeneralConfig = (roomId: string): ChatConfig => ({
+  tableName: 'general_chat_messages', // Future table
+  channelPrefix: 'general-chat',
+  filterField: 'room_id',
+  filterValue: roomId,
+  appearance: {
+    height: 'h-96',
+    showProfiles: true,
+    emptyStateText: 'Welcome to the chat room!'
+  },
+  messaging: {
+    enabled: true,
+    placeholder: 'Chat with everyone...',
+    requireAuth: true,
+    showSendButton: true
+  }
+});

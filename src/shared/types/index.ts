@@ -4,6 +4,7 @@ export * from './entities'
 export * from './api'
 export * from './ui'
 export * from './live'
+export * from './chat'
 
 // Re-export commonly used types
 export type { Database, Tables, TablesInsert, TablesUpdate, Enums } from '@/integrations/supabase/types'
