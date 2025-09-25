@@ -3,6 +3,8 @@ import { createSFU } from "@/lib/sfu";
 import { getAuthJWT } from "@/lib/authToken";
 import { RUNTIME } from "@/config/runtime";
 
+const USE_SFU = true; // Force SFU for now
+
 // Construct the fixed functions URL once
 const FUNCTIONS_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -19,7 +21,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
   const sfuRef = React.useRef<ReturnType<typeof createSFU> | null>(null);
 
   async function startSfuBroadcast() {
-    if (RUNTIME.USE_SFU) {
+    if (USE_SFU) {
       try {
         dlog("[CREATOR][SFU] start pressed");
         setSfuMsg("getting local tracks…");
