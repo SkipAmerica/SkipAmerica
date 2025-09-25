@@ -9,6 +9,23 @@ export interface ChatMessage {
   };
 }
 
+export interface ChatRichText {
+  enabled?: boolean;
+  allowBold?: boolean;
+  allowItalic?: boolean;
+  allowFontSize?: boolean;
+  allowFontColor?: boolean;
+  fontSizes?: string[];
+  fontColors?: string[];
+  toolbar?: 'compact' | 'full' | 'minimal';
+}
+
+export interface ChatPositioning {
+  mode?: 'relative' | 'fixed';
+  containerRelative?: boolean;
+  allowPositionToggle?: boolean;
+}
+
 export interface ChatAppearance {
   height?: string;
   width?: string;
@@ -44,6 +61,12 @@ export interface ChatConfig {
   
   // Messaging configuration
   messaging?: ChatMessaging;
+  
+  // Rich text configuration
+  richText?: ChatRichText;
+  
+  // Positioning configuration
+  positioning?: ChatPositioning;
   
   // Message sending function
   sendMessage?: (params: {

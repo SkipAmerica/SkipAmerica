@@ -24,6 +24,18 @@ export const createLobbyConfig = (creatorId: string): ChatConfig => ({
     requireAuth: true,
     showSendButton: true
   },
+  richText: {
+    enabled: true,
+    allowBold: true,
+    allowItalic: true,
+    allowFontSize: false,
+    allowFontColor: false,
+    toolbar: 'compact'
+  },
+  positioning: {
+    mode: 'fixed',
+    allowPositionToggle: true
+  },
   sendMessage: async ({ filterValue, userId, username, text }) => {
     await sendLobbyMessage({
       creatorId: filterValue,
@@ -85,6 +97,7 @@ export const createBottomLeftConfig = (roomId: string): ChatConfig => ({
     position: 'bottom-left',
     messageFlow: 'newest-top',
     showProfiles: true,
+    showProfileToggle: true,
     showScrollbar: true,
     emptyStateText: 'Chat is empty. Start the conversation!'
   },
@@ -93,6 +106,20 @@ export const createBottomLeftConfig = (roomId: string): ChatConfig => ({
     placeholder: 'Type your message...',
     requireAuth: true,
     showSendButton: true
+  },
+  richText: {
+    enabled: true,
+    allowBold: true,
+    allowItalic: true,
+    allowFontSize: true,
+    allowFontColor: true,
+    toolbar: 'full',
+    fontSizes: ['text-xs', 'text-sm', 'text-base', 'text-lg'],
+    fontColors: ['text-foreground', 'text-primary', 'text-secondary', 'text-accent']
+  },
+  positioning: {
+    mode: 'fixed',
+    allowPositionToggle: true
   },
   sendMessage: async ({ filterValue, userId, username, text }) => {
     await sendLobbyMessage({

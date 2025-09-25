@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Toggle } from '@/components/ui/toggle';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Send, Users } from 'lucide-react';
+import { Users, Move, Anchor } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useUniversalChat } from '@/hooks/useUniversalChat';
+import { RichTextInput } from './RichTextInput';
+import { RichTextMessage } from './RichTextMessage';
+import { getProfileDisplayInfo, getAvatarSizeClasses, getTextSizeClasses } from '@/lib/profileUtils';
 import type { ChatConfig } from '@/shared/types/chat';
 
 interface UniversalChatProps {
@@ -22,6 +25,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
+  const [isFixed, setIsFixed] = useState(config.positioning?.mode === 'fixed');
   const {
     messages,
     newMessage,
@@ -31,8 +35,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
     messagesEndRef
   } = useUniversalChat(config);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !user || sending || !config.messaging?.enabled) return;
 
     setSending(true);
@@ -71,6 +74,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
     return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
 
+  // Configuration values
   const height = config.appearance?.height || 'h-80';
   const width = config.appearance?.width || 'w-full';
   const maxWidth = config.appearance?.maxWidth;
@@ -82,9 +86,18 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const showScrollbar = config.appearance?.showScrollbar ?? true;
   const messageFlow = config.appearance?.messageFlow || 'newest-bottom';
   const position = config.appearance?.position || 'default';
+  const allowPositionToggle = config.positioning?.allowPositionToggle ?? false;
+  
+  // Text size classes
+  const textSizes = getTextSizeClasses(compact);
+  const avatarSizeClasses = getAvatarSizeClasses(compact);
 
   // Position styling
   const getPositionClasses = () => {
+    const useFixed = isFixed && position !== 'default';
+    
+    if (!useFixed) return '';
+    
     switch (position) {
       case 'bottom-left':
         return 'fixed bottom-4 left-4 z-50';
@@ -98,7 +111,6 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
         return 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50';
       case 'custom':
         return config.appearance?.className || '';
-      case 'default':
       default:
         return '';
     }
@@ -111,8 +123,8 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
 
   const containerClasses = `
     ${getPositionClasses()}
-    ${position !== 'default' && position !== 'custom' ? `${width} ${maxWidth ? maxWidth : 'max-w-sm'}` : ''}
-    ${position !== 'default' && position !== 'custom' ? 'bg-background border border-border rounded-lg shadow-lg' : ''}
+    ${isFixed && position !== 'default' && position !== 'custom' ? `${width} ${maxWidth ? maxWidth : 'max-w-sm'}` : ''}
+    ${isFixed && position !== 'default' && position !== 'custom' ? 'bg-background border border-border rounded-lg shadow-lg' : ''}
     ${className}
   `.trim();
 
@@ -122,82 +134,104 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
 
   return (
     <div className={`flex flex-col ${height} ${containerClasses}`}>
-      {showProfileToggle && (
-        <div className="p-3 border-b bg-muted/50">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            <Label htmlFor="profile-toggle" className="text-sm font-medium">
-              Show Profiles
-            </Label>
-            <Switch
-              id="profile-toggle"
-              checked={showProfiles}
-              onCheckedChange={setShowProfiles}
-              className="ml-auto"
-            />
-          </div>
+      {/* Header with controls */}
+      {(showProfileToggle || allowPositionToggle) && (
+        <div className="p-3 border-b bg-muted/50 space-y-2">
+          {showProfileToggle && (
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              <Label htmlFor="profile-toggle" className="text-sm font-medium">
+                Show Profiles
+              </Label>
+              <Switch
+                id="profile-toggle"
+                checked={showProfiles}
+                onCheckedChange={setShowProfiles}
+                className="ml-auto"
+              />
+            </div>
+          )}
+          
+          {allowPositionToggle && (
+            <div className="flex items-center gap-2">
+              <Anchor className="h-4 w-4" />
+              <Label htmlFor="position-toggle" className="text-sm font-medium">
+                Fixed Position
+              </Label>
+              <Toggle
+                pressed={isFixed}
+                onPressedChange={setIsFixed}
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+              >
+                <Move className="h-3 w-3" />
+              </Toggle>
+            </div>
+          )}
         </div>
       )}
       <ScrollArea className={scrollAreaClasses}>
         <div className={compact ? "space-y-2" : "space-y-4"}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <p className={compact ? 'text-xs' : 'text-sm'}>{emptyStateText}</p>
+              <p className={textSizes.message}>{emptyStateText}</p>
             </div>
           ) : (
-            displayMessages.map((message) => (
-              <div key={message.id} className="flex gap-3">
-                {showProfiles && (
-                  <Avatar className={compact ? "h-6 w-6 flex-shrink-0" : "h-8 w-8 flex-shrink-0"}>
-                    <AvatarImage src={message.profiles?.avatar_url} />
-                    <AvatarFallback className="text-xs">
-                      {message.profiles?.full_name?.charAt(0) || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div className="flex-1 min-w-0">
+            displayMessages.map((message) => {
+              const profileInfo = getProfileDisplayInfo(message.profiles);
+              
+              return (
+                <div key={message.id} className="flex gap-3">
                   {showProfiles && (
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
-                        {message.profiles?.full_name || 'Unknown User'}
-                      </span>
-                      <span className={`text-muted-foreground ${compact ? 'text-xs' : 'text-xs'}`}>
-                        {formatMessageTime(message.created_at)}
-                      </span>
-                    </div>
+                    <Avatar className={`${avatarSizeClasses} flex-shrink-0`}>
+                      <AvatarImage src={profileInfo.avatarUrl} />
+                      <AvatarFallback 
+                        className="text-xs font-medium"
+                        style={{
+                          backgroundColor: profileInfo.backgroundColor,
+                          color: profileInfo.textColor
+                        }}
+                      >
+                        {profileInfo.initials}
+                      </AvatarFallback>
+                    </Avatar>
                   )}
-                  <p className={`text-foreground break-words ${compact ? 'text-xs' : 'text-sm'}`}>
-                    {message.message}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    {showProfiles && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`font-medium ${textSizes.name}`}>
+                          {profileInfo.fullName}
+                        </span>
+                        <span className={`text-muted-foreground ${textSizes.timestamp}`}>
+                          {formatMessageTime(message.created_at)}
+                        </span>
+                      </div>
+                    )}
+                    <div className={`text-foreground break-words ${textSizes.message}`}>
+                      <RichTextMessage message={message.message} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
           <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
       
       {messagingEnabled && (
-        <form onSubmit={handleSendMessage} className="p-4 border-t">
-          <div className="flex gap-2">
-            <Input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={placeholder}
-              disabled={sending}
-              className="flex-1"
-            />
-            {(config.messaging?.showSendButton ?? true) && (
-              <Button 
-                type="submit" 
-                disabled={!newMessage.trim() || sending}
-                size="sm"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </form>
+        <div className="p-4 border-t">
+          <RichTextInput
+            value={newMessage}
+            onChange={setNewMessage}
+            onSubmit={handleSendMessage}
+            placeholder={placeholder}
+            disabled={sending}
+            richText={config.richText}
+            showSendButton={config.messaging?.showSendButton ?? true}
+          />
+        </div>
       )}
     </div>
   );
