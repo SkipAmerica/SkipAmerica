@@ -12,6 +12,7 @@ import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard'
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
+import { hudLog, hudError } from '@/lib/hud';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -826,7 +827,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const connectToCreatorBroadcast = async () => {
       // SFU path (bypass legacy P2P)
       if (USE_SFU) {
-        console.log('[VIEWER] Using LiveKit SFU');
+        hudLog("[SFU] start");
         try {
           const sfu = createSFU();
           
@@ -848,28 +849,22 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           
           // Identity and creatorId  
           const { data } = await supabase.auth.getUser();
-          const identity = data?.user?.id ?? crypto.randomUUID();
-          const creatorId = resolvedCreatorId || queueId; // use resolved creator ID
-          
-          console.log("[SFU] requesting token (viewer)", { creatorId: resolvedCreatorId });
-          
+          const body = { role: "viewer" as const, creatorId: resolvedCreatorId || queueId, identity: data?.user?.id || crypto.randomUUID() };
+          hudLog("[SFU] POST token", TOKEN_URL, JSON.stringify(body));
+
           const resp = await fetch(TOKEN_URL, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ role: 'viewer', creatorId, identity })
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
           });
-          
-          const responseData = await resp.json();
-          
-          if (responseData.error) throw new Error(responseData.error);
-          
-          const { token, host } = responseData;
-          
-          console.log("[SFU] token ok, connecting", { url: host });
-          
-          await sfu.connect(host, token);
-          
-          console.log("[SFU] connected, waiting for remote tracks");
+          hudLog("[SFU] token resp", String(resp.status));
+          const json = await resp.json().catch(e => ({ error: "bad-json " + String(e) }));
+          hudLog("[SFU] token json", JSON.stringify(json));
+
+          if (!resp.ok || json.error) throw new Error(json.error || ("HTTP " + resp.status));
+
+          await sfu.connect(json.host, json.token);
+          hudLog("[SFU] connected");
           
           setConnectionState('connected');
           console.log('[VIEWER] SFU connected successfully');
@@ -879,7 +874,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           
           return; // stop legacy P2P setup
         } catch (e) {
-          console.error('[VIEWER] SFU connect failed', e);
+          hudError("SFU", e);
           setConnectionState('failed');
           return;
         }

@@ -10,6 +10,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { canonicalSignalChannel } from '@/lib/queueResolver'
 import { createSFU } from '@/lib/sfu'
+import { hudLog, hudError } from '@/lib/hud'
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -382,34 +383,28 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const startBroadcast = async () => {
     // SFU path (skip P2P setup)
     if (USE_SFU) {
-      console.log('[CREATOR] Using LiveKit SFU');
+      hudLog("[SFU] start");
       try {
         const sfu = createSFU();
-        const identity = user?.id!;
-        const creatorId = user?.id!;
-        
-        console.log("[SFU] requesting token (creator)", { creatorId: user?.id });
-        
+        const { data } = await supabase.auth.getUser();
+        const body = { role: "creator" as const, creatorId: user?.id, identity: data?.user?.id || crypto.randomUUID() };
+        hudLog("[SFU] POST token", TOKEN_URL, JSON.stringify(body));
+
         const resp = await fetch(TOKEN_URL, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ role: 'creator', creatorId, identity })
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
         });
-        
-        const responseData = await resp.json();
-        if (responseData.error) throw new Error(responseData.error);
-        
-        const { token, host } = responseData;
-        
-        console.log("[SFU] token ok, connecting", { url: host });
-        
-        await sfu.connect(host, token);
-        
-        console.log("[SFU] connected, publishing camera/mic");
-        
+        hudLog("[SFU] token resp", String(resp.status));
+        const json = await resp.json().catch(e => ({ error: "bad-json " + String(e) }));
+        hudLog("[SFU] token json", JSON.stringify(json));
+
+        if (!resp.ok || json.error) throw new Error(json.error || ("HTTP " + resp.status));
+
+        await sfu.connect(json.host, json.token);
+        hudLog("[SFU] connected");
         await sfu.publishCameraMic();
-        
-        console.log("[SFU] publish done");
+        hudLog("[SFU] publish done");
         
         setMediaState(prev => ({ ...prev, isStreaming: true }));
         
@@ -419,7 +414,7 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         console.log('[CREATOR] SFU broadcast started successfully');
         return; // skip legacy P2P
       } catch (e) {
-        console.error('[CREATOR] SFU publish failed', e);
+        hudError("SFU", e);
         setMediaState(prev => ({ ...prev, isStreaming: false }));
         toast({
           title: "Failed to start SFU broadcast",
