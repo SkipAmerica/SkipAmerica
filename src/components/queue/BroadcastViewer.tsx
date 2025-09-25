@@ -16,7 +16,8 @@ import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
 import { getAuthJWT } from '@/lib/authToken';
 import { RUNTIME } from '@/config/runtime';
 
-const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+// Construct the fixed functions URL once
+const FUNCTIONS_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
@@ -136,19 +137,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         
         const jwt = await getAuthJWT();
 
-        const body = { role: "viewer", creatorId: effectiveCreatorId, identity };
-        hudLog("[SFU] POST token request", JSON.stringify(body));
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Req#': (prev['Req#'] || 0) + 1 }));
-
-        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
+        const resp = await fetch(FUNCTIONS_URL, {
           method: "POST",
           headers: {
             "content-type": "application/json",
             "authorization": `Bearer ${jwt}`,
-            // optional but harmless; helps some deployments
+            // optional: helps some deployments, harmless otherwise
             "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ role: "viewer", creatorId: effectiveCreatorId, identity }),
         });
 
         const raw = await resp.text();

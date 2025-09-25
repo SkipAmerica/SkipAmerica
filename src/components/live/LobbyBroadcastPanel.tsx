@@ -3,6 +3,9 @@ import { createSFU } from "@/lib/sfu";
 import { getAuthJWT } from "@/lib/authToken";
 import { RUNTIME } from "@/config/runtime";
 
+// Construct the fixed functions URL once
+const FUNCTIONS_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
 const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
@@ -29,11 +32,12 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
 
       const jwt = await getAuthJWT();
 
-      const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
+      const resp = await fetch(FUNCTIONS_URL, {
         method: "POST",
         headers: {
           "content-type": "application/json",
           "authorization": `Bearer ${jwt}`,
+          // optional: helps some deployments, harmless otherwise
           "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
         },
         body: JSON.stringify({ role: "creator", creatorId, identity }),
