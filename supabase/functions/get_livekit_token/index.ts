@@ -6,21 +6,21 @@ const API_SECRET = Deno.env.get("LIVEKIT_API_SECRET")!;
 const HOST = Deno.env.get("VITE_LIVEKIT_URL")!; // echo for clients
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "content-type": "application/json" },
+    headers: { "Content-Type": "application/json", ...corsHeaders },
   });
 }
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
