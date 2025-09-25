@@ -92,10 +92,14 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
     try {
       dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
-      const sfu = sfuRef.current || (RUNTIME.DEBUG_LOGS ? (window as any).__creatorSFU : null);
-      if (sfu) { await sfu.disconnect(); }
+      const sfu = (window as any).__creatorSFU;
+      if (sfu) { 
+        try { 
+          await sfu.disconnect(); 
+        } catch {} 
+        (window as any).__creatorSFU = undefined; 
+      }
       sfuRef.current = null;
-      if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = undefined;
       setSfuMsg("stopped");
     } catch (e) {
       dwarn("[CREATOR][SFU] stop error", e);
