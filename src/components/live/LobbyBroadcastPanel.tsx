@@ -410,7 +410,13 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const { token, url, error } = JSON.parse(raw);
         if (error) throw new Error(error);
 
-        await sfu.connect(url, token);
+        const HOST =
+          (typeof url === "string" && url.length > 0 ? url : (import.meta as any).env?.VITE_LIVEKIT_URL);
+
+        hudLog("[SFU] host", String(HOST));
+        if (!HOST) throw new Error("Missing LiveKit URL (neither function 'url' nor VITE_LIVEKIT_URL present)");
+
+        await sfu.connect(HOST, token);
         hudLog("[SFU] connected");
         await sfu.publishCameraMic();
         hudLog("[SFU] publish done");

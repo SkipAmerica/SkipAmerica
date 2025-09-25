@@ -22,6 +22,11 @@ function getSupabaseClient(): SupabaseClient<Database> {
       // Use a unique storage key to avoid collisions across clients
       storageKey: 'skipamerica-auth',
     },
+    global: {
+      headers: {
+        'accept': 'application/json',
+      },
+    },
   });
   globalThis.__SUPABASE__ = client;
   

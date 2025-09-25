@@ -3,7 +3,7 @@ import { AccessToken } from "https://esm.sh/livekit-server-sdk@2";
 
 const API_KEY = Deno.env.get("LIVEKIT_API_KEY")!;
 const API_SECRET = Deno.env.get("LIVEKIT_API_SECRET")!;
-const HOST = Deno.env.get("VITE_LIVEKIT_URL")!; // echo for clients
+const LIVEKIT_URL = Deno.env.get("LIVEKIT_URL")!;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -48,7 +48,7 @@ serve(async (req) => {
     const token = await at.toJwt();
     console.log('[LIVEKIT TOKEN] Generated token for room:', room);
     
-    return new Response(JSON.stringify({ token, host: HOST, room }), {
+    return new Response(JSON.stringify({ token, url: LIVEKIT_URL, room }), {
       headers: { "Content-Type": "application/json", ...cors },
     });
   } catch (e) {

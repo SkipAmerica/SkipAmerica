@@ -1,4 +1,5 @@
 import { Room, RoomEvent, Track, RemoteTrack, createLocalTracks } from "livekit-client";
+import { hudLog } from "@/lib/hud";
 
 export type SFUHandle = {
   room: Room;
@@ -21,7 +22,7 @@ export function createSFU(): SFUHandle {
       el.muted = true;      // autoplay-safe
       track.attach(el);
       attached = true;
-      console.log("[SFU] remote video attached");
+      hudLog("[SFU] remote video attached");
       cb(el);
     });
   }
