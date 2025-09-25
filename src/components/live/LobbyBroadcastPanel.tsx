@@ -388,6 +388,8 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const identity = user?.id!;
         const creatorId = user?.id!;
         
+        console.log("[SFU] requesting token (creator)", { creatorId: user?.id });
+        
         const resp = await fetch(TOKEN_URL, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
@@ -398,8 +400,16 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         if (responseData.error) throw new Error(responseData.error);
         
         const { token, host } = responseData;
+        
+        console.log("[SFU] token ok, connecting", { url: host });
+        
         await sfu.connect(host, token);
+        
+        console.log("[SFU] connected, publishing camera/mic");
+        
         await sfu.publishCameraMic();
+        
+        console.log("[SFU] publish done");
         
         setMediaState(prev => ({ ...prev, isStreaming: true }));
         
