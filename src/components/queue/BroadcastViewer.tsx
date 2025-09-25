@@ -149,7 +149,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
   }, [sfuHudData]);
 
-  // Immediate SFU connection flow on mount
+  // Simplified SFU connection flow on mount
   useEffect(() => {
     if (!queueId) return;
 
@@ -159,17 +159,18 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           console.log("[VIEWER SFU] start");
           const sfu = createSFU();
 
-          // Attach remote video into our existing element
-          const vv = document.getElementById("viewerVideo") as HTMLVideoElement | null;
-          if (vv) sfu.attachRemoteVideoTo(vv);
+          // Attach to the already-rendered element
+          if (videoRef.current) sfu.attachRemoteVideoTo(videoRef.current);
 
-          // Resolve creatorId using existing resolver you already have
+          // Resolve creatorId using existing resolver
           const resolvedId = await resolveCreatorUserId(queueId);
           const creatorId = resolvedId || queueId;
           const identity = (await supabase.auth.getUser()).data.user?.id ?? crypto.randomUUID();
 
+          // Token fetch (using the fixed endpoint/headers)
           const { token, url } = await getLiveKitToken("viewer", creatorId, identity);
 
+          // Connect (subscribe-only role)
           await sfu.connect(url, token);
           console.log("[VIEWER SFU] connected");
 
@@ -182,70 +183,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         }
       })();
 
-      // stop legacy P2P path
+      // Stop legacy P2P path
       return;
     }
 
-    const connectSFU = async () => {
-      try {
-        dlog('[SFU] Starting immediate connection flow');
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Ch Status': '(SFU)', 'PC': 'resolving' }));
-
-        // 1. Resolve creatorId (existing resolver)
-        const resolvedCreatorId = await resolveCreatorUserId(queueId);
-        const effectiveCreatorId = resolvedCreatorId || queueId;
-        dlog('[SFU] Resolved creator:', effectiveCreatorId);
-
-        // 2. Get identity from supabase.auth.getUser()
-        const { data } = await supabase.auth.getUser();
-        const viewerIdentity = data?.user?.id || crypto.randomUUID();
-        dlog('[SFU] Using identity:', viewerIdentity);
-
-        // 3. Fetch token with proper auth
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
-        
-        const jwt = await getAuthJWT();
-        const identity = data?.user?.id || crypto.randomUUID();
-
-        const { token, url } = await getLiveKitToken("viewer", effectiveCreatorId, viewerIdentity);
-
-        const HOST = url || import.meta.env?.VITE_LIVEKIT_URL;
-        if (!HOST) throw new Error("Missing LiveKit URL");
-
-        hudLog("[SFU] connecting to", String(HOST));
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'connecting' }));
-
-        // 5. Connect SFU
-        const sfu = createSFU();
-        
-        // Attach remote video to our video element
-        if (videoRef.current) {
-          sfu.attachRemoteVideoTo(videoRef.current);
-          dlog("[SFU] Remote video attached to video element");
-          if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
-          
-          // User-gesture-safe autoplay
-          handleAutoplay();
-        }
-
-        await sfu.connect(HOST, token);
-        dlog('[SFU] Connected successfully, participants:', sfu.room.remoteParticipants.size);
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'connected' }));
-        setConnectionState('connected');
-        
-        // Store cleanup function for unmount
-        if (RUNTIME.DEBUG_LOGS) (window as any).__viewerSFU = sfu;
-
-      } catch (e) {
-        console.error('[SFU] Connection failed:', e);
-        hudError("SFU", e);
-        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'failed' }));
-        setConnectionState('failed');
-      }
-    };
-
-    // Small delay to ensure DOM is ready
-    setTimeout(connectSFU, 100);
+    // Legacy P2P code would continue below but USE_SFU=true skips it
   }, [queueId]);
 
   // User-gesture-safe autoplay handler
