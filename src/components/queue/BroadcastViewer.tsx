@@ -8,7 +8,7 @@ import { RUNTIME } from '@/config/runtime';
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
-import { LIVEKIT_TOKEN_URL, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -52,7 +52,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         const creatorId = resolvedId || queueId;
         const { data } = await supabase.auth.getUser();
         const identity = getIdentity(data?.user?.id);
-        await sfu.connect(LIVEKIT_TOKEN_URL, { role: "viewer", creatorId, identity });
+        
+        // Fetch LiveKit token using Supabase Functions SDK
+        const { token, url } = await fetchLiveKitToken({
+          role: "viewer",
+          creatorId,
+          identity,
+        });
+        
+        await sfu.connect(url, token);
         console.log("[VIEWER SFU] connected");
         setConnectionState("connected");
       } catch (e) {
@@ -82,10 +90,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         <div className="relative w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-2xl">
           <video
             ref={videoRef}
-            className="w-full h-full object-cover bg-black"
-            autoPlay
+            muted
             playsInline
-            muted={isMuted}
+            autoPlay
+            className="w-full h-full object-cover bg-black"
           />
           
           {connectionState !== 'connected' && (

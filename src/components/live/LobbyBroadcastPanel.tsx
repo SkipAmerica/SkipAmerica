@@ -1,6 +1,6 @@
 import React from "react";
 import { createSFU } from "@/lib/sfu";
-import { LIVEKIT_TOKEN_URL, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
 import { RUNTIME } from "@/config/runtime";
 
 const USE_SFU = true;
@@ -28,7 +28,12 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       const { data } = await supabase.auth.getUser();
       const identity = getIdentity(data?.user?.id);
       const creatorId = data?.user?.id!;
-      await __creatorSFU.connect(LIVEKIT_TOKEN_URL, { role: "creator", creatorId, identity });
+      const { token, url } = await fetchLiveKitToken({
+        role: "creator",
+        creatorId,
+        identity,
+      });
+      await __creatorSFU.connect(url, token);
       await __creatorSFU.publishCameraMic();
       const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
       if (preview) {

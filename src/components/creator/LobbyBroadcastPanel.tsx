@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { createSFU } from "@/lib/sfu";
-import { LIVEKIT_TOKEN_URL, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
 import { useAuth } from "@/app/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 
@@ -28,8 +28,17 @@ export default function LobbyBroadcastPanel({ onEnd }: Props) {
       if (!__creatorSFU) __creatorSFU = createSFU();
       const identity = getIdentity(user?.id);
       const creatorId = user?.id!;
-      await __creatorSFU.connect(LIVEKIT_TOKEN_URL, { role: "creator", creatorId, identity });
+      
+      // Fetch LiveKit token using Supabase Functions SDK
+      const { token, url } = await fetchLiveKitToken({
+        role: "creator",
+        creatorId,
+        identity,
+      });
+      
+      await __creatorSFU.connect(url, token);
       await __creatorSFU.publishCameraMic();
+      
       // attach local video to preview
       const preview = (document.getElementById("creator-preview") as HTMLVideoElement) || videoRef.current;
       // Get the video track from local participant

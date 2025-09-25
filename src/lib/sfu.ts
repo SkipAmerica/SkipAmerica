@@ -4,7 +4,7 @@ export type ConnectArgs = { role: "creator" | "viewer"; creatorId: string; ident
 
 export type SFUHandle = {
   room: Room;
-  connect: (tokenUrl: string, args: ConnectArgs) => Promise<void>;
+  connect: (url: string, token: string) => Promise<void>;
   publishCameraMic: () => Promise<void>;
   onRemoteVideo: (cb: (videoEl: HTMLVideoElement) => void) => void;
   disconnect: () => Promise<void>;
@@ -26,18 +26,9 @@ export function createSFU(): SFUHandle {
     });
   }
 
-  async function connect(tokenUrl: string, { role, creatorId, identity }: ConnectArgs) {
-    console.log("[SFU] token fetch", { tokenUrl, role, creatorId, identity });
-    const resp = await fetch(tokenUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json", authorization: "Bearer anon" },
-      body: JSON.stringify({ role, creatorId, identity }),
-    });
-    const json = await resp.json();
-    console.log("[SFU] token resp", resp.status, json && Object.keys(json));
-    if (!resp.ok || !json?.token || !json?.url) throw new Error("token fetch failed");
-    console.log("[SFU] connecting to", json.url);
-    await room.connect(json.url, json.token);
+  async function connect(url: string, token: string) {
+    console.log("[SFU] connecting to", url);
+    await room.connect(url, token);
     console.log("[SFU] connected");
   }
 
