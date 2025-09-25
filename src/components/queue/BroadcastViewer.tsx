@@ -44,6 +44,66 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     return <div className="p-4 text-red-500">No queue ID provided</div>;
   }
 
+  // HUD state for SFU
+  const [sfuHudData, setSfuHudData] = useState<Record<string, any>>({
+    'Ch Status': '(SFU)',
+    'PC': '—',
+    'Tracks': 0,
+    'VideoReady': false,
+    'Req#': 0,
+    'OfferRx#': 0,
+    'AnsTx#': 0,
+    'Pong#': 0
+  });
+
+  // Create HUD element and setup window.__PQHUD on mount
+  useEffect(() => {
+    const hudEl = document.createElement('div');
+    hudEl.id = '__pq_hud';
+    hudEl.style.cssText = `
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 9999;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      font-family: ui-monospace, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      padding: 12px;
+      border-radius: 8px;
+      pointer-events: none;
+      max-width: 380px;
+    `;
+    document.body.appendChild(hudEl);
+
+    // Setup window.__PQHUD function
+    (window as any).__PQHUD = (updates: Record<string, any>) => {
+      setSfuHudData(prev => ({ ...prev, ...updates }));
+    };
+
+    return () => {
+      document.body.removeChild(hudEl);
+      delete (window as any).__PQHUD;
+    };
+  }, []);
+
+  // Update HUD DOM whenever data changes
+  useEffect(() => {
+    const hudEl = document.getElementById('__pq_hud');
+    if (hudEl) {
+      hudEl.innerHTML = `
+        <div style="font-weight: 700; margin-bottom: 8px;">PQ SFU HUD</div>
+        <div>Ch Status: ${sfuHudData['Ch Status'] || '—'}</div>
+        <div>PC: ${sfuHudData['PC'] || '—'}</div>
+        <div>Tracks: ${sfuHudData['Tracks'] || 0}</div>
+        <div>VideoReady: ${sfuHudData['VideoReady'] || false}</div>
+        <div>Req# (SFU): ${sfuHudData['Req#'] || 0} / OfferRx# (SFU): ${sfuHudData['OfferRx#'] || 0} / AnsTx# (SFU): ${sfuHudData['AnsTx#'] || 0}</div>
+        <div>Pong# (SFU): ${sfuHudData['Pong#'] || 0}</div>
+      `;
+    }
+  }, [sfuHudData]);
+
   const DEBUG =
     typeof window !== 'undefined' &&
     /(?:^|[?&])debug=1(?:&|$)/.test(window.location.search);
@@ -855,6 +915,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const identity = data?.user?.id || crypto.randomUUID();
           const body = { role: "viewer", creatorId, identity };
           hudLog("[SFU] POST", TOKEN_URL, JSON.stringify(body));
+          setSfuHudData(prev => ({ ...prev, 'Req#': (prev['Req#'] || 0) + 1 }));
 
           const auth = supabaseAuthHeaders();
           const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
@@ -1245,6 +1306,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       {/* Always render video element for WebRTC to work */}
       <video
         ref={videoRef}
+        id="pq-video"
         className="w-full h-full object-cover"
         autoPlay
         playsInline
