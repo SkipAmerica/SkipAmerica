@@ -15,6 +15,8 @@ import { hudLog, hudError } from "@/lib/hud";
 import { canonicalSignalChannel } from '@/lib/queueResolver'
 import { createSFU } from '@/lib/sfu'
 
+const USE_SFU = true;
+
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
 // Module-level singleton to avoid creating multiple SFU instances
@@ -84,6 +86,64 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     currentSession: null,
     isStreaming: false
   })
+
+  // SFU reference
+  const sfuRef = React.useRef<ReturnType<typeof createSFU> | null>(null);
+
+  // SFU broadcast functions
+  async function startSfuBroadcast() {
+    console.log("[CREATOR][SFU] startSfuBroadcast called");
+    try {
+      if (!sfuRef.current) sfuRef.current = createSFU();
+      const sfu = sfuRef.current;
+
+      // identity & creatorId
+      const creatorId = user?.id!;
+      const identity = creatorId;
+
+      console.log("[CREATOR][SFU] requesting token…", { creatorId, identity });
+      const resp = await fetch("/functions/v1/get_livekit_token", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ role: "creator", creatorId, identity }),
+      });
+      const { token, url, error, grants } = await resp.json();
+      if (error) throw new Error(error);
+      
+      console.log("[CREATOR][SFU] tokenFlags", { canPublish: grants?.canPublish, canSubscribe: grants?.canSubscribe, room: grants?.room });
+      console.log("[CREATOR][SFU] token received, connecting:", url);
+
+      await sfu.connect(url, token);
+      console.log("[CREATOR][SFU] connected, publishing camera/mic…");
+      await sfu.publishCameraMic();
+      console.log('[CREATOR][SFU] published tracks =', sfu.room.localParticipant.getTrackPublications().length);
+
+      (window as any).__creatorSFU = sfu;
+      setMediaState(prev => ({ ...prev, isStreaming: true }));
+      console.log("[CREATOR][SFU] publish complete ✓");
+    } catch (err) {
+      console.error("[CREATOR][SFU] publish failed", err);
+      setMediaState(prev => ({ ...prev, isStreaming: false }));
+      throw err;
+    }
+  }
+
+  async function stopSfuBroadcast() {
+    console.log("[CREATOR][SFU] stop requested");
+    try {
+      const sfu = sfuRef.current || (window as any).__creatorSFU;
+      if (sfu) {
+        await sfu.disconnect();
+        console.log("[CREATOR][SFU] disconnected");
+      }
+    } catch (e) {
+      console.warn("[CREATOR][SFU] disconnect error (ignored)", e);
+    } finally {
+      sfuRef.current = null;
+      (window as any).__creatorSFU = undefined;
+      setMediaState(prev => ({ ...prev, isStreaming: false }));
+    }
+  }
 
   const cleanup = useCallback(() => {
     if (streamRef.current) {
@@ -728,11 +788,15 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     }
   }, [mediaState.videoEnabled])
 
-  const handleEnd = useCallback(() => {
+  const handleEnd = useCallback(async () => {
     console.info('[LOBBY_BROADCAST] End clicked')
-    cleanup()
-    onEnd()
-  }, [cleanup, onEnd])
+    if (USE_SFU) {
+      await endBroadcast();
+    } else {
+      cleanup();
+    }
+    onEnd();
+  }, [cleanup, onEnd]);
 
   const handleRetry = useCallback(() => {
     if (mediaState.retryCount < 3) {
@@ -1027,18 +1091,53 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     return cleanup
   }, [initMedia, cleanup])
 
-  // Create confirmJoin function that calls startBroadcast
-  const confirmJoin = useCallback(() => {
-    console.log('[CREATOR][SFU] confirmJoin called, starting broadcast');
+  // Create confirmJoin function that calls SFU broadcast
+  const confirmJoin = useCallback(async () => {
+    console.log("[CREATOR] Broadcast button clicked");
+    if (USE_SFU) {
+      await startSfuBroadcast();
+      return; // hard exit to avoid legacy P2P
+    }
+    // (legacy path stays below, untouched)
     startBroadcast();
   }, []);
 
-  // Expose manual trigger on window for console debugging
+  // Create endBroadcast function that calls SFU stop
+  const endBroadcast = useCallback(async () => {
+    console.log("[CREATOR] End broadcast clicked");
+    if (USE_SFU) {
+      await stopSfuBroadcast();
+      return;
+    }
+    // (legacy cleanup if any…)
+  }, []);
+
+  // DevTools hooks - expose functions on window for console debugging
+  React.useEffect(() => {
+    (window as any).__creatorConfirmJoin = async () => {
+      console.log("[CREATOR][SFU] __creatorConfirmJoin called");
+      if (USE_SFU) {
+        await startSfuBroadcast();
+        return;
+      }
+      console.warn("[CREATOR] USE_SFU=false; legacy path not exposed via DevTools");
+    };
+    (window as any).__creatorStop = async () => {
+      console.log("[CREATOR][SFU] __creatorStop called");
+      await stopSfuBroadcast();
+    };
+    return () => {
+      delete (window as any).__creatorConfirmJoin;
+      delete (window as any).__creatorStop;
+    };
+  }, [user?.id]);
+
+  // Expose manual trigger on window for console debugging (keeping existing one for compatibility)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       // @ts-ignore
-      window.__creatorConfirmJoin = confirmJoin;
-      console.log('[CREATOR][SFU] window.__creatorConfirmJoin is ready');
+      window.__creatorConfirmJoinLegacy = confirmJoin;
+      console.log('[CREATOR][SFU] window.__creatorConfirmJoinLegacy is ready');
     }
   }, [confirmJoin]);
 
