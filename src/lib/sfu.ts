@@ -1,4 +1,4 @@
-import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, RemoteTrackPublication, createLocalTracks } from "livekit-client";
+import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, RemoteTrackPublication, createLocalTracks, ConnectionError } from "livekit-client";
 
 function attachVideoFromParticipant(p: RemoteParticipant, cb: (el: HTMLVideoElement) => void) {
   p.trackPublications.forEach((pub: RemoteTrackPublication) => {
@@ -7,7 +7,7 @@ function attachVideoFromParticipant(p: RemoteParticipant, cb: (el: HTMLVideoElem
       const el = document.createElement("video");
       el.autoplay = true;
       el.playsInline = true;
-      el.muted = false;
+      el.muted = true; // allow autoplay without user gesture
       track.attach(el);
       cb(el);
     }
@@ -23,7 +23,14 @@ export type SFUHandle = {
 };
 
 export function createSFU(): SFUHandle {
-  const room = new Room({ adaptiveStream: true, dynacast: true });
+  const room = new Room({
+    adaptiveStream: true,
+    dynacast: true,
+    // autosubscribe remote tracks so they're ready immediately
+    // (LiveKit JS defaults to true, but we declare it explicitly)
+    // @ts-ignore
+    autoSubscribe: true,
+  });
 
   function onRemoteVideo(cb: (videoEl: HTMLVideoElement) => void) {
     // live subscriptions
@@ -32,38 +39,45 @@ export function createSFU(): SFUHandle {
         const el = document.createElement("video");
         el.autoplay = true;
         el.playsInline = true;
-        el.muted = false;
+        el.muted = true;
         track.attach(el);
         cb(el);
       }
     });
-
-    // catch-up for participants already in the room
+    // catch-up for existing participants
     room.remoteParticipants.forEach((p) => attachVideoFromParticipant(p, cb));
-    // and future joins that might have tracks immediately
-    room.on(RoomEvent.ParticipantConnected, (p) => {
-      attachVideoFromParticipant(p, cb);
-    });
+    room.on(RoomEvent.ParticipantConnected, (p) => attachVideoFromParticipant(p, cb));
   }
 
   async function connect(host: string, token: string) {
-    console.log('[SFU] Connecting to:', host);
-    await room.connect(host, token);
-    console.log('[SFU] Connected successfully');
-    // after connect, run another catch-up pass (in case participants existed at join)
+    // 1st attempt: normal (UDP preferred). If it fails, force TURN relay.
+    try {
+      await room.connect(host, token);
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      const looksLikePcFail = e instanceof ConnectionError || msg.includes('pc connection') || msg.includes('ICE');
+      if (!looksLikePcFail) throw e;
+
+      console.warn('[SFU] Primary connect failed, retrying with TURN relay only...');
+      await room.connect(host, token, {
+        rtcConfig: { iceTransportPolicy: 'relay' } as any, // force TURN relay
+      });
+    }
+
+    // after connect, another catch-up pass
     room.remoteParticipants.forEach((p) => attachVideoFromParticipant(p, () => {}));
   }
 
   async function publishCameraMic() {
-    console.log('[SFU] Publishing camera/mic');
-    const tracks = await createLocalTracks({ 
-      audio: true, 
-      video: { facingMode: "user" } 
-    });
-    for (const t of tracks) {
-      await room.localParticipant.publishTrack(t);
-      console.log('[SFU] Published track:', t.kind);
+    // publish only after we're connected
+    if (room.state !== 'connected') {
+      await new Promise<void>((resolve) => {
+        const handler = () => { room.off(RoomEvent.Connected, handler as any); resolve(); };
+        room.on(RoomEvent.Connected, handler as any);
+      });
     }
+    const tracks = await createLocalTracks({ audio: true, video: { facingMode: 'user' } });
+    for (const t of tracks) await room.localParticipant.publishTrack(t);
   }
 
   async function disconnect() {

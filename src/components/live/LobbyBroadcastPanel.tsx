@@ -416,11 +416,10 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
         console.log("[CREATOR][SFU] connect", HOST);
         await __creatorSFU.connect(HOST, token);
-        console.log("[CREATOR][SFU] connected, tracks=", __creatorSFU.room.localParticipant.getTrackPublications().length);
 
         console.log("[CREATOR][SFU] publish camera/mic");
         await __creatorSFU.publishCameraMic();
-        console.log("[CREATOR][SFU] published tracks=", __creatorSFU.room.localParticipant.getTrackPublications().length);
+        console.log('[CREATOR][SFU] published tracks =', __creatorSFU.room.localParticipant.getTrackPublications().length);
 
         // Set UI state
         setMediaState(prev => ({ ...prev, isStreaming: true }));

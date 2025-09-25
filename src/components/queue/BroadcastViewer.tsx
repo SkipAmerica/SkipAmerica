@@ -887,9 +887,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             p.trackPublications.forEach((pub) => {
               const track = pub.track;
               if (track && track.kind === Track.Kind.Video && videoRef.current) {
-                const el = videoRef.current;
-                track.attach(el);
-                console.log("[SFU] attached existing video track to element");
+                track.attach(videoRef.current);
               }
             });
           });
