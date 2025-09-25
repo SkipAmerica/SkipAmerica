@@ -24,8 +24,10 @@ export function useLobbyChat(creatorId?: string) {
     const channelName = `realtime:lobby-chat-${creatorId}`;
     const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
 
+    // log once to confirm creator page is receiving
     ch.on("broadcast", { event: "message" }, (payload: any) => {
       const body = payload?.payload ?? payload ?? {};
+      console.debug("[useLobbyChat] rx", channelName, body);
       const msg: ChatMsg = {
         id: body.id ?? crypto.randomUUID(),
         text: body.text ?? "",
@@ -33,10 +35,13 @@ export function useLobbyChat(creatorId?: string) {
         username: body.username,
         ts: Date.now(),
       };
-      setMessages((prev) => [...prev, msg].slice(-50));
+      // append; we'll reverse at render time
+      setMessages((prev) => [...prev, msg].slice(-200));
     });
 
-    ch.subscribe();
+    ch.subscribe((status) => {
+      console.debug("[useLobbyChat] sub", channelName, status);
+    });
     chanRef.current = ch;
 
     return () => {

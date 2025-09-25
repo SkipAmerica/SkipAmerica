@@ -14,6 +14,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const [attached, setAttached] = useState(false);
   const [connected, setConnected] = useState(false);
   const [text, setText] = useState("");
+  const [focusHack, setFocusHack] = useState(false);
 
   // --- LiveKit-driven preview + instant getUserMedia fallback ---
   useEffect(() => {
@@ -129,6 +130,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
 
   return (
     <div className="space-y-3">
+      {/* ensure overlay can sit above video */}
       <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black/80 border border-white/10">
         <video ref={videoRef} className="w-full h-full object-cover" />
         {!connected && !attached && (
@@ -141,17 +143,26 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         <OverlayChat creatorId={creatorId} />
       </div>
 
-      {/* Creator chat input */}
+      {/* creator input — readable on dark bg */}
       <form onSubmit={onSend} className="flex gap-2">
-        <Input
+        <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Say something to the lobby..."
-          className="flex-1 bg-white/5 border-white/10 text-white placeholder-white/50 focus:border-white/20"
+          onFocus={() => setFocusHack(true)}
+          onBlur={() => setFocusHack(false)}
+          placeholder="Say something to the lobby…"
+          className={
+            "flex-1 rounded-lg border px-3 py-2 focus:outline-none " +
+            "bg-black/70 border-white/20 text-white placeholder-white/60 " +
+            (focusHack ? "ring-1 ring-white/30" : "")
+          }
         />
-        <Button type="submit" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+        <button
+          type="submit"
+          className="rounded-lg bg-white/15 px-3 py-2 hover:bg-white/25 text-white border border-white/20"
+        >
           Send
-        </Button>
+        </button>
       </form>
     </div>
   );
