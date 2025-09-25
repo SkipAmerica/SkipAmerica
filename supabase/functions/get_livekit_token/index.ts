@@ -1,9 +1,12 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AccessToken } from "https://esm.sh/livekit-server-sdk@2";
 
+const sanitize = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9_-]/g, "-").slice(0, 96);
+
 const API_KEY = Deno.env.get("LIVEKIT_API_KEY")!;
 const API_SECRET = Deno.env.get("LIVEKIT_API_SECRET")!;
-const LIVEKIT_URL = Deno.env.get("LIVEKIT_URL")!;
+const LIVEKIT_URL = Deno.env.get("LIVEKIT_URL")!
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -34,8 +37,14 @@ serve(async (req) => {
       });
     }
     
-    const room = `creator:${creatorId}`;
-    const at = new AccessToken(API_KEY, API_SECRET, { identity, ttl: 60 * 60 });
+    // Build a LiveKit-safe room name (NO colons)
+    const safeCreator = sanitize(creatorId || "unknown");
+    const room = `creator-${safeCreator}`;
+    
+    // Also make a safe identity as fallback
+    const safeIdentity = sanitize(identity || crypto.randomUUID());
+    
+    const at = new AccessToken(API_KEY, API_SECRET, { identity: safeIdentity, ttl: 60 * 60 });
     
     let grants;
     if (role === "creator") {
