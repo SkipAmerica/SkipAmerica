@@ -26,24 +26,19 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       try {
         console.log("[CREATOR SFU] starting…");
         const sfu = createSFU();
+        (window as any).__creatorSFU = sfu;
 
-        // === GET LOCAL STREAM & ATTACH PREVIEW ===
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true, 
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
+        // Optional preview: render local video to preview element
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        if (pv) {
-          pv.srcObject = stream;
-          pv.play?.().catch(()=>{});
-          console.log("[CREATOR SFU] local preview attached");
-        }
+        if (pv) sfu.attachRemoteVideoTo(pv);
 
         // === GET TOKEN FROM EDGE FUNCTION ===
         const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
           try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
         })());
         const identity = creatorId || crypto.randomUUID();
+
+        // Fetch token for role "creator" (canPublish=true from the Edge Function)
         const { supabase } = await import("@/lib/supabaseClient");
         const session = (await supabase.auth.getSession()).data.session;
         const resp = await fetch(FUNCTIONS_URL, {
@@ -62,22 +57,14 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         console.log("[CREATOR SFU] parsed", { tokenLen: token?.length, url, room });
         if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
 
-        // === CONNECT & PUBLISH TRACKS ===
-        sfu.room
-          .on("connectionStateChanged", st => console.log("[CREATOR SFU] conn state:", st))
-          .on("participantConnected", p => console.log("[CREATOR SFU] participant:", p?.identity))
-          .on("trackPublished", pub => console.log("[CREATOR SFU] track published:", pub?.kind));
-
+        // === CONNECT & PUBLISH CAMERA/MIC ===
         await sfu.connect(url, token);
-        console.log("[CREATOR SFU] connected to LiveKit");
-
         await sfu.publishCameraMic();
         console.log("[CREATOR SFU] published camera and microphone");
 
-        sfuRef.current = sfu;
-        if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
-        setSfuMsg("LIVE ✓");
+        // Set UI broadcasting state
         setIsBroadcasting?.(true);
+        setSfuMsg("LIVE ✓");
         return; // skip legacy path
       } catch (e) {
         console.error("[CREATOR SFU] start failed", e);
@@ -92,9 +79,11 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
       const sfu = (window as any).__creatorSFU;
-      if (sfu) { try { await sfu.disconnect(); } catch {} (window as any).__creatorSFU = undefined; }
+      if (sfu) { 
+        try { await sfu.disconnect(); } catch {} 
+        (window as any).__creatorSFU = undefined; 
+      }
       setIsBroadcasting?.(false);
-      sfuRef.current = null;
       setSfuMsg("stopped");
     } catch (e) {
       dwarn("[CREATOR][SFU] stop error", e);

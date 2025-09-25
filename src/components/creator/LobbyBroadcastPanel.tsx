@@ -58,35 +58,25 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       try {
         console.log("[CREATOR SFU] start");
         const sfu = createSFU();
+        (window as any).__creatorSFU = sfu;
 
-        // 1) Get local preview stream & attach immediately
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true, 
-          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
-        });
+        // Optional preview: render local video to preview element
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        if (pv) { 
-          pv.srcObject = stream; 
-          pv.play?.().catch(()=>{}); 
-          console.log("[CREATOR SFU] preview attached"); 
-        }
+        if (pv) sfu.attachRemoteVideoTo(pv);
 
-        // 2) Get token
+        // Fetch token for role "creator" (canPublish=true from the Edge Function)
         const creatorId = user?.id!;
         const identity = user?.id!;
         const { token, url } = await getLiveKitToken("creator", creatorId, identity);
 
-        // 3) Connect & publish
-        sfu.room
-          .on("connectionStateChanged", st => console.log("[CREATOR SFU] room state:", st))
-          .on("trackPublished", pub => console.log("[CREATOR SFU] track published:", pub?.kind));
+        // Connect + publish camera/mic
         await sfu.connect(url, token);
         await sfu.publishCameraMic();
-        console.log("[CREATOR SFU] published camera and microphone");
 
-        (window as any).__creatorSFU = sfu;
+        // Set UI broadcasting state
         setIsBroadcasting?.(true);
         setSfuMsg("LIVE ✓");
+        console.log("[CREATOR SFU] published camera and microphone");
         return; // skip legacy P2P
       } catch (e) {
         console.error("[CREATOR SFU] failed", e);
@@ -101,9 +91,11 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
       const sfu = (window as any).__creatorSFU;
-      if (sfu) { try { await sfu.disconnect(); } catch {} (window as any).__creatorSFU = undefined; }
+      if (sfu) { 
+        try { await sfu.disconnect(); } catch {} 
+        (window as any).__creatorSFU = undefined; 
+      }
       setIsBroadcasting?.(false);
-      sfuRef.current = null;
       setSfuMsg("stopped");
     } catch (e) {
       dwarn("[CREATOR][SFU] stop error", e);
