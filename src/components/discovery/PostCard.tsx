@@ -5,6 +5,7 @@ import { CreatorHistoryCarousel } from './CreatorHistoryCarousel'
 import { LiveAvatar } from './LiveAvatar'
 import { LiveActionButton } from './LiveActionButton'
 import { cn } from '@/lib/utils'
+import { RUNTIME } from '@/config/runtime'
 
 interface ThreadPost {
   id: string
@@ -77,12 +78,16 @@ export function PostCard({ post, isLast }: PostCardProps) {
   }, [isLiked])
 
   const handleJoinLive = useCallback(() => {
-    console.log('Joining live session for creator:', post.creator.id)
+    if (RUNTIME.DEBUG_LOGS) {
+      console.error('Joining live session for creator:', post.creator.id);
+    }
     // TODO: Implement live session joining logic
   }, [post.creator.id])
 
   const handleBookAppointment = useCallback(() => {
-    console.log('Booking appointment with creator:', post.creator.id)
+    if (RUNTIME.DEBUG_LOGS) {
+      console.error('Booking appointment with creator:', post.creator.id);
+    }
     // TODO: Implement appointment booking logic
   }, [post.creator.id])
 

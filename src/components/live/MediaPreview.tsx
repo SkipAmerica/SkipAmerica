@@ -5,6 +5,7 @@
 
 import React, { useEffect, useRef } from 'react'
 import { mediaManager } from '@/media/MediaOrchestrator'
+import { RUNTIME } from '@/config/runtime';
 
 interface MediaPreviewProps {
   className?: string
@@ -23,7 +24,9 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
     const attachStream = () => {
       const stream = mediaManager.getLocalStream()
       if (stream && video.srcObject !== stream) {
-        console.info('[MEDIA][PREVIEW] Attaching stream to video element')
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[MEDIA][PREVIEW] Attaching stream to video element');
+        }
         video.srcObject = stream
         video.muted = muted
         video.autoplay = autoPlay
@@ -52,7 +55,9 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
         video.removeAttribute('src')
         video.load()
       } catch (err) {
-        console.warn('[MEDIA][PREVIEW] Failed to cleanup video:', err)
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[MEDIA][PREVIEW] Failed to cleanup video:', err);
+        }
       }
     }
   }, [muted, autoPlay])

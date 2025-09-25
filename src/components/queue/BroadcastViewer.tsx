@@ -7,7 +7,6 @@ import { mediaManager } from '@/media/MediaOrchestrator';
 import { generateViewerId } from '@/utils/viewer-id';
 import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from '@/lib/queueResolver';
 import { isQueueFallbackEnabled } from '@/lib/env';
-import { isDebug } from '@/lib/debugFlag';
 import { supabaseAuthHeaders } from "@/lib/supabaseAuthHeaders";
 import { hudLog, hudError } from "@/lib/hud";
 import DebugHUD from '@/components/dev/DebugHUD';
@@ -410,7 +409,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     try { (v as any).srcObject = null; } catch {}
     (v as any).srcObject = ms;
     v.muted = true; v.autoplay = true; v.setAttribute('playsinline','');
-    try { v.play?.(); } catch (e) { console.warn('[VIEWER', viewerIdRef.current, '] play() rejected', e); }
+      try { v.play?.(); } catch (e) { 
+        if (RUNTIME.DEBUG_LOGS) console.error('[VIEWER', viewerIdRef.current, '] play() rejected', e); 
+      }
   }
 
   function makePc(): RTCPeerConnection {
@@ -434,7 +435,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     pc.onconnectionstatechange = () => {
       const st = pc.connectionState;
-      console.log('[VIEWER', viewerIdRef.current, '] PC=', st, 'signal=', pc.signalingState);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('[VIEWER', viewerIdRef.current, '] PC=', st, 'signal=', pc.signalingState);
+      }
       if (st === 'connected') {
         stopSlowRetry('pc-connected');
         queueMicrotask(() => rebindVideo());
@@ -475,7 +478,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   // Stable callback for checking broadcast status
   const checkCreatorBroadcastStatus = useCallback(async (): Promise<boolean> => {
     try {
-      console.log(`[BROADCAST_VIEWER] Checking if creator is broadcasting: ${effectiveCreatorId}`);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error(`[BROADCAST_VIEWER] Checking if creator is broadcasting: ${effectiveCreatorId}`);
+      }
       
       const { data: liveSession } = await supabase
         .from('live_sessions')
@@ -487,7 +492,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         .maybeSingle();
 
       const isBroadcasting = !!liveSession;
-      console.log('[BROADCAST_VIEWER] Creator broadcasting status:', isBroadcasting);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('[BROADCAST_VIEWER] Creator broadcasting status:', isBroadcasting);
+      }
       
       return isBroadcasting;
     } catch (error) {
@@ -499,7 +506,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Stable retry handler
   const handleRetry = useCallback(() => {
-    console.log('[BROADCAST_VIEWER] Manual retry triggered');
+    if (RUNTIME.DEBUG_LOGS) {
+      console.error('[BROADCAST_VIEWER] Manual retry triggered');
+    }
     setRetryCount(prev => prev + 1);
     setConnectionState('checking');
   }, []);
@@ -591,7 +600,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   useEffect(() => {
     if (!queueId || resolvedCreatorId === undefined) return;
 
-    console.log('[BROADCAST_VIEWER] Setting up consolidated live session subscription for:', effectiveCreatorId);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('[BROADCAST_VIEWER] Setting up consolidated live session subscription for:', effectiveCreatorId);
+      }
 
     // Single subscription channel with debounced state updates
     let stateUpdateTimeout: NodeJS.Timeout | null = null;
@@ -612,10 +623,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           filter: `creator_id=eq.${effectiveCreatorId}`
         },
         (payload) => {
-          console.log('[BROADCAST_VIEWER] Live session change (consolidated):', payload.eventType);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[BROADCAST_VIEWER] Live session change (consolidated):', payload.eventType);
+        }
 
           if (payload.eventType === 'INSERT') {
-            console.log('[BROADCAST_VIEWER] Creator went live - attempting connection immediately');
+            if (RUNTIME.DEBUG_LOGS) {
+              console.error('[BROADCAST_VIEWER] Creator went live - attempting connection immediately');
+            }
             setRetryCount(0);
             debouncedStateUpdate('checking');
             
@@ -629,10 +644,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             }, 2000);
             console.log('[VIEWER] Started offer burst on live session INSERT');
           } else if (payload.eventType === 'UPDATE' && payload.new.ended_at) {
-            console.log('[BROADCAST_VIEWER] Creator stopped broadcasting');
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[BROADCAST_VIEWER] Creator stopped broadcasting');
+        }
             debouncedStateUpdate('offline');
           } else if (payload.eventType === 'DELETE') {
-            console.log('[BROADCAST_VIEWER] Live session deleted');
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[BROADCAST_VIEWER] Live session deleted');
+        }
             debouncedStateUpdate('offline');
           }
         }
@@ -657,7 +676,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       
       // Update UI state only - no automatic reconnection to prevent reloads
       if (isBroadcasting && (connectionState === 'offline' || connectionState === 'failed')) {
-        console.log('[BROADCAST_VIEWER] Background poll detected creator broadcasting (UI feedback only)');
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[BROADCAST_VIEWER] Background poll detected creator broadcasting (UI feedback only)');
+        }
         // Just update UI state - let user manually retry or rely on SFU room events
         // setConnectionState('checking'); // Removed auto-reconnect to prevent reloads
       }
@@ -1037,7 +1058,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
       try {
         const viewerId = viewerIdRef.current;
-        console.log(`[BROADCAST_VIEWER:${viewerId}] Starting connection attempt`, retryCount + 1);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error(`[BROADCAST_VIEWER:${viewerId}] Starting connection attempt`, retryCount + 1);
+        }
         setConnectionState('connecting');
         
         // Ensure we have an open peer connection (creates fresh if needed)
@@ -1065,38 +1088,27 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           return;
         }
 
-        console.log(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);
-
-        // Prove Realtime works with debug channel first
-        if (isDebug()) {
-          const dbg = supabase.channel('debug:ping:' + viewerId);
-          dbg.subscribe((s) => {
-            if (s === 'SUBSCRIBED') {
-              dlog('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
-              // Attempt to leave debug channel, but use global guard
-              console.log('[VIEWER', viewerId, '] removeChannel attempted for debug channel', dbg.topic);
-              try { dbg.unsubscribe?.(); } catch {}
-              try { supabase.removeChannel(dbg); } catch {}
-            }
-            if (s === 'CLOSED') {
-              console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
-            }
-          });
-        }
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error(`[BROADCAST_VIEWER:${viewerId}] Connecting to ${usingFallback ? 'fallback' : 'primary'} channel: ${channelToUse}`);
+      }
 
         // Subscribe with channel reuse
         const ch = await ensureSubscribed(channelToUse);
         if (ch && subscribedRef.current) {
           const ok = await requestOfferWithRetries(ch, 3);
           if (!ok) {
-            console.warn('[VIEWER', viewerId, '] No offer after retries; staying subscribed.');
+          if (RUNTIME.DEBUG_LOGS) {
+            console.error('[VIEWER', viewerId, '] No offer after retries; staying subscribed.');
+          }
           }
         } else {
           console.error('[VIEWER', viewerId, '] Failed to subscribe; will retry later without teardown.');
           setConnectionState('failed');
         }
 
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] WebRTC setup complete`);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] WebRTC setup complete`);
+        }
 
       } catch (error) {
         console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Error setting up WebRTC:`, error);
@@ -1108,7 +1120,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const handleOfferRetry = () => {
       const maxOfferRetries = 3;
       if (offerRetryCount >= maxOfferRetries) {
-        console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached`);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Max offer retries reached`);
+        }
         setConnectionState('failed');
         return;
       }
@@ -1116,7 +1130,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       setOfferRetryCount(prev => prev + 1);
       const retryDelay = [5000, 8000, 13000][offerRetryCount] || 13000; // Exponential backoff: 5s, 8s, 13s
       
-      console.log(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1})`);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error(`[BROADCAST_VIEWER:${viewerIdRef.current}] Retrying offer request in ${retryDelay}ms (attempt ${offerRetryCount + 1})`);
+        }
       
       setTimeout(() => {
         if (channelRef.current) {
@@ -1149,20 +1165,24 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           .eq('creator_id', resolvedCreatorId)
           .eq('fan_id', user.id);
         
-        console.log('[BROADCAST_VIEWER] Removed user from queue due to connection failure');
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('[BROADCAST_VIEWER] Removed user from queue due to connection failure');
+        }
       } catch (error) {
         console.error('[BROADCAST_VIEWER] Error cleaning up queue:', error);
       }
     };
 
     const cleanup = () => {
-      console.warn('[VIEWER', viewerIdRef.current, '] cleanup() called from:', new Error().stack);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('[VIEWER', viewerIdRef.current, '] cleanup() called from:', new Error().stack);
+      }
       
       if (connectionTimeoutRef.current) {
         clearTimeout(connectionTimeoutRef.current);
         connectionTimeoutRef.current = null;
       }
-      if (debugIntervalRef.current) {
+      if (RUNTIME.DEBUG_LOGS && debugIntervalRef.current) {
         clearInterval(debugIntervalRef.current);
         debugIntervalRef.current = null;
       }
@@ -1184,46 +1204,26 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         return;
       }
 
-      // Subscribe immediately regardless of broadcast status
-      console.log('[BROADCAST_VIEWER] Connecting without teardown');
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('[BROADCAST_VIEWER] Connecting without teardown');
+      }
 
       // Proceed with WebRTC connection
       await connectToCreatorBroadcast();
     };
 
-    // Setup debug stats monitoring if debug=1 is in URL
-    const isDebugMode = window.location.search.includes('debug=1');
-    if (isDebugMode && !debugIntervalRef.current) {
-      debugIntervalRef.current = setInterval(() => {
-        if (pcRef.current) {
-          const video = videoRef.current;
-          const videoResolution = video && video.videoWidth && video.videoHeight 
-            ? `${video.videoWidth}x${video.videoHeight}` 
-            : '0x0';
-          
-          const remoteStreams = video?.srcObject ? (video.srcObject as MediaStream).getTracks().length : 0;
-          
-          setDebugStats({
-            signalingState: pcRef.current.signalingState,
-            iceConnectionState: pcRef.current.iceConnectionState,
-            connectionState: pcRef.current.connectionState,
-            remoteTrackCount: remoteStreams,
-            videoResolution,
-            iceCandidateCount: iceCandidateCountRef.current
-          });
-        }
-      }, 1000);
-    }
-
-    // Only initialize legacy P2P connection for non-SFU mode
-    if (connectionState === 'checking' || connectionState === 'retry') {
-      initConnection();
-    }
-
+    if (!RUNTIME.USE_SFU) {
+      // Only initialize legacy P2P connection for non-SFU mode
+      if (connectionState === 'checking' || connectionState === 'retry') {
+        initConnection();
+      }
     } // End legacy P2P (!RUNTIME.USE_SFU)
 
+    } // End main P2P guard (!RUNTIME.USE_SFU)
+
     // No cleanup here - let unmount-only effect handle it
-  }, [resolvedCreatorId, viewerIdRef.current, RUNTIME.USE_SFU]); // Only re-run when creatorUserId changes, not on UI state
+
+  }, [resolvedCreatorId, viewerIdRef.current, RUNTIME.USE_SFU]);
 
   // Add visibility change handler for offer burst and video rebind
   useEffect(() => {

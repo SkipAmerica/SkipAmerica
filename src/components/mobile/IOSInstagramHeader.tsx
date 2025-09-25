@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { MessageCircle, Heart, Menu, Phone } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
+import { RUNTIME } from '@/config/runtime';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
@@ -36,7 +37,9 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        console.log('Recording selected for story:', file);
+      if (RUNTIME.DEBUG_LOGS) {
+        console.error('Recording selected for story:', file);
+      }
       }
     };
     input.click();
@@ -49,7 +52,9 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        console.log('File selected for story upload:', file);
+        if (RUNTIME.DEBUG_LOGS) {
+          console.error('File selected for story upload:', file);
+        }
       }
     };
     input.click();
