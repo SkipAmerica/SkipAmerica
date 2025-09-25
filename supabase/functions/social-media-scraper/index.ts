@@ -147,7 +147,7 @@ serve(async (req) => {
     console.error('Error in social-media-scraper:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

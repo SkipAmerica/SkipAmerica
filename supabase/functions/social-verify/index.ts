@@ -59,7 +59,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in social-verify function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: String(error) }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -136,23 +136,23 @@ async function handleCallback(platform: string, code: string, state: string, sup
     .upsert({
       user_id: extractUserIdFromState(state), // You'll need to implement this
       platform: platform,
-      platform_user_id: userData.id,
-      platform_username: userData.username,
-      follower_count: userData.followerCount,
-      account_created_at: userData.createdAt,
+      platform_user_id: userData?.id || '',
+      platform_username: userData?.username || '',
+      follower_count: userData?.followerCount || 0,
+      account_created_at: userData?.createdAt || null,
       verification_status: 'verified',
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
-      metadata: userData.metadata
+      metadata: userData?.metadata || null
     });
 
   if (error) throw error;
 
   // Fetch recent content
   if (platform === 'youtube') {
-    await fetchYouTubeContent(userData.id, tokenData.access_token, supabase);
+    await fetchYouTubeContent(userData?.id || '', tokenData.access_token, supabase);
   } else if (platform === 'twitter') {
-    await fetchTwitterContent(userData.id, tokenData.access_token, supabase);
+    await fetchTwitterContent(userData?.id || '', tokenData.access_token, supabase);
   }
 
   return new Response(

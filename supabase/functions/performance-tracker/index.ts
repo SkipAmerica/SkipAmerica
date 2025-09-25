@@ -134,7 +134,7 @@ serve(async (req) => {
     console.error('Error in performance-tracker:', error);
     return new Response(JSON.stringify({
       success: false,
-      error: error.message
+      error: String(error)
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -160,9 +160,9 @@ function calculateActivePeriods(appointments: any[]) {
 
   // Calculate active hours per day (assuming 8-hour active periods on days with calls)
   Object.values(dayGroups).forEach(dayAppointments => {
-    if (dayAppointments.length > 0) {
+    if (Array.isArray(dayAppointments) && dayAppointments.length > 0) {
       // Estimate active hours based on call distribution
-      const hoursWithCalls = Math.min(8, Math.max(2, dayAppointments.length * 0.5));
+      const hoursWithCalls = Math.min(8, Math.max(2, Array.isArray(dayAppointments) ? dayAppointments.length * 0.5 : 2));
       totalActiveHours += hoursWithCalls;
     }
   });

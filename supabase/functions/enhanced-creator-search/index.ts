@@ -94,11 +94,11 @@ serve(async (req) => {
     }
 
     // Enhanced search: search across ALL related tables
-    let profileMatches = [];
-    let pressMatches = [];
-    let platformMatches = [];
-    let offerMatches = [];
-    let socialAnalysisMatches = [];
+    let profileMatches: Array<any> = [];
+    let pressMatches: Array<any> = [];
+    let platformMatches: Array<any> = [];
+    let offerMatches: Array<any> = [];
+    let socialAnalysisMatches: Array<any> = [];
     
     if (query && query.trim()) {
       const searchTerm = query.trim();
@@ -240,10 +240,10 @@ serve(async (req) => {
         if (creator.location_city?.toLowerCase().includes(searchLower)) score += 8;
         
         // Category and specialty matches
-        if (creator.categories?.some(cat => cat.toLowerCase().includes(searchLower))) score += 11;
-        if (creator.political_tags?.some(tag => tag.toLowerCase().includes(searchLower))) score += 7;
-        if (creator.languages?.some(lang => lang.toLowerCase().includes(searchLower))) score += 6;
-        if (creator.risk_flags?.some(flag => flag.toLowerCase().includes(searchLower))) score += 5;
+        if (creator.categories?.some((cat: any) => cat.toLowerCase().includes(searchLower))) score += 11;
+        if (creator.political_tags?.some((tag: any) => tag.toLowerCase().includes(searchLower))) score += 7;
+        if (creator.languages?.some((lang: any) => lang.toLowerCase().includes(searchLower))) score += 6;
+        if (creator.risk_flags?.some((flag: any) => flag.toLowerCase().includes(searchLower))) score += 5;
         
         // Celebrity tier and verification
         if (creator.celebrity_tier?.toLowerCase().includes(searchLower)) score += 9;
@@ -252,7 +252,7 @@ serve(async (req) => {
         // Related tables matches
         const profileMatch = profileMatches.find(p => p.id === creator.id);
         if (profileMatch?.industry_specialization?.toLowerCase().includes(searchLower)) score += 12;
-        if (profileMatch?.interests?.some(interest => interest.toLowerCase().includes(searchLower))) score += 8;
+        if (profileMatch?.interests?.some((interest: any) => interest.toLowerCase().includes(searchLower))) score += 8;
         
         // Press coverage matches
         if (pressMatches.some(press => press.creator_id === creator.id)) score += 11;
@@ -319,7 +319,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Enhanced creator search error:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
+      error: String(error),
       creators: [],
       facets: {},
       total: 0 

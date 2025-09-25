@@ -117,7 +117,7 @@ serve(async (req) => {
     console.error('Voice transcription error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: String(error),
         transcript: '',
         moderation: { flagged: false, action: 'allow' }
       }),

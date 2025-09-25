@@ -126,7 +126,7 @@ serve(async (req) => {
     console.error('AI Moderation error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
+        error: String(error),
         flagged: false,
         action: 'allow' // Fail open for better UX
       }),
