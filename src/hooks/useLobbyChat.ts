@@ -12,6 +12,8 @@ export type ChatMsg = {
 export function useLobbyChat(creatorId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const hasReceivedRealtimeRef = useRef(false);
 
   useEffect(() => {
     if (!creatorId) return;
@@ -56,8 +58,25 @@ export function useLobbyChat(creatorId?: string) {
       }
     };
 
+    const startPollingFallback = () => {
+      hasReceivedRealtimeRef.current = false;
+      pollingRef.current = setInterval(async () => {
+        if (hasReceivedRealtimeRef.current) {
+          clearInterval(pollingRef.current!);
+          pollingRef.current = null;
+          return;
+        }
+        
+        try {
+          await fetchInitialMessages();
+        } catch (error) {
+          console.error('[useLobbyChat] Polling error:', error);
+        }
+      }, 3000);
+    };
+
     const subscribeToRealtime = async () => {
-      const channelName = `lobby-chat-${creatorId}`;
+      const channelName = `lobby-chat-db-${creatorId}-creator`;
       console.log('[useLobbyChat] subscribe ->', channelName);
 
       // Clean any prior channel before re-subscribing
@@ -67,9 +86,14 @@ export function useLobbyChat(creatorId?: string) {
           supabase.removeChannel(chanRef.current);
           chanRef.current = null;
         }
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
+        }
       } catch {}
 
       await fetchInitialMessages();
+      startPollingFallback();
 
       // Subscribe to new messages using postgres_changes (same as PQ)
       const ch = supabase.channel(channelName);
@@ -83,7 +107,8 @@ export function useLobbyChat(creatorId?: string) {
           filter: `creator_id=eq.${creatorId}`,
         },
         async (payload) => {
-          console.log('[useLobbyChat] INSERT received:', payload.new.id, 'creator_id:', payload.new.creator_id);
+          console.log('[CreatorOverlay] INSERT', payload.new.id, payload.new.creator_id);
+          hasReceivedRealtimeRef.current = true;
 
           // Fetch profile for the new message
           const { data: profileData } = await supabase
@@ -129,10 +154,14 @@ export function useLobbyChat(creatorId?: string) {
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
         console.log('[useLobbyChat] auth state change ->', event, !!newSession);
-        // Teardown existing channel
+        // Teardown existing channel and polling
         if (chanRef.current) {
           try { supabase.removeChannel(chanRef.current); } catch {}
           chanRef.current = null;
+        }
+        if (pollingRef.current) {
+          clearInterval(pollingRef.current);
+          pollingRef.current = null;
         }
         if (newSession) {
           await subscribeToRealtime();
@@ -146,7 +175,7 @@ export function useLobbyChat(creatorId?: string) {
     init();
 
     return () => {
-      const channelName = `lobby-chat-${creatorId}`;
+      const channelName = `lobby-chat-db-${creatorId}-creator`;
       if ((window as any).__allow_ch_teardown) {
         try {
           if (chanRef.current) {
@@ -158,6 +187,10 @@ export function useLobbyChat(creatorId?: string) {
         console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
       }
       chanRef.current = null;
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
       authSubscription?.unsubscribe?.();
     };
   }, [creatorId]);
