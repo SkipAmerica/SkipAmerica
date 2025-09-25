@@ -1,5 +1,6 @@
 import React from "react";
 import { createSFU } from "@/lib/sfu";
+import { getAuthJWT } from "@/lib/authToken";
 
 const USE_SFU = true;
 
@@ -23,9 +24,15 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
       const identity = creatorId || crypto.randomUUID();
       if (!creatorId) console.warn("[CREATOR][SFU] creatorId not found; using identity only");
 
-      const resp = await fetch("/functions/v1/get_livekit_token", {
+      const jwt = await getAuthJWT();
+
+      const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          "authorization": `Bearer ${jwt}`,
+          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
+        },
         body: JSON.stringify({ role: "creator", creatorId, identity }),
       });
       const j = await resp.json();
