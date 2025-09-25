@@ -6,17 +6,16 @@ export type ChatMsg = {
   text: string;
   userId?: string;
   username?: string;
-  ts: number; // ms
+  ts: number; // epoch ms
 };
 
-export function useLobbyChat(creatorId: string | undefined) {
+export function useLobbyChat(creatorId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!creatorId) return;
 
-    // idempotent re-subscribe if creator changes
     if (chanRef.current) {
       try { supabase.removeChannel(chanRef.current); } catch {}
       chanRef.current = null;
@@ -25,8 +24,8 @@ export function useLobbyChat(creatorId: string | undefined) {
     const channelName = `realtime:lobby-chat-${creatorId}`;
     const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
 
-    ch.on("broadcast", { event: "message" }, (payload) => {
-      const body = (payload as any)?.payload ?? {};
+    ch.on("broadcast", { event: "message" }, (payload: any) => {
+      const body = payload?.payload ?? payload ?? {};
       const msg: ChatMsg = {
         id: body.id ?? crypto.randomUUID(),
         text: body.text ?? "",
@@ -34,15 +33,12 @@ export function useLobbyChat(creatorId: string | undefined) {
         username: body.username,
         ts: Date.now(),
       };
-      // keep last 50
       setMessages((prev) => [...prev, msg].slice(-50));
     });
 
-    ch.subscribe((status) => {
-      if (import.meta.env.DEV) console.log("[OverlayChat] sub status", status, channelName);
-    });
-
+    ch.subscribe();
     chanRef.current = ch;
+
     return () => {
       try { if (chanRef.current) supabase.removeChannel(chanRef.current); } catch {}
       chanRef.current = null;

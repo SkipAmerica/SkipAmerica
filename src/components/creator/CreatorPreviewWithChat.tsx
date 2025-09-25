@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import OverlayChat from "@/components/live/OverlayChat";
+import { sendLobbyMessage } from "@/lib/lobbyChat";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type Props = {
   creatorId: string;
@@ -10,6 +13,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [attached, setAttached] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [text, setText] = useState("");
 
   // --- LiveKit-driven preview + instant getUserMedia fallback ---
   useEffect(() => {
@@ -112,9 +116,19 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     };
   }, [attached]);
 
+  async function onSend(e: React.FormEvent) {
+    e.preventDefault();
+    const { data } = await supabase.auth.getUser();
+    const userId = data?.user?.id;
+    const username = data?.user?.email?.split("@")[0] ?? "creator";
+    const t = text.trim();
+    if (!t) return;
+    setText("");
+    await sendLobbyMessage({ creatorId, userId, username, text: t });
+  }
+
   return (
-    <div className="relative w-full max-w-3xl">
-      {/* Video preview surface */}
+    <div className="space-y-3">
       <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black/80 border border-white/10">
         <video ref={videoRef} className="w-full h-full object-cover" />
         {!connected && !attached && (
@@ -126,6 +140,19 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         {/* Instagram-style floating chat overlay */}
         <OverlayChat creatorId={creatorId} />
       </div>
+
+      {/* Creator chat input */}
+      <form onSubmit={onSend} className="flex gap-2">
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Say something to the lobby..."
+          className="flex-1 bg-white/5 border-white/10 text-white placeholder-white/50 focus:border-white/20"
+        />
+        <Button type="submit" variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+          Send
+        </Button>
+      </form>
     </div>
   );
 }

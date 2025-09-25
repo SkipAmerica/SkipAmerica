@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { sendLobbyMessage } from '@/lib/lobbyChat';
 
 interface ChatMessage {
   id: string;
@@ -130,15 +131,13 @@ export function LobbyChat({ creatorId }: LobbyChatProps) {
 
     setSending(true);
     try {
-      const { error } = await supabase
-        .from('lobby_chat_messages')
-        .insert({
-          creator_id: creatorId,
-          user_id: user.id,
-          message: newMessage.trim()
-        });
-
-      if (error) throw error;
+      const username = user.email?.split("@")[0] ?? "guest";
+      await sendLobbyMessage({ 
+        creatorId, 
+        userId: user.id, 
+        username, 
+        text: newMessage.trim() 
+      });
       setNewMessage('');
     } catch (error) {
       console.error('Error sending message:', error);
