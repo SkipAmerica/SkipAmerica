@@ -11,20 +11,54 @@ export type ChatMsg = {
 
 export function useLobbyChat(creatorId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [loading, setLoading] = useState(false);
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
     if (!creatorId) return;
 
+    // Load historical messages first
+    const loadHistoricalMessages = async () => {
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("lobby_chat_messages")
+          .select("id, message, created_at, user_id")
+          .eq("creator_id", creatorId)
+          .order("created_at", { ascending: true })
+          .limit(500); // Load last 500 messages
+
+        if (error) {
+          console.warn("[useLobbyChat] Failed to load historical messages:", error);
+        } else if (data) {
+          const historicalMsgs: ChatMsg[] = data.map((row) => ({
+            id: row.id,
+            text: row.message,
+            userId: row.user_id,
+            username: 'User', // Username will be updated via real-time if available
+            ts: new Date(row.created_at).getTime(),
+          }));
+          setMessages(historicalMsgs);
+        }
+      } catch (e) {
+        console.warn("[useLobbyChat] Error loading historical messages:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadHistoricalMessages();
+
+    // Clean up existing channel
     if (chanRef.current) {
       try { supabase.removeChannel(chanRef.current); } catch {}
       chanRef.current = null;
     }
 
+    // Set up real-time subscription
     const channelName = `realtime:lobby-chat-${creatorId}`;
     const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
 
-    // log once to confirm creator page is receiving
     ch.on("broadcast", { event: "message" }, (payload: any) => {
       const body = payload?.payload ?? payload ?? {};
       console.debug("[useLobbyChat] rx", channelName, body);
@@ -35,8 +69,8 @@ export function useLobbyChat(creatorId?: string) {
         username: body.username,
         ts: Date.now(),
       };
-      // append; we'll reverse at render time
-      setMessages((prev) => [...prev, msg].slice(-200));
+      // Append new message to existing history
+      setMessages((prev) => [...prev, msg]);
     });
 
     ch.subscribe((status) => {
@@ -50,5 +84,5 @@ export function useLobbyChat(creatorId?: string) {
     };
   }, [creatorId]);
 
-  return messages;
+  return { messages, loading };
 }

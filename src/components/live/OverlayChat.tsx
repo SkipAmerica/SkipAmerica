@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLobbyChat } from "@/hooks/useLobbyChat";
 
 type Props = {
@@ -10,31 +10,73 @@ export default function OverlayChat({
   creatorId,
   className = "",
 }: Props) {
-  const msgs = useLobbyChat(creatorId);
-  // newest-first for rendering (top pushes older down)
-  const live = useMemo(() => [...msgs].reverse().slice(0, 50), [msgs]);
+  const { messages, loading } = useLobbyChat(creatorId);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+
+  // Auto-scroll to bottom when new messages arrive (only if user was already at bottom)
+  useEffect(() => {
+    if (scrollRef.current && isAtBottomRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  // Track if user is at bottom for auto-scroll behavior
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+      isAtBottomRef.current = scrollTop + clientHeight >= scrollHeight - 10;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        className={
+          "pointer-events-none absolute inset-0 flex items-center justify-center z-[9999] " + className
+        }
+        aria-hidden
+      >
+        <div className="bg-black/50 text-white rounded-lg px-3 py-2 text-sm">
+          Loading chat...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
       className={
-        "pointer-events-none absolute inset-0 flex items-end p-3 sm:p-4 z-[9999] " + className
+        "absolute inset-0 flex flex-col z-[9999] " + className
       }
       aria-hidden
     >
-      {/* stack from bottom, newest at top by reversing data */}
-      <div className="w-full flex flex-col-reverse gap-2">
-        {live.map((m) => (
-          <div
-            key={m.id}
-            className="max-w-[80%] sm:max-w-[70%] bg-black/70 text-white rounded-2xl px-3 py-2 backdrop-blur"
-          >
-            <div className="text-[11px] opacity-80 leading-none">{m.username ?? "guest"}</div>
-            <div className="text-sm sm:text-base break-words">{m.text}</div>
-          </div>
-        ))}
+      {/* Scrollable chat area */}
+      <div 
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-3 sm:p-4 pointer-events-auto"
+        style={{ 
+          // Custom scrollbar styling
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'rgba(255,255,255,0.3) transparent'
+        }}
+      >
+        <div className="flex flex-col gap-2 min-h-full justify-end">
+          {messages.map((m) => (
+            <div
+              key={m.id}
+              className="max-w-[80%] sm:max-w-[70%] bg-black/70 text-white rounded-2xl px-3 py-2 backdrop-blur self-start"
+            >
+              <div className="text-[11px] opacity-80 leading-none">{m.username ?? "guest"}</div>
+              <div className="text-sm sm:text-base break-words">{m.text}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32 bg-gradient-to-t from-black/40 to-transparent" />
+      {/* Gradient overlay at bottom for visual fade */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
     </div>
   );
 }
