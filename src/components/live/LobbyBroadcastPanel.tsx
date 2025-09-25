@@ -23,7 +23,22 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
   async function startSfuBroadcast() {
     if (!USE_SFU) return;
     try {
-      if (!__creatorSFU) __creatorSFU = createSFU();
+      if (!__creatorSFU) {
+        __creatorSFU = createSFU();
+        
+        // expose handle early so other components can subscribe to events
+        (window as any).__creatorSFU = __creatorSFU;
+        
+        // add event relays right after createSFU
+        __creatorSFU.room
+          .on("connectionstatechanged", () => {
+            try { window.dispatchEvent(new Event("sfu:creator:connected")); } catch {}
+          })
+          .on("localtrackpublished", () => {
+            try { window.dispatchEvent(new Event("sfu:creator:published")); } catch {}
+          });
+      }
+      
       const { supabase } = await import("@/lib/supabaseClient");
       const { data } = await supabase.auth.getUser();
       const identity = data?.user?.id || crypto.randomUUID();
@@ -33,16 +48,21 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         creatorId,
         identity,
       });
+      
+      // when LiveKit room connects
       await __creatorSFU.connect(url, token);
-      window.dispatchEvent(new Event("sfu:creator:connected"));
+      try { window.dispatchEvent(new Event("sfu:creator:connected")); } catch {}
+      
+      // when local camera/mic are published
       await __creatorSFU.publishCameraMic();
-      window.dispatchEvent(new Event("sfu:creator:published"));
+      try { window.dispatchEvent(new Event("sfu:creator:published")); } catch {}
+      
       const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
       if (preview) {
         preview.muted = true;
         preview.autoplay = true;
         preview.playsInline = true;
-        const sfu = window.__creatorSFU;
+        const sfu = (window as any).__creatorSFU;
         const room = sfu?.room;
         const lp = room?.localParticipant;
         const camPub = lp?.videoTracks
