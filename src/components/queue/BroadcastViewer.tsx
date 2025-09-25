@@ -5,6 +5,7 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
+import OverlayChat from '@/components/live/OverlayChat';
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
@@ -27,6 +28,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
+  const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
 
   // SFU connection effect
   useEffect(() => {
@@ -50,6 +52,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       try {
         const resolvedId = await resolveCreatorUserId(queueId);
         const creatorId = resolvedId || queueId;
+        setResolvedCreatorId(creatorId); // Store for chat overlay
         const { data } = await supabase.auth.getUser();
         const identity = data?.user?.id || crypto.randomUUID();
         
@@ -116,6 +119,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
               </div>
             </div>
           )}
+          
+          {/* Instagram-style floating chat overlay */}
+          {resolvedCreatorId && <OverlayChat creatorId={resolvedCreatorId} />}
           
           <div className="absolute bottom-4 left-4">
             <Button

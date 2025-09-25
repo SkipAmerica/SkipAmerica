@@ -1,16 +1,14 @@
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import OverlayChat from "@/components/live/OverlayChat";
 
 type Props = {
   creatorId: string;
 };
 
-type ChatMsg = { id: string; user?: string; text: string; ts: string };
-
 export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [attached, setAttached] = useState(false);
-  const [chat, setChat] = useState<ChatMsg[]>([]);
   const [connected, setConnected] = useState(false);
 
   // --- LiveKit-driven preview + instant getUserMedia fallback ---
@@ -114,29 +112,6 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     };
   }, [attached]);
 
-  // Subscribe to lobby chat overlay (best-effort)
-  useEffect(() => {
-    // prefer per-creator lobby channel
-    const chName = `realtime:lobby-chat-${creatorId}`;
-    const ch = supabase.channel(chName, { config: { broadcast: { ack: true } } });
-
-    ch.on("broadcast", { event: "message" }, (payload: any) => {
-      const msg: ChatMsg = {
-        id: payload?.id ?? crypto.randomUUID(),
-        user: payload?.user ?? "anon",
-        text: payload?.text ?? "",
-        ts: new Date().toISOString(),
-      };
-      setChat((prev) => [...prev.slice(-99), msg]);
-    });
-
-    ch.subscribe();
-
-    return () => {
-      try { ch.unsubscribe(); } catch {}
-    };
-  }, [creatorId]);
-
   return (
     <div className="relative w-full max-w-3xl">
       {/* Video preview surface */}
@@ -147,20 +122,9 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
             Camera preview (click Start SFU for LiveKit)
           </div>
         )}
-      </div>
-
-      {/* Chat overlay */}
-      <div className="pointer-events-auto absolute inset-x-4 bottom-4 max-h-52 overflow-y-auto rounded-xl bg-black/40 backdrop-blur p-3 border border-white/10 text-white">
-        <div className="text-xs opacity-70 pb-1">Lobby Chat</div>
-        <div className="space-y-1 text-sm leading-tight">
-          {chat.length === 0 && <div className="opacity-60">No messages yet…</div>}
-          {chat.map((m) => (
-            <div key={m.id} className="flex gap-2">
-              <span className="opacity-70">{m.user ?? "user"}:</span>
-              <span>{m.text}</span>
-            </div>
-          ))}
-        </div>
+        
+        {/* Instagram-style floating chat overlay */}
+        <OverlayChat creatorId={creatorId} />
       </div>
     </div>
   );
