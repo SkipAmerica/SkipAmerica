@@ -121,11 +121,21 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     e.preventDefault();
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
-    const username = data?.user?.email?.split("@")[0] ?? "creator";
+    
+    // Get user profile for avatar
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, avatar_url")
+      .eq("id", userId)
+      .single();
+    
+    const username = profile?.full_name?.split(" ")[0] ?? data?.user?.email?.split("@")[0] ?? "creator";
+    const avatarUrl = profile?.avatar_url;
+    
     const t = text.trim();
     if (!t) return;
     setText("");
-    await sendLobbyMessage({ creatorId, userId, username, text: t });
+    await sendLobbyMessage({ creatorId, userId, username, avatarUrl, text: t });
   }
 
   return (

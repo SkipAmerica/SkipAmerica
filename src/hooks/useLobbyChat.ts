@@ -6,6 +6,7 @@ export type ChatMsg = {
   text: string;
   userId?: string;
   username?: string;
+  avatarUrl?: string;
   ts: number; // epoch ms
 };
 
@@ -23,7 +24,13 @@ export function useLobbyChat(creatorId?: string) {
       try {
         const { data, error } = await supabase
           .from("lobby_chat_messages")
-          .select("id, message, created_at, user_id")
+          .select(`
+            id,
+            message,
+            created_at,
+            user_id,
+            profiles(full_name, avatar_url)
+          `)
           .eq("creator_id", creatorId)
           .order("created_at", { ascending: true })
           .limit(500); // Load last 500 messages
@@ -31,11 +38,12 @@ export function useLobbyChat(creatorId?: string) {
         if (error) {
           console.warn("[useLobbyChat] Failed to load historical messages:", error);
         } else if (data) {
-          const historicalMsgs: ChatMsg[] = data.map((row) => ({
+          const historicalMsgs: ChatMsg[] = data.map((row: any) => ({
             id: row.id,
             text: row.message,
             userId: row.user_id,
-            username: 'User', // Username will be updated via real-time if available
+            username: row.profiles?.full_name?.split(' ')[0] || 'User',
+            avatarUrl: row.profiles?.avatar_url,
             ts: new Date(row.created_at).getTime(),
           }));
           setMessages(historicalMsgs);
@@ -67,6 +75,7 @@ export function useLobbyChat(creatorId?: string) {
         text: body.text ?? "",
         userId: body.userId,
         username: body.username,
+        avatarUrl: body.avatarUrl,
         ts: Date.now(),
       };
       // Append new message to existing history

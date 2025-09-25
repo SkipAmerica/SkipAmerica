@@ -66,10 +66,28 @@ export default function OverlayChat({
           {messages.map((m) => (
             <div
               key={m.id}
-              className="max-w-[80%] sm:max-w-[70%] bg-black/70 text-white rounded-2xl px-3 py-2 backdrop-blur self-start"
+              className="max-w-[80%] sm:max-w-[70%] bg-black/70 text-white rounded-2xl px-3 py-2 backdrop-blur self-start flex items-start gap-2"
             >
-              <div className="text-[11px] opacity-80 leading-none">{m.username ?? "guest"}</div>
-              <div className="text-sm sm:text-base break-words">{m.text}</div>
+              {/* Profile picture */}
+              <div className="flex-shrink-0 mt-1">
+                {m.avatarUrl ? (
+                  <img 
+                    src={m.avatarUrl} 
+                    alt={m.username ?? "User"} 
+                    className="w-6 h-6 rounded-full object-cover border border-white/20"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center text-xs font-medium">
+                    {(m.username ?? "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              
+              {/* Message content */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] opacity-80 leading-none mb-1">{m.username ?? "guest"}</div>
+                <div className="text-sm sm:text-base break-words">{m.text}</div>
+              </div>
             </div>
           ))}
         </div>

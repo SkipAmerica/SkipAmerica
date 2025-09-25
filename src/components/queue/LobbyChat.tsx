@@ -131,11 +131,21 @@ export function LobbyChat({ creatorId }: LobbyChatProps) {
 
     setSending(true);
     try {
-      const username = user.email?.split("@")[0] ?? "guest";
+      // Get user profile for avatar
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      
+      const username = profile?.full_name?.split(" ")[0] ?? user.email?.split("@")[0] ?? "guest";
+      const avatarUrl = profile?.avatar_url;
+      
       await sendLobbyMessage({ 
         creatorId, 
         userId: user.id, 
         username, 
+        avatarUrl,
         text: newMessage.trim() 
       });
       setNewMessage('');

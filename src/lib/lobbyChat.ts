@@ -4,11 +4,13 @@ export async function sendLobbyMessage({
   creatorId,
   userId,
   username,
+  avatarUrl,
   text,
 }: {
   creatorId: string;
   userId?: string;
   username?: string;
+  avatarUrl?: string;
   text: string;
 }) {
   if (!creatorId || !text?.trim()) return;
@@ -37,6 +39,7 @@ export async function sendLobbyMessage({
         text,
         userId,
         username,
+        avatarUrl,
       },
     });
   } catch (e) {
