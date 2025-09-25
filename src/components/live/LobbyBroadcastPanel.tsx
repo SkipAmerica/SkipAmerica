@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+console.log('[CREATOR][SFU] LobbyBroadcastPanel module loaded');
+
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -55,6 +57,12 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const [chatInput, setChatInput] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [sending, setSending] = useState(false)
+
+  // Mount effect log
+  React.useEffect(() => {
+    console.log('[CREATOR][SFU] LobbyBroadcastPanel mounted');
+  }, []);
+
   const [debugStats, setDebugStats] = useState({
     signalingState: 'stable',
     iceConnectionState: 'closed',
@@ -1019,12 +1027,32 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     return cleanup
   }, [initMedia, cleanup])
 
+  // Create confirmJoin function that calls startBroadcast
+  const confirmJoin = useCallback(() => {
+    console.log('[CREATOR][SFU] confirmJoin called, starting broadcast');
+    startBroadcast();
+  }, []);
+
+  // Expose manual trigger on window for console debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // @ts-ignore
+      window.__creatorConfirmJoin = confirmJoin;
+      console.log('[CREATOR][SFU] window.__creatorConfirmJoin is ready');
+    }
+  }, [confirmJoin]);
+
   return (
     <div 
       className="w-full mb-4" 
       role="region" 
       aria-label="Lobby Broadcast"
     >
+      {/* Dev Badge */}
+      <span style={{position:'absolute',top:8,right:8,background:'#111',color:'#0f0',padding:'4px 8px',fontSize:12,borderRadius:6,zIndex:9999}}>
+        SFU CREATOR PANEL ACTIVE
+      </span>
+      
       <div className="relative w-full aspect-video overflow-hidden rounded-2xl bg-neutral-900">
         {/* Video Element */}
         <video
@@ -1110,6 +1138,17 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
 
               {/* End Broadcast Button */}
               <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="default"
+                  onClick={(e) => { 
+                    console.log('[CREATOR][SFU] Broadcast button clicked'); 
+                    confirmJoin(); 
+                  }}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  Broadcast
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
