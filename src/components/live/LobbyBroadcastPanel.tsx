@@ -25,21 +25,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         setSfuMsg("getting local tracks…");
         const sfu = createSFU();
 
-        // 1) Get local tracks once
-        const tracks = await sfu.createLocalTracks({ audio: true, video: { facingMode: "user" } });
-
-        // 2) Attach camera to preview element
-        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        if (pv) {
-          // detach anything first
-          pv.srcObject = null;
-          const MediaStreamCls = (window as any).MediaStream;
-          const ms = new MediaStreamCls(tracks.filter(t => t.kind === "video").map(t => t.mediaStreamTrack));
-          pv.srcObject = ms;
-          try { await pv.play(); } catch {}
-        }
-
-        // 3) Get token
+        // 1) Get token
         setSfuMsg("requesting token…");
         const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
           try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
@@ -61,11 +47,34 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         const { token, url, error } = await resp.json();
         if (error) throw new Error(error);
 
-        // 4) Connect room then publish the tracks
+        // 2) Connect to LiveKit
         setSfuMsg(`connecting ${url}…`);
         await sfu.connect(url, token);
+
+        // Publish mic + camera (this also creates the local tracks)
         setSfuMsg("publishing tracks…");
-        await sfu.publishTracks(tracks);
+        await sfu.publishCameraMic();
+
+        // Attach creator preview to the local video track
+        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
+        try {
+          const pubs = sfu.room.localParticipant.getTrackPublications();
+          console.log("[CREATOR SFU] after publish pubs=", pubs.map(p => p.kind));
+
+          const camPub = pubs.find(p => p.kind === "video");
+          const camTrack = camPub?.track;
+          if (pv && camTrack) {
+            pv.muted = true;
+            pv.playsInline = true;
+            pv.autoplay = true;
+            camTrack.attach(pv);
+            pv.play?.().catch(() => {});
+          } else {
+            console.warn("[CREATOR SFU] preview attach skipped (pv or camTrack missing)");
+          }
+        } catch (e) {
+          console.error("[CREATOR SFU] preview attach error", e);
+        }
 
         sfuRef.current = sfu;
         if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
