@@ -40,7 +40,12 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         preview.muted = true;
         preview.autoplay = true;
         preview.playsInline = true;
-        const camPub = __creatorSFU.room.localParticipant.videoTracks.values().next().value?.videoTrack;
+        const sfu = window.__creatorSFU;
+        const room = sfu?.room;
+        const lp = room?.localParticipant;
+        const camPub = lp?.videoTracks
+          ? (Array.from(lp.videoTracks.values()).find((p: any) => p?.videoTrack) as any)?.videoTrack
+          : null;
         if (camPub) camPub.attach(preview);
       }
       setIsBroadcasting?.(true);
