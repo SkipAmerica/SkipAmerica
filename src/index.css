@@ -549,3 +549,13 @@ html.precall-open [class*="creator-post-prompt"] {
   opacity: 0.6;
   transition: opacity 0.2s ease;
 }
+
+/* Chat scrollbar utilities */
+.scrollbar-hide {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

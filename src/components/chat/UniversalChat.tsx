@@ -69,23 +69,61 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   };
 
   const height = config.appearance?.height || 'h-80';
+  const width = config.appearance?.width || 'w-full';
+  const maxWidth = config.appearance?.maxWidth;
   const showProfiles = config.appearance?.showProfiles ?? true;
   const compact = config.appearance?.compact ?? false;
   const emptyStateText = config.appearance?.emptyStateText || 'No messages yet. Start the conversation!';
   const messagingEnabled = config.messaging?.enabled ?? true;
   const placeholder = config.messaging?.placeholder || 'Type a message...';
+  const showScrollbar = config.appearance?.showScrollbar ?? true;
+  const messageFlow = config.appearance?.messageFlow || 'newest-bottom';
+  const position = config.appearance?.position || 'default';
 
-  const displayMessages = config.appearance?.reverseOrder 
+  // Position styling
+  const getPositionClasses = () => {
+    switch (position) {
+      case 'bottom-left':
+        return 'fixed bottom-4 left-4 z-50';
+      case 'bottom-right':
+        return 'fixed bottom-4 right-4 z-50';
+      case 'top-left':
+        return 'fixed top-4 left-4 z-50';
+      case 'top-right':
+        return 'fixed top-4 right-4 z-50';
+      case 'center':
+        return 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50';
+      case 'custom':
+        return config.appearance?.className || '';
+      case 'default':
+      default:
+        return '';
+    }
+  };
+
+  // Message ordering for display
+  const displayMessages = messageFlow === 'newest-top' 
     ? [...messages].reverse() 
     : messages;
 
+  const containerClasses = `
+    ${getPositionClasses()}
+    ${position !== 'default' && position !== 'custom' ? `${width} ${maxWidth ? maxWidth : 'max-w-sm'}` : ''}
+    ${position !== 'default' && position !== 'custom' ? 'bg-background border border-border rounded-lg shadow-lg' : ''}
+    ${className}
+  `.trim();
+
+  const scrollAreaClasses = showScrollbar 
+    ? "flex-1 p-4" 
+    : "flex-1 p-4 [&>div>div]:!scrollbar-hide";
+
   return (
-    <div className={`flex flex-col ${height} ${config.appearance?.className || ''} ${className}`}>
-      <ScrollArea className="flex-1 p-4">
+    <div className={`flex flex-col ${height} ${containerClasses}`}>
+      <ScrollArea className={scrollAreaClasses}>
         <div className={compact ? "space-y-2" : "space-y-4"}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
-              <p>{emptyStateText}</p>
+              <p className={compact ? 'text-xs' : 'text-sm'}>{emptyStateText}</p>
             </div>
           ) : (
             displayMessages.map((message) => (

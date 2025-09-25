@@ -16,13 +16,22 @@ export function useUniversalChat(config: ChatConfig) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  useEffect(() => {
-    if (config.appearance?.reverseOrder) {
+  const scrollToNewest = () => {
+    const flow = config.appearance?.messageFlow || 'newest-bottom';
+    const shouldScroll = config.appearance?.scrollToNewest !== false;
+    
+    if (!shouldScroll) return;
+    
+    if (flow === 'newest-top') {
       scrollToTop();
     } else {
       scrollToBottom();
     }
-  }, [messages, config.appearance?.reverseOrder]);
+  };
+
+  useEffect(() => {
+    scrollToNewest();
+  }, [messages]);
 
   // Fetch initial messages - Based on PQ implementation
   useEffect(() => {
@@ -35,7 +44,9 @@ export function useUniversalChat(config: ChatConfig) {
           .from(config.tableName as any)
           .select('*')
           .eq(config.filterField, config.filterValue)
-          .order('created_at', { ascending: !config.appearance?.reverseOrder })
+          .order('created_at', { 
+            ascending: config.appearance?.messageFlow === 'newest-top' ? false : true 
+          })
           .limit(50);
 
         if (messagesError) throw messagesError;
@@ -99,8 +110,9 @@ export function useUniversalChat(config: ChatConfig) {
             profiles: profileData || undefined
           };
 
+          const flow = config.appearance?.messageFlow || 'newest-bottom';
           setMessages(prev => 
-            config.appearance?.reverseOrder 
+            flow === 'newest-top' 
               ? [enrichedMessage, ...prev]
               : [...prev, enrichedMessage]
           );
@@ -125,6 +137,7 @@ export function useUniversalChat(config: ChatConfig) {
     setSending,
     messagesEndRef,
     scrollToBottom,
-    scrollToTop
+    scrollToTop,
+    scrollToNewest
   };
 }

@@ -11,11 +11,17 @@ export interface ChatMessage {
 
 export interface ChatAppearance {
   height?: string;
+  width?: string;
+  maxWidth?: string;
   showProfiles?: boolean;
   compact?: boolean;
   reverseOrder?: boolean;
   className?: string;
   emptyStateText?: string;
+  position?: 'default' | 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | 'center' | 'custom';
+  messageFlow?: 'newest-bottom' | 'newest-top';
+  scrollToNewest?: boolean;
+  showScrollbar?: boolean;
 }
 
 export interface ChatMessaging {

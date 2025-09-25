@@ -38,7 +38,7 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     height: 'h-64',
     showProfiles: false,
     compact: true,
-    reverseOrder: true,
+    messageFlow: 'newest-top',
     emptyStateText: 'No messages yet…',
     className: 'pointer-events-none absolute inset-0 z-20'
   },
@@ -63,5 +63,37 @@ export const createGeneralConfig = (roomId: string): ChatConfig => ({
     placeholder: 'Chat with everyone...',
     requireAuth: true,
     showSendButton: true
+  }
+});
+
+// Bottom-left positioned chat with newest messages at top
+export const createBottomLeftConfig = (roomId: string): ChatConfig => ({
+  tableName: 'lobby_chat_messages',
+  channelPrefix: 'bottom-left-chat',
+  filterField: 'creator_id',
+  filterValue: roomId,
+  appearance: {
+    height: 'h-96',
+    width: 'w-80',
+    maxWidth: 'max-w-sm',
+    position: 'bottom-left',
+    messageFlow: 'newest-top',
+    showProfiles: true,
+    showScrollbar: true,
+    emptyStateText: 'Chat is empty. Start the conversation!'
+  },
+  messaging: {
+    enabled: true,
+    placeholder: 'Type your message...',
+    requireAuth: true,
+    showSendButton: true
+  },
+  sendMessage: async ({ filterValue, userId, username, text }) => {
+    await sendLobbyMessage({
+      creatorId: filterValue,
+      userId,
+      username,
+      text
+    });
   }
 });
