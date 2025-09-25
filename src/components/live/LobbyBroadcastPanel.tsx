@@ -387,21 +387,24 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
       try {
         const sfu = createSFU();
         const { data } = await supabase.auth.getUser();
-        const body = { role: "creator" as const, creatorId: user?.id, identity: data?.user?.id || crypto.randomUUID() };
-        hudLog("[SFU] POST token", TOKEN_URL, JSON.stringify(body));
+        const creatorId = user?.id;
+        const identity = data?.user?.id || crypto.randomUUID();
+        const body = { role: "creator", creatorId, identity };
+        hudLog("[SFU] POST", TOKEN_URL, JSON.stringify(body));
 
         const resp = await fetch(TOKEN_URL, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(body),
         });
-        hudLog("[SFU] token resp", String(resp.status));
-        const json = await resp.json().catch(e => ({ error: "bad-json " + String(e) }));
-        hudLog("[SFU] token json", JSON.stringify(json));
+        const raw = await resp.text();
+        hudLog("[SFU] resp", String(resp.status), raw.slice(0, 200));
+        if (!resp.ok) throw new Error("token http " + resp.status + " " + raw);
 
-        if (!resp.ok || json.error) throw new Error(json.error || ("HTTP " + resp.status));
+        const { token, url, error } = JSON.parse(raw);
+        if (error) throw new Error(error);
 
-        await sfu.connect(json.host, json.token);
+        await sfu.connect(url, token);
         hudLog("[SFU] connected");
         await sfu.publishCameraMic();
         hudLog("[SFU] publish done");
