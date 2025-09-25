@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import OverlayChat from "@/components/live/OverlayChat";
 import { sendLobbyMessage } from "@/lib/lobbyChat";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 
 type Props = { creatorId: string };
 

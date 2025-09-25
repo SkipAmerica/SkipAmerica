@@ -85,12 +85,14 @@ export function useLobbyChat(creatorId?: string) {
         filter: `creator_id=eq.${creatorId}`
       },
       async (payload) => {
+        console.log("[useLobbyChat] INSERT received:", payload.new.id);
+        
         // Fetch profile for the new message
         const { data: profileData } = await supabase
           .from('profiles')
           .select('full_name, avatar_url')
           .eq('id', payload.new.user_id)
-          .single();
+          .maybeSingle();
 
         const chatMessage: ChatMsg = {
           id: payload.new.id,
@@ -106,6 +108,14 @@ export function useLobbyChat(creatorId?: string) {
 
     ch.subscribe((status) => {
       console.log("[useLobbyChat] status:", status, channelName);
+      
+      // Auto re-subscribe if channel goes CLOSED
+      if (status === 'CLOSED') {
+        setTimeout(() => {
+          console.log("[useLobbyChat] auto re-subscribing after CLOSED");
+          ch.subscribe();
+        }, 1000);
+      }
     });
 
     chanRef.current = ch;
