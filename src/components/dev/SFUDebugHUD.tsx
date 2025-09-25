@@ -147,8 +147,8 @@ export function SFUDebugHUD() {
     };
   }, []);
 
-  // Only render in debug mode
-  if (!RUNTIME.DEBUG_LOGS) {
+  // Only render when both debug logs and SFU control are enabled
+  if (!RUNTIME.DEBUG_LOGS || !RUNTIME.SHOW_SFU_CONTROL) {
     return null;
   }
 
