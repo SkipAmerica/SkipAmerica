@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
-import { guardChannelUnsubscribe } from '@/lib/realtimeGuard';
 
 // Use hardcoded values instead of env vars for Lovable compatibility
 const SUPABASE_URL = "https://ytqkunjxhtjsbpdrwsjf.supabase.co";
@@ -29,17 +28,6 @@ function createSupabaseSingleton() {
       params: { eventsPerSecond: 20 } 
     },
   });
-
-  // Global wrap - add right after createClient
-  const __origChannel = client.channel.bind(client);
-  client.channel = (...args: any[]) => {
-    const ch = __origChannel(...args);
-    guardChannelUnsubscribe(ch as any, String(args?.[0] ?? 'unknown'));
-    // Proof this ran:
-    // @ts-ignore
-    console.log('[GLOBAL GUARD] wrapped', ch.topic, 'patched=', !!(ch as any).__origUnsub);
-    return ch;
-  };
 
   globalThis.__SUPABASE_SINGLETON__ = client;
   return client;

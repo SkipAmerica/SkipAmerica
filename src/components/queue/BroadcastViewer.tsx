@@ -10,8 +10,6 @@ import { isQueueFallbackEnabled } from '@/lib/env';
 import { isDebug } from '@/lib/debugFlag';
 import { supabaseAuthHeaders } from "@/lib/supabaseAuthHeaders";
 import { hudLog, hudError } from "@/lib/hud";
-import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
-import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
 import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
@@ -554,10 +552,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     fetchMessages();
 
     // Subscribe to new messages
-    const channel = guardChannelUnsubscribe(
-      supabase.channel('broadcast-chat-messages'),
-      'chat-messages'
-    )
+    const channel = supabase.channel('broadcast-chat-messages')
       .on(
         'postgres_changes',
         {
@@ -608,10 +603,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       }, 100); // Debounce rapid state changes
     };
 
-    const channel = guardChannelUnsubscribe(
-      supabase.channel(`broadcast-live-session-consolidated-${effectiveCreatorId}`),
-      `live-session-consolidated-${effectiveCreatorId}`
-    )
+    const channel = supabase.channel(`broadcast-live-session-consolidated-${effectiveCreatorId}`)
       .on(
         'postgres_changes',
         {
@@ -1028,12 +1020,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           setConnectionState('offline');
           // Allow teardown ONLY for explicit creator-offline
           console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for creator-offline', channelRef.current?.topic);
-          runWithTeardownAllowed(() => {
-            try { channelRef.current?.unsubscribe?.(); } catch {}
-            try { supabase.removeChannel(channelRef.current!); } catch {}
-            try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
-            try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
-          });
+          try { channelRef.current?.unsubscribe?.(); } catch {}
+          try { supabase.removeChannel(channelRef.current!); } catch {}
+          try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+          try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
           try { pcRef.current?.close(); pcRef.current = null; } catch {}
         });
     };
@@ -1076,19 +1066,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         // Prove Realtime works with debug channel first
         if (isDebug()) {
-          const dbg = guardChannelUnsubscribe(
-            supabase.channel('debug:ping:' + viewerId),
-            'debug-ping'
-          );
+          const dbg = supabase.channel('debug:ping:' + viewerId);
           dbg.subscribe((s) => {
             if (s === 'SUBSCRIBED') {
-              console.log('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
+              dlog('[VIEWER', viewerId, '] DEBUG channel SUBSCRIBED ok:', dbg.topic);
               // Attempt to leave debug channel, but use global guard
               console.log('[VIEWER', viewerId, '] removeChannel attempted for debug channel', dbg.topic);
-              runWithTeardownAllowed(() => {
-                try { dbg.unsubscribe?.(); } catch {}
-                try { supabase.removeChannel(dbg); } catch {}
-              });
+              try { dbg.unsubscribe?.(); } catch {}
+              try { supabase.removeChannel(dbg); } catch {}
             }
             if (s === 'CLOSED') {
               console.warn('[VIEWER', viewerId, '] DEBUG channel CLOSED:', dbg.topic);
@@ -1271,13 +1256,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         }
       }
       
-      runWithTeardownAllowed(() => {
-        try { channelRef.current?.unsubscribe?.(); } catch {}
-        try { supabase.removeChannel(channelRef.current!); } catch {}
-        try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
-        try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
-        try { pcRef.current?.close?.(); } catch {}
-      });
+      try { channelRef.current?.unsubscribe?.(); } catch {}
+      try { supabase.removeChannel(channelRef.current!); } catch {}
+      try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+      try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
+      try { pcRef.current?.close?.(); } catch {}
     };
   }, []);
 
