@@ -143,20 +143,16 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   return (
     <div className="space-y-3">
       {/* ensure overlay can sit above video */}
-      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black/80 border border-white/10">
-        <video ref={videoRef} className="w-full h-full object-cover" />
-        {!connected && !attached && (
-          <div className="absolute inset-0 flex items-center justify-center text-white/80 text-sm">
-            Camera preview (click Start SFU for LiveKit)
-          </div>
-        )}
-
-        {/* Overlay is always mounted; high z-index; pointer-events enabled for scroll */}
+      <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl">
+        <video
+          id="creator-preview"
+          ref={videoRef}
+          className="w-full h-full object-cover"
+          muted
+          playsInline
+          autoPlay
+        />
         <OverlayChat creatorId={creatorId} />
-        {/* TEMP DEBUG BADGE */}
-        <div className="absolute left-2 top-2 z-[10000] text-xs px-2 py-1 rounded bg-black/70 text-white">
-          CreatorId: {creatorId}
-        </div>
       </div>
 
       {/* creator input – visible on dark bg */}
@@ -164,10 +160,8 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onFocus={() => setFocusHack(true)}
-          onBlur={() => setFocusHack(false)}
           placeholder="Say something to the lobby…"
-          className="flex-1 rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-white placeholder-white/60 focus:outline-none"
+          className="flex-1 rounded-lg border border-white/10 bg-black/40 text-white placeholder-white/60 px-3 py-2 focus:outline-none"
         />
         <button
           type="submit"

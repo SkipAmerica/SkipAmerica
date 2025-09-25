@@ -44,9 +44,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { store } = useLive()
   
   // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
-  // Use the authenticated user ID as the lobby creator ID
-  const lobbyCreatorId = user?.id; // <- MUST match PQ
-  console.log("[CREATOR PANEL] lobbyCreatorId=", lobbyCreatorId);
+  // Use the authenticated user ID as the lobby creator ID (creator's own panel)
+  const lobbyCreatorId = user?.id || "";
+  console.log("[CREATOR PANEL] lobbyCreatorId =", lobbyCreatorId);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -357,9 +357,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           {lobbyCreatorId ? (
             <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
           ) : (
-            <div className="text-sm text-red-400">
-              Missing store.creator_user_id — creator overlay cannot subscribe.
-            </div>
+            <div className="text-sm text-red-400">Missing creator id; overlay disabled.</div>
           )}
         </div>
 
