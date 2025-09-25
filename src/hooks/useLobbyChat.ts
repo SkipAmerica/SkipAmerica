@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 
 export type ChatMsg = {
   id: string;
@@ -111,10 +111,14 @@ export function useLobbyChat(creatorId?: string) {
     chanRef.current = ch;
 
     return () => {
-      try {
-        console.log("[useLobbyChat] unsubscribe <-", channelName);
-        supabase.removeChannel(ch);
-      } catch {}
+      if ((window as any).__allow_ch_teardown) {
+        try { 
+          console.log("[useLobbyChat] unsubscribe <-", channelName);
+          supabase.removeChannel(ch); 
+        } catch {}
+      } else {
+        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+      }
       chanRef.current = null;
     };
   }, [creatorId]);

@@ -12,6 +12,8 @@ const __DEV_IOS__ = import.meta.env.DEV || (window as any).__SKIP_DEBUG__ === tr
 if (__DEV_IOS__) {
   // Enable live debugging
   (window as any).__LIVE_DEBUG = true;
+  // Enable channel teardown for proper cleanup
+  (window as any).__allow_ch_teardown = true;
 
   // Global error handler with immutable logging
   window.addEventListener('error', (event) => {
