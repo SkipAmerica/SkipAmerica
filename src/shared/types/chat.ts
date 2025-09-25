@@ -14,6 +14,7 @@ export interface ChatAppearance {
   width?: string;
   maxWidth?: string;
   showProfiles?: boolean;
+  showProfileToggle?: boolean;
   compact?: boolean;
   reverseOrder?: boolean;
   className?: string;

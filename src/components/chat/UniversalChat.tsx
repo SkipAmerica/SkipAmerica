@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/lib/supabase';
-import { Send } from 'lucide-react';
+import { Send, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useUniversalChat } from '@/hooks/useUniversalChat';
 import type { ChatConfig } from '@/shared/types/chat';
@@ -19,6 +21,7 @@ interface UniversalChatProps {
 export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
   const {
     messages,
     newMessage,
@@ -71,7 +74,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const height = config.appearance?.height || 'h-80';
   const width = config.appearance?.width || 'w-full';
   const maxWidth = config.appearance?.maxWidth;
-  const showProfiles = config.appearance?.showProfiles ?? true;
+  const showProfileToggle = config.appearance?.showProfileToggle ?? false;
   const compact = config.appearance?.compact ?? false;
   const emptyStateText = config.appearance?.emptyStateText || 'No messages yet. Start the conversation!';
   const messagingEnabled = config.messaging?.enabled ?? true;
@@ -119,6 +122,22 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
 
   return (
     <div className={`flex flex-col ${height} ${containerClasses}`}>
+      {showProfileToggle && (
+        <div className="p-3 border-b bg-muted/50">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            <Label htmlFor="profile-toggle" className="text-sm font-medium">
+              Show Profiles
+            </Label>
+            <Switch
+              id="profile-toggle"
+              checked={showProfiles}
+              onCheckedChange={setShowProfiles}
+              className="ml-auto"
+            />
+          </div>
+        </div>
+      )}
       <ScrollArea className={scrollAreaClasses}>
         <div className={compact ? "space-y-2" : "space-y-4"}>
           {messages.length === 0 ? (

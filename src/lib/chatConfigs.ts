@@ -1,15 +1,21 @@
 import type { ChatConfig } from '@/shared/types/chat';
 import { sendLobbyMessage } from '@/lib/lobbyChat';
 
-// Lobby Chat Configuration (PQ system)
+// Lobby Chat Configuration (PQ system) - Bottom Left with Profile Toggle
 export const createLobbyConfig = (creatorId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
   channelPrefix: 'lobby-chat',
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
-    height: 'h-80',
+    height: 'h-96',
+    width: 'w-80',
+    maxWidth: 'max-w-sm',
+    position: 'bottom-left',
+    messageFlow: 'newest-top',
     showProfiles: true,
+    showProfileToggle: true,
+    showScrollbar: true,
     emptyStateText: 'No messages yet. Start the conversation!'
   },
   messaging: {

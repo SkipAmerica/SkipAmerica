@@ -571,14 +571,7 @@ export default function JoinQueue() {
 
         {/* Lobby Chat - Only show when user is in queue */}
         {isInQueue && (
-          <Card className="m-4">
-            <CardHeader>
-              <CardTitle>Lobby Chat</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LobbyChat creatorId={creatorId!} />
-            </CardContent>
-          </Card>
+          <LobbyChat creatorId={creatorId!} />
         )}
       </div>
     </div>
