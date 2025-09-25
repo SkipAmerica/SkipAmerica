@@ -6,6 +6,9 @@ import { supabase } from "@/lib/supabaseClient";
 import { useAuth } from "@/app/providers/auth-provider";
 import { RUNTIME } from "@/config/runtime";
 
+// use explicit Supabase Functions URL (replace with your project ref if different)
+const TOKEN_ENDPOINT = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
 const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
@@ -36,7 +39,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         const creatorId = user?.id!;
         const identity = user?.id!;
         const session = (await supabase.auth.getSession()).data.session;
-        const resp = await fetch("/functions/v1/get_livekit_token", {
+        const resp = await fetch(TOKEN_ENDPOINT, {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -46,8 +49,17 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         });
         const text = await resp.text();
         console.log("[CREATOR SFU] token http", resp.status, text.slice(0,200)+"…");
-        if (!resp.ok) throw new Error(`token http ${resp.status}`);
-        const { token, url } = JSON.parse(text || "{}");
+        if (!resp.ok) throw new Error(`token http ${resp.status}: ${text}`);
+        
+        let parsedResponse;
+        try {
+          parsedResponse = JSON.parse(text || "{}");
+        } catch (parseError) {
+          throw new Error(`Failed to parse token response: ${parseError}`);
+        }
+        
+        const { token, url } = parsedResponse;
+        if (!token) throw new Error(`No token in response: ${text}`);
         if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
 
         // 3) Connect & publish
