@@ -1,6 +1,6 @@
 import React from "react";
 import { createSFU } from "@/lib/sfu";
-import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken } from "@/lib/livekitToken";
 import { RUNTIME } from "@/config/runtime";
 
 const USE_SFU = true;
@@ -26,7 +26,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       if (!__creatorSFU) __creatorSFU = createSFU();
       const { supabase } = await import("@/lib/supabaseClient");
       const { data } = await supabase.auth.getUser();
-      const identity = getIdentity(data?.user?.id);
+      const identity = data?.user?.id || crypto.randomUUID();
       const creatorId = data?.user?.id!;
       const { token, url } = await fetchLiveKitToken({
         role: "creator",

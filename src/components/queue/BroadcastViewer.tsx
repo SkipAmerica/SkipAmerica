@@ -8,7 +8,7 @@ import { RUNTIME } from '@/config/runtime';
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
-import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken } from "@/lib/livekitToken";
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -51,7 +51,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         const resolvedId = await resolveCreatorUserId(queueId);
         const creatorId = resolvedId || queueId;
         const { data } = await supabase.auth.getUser();
-        const identity = getIdentity(data?.user?.id);
+        const identity = data?.user?.id || crypto.randomUUID();
         
         // Fetch LiveKit token using Supabase Functions SDK
         const { token, url } = await fetchLiveKitToken({

@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import { createSFU } from "@/lib/sfu";
-import { fetchLiveKitToken, getIdentity } from "@/lib/sfuToken";
+import { fetchLiveKitToken } from "@/lib/livekitToken";
 import { useAuth } from "@/app/providers/auth-provider";
 import { Button } from "@/components/ui/button";
 
@@ -26,7 +26,7 @@ export default function LobbyBroadcastPanel({ onEnd }: Props) {
     try {
       console.log("[CREATOR UI] startBroadcast clicked");
       if (!__creatorSFU) __creatorSFU = createSFU();
-      const identity = getIdentity(user?.id);
+      const identity = user?.id || crypto.randomUUID();
       const creatorId = user?.id!;
       
       // Fetch LiveKit token using Supabase Functions SDK
