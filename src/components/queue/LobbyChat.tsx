@@ -145,7 +145,6 @@ export function LobbyChat({ creatorId }: LobbyChatProps) {
         creatorId, 
         userId: user.id, 
         username, 
-        avatarUrl,
         text: newMessage.trim() 
       });
       setNewMessage('');

@@ -27,6 +27,7 @@ export function useLobbyChat(creatorId?: string) {
     if (!ch) {
       ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
       _lobbyChanRegistry[channelName] = ch;
+      console.log("[useLobbyChat] create channel", channelName);
     }
     chanRef.current = ch;
 
@@ -47,8 +48,8 @@ export function useLobbyChat(creatorId?: string) {
         setMessages((prev) => [...prev, msg].slice(-400));
       });
 
-      ch.subscribe(() => {
-        // no-op; Supabase will auto-reconnect
+      ch.subscribe((status) => {
+        console.log("[useLobbyChat] status", channelName, status);
       });
 
       // @ts-ignore

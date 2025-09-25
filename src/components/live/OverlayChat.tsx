@@ -26,7 +26,7 @@ export default function OverlayChat({
     <div
       className={
         // allow interaction so users can scroll on creator view
-        "pointer-events-auto absolute inset-0 flex items-end p-3 sm:p-4 z-[9999] " + className
+        "pointer-events-auto absolute inset-0 flex items-end p-3 sm:p-4 z-[10000] " + className
       }
       aria-hidden
     >
@@ -35,6 +35,8 @@ export default function OverlayChat({
         ref={listRef}
         className="ml-auto w-full sm:w-[70%] max-h-[50%] overflow-y-auto flex flex-col gap-2"
       >
+        {/* TEMP DEBUG header */}
+        <div className="text-[11px] uppercase tracking-wide text-white/70">Lobby Chat (creatorId: {creatorId})</div>
         {live.map((m) => (
           <div
             key={m.id}
@@ -44,6 +46,9 @@ export default function OverlayChat({
             <div className="text-sm sm:text-base break-words">{m.text}</div>
           </div>
         ))}
+        {live.length === 0 && (
+          <div className="text-white/60 text-sm">No messages yet…</div>
+        )}
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32 bg-gradient-to-t from-black/40 to-transparent" />

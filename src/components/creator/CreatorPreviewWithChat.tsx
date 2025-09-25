@@ -5,9 +5,7 @@ import { sendLobbyMessage } from "@/lib/lobbyChat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type Props = {
-  creatorId?: string;
-};
+type Props = { creatorId: string }; // make required so we never subscribe to undefined
 
 export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -15,28 +13,14 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const [connected, setConnected] = useState(false);
   const [text, setText] = useState("");
   const [focusHack, setFocusHack] = useState(false);
-  const [effectiveCreatorId, setEffectiveCreatorId] = useState<string | undefined>(creatorId);
 
-  // Ensure we always have a creatorId on creator view
   useEffect(() => {
-    if (creatorId) { setEffectiveCreatorId(creatorId); return; }
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getUser();
-        const id = data?.user?.id;
-        if (id) setEffectiveCreatorId(id);
-      } catch {}
-    })();
+    console.log("[CreatorPreview] mounted for creatorId:", creatorId);
   }, [creatorId]);
 
-  // Debug logging for creatorId stability
-  useEffect(() => {
-    console.log(`[CreatorPreviewWithChat] Component updated with effectiveCreatorId: ${effectiveCreatorId}`);
-  }, [effectiveCreatorId]);
-
   // Ensure creatorId is stable and valid
-  if (!effectiveCreatorId) {
-    console.warn("[CreatorPreviewWithChat] No effective creatorId available");
+  if (!creatorId) {
+    console.warn("[CreatorPreviewWithChat] No creatorId available");
     return (
       <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
@@ -149,24 +133,13 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!effectiveCreatorId) return;
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
-    
-    // Get user profile for avatar
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, avatar_url")
-      .eq("id", userId)
-      .single();
-    
-    const username = profile?.full_name?.split(" ")[0] ?? data?.user?.email?.split("@")[0] ?? "creator";
-    const avatarUrl = profile?.avatar_url;
-    
+    const username = data?.user?.email?.split("@")[0] ?? "creator";
     const t = text.trim();
     if (!t) return;
     setText("");
-    await sendLobbyMessage({ creatorId: effectiveCreatorId, userId, username, avatarUrl, text: t });
+    await sendLobbyMessage({ creatorId, userId, username, text: t });
   }
 
   return (
@@ -180,8 +153,12 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
           </div>
         )}
         
-        {/* Instagram-style floating chat overlay */}
-        <OverlayChat creatorId={effectiveCreatorId} />
+        {/* Overlay is always mounted; high z-index; pointer-events enabled for scroll */}
+        <OverlayChat creatorId={creatorId} />
+        {/* TEMP DEBUG BADGE */}
+        <div className="absolute left-2 top-2 z-[10000] text-xs px-2 py-1 rounded bg-black/70 text-white">
+          CreatorId: {creatorId}
+        </div>
       </div>
 
       {/* creator input – visible on dark bg */}
@@ -192,7 +169,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
           onFocus={() => setFocusHack(true)}
           onBlur={() => setFocusHack(false)}
           placeholder="Say something to the lobby…"
-          className="flex-1 rounded-lg border border-white/20 bg-neutral-900/90 px-3 py-2 text-white placeholder-white/60 focus:outline-none"
+          className="flex-1 rounded-lg border border-white/30 bg-neutral-900 px-3 py-2 text-white placeholder-white/70 focus:outline-none"
         />
         <button
           type="submit"

@@ -347,10 +347,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           </div>
         )}
 
-        {/* Creator Preview with Chat */}
+        {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
         <div className="flex-shrink-0 px-6 mt-4">
-          {user?.id && (
+          {user?.id ? (
             <CreatorPreviewWithChat creatorId={user.id} />
+          ) : (
+            <div className="text-xs text-red-400">[CreatorPreview] No user.id — sign in required</div>
           )}
         </div>
 

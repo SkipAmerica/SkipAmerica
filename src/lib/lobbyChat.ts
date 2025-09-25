@@ -4,13 +4,11 @@ export async function sendLobbyMessage({
   creatorId,
   userId,
   username,
-  avatarUrl,
   text,
 }: {
   creatorId: string;
   userId?: string;
   username?: string;
-  avatarUrl?: string;
   text: string;
 }) {
   if (!creatorId || !text?.trim()) return;
@@ -44,7 +42,7 @@ export async function sendLobbyMessage({
     await ch.send({
       type: "broadcast",
       event: "message",
-      payload: { id: crypto.randomUUID(), text, userId, username, avatarUrl },
+      payload: { id: crypto.randomUUID(), text, userId, username },
     });
   } catch (e) {
     console.warn("[lobbyChat] broadcast failed", e);
