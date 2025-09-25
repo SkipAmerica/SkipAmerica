@@ -59,11 +59,17 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         console.log("[CREATOR SFU] start");
         const sfu = createSFU();
 
-        // 1) Create local tracks & attach preview immediately
-        const tracks = await sfu.createLocalAV();
+        // 1) Get local preview stream & attach immediately
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true, 
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        const vtrack = tracks.find(t => t.kind === "video");
-        if (pv && vtrack) { vtrack.attach(pv); pv.play?.().catch(()=>{}); console.log("[CREATOR SFU] preview attached"); }
+        if (pv) { 
+          pv.srcObject = stream; 
+          pv.play?.().catch(()=>{}); 
+          console.log("[CREATOR SFU] preview attached"); 
+        }
 
         // 2) Get token
         const creatorId = user?.id!;
@@ -75,8 +81,8 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
           .on("connectionStateChanged", st => console.log("[CREATOR SFU] room state:", st))
           .on("trackPublished", pub => console.log("[CREATOR SFU] track published:", pub?.kind));
         await sfu.connect(url, token);
-        for (const t of tracks) await sfu.room.localParticipant.publishTrack(t);
-        console.log("[CREATOR SFU] published:", tracks.map(t => t.kind));
+        await sfu.publishCameraMic();
+        console.log("[CREATOR SFU] published camera and microphone");
 
         (window as any).__creatorSFU = sfu;
         setIsBroadcasting?.(true);

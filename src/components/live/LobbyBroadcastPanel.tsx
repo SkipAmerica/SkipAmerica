@@ -27,14 +27,14 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         console.log("[CREATOR SFU] starting…");
         const sfu = createSFU();
 
-        // === PREVIEW CAMERA IMMEDIATELY & GET TRACKS ===
+        // === GET LOCAL STREAM & ATTACH PREVIEW ===
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true, 
+          video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        const tracks = await sfu.createLocalAV();
-        
-        // Attach video track to preview element
-        const videoTrack = tracks.find(t => t.kind === "video");
-        if (pv && videoTrack) {
-          videoTrack.attach(pv);
+        if (pv) {
+          pv.srcObject = stream;
           pv.play?.().catch(()=>{});
           console.log("[CREATOR SFU] local preview attached");
         }
@@ -46,7 +46,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         const identity = creatorId || crypto.randomUUID();
         const { supabase } = await import("@/lib/supabaseClient");
         const session = (await supabase.auth.getSession()).data.session;
-        const resp = await fetch("/functions/v1/get_livekit_token", {
+        const resp = await fetch(FUNCTIONS_URL, {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -71,8 +71,8 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         await sfu.connect(url, token);
         console.log("[CREATOR SFU] connected to LiveKit");
 
-        for (const t of tracks) await sfu.room.localParticipant.publishTrack(t);
-        console.log("[CREATOR SFU] published:", tracks.map(t => t.kind));
+        await sfu.publishCameraMic();
+        console.log("[CREATOR SFU] published camera and microphone");
 
         sfuRef.current = sfu;
         if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;

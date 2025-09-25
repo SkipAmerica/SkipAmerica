@@ -161,7 +161,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
           // Attach remote video into our existing element
           const vv = document.getElementById("viewerVideo") as HTMLVideoElement | null;
-          if (vv) sfu.attachRemoteVideo(vv);
+          if (vv) sfu.attachRemoteVideoTo(vv);
 
           // Resolve creatorId using existing resolver you already have
           const resolvedId = await resolveCreatorUserId(queueId);
@@ -220,7 +220,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         
         // Attach remote video to our video element
         if (videoRef.current) {
-          sfu.attachRemoteVideo(videoRef.current);
+          sfu.attachRemoteVideoTo(videoRef.current);
           dlog("[SFU] Remote video attached to video element");
           if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
           
