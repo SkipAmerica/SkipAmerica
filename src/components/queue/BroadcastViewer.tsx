@@ -10,10 +10,12 @@ import { isQueueFallbackEnabled } from '@/lib/env';
 import { supabaseAuthHeaders } from "@/lib/supabaseAuthHeaders";
 import { hudLog, hudError } from "@/lib/hud";
 import DebugHUD from '@/components/dev/DebugHUD';
-import { createSFU } from '@/lib/sfu';
 import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
 import { getAuthJWT } from '@/lib/authToken';
 import { RUNTIME } from '@/config/runtime';
+
+const USE_SFU = true;
+import { createSFU } from "@/lib/sfu";
 
 // Construct the fixed functions URL once
 const FUNCTIONS_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
@@ -116,7 +118,53 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Immediate SFU connection flow on mount
   useEffect(() => {
-    if (!RUNTIME.USE_SFU || !queueId) return;
+    if (!queueId) return;
+
+    if (USE_SFU) {
+      (async () => {
+        try {
+          console.log("[VIEWER SFU] start");
+          const sfu = createSFU();
+
+          // Attach remote video into our existing element
+          const vv = document.getElementById("viewerVideo") as HTMLVideoElement | null;
+          if (vv) sfu.attachRemoteVideo(vv);
+
+          // Resolve creatorId using existing resolver you already have
+          const resolvedId = await resolveCreatorUserId(queueId);
+          const creatorId = resolvedId || queueId;
+          const identity = (await supabase.auth.getUser()).data.user?.id ?? crypto.randomUUID();
+
+          const session = (await supabase.auth.getSession()).data.session;
+          const resp = await fetch("/functions/v1/get_livekit_token", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
+            },
+            body: JSON.stringify({ role: "viewer", creatorId, identity })
+          });
+          const text = await resp.text();
+          console.log("[VIEWER SFU] token http", resp.status, text.slice(0,200)+"…");
+          if (!resp.ok) throw new Error(`token http ${resp.status}`);
+          const { token, url } = JSON.parse(text || "{}");
+          if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+
+          await sfu.connect(url, token);
+          console.log("[VIEWER SFU] connected");
+
+          // Keep a handle for teardown on unmount
+          (window as any).__viewerSFU = sfu;
+          setConnectionState("connected");
+        } catch (e) {
+          console.error("[VIEWER SFU] failed", e);
+          setConnectionState("failed");
+        }
+      })();
+
+      // stop legacy P2P path
+      return;
+    }
 
     const connectSFU = async () => {
       try {
@@ -197,7 +245,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Small delay to ensure DOM is ready
     setTimeout(connectSFU, 100);
-  }, [RUNTIME.USE_SFU, queueId]);
+  }, [queueId]);
 
   // User-gesture-safe autoplay handler
   const handleAutoplay = useCallback(() => {
@@ -1257,14 +1305,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Cleanup SFU on unmount (always run for SFU mode)
     return () => {
-      if (RUNTIME.USE_SFU && RUNTIME.DEBUG_LOGS && (window as any).__viewerSFU) {
-        try {
-          (window as any).__viewerSFU.disconnect();
-          (window as any).__viewerSFU = null;
-        } catch (e) {
-          console.error('[VIEWER] SFU cleanup error', e);
-        }
-      }
+      const sfu = (window as any).__viewerSFU;
+      if (sfu) { try { sfu.disconnect(); } catch {} (window as any).__viewerSFU = undefined; }
     };
   }, []);
 
@@ -1362,20 +1404,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   return (
     <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
       {/* Always render video element for WebRTC to work */}
-      <video
-        ref={videoRef}
-        id="pq-video"
-        className="w-full h-full object-cover"
-        autoPlay
-        playsInline
-        muted
-        onLoadedMetadata={() => {
-          // Ensure video starts muted for autoplay policies
-          if (videoRef.current) {
-            videoRef.current.muted = true;
-          }
-        }}
-      />
+      <div className="w-full aspect-video bg-black rounded-xl overflow-hidden">
+        <video 
+          ref={videoRef}
+          id="viewerVideo" 
+          className="w-full h-full object-cover" 
+          muted={false} 
+          playsInline 
+          autoPlay 
+        />
+      </div>
       
       {connectionState === 'connected' && (
         <>
