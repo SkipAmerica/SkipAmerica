@@ -9,7 +9,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
-import { LobbyBroadcastPanel } from './LobbyBroadcastPanel'
+import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 
 interface QueueEntry {
   id: string

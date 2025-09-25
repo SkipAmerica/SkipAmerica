@@ -3,6 +3,8 @@ import {
   RemoteTrackPublication, createLocalTracks, ConnectionError
 } from "livekit-client";
 
+console.log("[SFU] helper loaded");
+
 export function createSFU() {
   const room = new Room({
     adaptiveStream: true,
