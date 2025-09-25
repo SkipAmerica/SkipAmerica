@@ -92,6 +92,24 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
   // always render the overlay so we can click it no matter what the rest of the UI does
   return (
     <>
+      {/* Local Preview Video */}
+      <video 
+        id="creatorPreview" 
+        muted 
+        playsInline 
+        autoPlay 
+        className="w-full rounded-lg bg-black" 
+        style={{
+          position: "fixed", 
+          top: 12, 
+          right: 12, 
+          zIndex: 99998,
+          width: 320, 
+          height: 240,
+          boxShadow: "0 8px 20px rgba(0,0,0,.35)"
+        }}
+      />
+      
       <div style={{
         position: "fixed", right: 12, bottom: 12, zIndex: 99999,
         background: "rgba(0,0,0,.85)", color: "#fff",
