@@ -15,6 +15,7 @@ import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
 import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
+import { getAuthJWT } from '@/lib/authToken';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -126,18 +127,19 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         // 3. Fetch token with proper auth
         setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
-        const session = await supabase.auth.getSession();
-        const authToken = session.data.session?.access_token || '';
         
+        const jwt = await getAuthJWT();
+
         const body = { role: "viewer", creatorId: effectiveCreatorId, identity };
         hudLog("[SFU] POST token request", JSON.stringify(body));
         setSfuHudData(prev => ({ ...prev, 'Req#': (prev['Req#'] || 0) + 1 }));
 
-        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.supabase.co/functions/v1/get_livekit_token", {
+        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
           method: "POST",
           headers: {
             "content-type": "application/json",
-            "Authorization": `Bearer ${authToken}`,
+            "authorization": `Bearer ${jwt}`,
+            // optional but harmless; helps some deployments
             "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
           },
           body: JSON.stringify(body),
