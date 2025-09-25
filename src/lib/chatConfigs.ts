@@ -46,7 +46,7 @@ export const createLobbyConfig = (creatorId: string): ChatConfig => ({
   }
 });
 
-// Creator Overlay Configuration (read-only overlay)
+// Creator Overlay Configuration (interactive overlay)
 export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
   channelPrefix: 'lobby-chat-db',
@@ -58,10 +58,33 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     compact: true,
     messageFlow: 'newest-top',
     emptyStateText: 'No messages yet…',
-    className: 'pointer-events-none absolute inset-0 z-20'
+    className: 'bg-transparent border-0'
   },
   messaging: {
-    enabled: false
+    enabled: true,
+    placeholder: 'Type a message...',
+    requireAuth: true,
+    showSendButton: true
+  },
+  richText: {
+    enabled: true,
+    allowBold: true,
+    allowItalic: true,
+    allowFontSize: false,
+    allowFontColor: false,
+    toolbar: 'compact'
+  },
+  positioning: {
+    mode: 'relative',
+    allowPositionToggle: false
+  },
+  sendMessage: async ({ filterValue, userId, username, text }) => {
+    await sendLobbyMessage({
+      creatorId: filterValue,
+      userId,
+      username,
+      text
+    });
   }
 });
 
