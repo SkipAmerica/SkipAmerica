@@ -9,6 +9,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
+import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 
 interface QueueEntry {
@@ -337,7 +338,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </SheetHeader>
 
         {/* Broadcast Panel */}
-        {store.isLobbyBroadcasting && (
+        {store.isLobbyBroadcasting && RUNTIME.SHOW_SFU_CONTROL && (
           <div className="flex-shrink-0 px-6">
             <LobbyBroadcastPanel 
               onEnd={() => store.setLobbyBroadcasting(false)}
