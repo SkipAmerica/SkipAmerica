@@ -83,10 +83,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     `;
     document.body.appendChild(hudEl);
 
-    // Setup window.__PQHUD function
-    (window as any).__PQHUD = (updates: Record<string, any>) => {
-      if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, ...updates }));
-    };
+    // Setup window.__PQHUD function for debugging
+    if (RUNTIME.DEBUG_LOGS) {
+      (window as any).__PQHUD = (updates: Record<string, any>) => {
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, ...updates }));
+      };
+    }
 
     return () => {
       document.body.removeChild(hudEl);
@@ -190,7 +192,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         setConnectionState('connected');
         
         // Store cleanup function for unmount
-        (window as any).__viewerSFU = sfu;
+        if (RUNTIME.DEBUG_LOGS) (window as any).__viewerSFU = sfu;
 
       } catch (e) {
         console.error('[SFU] Connection failed:', e);
@@ -785,7 +787,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         newCh.unsubscribe = (...args: any[]) => {
           // Only allow during unmount/creator-offline where we set window.__allow_ch_teardown = true
           // @ts-ignore
-          if (!(window as any).__allow_ch_teardown) {
+          if (!(RUNTIME.DEBUG_LOGS && (window as any).__allow_ch_teardown)) {
             console.warn('[HARD-BLOCK] prevented unsubscribe on', newCh.topic, 'stack:\n', new Error().stack);
             return newCh; // NO-OP
           }
@@ -1261,7 +1263,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Cleanup SFU on unmount (always run for SFU mode)
     return () => {
-      if (RUNTIME.USE_SFU && (window as any).__viewerSFU) {
+      if (RUNTIME.USE_SFU && RUNTIME.DEBUG_LOGS && (window as any).__viewerSFU) {
         try {
           (window as any).__viewerSFU.disconnect();
           (window as any).__viewerSFU = null;

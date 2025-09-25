@@ -50,7 +50,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
       await sfuRef.current!.connect(j.url, j.token);
       setSfuMsg("connected, publishing…");
       await sfuRef.current!.publishCameraMic();
-      (window as any).__creatorSFU = sfuRef.current;
+      if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfuRef.current;
       setSfuMsg("LIVE ✓");
       dlog("[CREATOR][SFU] LIVE");
     } catch (e) {
@@ -63,10 +63,10 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
     try {
       dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
-      const sfu = sfuRef.current || (window as any).__creatorSFU;
+      const sfu = sfuRef.current || (RUNTIME.DEBUG_LOGS ? (window as any).__creatorSFU : null);
       if (sfu) { await sfu.disconnect(); }
       sfuRef.current = null;
-      (window as any).__creatorSFU = undefined;
+      if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = undefined;
       setSfuMsg("stopped");
     } catch (e) {
       dwarn("[CREATOR][SFU] stop error", e);
@@ -74,14 +74,18 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
     }
   }
 
-  // expose to DevTools just in case
+  // expose to DevTools just in case (debug only)
   React.useEffect(() => {
-    (window as any).__creatorStartSFU = startSfuBroadcast;
-    (window as any).__creatorStopSFU = stopSfuBroadcast;
+    if (RUNTIME.DEBUG_LOGS) {
+      (window as any).__creatorStartSFU = startSfuBroadcast;
+      (window as any).__creatorStopSFU = stopSfuBroadcast;
+    }
     dlog("[CREATOR][SFU] panel mounted (v1)");
     return () => {
-      delete (window as any).__creatorStartSFU;
-      delete (window as any).__creatorStopSFU;
+      if (RUNTIME.DEBUG_LOGS) {
+        delete (window as any).__creatorStartSFU;
+        delete (window as any).__creatorStopSFU;
+      }
     };
   }, []);
 

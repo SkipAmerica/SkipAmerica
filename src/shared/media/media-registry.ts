@@ -41,13 +41,13 @@ export function setMediaPhase(phase: MediaRegistry['phase']): void {
 
 export function registerStream(stream: MediaStream): void {
   mediaRegistry.stream = stream
-  window.__localStream = stream
+  if (import.meta.env.DEV) window.__localStream = stream
   console.info(`[MEDIA] Stream registered:`, stream.getTracks().length, 'tracks')
 }
 
 export function registerPeerConnection(pc: RTCPeerConnection): void {
   mediaRegistry.pc = pc
-  window.__pc = pc
+  if (import.meta.env.DEV) window.__pc = pc
   console.info(`[MEDIA] PeerConnection registered`)
 }
 
@@ -157,8 +157,8 @@ export async function teardownMedia(): Promise<void> {
       // Step 4: Clear registry and global references
       mediaRegistry.pc = null
       mediaRegistry.stream = null
-      window.__localStream = null
-      window.__pc = null
+      if (import.meta.env.DEV) window.__localStream = null
+      if (import.meta.env.DEV) window.__pc = null
 
       console.info('[MEDIA] Teardown complete')
 
@@ -267,7 +267,7 @@ export async function initializeMedia(storeState: string, previewOnly = false): 
       const stream = await navigator.mediaDevices.getUserMedia(constraints)
       
       mediaRegistry.stream = stream
-      window.__localStream = stream
+      if (import.meta.env.DEV) window.__localStream = stream
 
       // Only create peer connection for full session
       if (!previewOnly && storeState === 'SESSION_JOINING') {
@@ -276,7 +276,7 @@ export async function initializeMedia(storeState: string, previewOnly = false): 
         })
         
         mediaRegistry.pc = pc
-        window.__pc = pc
+        if (import.meta.env.DEV) window.__pc = pc
         
         // Add tracks to peer connection
         stream.getTracks().forEach(track => {
@@ -306,8 +306,8 @@ export async function initializeMedia(storeState: string, previewOnly = false): 
 export function emergencyCleanup(): void {
   console.warn('[MEDIA] Emergency cleanup triggered')
   
-  // Stop any global streams
-  if (window.__localStream) {
+  // Stop any global streams (dev only)
+  if (import.meta.env.DEV && window.__localStream) {
     window.__localStream.getTracks().forEach(track => {
       track.enabled = false
       track.stop()
@@ -315,8 +315,8 @@ export function emergencyCleanup(): void {
     window.__localStream = null
   }
   
-  // Close global peer connection
-  if (window.__pc) {
+  // Close global peer connection (dev only)
+  if (import.meta.env.DEV && window.__pc) {
     window.__pc.close()
     window.__pc = null
   }
