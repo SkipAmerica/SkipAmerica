@@ -74,11 +74,13 @@ serve(async (req) => {
 
     const at = new AccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET, { identity: pid, ttl: 60 * 60 });
     
+    const isCreator = role === "creator";
+
     const grants = {
-      room,
+      room: `creator:${creatorId}`,
       roomJoin: true,
-      canSubscribe: true,
-      canPublish: role === "creator", // only creators publish
+      canPublish: isCreator,        // creator can publish
+      canSubscribe: true,           // both can subscribe
       canPublishData: true,
     };
     
