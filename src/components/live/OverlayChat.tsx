@@ -10,9 +10,18 @@ export default function OverlayChat({
   creatorId,
   className = "",
 }: Props) {
-  const { messages, loading } = useLobbyChat(creatorId);
+  const { messages, loading, connectionStatus, retryCount } = useLobbyChat(creatorId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const isAtBottomRef = useRef(true);
+
+  // Debug logging
+  useEffect(() => {
+    console.log(`[OverlayChat] Component mounted/updated - creatorId: ${creatorId}, messages: ${messages.length}, status: ${connectionStatus}`);
+    
+    return () => {
+      console.log(`[OverlayChat] Component unmounting for creator ${creatorId}`);
+    };
+  }, [creatorId, messages.length, connectionStatus]);
 
   // Auto-scroll to bottom when new messages arrive (only if user was already at bottom)
   useEffect(() => {
@@ -29,7 +38,8 @@ export default function OverlayChat({
     }
   };
 
-  if (loading) {
+  // Show connection status
+  if (loading || connectionStatus === 'connecting') {
     return (
       <div
         className={
@@ -38,10 +48,30 @@ export default function OverlayChat({
         aria-hidden
       >
         <div className="bg-black/50 text-white rounded-lg px-3 py-2 text-sm">
-          Loading chat...
+          {loading ? "Loading chat..." : "Connecting..."}
         </div>
       </div>
     );
+  }
+
+  if (connectionStatus === 'error') {
+    return (
+      <div
+        className={
+          "pointer-events-none absolute inset-0 flex items-center justify-center z-[9999] " + className
+        }
+        aria-hidden
+      >
+        <div className="bg-red-900/50 text-white rounded-lg px-3 py-2 text-sm">
+          Chat connection failed {retryCount > 0 && `(retry ${retryCount}/5)`}
+        </div>
+      </div>
+    );
+  }
+
+  if (!creatorId) {
+    console.warn("[OverlayChat] No creatorId provided");
+    return null;
   }
 
   return (
@@ -92,6 +122,15 @@ export default function OverlayChat({
           ))}
         </div>
       </div>
+
+      {/* Connection status indicator */}
+      {connectionStatus === 'connected' && messages.length === 0 && (
+        <div className="absolute inset-x-0 bottom-4 text-center">
+          <div className="inline-block bg-black/50 text-white/70 rounded-lg px-3 py-1 text-xs">
+            Chat connected • No messages yet
+          </div>
+        </div>
+      )}
 
       {/* Gradient overlay at bottom for visual fade */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />

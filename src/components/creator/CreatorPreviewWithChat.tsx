@@ -16,6 +16,23 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const [text, setText] = useState("");
   const [focusHack, setFocusHack] = useState(false);
 
+  // Debug logging for creatorId stability
+  useEffect(() => {
+    console.log(`[CreatorPreviewWithChat] Component updated with creatorId: ${creatorId}`);
+  }, [creatorId]);
+
+  // Ensure creatorId is stable and valid
+  if (!creatorId) {
+    console.warn("[CreatorPreviewWithChat] No creatorId provided");
+    return (
+      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-center">
+          <p>Loading creator preview...</p>
+        </div>
+      </div>
+    );
+  }
+
   // --- LiveKit-driven preview + instant getUserMedia fallback ---
   useEffect(() => {
     let fallbackStream: MediaStream | null = null;
