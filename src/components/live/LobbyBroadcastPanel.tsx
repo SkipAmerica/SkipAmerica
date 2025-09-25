@@ -15,6 +15,9 @@ import { createSFU } from '@/lib/sfu'
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
+// Module-level singleton to avoid creating multiple SFU instances
+let __creatorSFU: ReturnType<typeof createSFU> | null = null;
+
 interface LobbyBroadcastPanelProps {
   onEnd: () => void
 }
@@ -386,49 +389,45 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
     if (USE_SFU) {
       hudLog("[SFU] start");
       try {
-        const sfu = createSFU();
+        // Build or reuse SFU singleton
+        if (!__creatorSFU) {
+          __creatorSFU = createSFU();
+        }
+
+        // Identity & room naming
         const { data } = await supabase.auth.getUser();
-        const creatorId = user?.id;
-        const identity = data?.user?.id || crypto.randomUUID();
-        const body = { role: "creator", creatorId, identity };
-        hudLog("[SFU] POST", TOKEN_URL, JSON.stringify(body));
+        const creatorId = data?.user?.id!;
+        const identity = creatorId;
 
-        const auth = supabaseAuthHeaders();
-        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
-          method: "POST",
-          headers: {
-            "accept": "application/json",
-            "content-type": "application/json",
-            ...auth, // REQUIRED to avoid 401
-          },
-          body: JSON.stringify(body),
+        // Fetch token from our edge function
+        const { data: tokenData, error: invokeError } = await supabase.functions.invoke('get_livekit_token', {
+          body: { role: "creator", creatorId, identity }
         });
-        const raw = await resp.text();
-        hudLog("[SFU] resp", String(resp.status), raw.slice(0, 200));
-        if (!resp.ok) throw new Error("token http " + resp.status + " " + raw);
+        
+        hudLog("[SFU] resp", "200", JSON.stringify(tokenData).slice(0, 200));
+        if (invokeError) throw new Error("Function invoke error: " + invokeError.message);
 
-        const { token, url, error } = JSON.parse(raw);
+        const { token, url, error } = tokenData;
         if (error) throw new Error(error);
 
-        const HOST =
-          (typeof url === "string" && url.length > 0 ? url : (import.meta as any).env?.VITE_LIVEKIT_URL);
-
+        // Choose host (function 'url' or env VITE_LIVEKIT_URL)
+        const HOST = (typeof url === "string" && url) || (import.meta as any).env?.VITE_LIVEKIT_URL;
         hudLog("[SFU] host", String(HOST));
-        if (!HOST) throw new Error("Missing LiveKit URL (neither function 'url' nor VITE_LIVEKIT_URL present)");
+        if (!HOST) throw new Error("Missing LiveKit URL");
 
-        await sfu.connect(HOST, token);
-        hudLog("[SFU] connected");
-        await sfu.publishCameraMic();
-        hudLog("[SFU] publish done");
-        
+        console.log("[CREATOR][SFU] connect", HOST);
+        await __creatorSFU.connect(HOST, token);
+
+        console.log("[CREATOR][SFU] publish camera/mic");
+        await __creatorSFU.publishCameraMic();
+
+        // Set UI state
         setMediaState(prev => ({ ...prev, isStreaming: true }));
         
-        // Store sfu handle for cleanup
-        (window as any).__creatorSFU = sfu;
-        
         console.log('[CREATOR] SFU broadcast started successfully');
-        return; // skip legacy P2P
+        return; // Stop here so legacy P2P doesn't run
       } catch (e) {
+        console.error("[CREATOR][SFU] failed", e);
         hudError("SFU", e);
         setMediaState(prev => ({ ...prev, isStreaming: false }));
         toast({
@@ -517,16 +516,18 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
   const stopBroadcast = async () => {
     console.log('Stopping broadcast...')
     
-    // SFU cleanup
-    if (USE_SFU && (window as any).__creatorSFU) {
+    // SFU cleanup - use module singleton
+    if (__creatorSFU) {
       try {
-        await (window as any).__creatorSFU.disconnect();
-        (window as any).__creatorSFU = undefined;
+        await __creatorSFU.disconnect();
         console.log('[CREATOR] SFU disconnected');
       } catch (e) {
         console.error('[CREATOR] SFU disconnect error', e);
       }
+      __creatorSFU = null;
     }
+    
+    setMediaState(prev => ({ ...prev, isStreaming: false }));
     
     // Clear proactive offer timeout
     if (proactiveOfferTimeoutRef.current) {
