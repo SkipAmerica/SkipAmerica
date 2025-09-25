@@ -43,17 +43,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { toast } = useToast()
   const { store } = useLive()
   
-  // IMPORTANT: use the SAME id the PQ uses for chat/video
-  // If you already compute it elsewhere, reuse that variable here.
-  // Common names in this codebase: store.creator_user_id, resolvedCreatorId, creator_user_id
-  const resolvedCreatorId =
-    // try store first (matches PQ):
-    // @ts-ignore
-    (store?.creator_user_id || store?.creatorId) ||
-    // LAST resort: auth user id (only if the above are missing)
-    user?.id;
-
-  console.log("[CREATOR MOUNT] resolvedCreatorId =", resolvedCreatorId, " auth.user =", user?.id);
+  // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
+  // Use the authenticated user ID as the lobby creator ID
+  const lobbyCreatorId = user?.id; // <- MUST match PQ
+  console.log("[CREATOR PANEL] lobbyCreatorId=", lobbyCreatorId);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -360,12 +353,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         )}
 
         {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
-        <div className="flex-shrink-0 px-6 mt-4">
-          {resolvedCreatorId ? (
-            <CreatorPreviewWithChat creatorId={resolvedCreatorId} />
+        <div className="mt-4">
+          {lobbyCreatorId ? (
+            <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
           ) : (
-            <div className="text-xs text-red-400">
-              [CreatorPreview] Missing resolvedCreatorId — cannot subscribe to lobby channel
+            <div className="text-sm text-red-400">
+              Missing store.creator_user_id — creator overlay cannot subscribe.
             </div>
           )}
         </div>

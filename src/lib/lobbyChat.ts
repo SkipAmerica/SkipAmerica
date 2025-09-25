@@ -13,7 +13,6 @@ export async function sendLobbyMessage({
 }) {
   if (!creatorId || !text?.trim()) return;
 
-  // 1) Persist to DB (history) — best effort
   try {
     await supabase.from("lobby_chat_messages").insert({
       creator_id: creatorId,
@@ -24,21 +23,10 @@ export async function sendLobbyMessage({
     console.warn("[lobbyChat] DB insert failed (continuing to broadcast)", e);
   }
 
-  // 2) Broadcast for overlays (instant UI) — reuse the existing singleton channel
   const channelName = `realtime:lobby-chat-${creatorId}`;
-  // @ts-ignore
-  const reg = (window as any).__lobbyChanRegistry || {};
-  let ch = reg[channelName];
-  if (!ch) {
-    // lazy init if something sent before any listener mounted
-    ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
-    // keep it in the registry for future sends/listens
-    // @ts-ignore
-    (window as any).__lobbyChanRegistry = { ...reg, [channelName]: ch };
-    // kick a subscribe so .send can succeed quickly; no-op if it's already connected
-    ch.subscribe().catch(() => {});
-  }
+  const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
   try {
+    await ch.subscribe();
     await ch.send({
       type: "broadcast",
       event: "message",
@@ -46,5 +34,7 @@ export async function sendLobbyMessage({
     });
   } catch (e) {
     console.warn("[lobbyChat] broadcast failed", e);
+  } finally {
+    try { await ch.unsubscribe(); } catch {}
   }
 }

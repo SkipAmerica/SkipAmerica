@@ -1,11 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import React, { useRef, useState, useEffect } from "react";
 import OverlayChat from "@/components/live/OverlayChat";
 import { sendLobbyMessage } from "@/lib/lobbyChat";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { supabase } from "@/lib/supabaseClient";
 
-type Props = { creatorId: string }; // make required so we never subscribe to undefined
+type Props = { creatorId: string };
 
 export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -56,8 +54,8 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
             fallbackStream.getTracks().forEach(t => t.stop());
             fallbackStream = null;
           }
-        } catch {}
-        try { track.detach(videoRef.current); } catch {}
+        } catch { }
+        try { track.detach(videoRef.current); } catch { }
         track.attach(videoRef.current);
         videoRef.current.autoplay = true;
         videoRef.current.playsInline = true;
@@ -104,7 +102,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     // @ts-ignore
     const sfu = (window as any).__creatorSFU;
     const room = sfu?.room;
-    const detachRoomHandlers = () => {};
+    const detachRoomHandlers = () => { };
     if (room) {
       const onState = () => onConnected();
       const onLocalPub = () => onPublished();
@@ -112,22 +110,22 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
       room.on("localtrackpublished", onLocalPub);
       // keep a tiny disposer
       (detachRoomHandlers as any).fn = () => {
-        try { room.off("connectionstatechanged", onState); } catch {}
-        try { room.off("localtrackpublished", onLocalPub); } catch {}
+        try { room.off("connectionstatechanged", onState); } catch { }
+        try { room.off("localtrackpublished", onLocalPub); } catch { }
       };
     }
 
     return () => {
       window.removeEventListener("sfu:creator:connected", onConnected);
       window.removeEventListener("sfu:creator:published", onPublished);
-      try { (detachRoomHandlers as any).fn?.(); } catch {}
+      try { (detachRoomHandlers as any).fn?.(); } catch { }
       // cleanup fallback stream if still running
       try {
         if (fallbackStream) {
           fallbackStream.getTracks().forEach(t => t.stop());
           fallbackStream = null;
         }
-      } catch {}
+      } catch { }
     };
   }, [attached]);
 
@@ -152,7 +150,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
             Camera preview (click Start SFU for LiveKit)
           </div>
         )}
-        
+
         {/* Overlay is always mounted; high z-index; pointer-events enabled for scroll */}
         <OverlayChat creatorId={creatorId} />
         {/* TEMP DEBUG BADGE */}
@@ -169,11 +167,11 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
           onFocus={() => setFocusHack(true)}
           onBlur={() => setFocusHack(false)}
           placeholder="Say something to the lobby…"
-          className="flex-1 rounded-lg border border-white/30 bg-neutral-900 px-3 py-2 text-white placeholder-white/70 focus:outline-none"
+          className="flex-1 rounded-lg border border-white/10 bg-white/10 px-3 py-2 text-white placeholder-white/60 focus:outline-none"
         />
         <button
           type="submit"
-          className="rounded-lg bg-white/10 px-3 py-2 hover:bg-white/20 text-white"
+          className="rounded-lg bg-white/15 px-3 py-2 hover:bg-white/25 text-white"
         >
           Send
         </button>

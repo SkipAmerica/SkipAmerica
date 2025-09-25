@@ -6,13 +6,8 @@ export type ChatMsg = {
   text: string;
   userId?: string;
   username?: string;
-  avatarUrl?: string;
   ts: number; // epoch ms
 };
-
-// global singleton registry so components share the same realtime channel
-const _lobbyChanRegistry: Record<string, ReturnType<typeof supabase.channel> | undefined> =
-  (window as any).__lobbyChanRegistry || ((window as any).__lobbyChanRegistry = {});
 
 export function useLobbyChat(creatorId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
@@ -21,48 +16,48 @@ export function useLobbyChat(creatorId?: string) {
   useEffect(() => {
     if (!creatorId) return;
 
-    // 1) Reuse a single channel per creatorId (do NOT create/destroy on each mount)
+    // Always use the exact same channel name format as PQ
     const channelName = `realtime:lobby-chat-${creatorId}`;
     console.log("[useLobbyChat] subscribe ->", channelName);
-    let ch = _lobbyChanRegistry[channelName];
-    if (!ch) {
-      ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
-      _lobbyChanRegistry[channelName] = ch;
-      console.log("[useLobbyChat] create channel", channelName);
-    }
+
+    // Clean any prior channel before re-subscribing
+    try {
+      if (chanRef.current) {
+        console.log("[useLobbyChat] removing previous channel");
+        supabase.removeChannel(chanRef.current);
+        chanRef.current = null;
+      }
+    } catch {}
+
+    const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
+
+    ch.on("broadcast", { event: "message" }, (payload: any) => {
+      const body = (payload?.payload ?? payload ?? {}) as Partial<ChatMsg>;
+      const msg: ChatMsg = {
+        id: body.id ?? crypto.randomUUID(),
+        text: body.text ?? "",
+        userId: body.userId,
+        username: body.username,
+        ts: Date.now(),
+      };
+      // Newest goes first visually; we'll render in reversed order.
+      setMessages((prev) => [...prev, msg].slice(-200));
+    });
+
+    ch.subscribe((status) => {
+      console.log("[useLobbyChat] status:", status, channelName);
+    });
+
     chanRef.current = ch;
 
-    // bind handlers once
-    // @ts-ignore
-    if (!(ch as any).__handlersBound) {
-      ch.on("broadcast", { event: "message" }, (payload: any) => {
-        const body = payload?.payload ?? payload ?? {};
-        const msg: ChatMsg = {
-          id: body.id ?? crypto.randomUUID(),
-          text: body.text ?? "",
-          userId: body.userId,
-          username: body.username,
-          avatarUrl: body.avatarUrl,
-          ts: Date.now(),
-        };
-        // keep a longer window; creator & viewer share
-        setMessages((prev) => [...prev, msg].slice(-400));
-      });
-
-      ch.subscribe((status) => {
-        console.log("[useLobbyChat] status", channelName, status);
-      });
-
-      // @ts-ignore
-      (ch as any).__handlersBound = true;
-    }
-
-    // 3) Soft cleanup: DO NOT remove the channel (let others reuse it).
-    // Only clear our local ref on unmount.
-    return () => { chanRef.current = null; };
+    return () => {
+      try {
+        console.log("[useLobbyChat] unsubscribe <-", channelName);
+        supabase.removeChannel(ch);
+      } catch {}
+      chanRef.current = null;
+    };
   }, [creatorId]);
 
-  // expose status if caller wants to show "reconnecting..."
-  // (Overlay uses messages only; creator page can read status if needed)
   return messages;
 }

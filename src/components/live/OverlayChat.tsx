@@ -6,53 +6,55 @@ type Props = {
   className?: string;
 };
 
-export default function OverlayChat({
-  creatorId,
-  className = "",
-}: Props) {
+export default function OverlayChat({ creatorId, className = "" }: Props) {
   const msgs = useLobbyChat(creatorId);
-  // newest-first for rendering (top pushes older down)
-  // reverse() so newest is first in the array; we render normal column order.
-  const live = useMemo(() => [...msgs].reverse(), [msgs]);
-  const listRef = useRef<HTMLDivElement | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  // keep scroll pinned to top (where newest items appear)
+  // Render newest first (top), older below it
+  const ordered = useMemo(() => {
+    // slice() to avoid mutating state array
+    const list = msgs.slice().reverse();
+    return list;
+  }, [msgs]);
+
+  // Optional: auto-scroll to top so newest stays visible if container grows
   useEffect(() => {
-    if (!listRef.current) return;
-    listRef.current.scrollTop = 0; // newest at top
-    console.log("[OverlayChat] creatorId", creatorId, " messages:", live.length);
-  }, [live.length, creatorId]);
+    const el = wrapRef.current;
+    if (!el) return;
+    // keep scroll at top so newest (top) is visible
+    el.scrollTo({ top: 0, behavior: "instant" as any });
+  }, [ordered.length]);
 
   return (
     <div
       className={
-        // allow interaction so users can scroll on creator view
-        "pointer-events-auto absolute inset-0 flex items-end p-3 sm:p-4 z-[10000] " + className
+        "pointer-events-none absolute inset-0 z-20 " + className
       }
       aria-hidden
     >
-      {/* anchored area above controls; scrollable; newest at top */}
       <div
-        ref={listRef}
-        className="ml-auto w-full sm:w-[70%] max-h-[50%] overflow-y-auto flex flex-col gap-2"
+        ref={wrapRef}
+        className="pointer-events-none absolute left-3 right-3 bottom-3 top-3 overflow-y-auto flex flex-col gap-2"
+        style={{ scrollbarWidth: "none" }}
       >
-        {/* TEMP DEBUG header */}
-        <div className="text-[11px] uppercase tracking-wide text-white/70">Lobby Chat (creatorId: {creatorId})</div>
-        {live.map((m) => (
-          <div
-            key={m.id}
-            className="max-w-[90%] bg-black/70 text-white rounded-2xl px-3 py-2 backdrop-blur"
-          >
-            <div className="text-[11px] opacity-80 leading-none">{m.username ?? "guest"}</div>
-            <div className="text-sm sm:text-base break-words">{m.text}</div>
-          </div>
-        ))}
-        {live.length === 0 && (
-          <div className="text-white/60 text-sm">No messages yet…</div>
+        {ordered.length === 0 ? (
+          <div className="text-white/80 text-sm">No messages yet…</div>
+        ) : (
+          ordered.map((m) => (
+            <div
+              key={m.id}
+              className="max-w-[90%] bg-black/55 text-white rounded-2xl px-3 py-2 backdrop-blur"
+            >
+              <div className="text-[11px] opacity-80 leading-none">
+                {m.username ?? "guest"}
+              </div>
+              <div className="text-sm sm:text-base break-words">
+                {m.text}
+              </div>
+            </div>
+          ))
         )}
       </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 sm:h-32 bg-gradient-to-t from-black/40 to-transparent" />
     </div>
   );
 }
