@@ -14,9 +14,10 @@ const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args
 
 interface LobbyBroadcastPanelProps {
   onEnd?: () => void;
+  setIsBroadcasting?: (broadcasting: boolean) => void;
 }
 
-export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
+export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyBroadcastPanelProps) {
   const [__sfuMsg, setSfuMsg] = React.useState<string>("panel mounted");
   const sfuRef = React.useRef<ReturnType<typeof createSFU> | null>(null);
 
@@ -91,12 +92,8 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
       dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
       const sfu = (window as any).__creatorSFU;
-      if (sfu) { 
-        try { 
-          await sfu.disconnect(); 
-        } catch {} 
-        (window as any).__creatorSFU = undefined; 
-      }
+      if (sfu) { try { await sfu.disconnect(); } catch {} (window as any).__creatorSFU = undefined; }
+      setIsBroadcasting?.(false);
       sfuRef.current = null;
       setSfuMsg("stopped");
     } catch (e) {
