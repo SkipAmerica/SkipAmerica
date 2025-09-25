@@ -709,9 +709,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
   }, []);
 
-  // WebRTC connection management - subscribe immediately after resolution
+  // WebRTC connection management - legacy P2P path (fallback when SFU disabled)
   useEffect(() => {
-    if (resolvedCreatorId === undefined) return;
+    if (!RUNTIME.USE_SFU) {
+      // Legacy P2P connection management
+      if (resolvedCreatorId === undefined) return;
 
     // Ensure websocket connection before subscribing
     const ensureRealtimeConnected = () => {
@@ -1210,9 +1212,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
 
     // Only initialize legacy P2P connection for non-SFU mode
-    if (!RUNTIME.USE_SFU && (connectionState === 'checking' || connectionState === 'retry')) {
+    if (connectionState === 'checking' || connectionState === 'retry') {
       initConnection();
     }
+
+    } // End legacy P2P (!RUNTIME.USE_SFU)
 
     // No cleanup here - let unmount-only effect handle it
   }, [resolvedCreatorId, viewerIdRef.current, RUNTIME.USE_SFU]); // Only re-run when creatorUserId changes, not on UI state
@@ -1238,12 +1242,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (videoRef.current) rebindVideo(videoRef.current);
   }, []);
 
-  // UNMOUNT-only cleanup effect
+  // Legacy P2P cleanup (fallback path only)
   useEffect(() => {
-    return () => {
+    if (!RUNTIME.USE_SFU) {
+      // Legacy P2P cleanup handling
+      return () => {
       console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for', channelRef.current?.topic);
       
-      // Cleanup SFU on unmount
+      try { channelRef.current?.unsubscribe?.(); } catch {}
+      try { supabase.removeChannel(channelRef.current!); } catch {}
+      try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
+      try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
+      try { pcRef.current?.close?.(); } catch {}
+      };
+    } // End legacy P2P cleanup
+
+    // Cleanup SFU on unmount (always run for SFU mode)
+    return () => {
       if (RUNTIME.USE_SFU && (window as any).__viewerSFU) {
         try {
           (window as any).__viewerSFU.disconnect();
@@ -1252,12 +1267,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           console.error('[VIEWER] SFU cleanup error', e);
         }
       }
-      
-      try { channelRef.current?.unsubscribe?.(); } catch {}
-      try { supabase.removeChannel(channelRef.current!); } catch {}
-      try { fallbackChannelRef.current?.unsubscribe?.(); } catch {}
-      try { supabase.removeChannel(fallbackChannelRef.current!); } catch {}
-      try { pcRef.current?.close?.(); } catch {}
     };
   }, []);
 
