@@ -9,6 +9,36 @@ import { RUNTIME } from "@/config/runtime";
 // use explicit Supabase Functions URL (replace with your project ref if different)
 const TOKEN_ENDPOINT = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
+async function getLiveKitToken(role: "creator" | "viewer", creatorId: string, identity: string) {
+  const session = (await supabase.auth.getSession()).data.session;
+  const headers: Record<string,string> = { "content-type": "application/json" };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+
+  const body = JSON.stringify({ role, creatorId, identity });
+
+  console.log("[SFU] POST", TOKEN_ENDPOINT, body);
+  const resp = await fetch(TOKEN_ENDPOINT, { method: "POST", headers, body });
+  const raw = await resp.text();
+  console.log("[SFU] resp", resp.status, raw.slice(0, 200) + (raw.length > 200 ? "…" : ""));
+
+  if (!resp.ok) throw new Error(`token http ${resp.status}`);
+
+  const ct = resp.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    throw new Error(`expected JSON, got "${ct}"`);
+  }
+
+  let parsed: any;
+  try { parsed = JSON.parse(raw); } catch {
+    throw new Error("invalid JSON from token endpoint");
+  }
+  const { token, url, error } = parsed || {};
+  if (error) throw new Error(error);
+  if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+  if (!token) throw new Error("missing token");
+  return { token, url };
+}
+
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
 const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
@@ -38,29 +68,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         // 2) Get token
         const creatorId = user?.id!;
         const identity = user?.id!;
-        const session = (await supabase.auth.getSession()).data.session;
-        const resp = await fetch(TOKEN_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
-          },
-          body: JSON.stringify({ role: "creator", creatorId, identity })
-        });
-        const text = await resp.text();
-        console.log("[CREATOR SFU] token http", resp.status, text.slice(0,200)+"…");
-        if (!resp.ok) throw new Error(`token http ${resp.status}: ${text}`);
-        
-        let parsedResponse;
-        try {
-          parsedResponse = JSON.parse(text || "{}");
-        } catch (parseError) {
-          throw new Error(`Failed to parse token response: ${parseError}`);
-        }
-        
-        const { token, url } = parsedResponse;
-        if (!token) throw new Error(`No token in response: ${text}`);
-        if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+        const { token, url } = await getLiveKitToken("creator", creatorId, identity);
 
         // 3) Connect & publish
         sfu.room

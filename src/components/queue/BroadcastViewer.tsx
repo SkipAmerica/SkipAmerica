@@ -23,6 +23,36 @@ const FUNCTIONS_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_li
 // use explicit Supabase Functions URL (replace with your project ref if different)
 const TOKEN_ENDPOINT = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
+async function getLiveKitToken(role: "creator" | "viewer", creatorId: string, identity: string) {
+  const session = (await supabase.auth.getSession()).data.session;
+  const headers: Record<string,string> = { "content-type": "application/json" };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+
+  const body = JSON.stringify({ role, creatorId, identity });
+
+  console.log("[SFU] POST", TOKEN_ENDPOINT, body);
+  const resp = await fetch(TOKEN_ENDPOINT, { method: "POST", headers, body });
+  const raw = await resp.text();
+  console.log("[SFU] resp", resp.status, raw.slice(0, 200) + (raw.length > 200 ? "…" : ""));
+
+  if (!resp.ok) throw new Error(`token http ${resp.status}`);
+
+  const ct = resp.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    throw new Error(`expected JSON, got "${ct}"`);
+  }
+
+  let parsed: any;
+  try { parsed = JSON.parse(raw); } catch {
+    throw new Error("invalid JSON from token endpoint");
+  }
+  const { token, url, error } = parsed || {};
+  if (error) throw new Error(error);
+  if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+  if (!token) throw new Error("missing token");
+  return { token, url };
+}
+
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
 const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
@@ -138,29 +168,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const creatorId = resolvedId || queueId;
           const identity = (await supabase.auth.getUser()).data.user?.id ?? crypto.randomUUID();
 
-          const session = (await supabase.auth.getSession()).data.session;
-          const resp = await fetch(TOKEN_ENDPOINT, {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-              ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
-            },
-            body: JSON.stringify({ role: "viewer", creatorId, identity })
-          });
-          const text = await resp.text();
-          console.log("[VIEWER SFU] token http", resp.status, text.slice(0,200)+"…");
-          if (!resp.ok) throw new Error(`token http ${resp.status}: ${text}`);
-          
-          let parsedResponse;
-          try {
-            parsedResponse = JSON.parse(text || "{}");
-          } catch (parseError) {
-            throw new Error(`Failed to parse token response: ${parseError}`);
-          }
-          
-          const { token, url } = parsedResponse;
-          if (!token) throw new Error(`No token in response: ${text}`);
-          if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+          const { token, url } = await getLiveKitToken("viewer", creatorId, identity);
 
           await sfu.connect(url, token);
           console.log("[VIEWER SFU] connected");
@@ -190,43 +198,16 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         // 2. Get identity from supabase.auth.getUser()
         const { data } = await supabase.auth.getUser();
-        const identity = data?.user?.id || crypto.randomUUID();
-        dlog('[SFU] Using identity:', identity);
+        const viewerIdentity = data?.user?.id || crypto.randomUUID();
+        dlog('[SFU] Using identity:', viewerIdentity);
 
         // 3. Fetch token with proper auth
         if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
         
         const jwt = await getAuthJWT();
+        const identity = data?.user?.id || crypto.randomUUID();
 
-        const resp = await fetch(TOKEN_ENDPOINT, {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            "authorization": `Bearer ${jwt}`,
-            // optional: helps some deployments, harmless otherwise
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
-          },
-          body: JSON.stringify({ role: "viewer", creatorId: effectiveCreatorId, identity }),
-        });
-
-        const raw = await resp.text();
-        hudLog("[SFU] token response", String(resp.status), raw.slice(0, 200));
-        
-        if (!resp.ok) {
-          throw new Error(`Token fetch failed: ${resp.status} ${raw}`);
-        }
-
-        // 4. Parse response and get URL
-        let parsedResponse;
-        try {
-          parsedResponse = JSON.parse(raw || "{}");
-        } catch (parseError) {
-          throw new Error(`Failed to parse token response: ${parseError}`);
-        }
-        
-        const { token, url, error } = parsedResponse;
-        if (error) throw new Error(error);
-        if (!token) throw new Error(`No token in response: ${raw}`);
+        const { token, url } = await getLiveKitToken("viewer", effectiveCreatorId, viewerIdentity);
 
         const HOST = url || import.meta.env?.VITE_LIVEKIT_URL;
         if (!HOST) throw new Error("Missing LiveKit URL");
