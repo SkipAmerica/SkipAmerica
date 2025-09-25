@@ -63,6 +63,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Create HUD element and setup window.__PQHUD on mount
   useEffect(() => {
+    if (!RUNTIME.ENABLE_HUD) return;
+    
     const hudEl = document.createElement('div');
     hudEl.id = '__pq_hud';
     hudEl.style.cssText = `
@@ -84,7 +86,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Setup window.__PQHUD function
     (window as any).__PQHUD = (updates: Record<string, any>) => {
-      setSfuHudData(prev => ({ ...prev, ...updates }));
+      if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, ...updates }));
     };
 
     return () => {
@@ -95,6 +97,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Update HUD DOM whenever data changes
   useEffect(() => {
+    if (!RUNTIME.ENABLE_HUD) return;
+    
     const hudEl = document.getElementById('__pq_hud');
     if (hudEl) {
       hudEl.innerHTML = `
@@ -117,7 +121,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const connectSFU = async () => {
       try {
         dlog('[SFU] Starting immediate connection flow');
-        setSfuHudData(prev => ({ ...prev, 'Ch Status': '(SFU)', 'PC': 'resolving' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Ch Status': '(SFU)', 'PC': 'resolving' }));
 
         // 1. Resolve creatorId (existing resolver)
         const resolvedCreatorId = await resolveCreatorUserId(queueId);
@@ -130,13 +134,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         dlog('[SFU] Using identity:', identity);
 
         // 3. Fetch token with proper auth
-        setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
         
         const jwt = await getAuthJWT();
 
         const body = { role: "viewer", creatorId: effectiveCreatorId, identity };
         hudLog("[SFU] POST token request", JSON.stringify(body));
-        setSfuHudData(prev => ({ ...prev, 'Req#': (prev['Req#'] || 0) + 1 }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Req#': (prev['Req#'] || 0) + 1 }));
 
         const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
           method: "POST",
@@ -164,7 +168,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         if (!HOST) throw new Error("Missing LiveKit URL");
 
         hudLog("[SFU] connecting to", String(HOST));
-        setSfuHudData(prev => ({ ...prev, 'PC': 'connecting' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'connecting' }));
 
         // 5. Connect SFU
         const sfu = createSFU();
@@ -177,7 +181,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             const stream = videoElement.srcObject as MediaStream;
             if (stream) {
               videoRef.current.srcObject = stream;
-              setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
+              if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
               
               // User-gesture-safe autoplay
               handleAutoplay();
@@ -187,7 +191,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
         await sfu.connect(HOST, token);
         dlog('[SFU] Connected successfully, participants:', sfu.room.remoteParticipants.size);
-        setSfuHudData(prev => ({ ...prev, 'PC': 'connected' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'connected' }));
         setConnectionState('connected');
         
         // Store cleanup function for unmount
@@ -196,7 +200,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       } catch (e) {
         console.error('[SFU] Connection failed:', e);
         hudError("SFU", e);
-        setSfuHudData(prev => ({ ...prev, 'PC': 'failed' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'PC': 'failed' }));
         setConnectionState('failed');
       }
     };
@@ -212,11 +216,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     video.play().then(() => {
       dlog('[SFU] Autoplay succeeded');
-      setSfuHudData(prev => ({ ...prev, 'Autoplay': 'ok' }));
+      if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Autoplay': 'ok' }));
     }).catch((error) => {
       if (error.name === 'AbortError' || error.name === 'NotAllowedError') {
         dlog('[SFU] Autoplay blocked - awaiting user gesture');
-        setSfuHudData(prev => ({ ...prev, 'Autoplay': 'blocked' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Autoplay': 'blocked' }));
         
         // Add click handler to resume on user gesture
         if (!(window as any).__autoplayClickAdded) {
@@ -225,7 +229,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         }
       } else {
         console.error('[SFU] Video play error:', error);
-        setSfuHudData(prev => ({ ...prev, 'Autoplay': 'error' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Autoplay': 'error' }));
       }
     });
   }, []);
@@ -249,7 +253,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (video && video.paused) {
       video.play().then(() => {
         dlog('[SFU] Video resumed after user gesture');
-        setSfuHudData(prev => ({ ...prev, 'Autoplay': 'resumed' }));
+        if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'Autoplay': 'resumed' }));
       }).catch(console.error);
     }
     
