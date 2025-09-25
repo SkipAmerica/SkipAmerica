@@ -19,43 +19,66 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
   const sfuRef = React.useRef<ReturnType<typeof createSFU> | null>(null);
 
   async function startSfuBroadcast() {
-    try {
-      dlog("[CREATOR][SFU] start pressed");
-      setSfuMsg("requesting token…");
-      if (!sfuRef.current) sfuRef.current = createSFU();
+    if (RUNTIME.USE_SFU) {
+      try {
+        dlog("[CREATOR][SFU] start pressed");
+        setSfuMsg("getting local tracks…");
+        const sfu = createSFU();
 
-      const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
-        try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
-      })());
-      const identity = creatorId || crypto.randomUUID();
-      if (!creatorId) dwarn("[CREATOR][SFU] creatorId not found; using identity only");
+        // 1) Get local tracks once
+        const { createLocalTracks } = await import("livekit-client");
+        const localTracks = await createLocalTracks({ audio: true, video: { facingMode: "user" } });
 
-      const jwt = await getAuthJWT();
+        // 2) Attach camera to preview element
+        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
+        if (pv) {
+          // detach anything first
+          pv.srcObject = null;
+          const MediaStreamCls = (window as any).MediaStream;
+          const ms = new MediaStreamCls(localTracks.filter(t => t.kind === "video").map(t => t.mediaStreamTrack));
+          pv.srcObject = ms;
+          try { await pv.play(); } catch {}
+        }
 
-      const resp = await fetch(FUNCTIONS_URL, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "authorization": `Bearer ${jwt}`,
-          // optional: helps some deployments, harmless otherwise
-          "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
-        },
-        body: JSON.stringify({ role: "creator", creatorId, identity }),
-      });
-      const j = await resp.json();
-      dlog("[CREATOR][SFU] token resp", resp.status, j);
-      if (!resp.ok || j.error) throw new Error(j.error || `http ${resp.status}`);
+        // 3) Get token
+        setSfuMsg("requesting token…");
+        const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
+          try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
+        })());
+        const identity = creatorId || crypto.randomUUID();
+        if (!creatorId) dwarn("[CREATOR][SFU] creatorId not found; using identity only");
 
-      setSfuMsg(`connecting ${j.url}…`);
-      await sfuRef.current!.connect(j.url, j.token);
-      setSfuMsg("connected, publishing…");
-      await sfuRef.current!.publishCameraMic();
-      if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfuRef.current;
-      setSfuMsg("LIVE ✓");
-      dlog("[CREATOR][SFU] LIVE");
-    } catch (e) {
-      console.error("[CREATOR][SFU] error", e);
-      setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
+        const jwt = await getAuthJWT();
+
+        const resp = await fetch(FUNCTIONS_URL, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "authorization": `Bearer ${jwt}`,
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
+          },
+          body: JSON.stringify({ role: "creator", creatorId, identity }),
+        });
+        const { token, url, error } = await resp.json();
+        if (error) throw new Error(error);
+
+        // 4) Connect room then publish the tracks
+        setSfuMsg(`connecting ${url}…`);
+        await sfu.connect(url, token);
+        setSfuMsg("publishing tracks…");
+        for (const t of localTracks) {
+          await sfu.room.localParticipant.publishTrack(t);
+        }
+
+        sfuRef.current = sfu;
+        if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
+        setSfuMsg("LIVE ✓");
+        dlog("[CREATOR][SFU] LIVE");
+        return; // skip legacy path
+      } catch (e) {
+        console.error("[CREATOR][SFU] publish failed", e);
+        setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
+      }
     }
   }
 
