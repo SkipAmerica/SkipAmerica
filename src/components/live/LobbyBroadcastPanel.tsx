@@ -114,6 +114,28 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       <div className="w-full max-w-xl aspect-video bg-black/80 rounded-xl overflow-hidden">
         <video id="creator-preview" className="w-full h-full object-cover" autoPlay playsInline muted />
       </div>
+      
+      {/* SFU Control Panel */}
+      <div className="bg-black/85 text-white p-3 rounded-xl font-mono text-sm">
+        <div className="font-bold mb-2">SFU Control</div>
+        <div className="text-xs leading-relaxed min-h-9 whitespace-pre-wrap mb-3">
+          {__sfuMsg}
+        </div>
+        <div className="flex gap-2">
+          <button 
+            onClick={startSfuBroadcast}
+            className="flex-1 px-3 py-2 rounded-lg border border-green-400 bg-green-900/40 text-green-400 hover:bg-green-900/60 cursor-pointer"
+          >
+            Start SFU
+          </button>
+          <button 
+            onClick={stopSfuBroadcast}
+            className="flex-1 px-3 py-2 rounded-lg border border-red-400 bg-red-900/40 text-red-400 hover:bg-red-900/60 cursor-pointer"
+          >
+            Stop
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
