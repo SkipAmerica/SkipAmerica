@@ -408,6 +408,18 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const { token, url, error } = await resp.json();
         if (error) throw new Error(error);
 
+        // Log token grants for debugging (HUD only)
+        try {
+          const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+          console.log('[CREATOR][SFU] tokenFlags', { 
+            canPublish: tokenPayload?.video?.canPublish, 
+            canSubscribe: tokenPayload?.video?.canSubscribe, 
+            room: tokenPayload?.video?.room 
+          });
+        } catch (e) {
+          console.warn('[CREATOR][SFU] Could not decode token for debugging:', e);
+        }
+
         // Choose host (function 'url' or env VITE_LIVEKIT_URL)
         const HOST =
           (typeof url === "string" && url) ||

@@ -14,7 +14,7 @@ import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard'
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
-import { Track } from 'livekit-client';
+import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -880,16 +880,21 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           if (!HOST) throw new Error("Missing LiveKit URL (neither function 'url' nor VITE_LIVEKIT_URL present)");
 
           await sfu.connect(HOST, token);
-          hudLog("[SFU] connected");
+          console.log('[VIEWER][SFU] connected participants=', sfu.room.remoteParticipants.size);
           
-          // force a catch-up pass now that we're connected
+          // force a catch-up pass into existing video element
           sfu.room.remoteParticipants.forEach((p) => {
-            p.trackPublications.forEach((pub) => {
-              const track = pub.track;
-              if (track && track.kind === Track.Kind.Video && videoRef.current) {
-                track.attach(videoRef.current);
-              }
-            });
+            if (videoRef.current) sfu.attachVideoFromParticipant(p, videoRef.current);
+          });
+
+          // Listen for future tracks and attach into the same element (no swapping)
+          sfu.room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, pub, participant) => {
+            if (track.kind === Track.Kind.Video && videoRef.current) {
+              track.attach(videoRef.current);
+              // resume playback if browser blocked it
+              const v = videoRef.current;
+              if (v.paused) v.play().catch(()=>{});
+            }
           });
           
           setConnectionState('connected');

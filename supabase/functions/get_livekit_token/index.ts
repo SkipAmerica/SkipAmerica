@@ -37,28 +37,31 @@ serve(async (req) => {
     const room = `creator:${creatorId}`;
     const at = new AccessToken(API_KEY, API_SECRET, { identity, ttl: 60 * 60 });
     
+    let grants;
     if (role === "creator") {
-      at.addGrant({
+      grants = {
         roomJoin: true,
         room,
         canPublish: true,
         canSubscribe: true,
         canPublishData: true,
-      });
+      };
+      at.addGrant(grants);
     } else if (role === "viewer") {
-      at.addGrant({
+      grants = {
         roomJoin: true,
         room,
         canPublish: false,
         canSubscribe: true,
         canPublishData: true,
-      });
+      };
+      at.addGrant(grants);
     }
     
     const token = await at.toJwt();
     console.log('[LIVEKIT TOKEN] Generated token for room:', room);
     
-    return new Response(JSON.stringify({ token, url: LIVEKIT_URL }), {
+    return new Response(JSON.stringify({ token, url: LIVEKIT_URL, grants }), {
       headers: { "Content-Type": "application/json", ...cors },
     });
   } catch (e) {
