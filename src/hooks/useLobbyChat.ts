@@ -16,7 +16,6 @@ const _lobbyChanRegistry: Record<string, ReturnType<typeof supabase.channel> | u
 
 export function useLobbyChat(creatorId?: string) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
-  const [status, setStatus] = useState<"connecting"|"joined"|"reconnecting"|"closed">("connecting");
   const chanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   useEffect(() => {
@@ -31,11 +30,9 @@ export function useLobbyChat(creatorId?: string) {
     }
     chanRef.current = ch;
 
-    // 2) Idempotent handler registration
-    // Guard so we don't attach listeners more than once
+    // bind handlers once
     // @ts-ignore
     if (!(ch as any).__handlersBound) {
-      // message handler
       ch.on("broadcast", { event: "message" }, (payload: any) => {
         const body = payload?.payload ?? payload ?? {};
         const msg: ChatMsg = {
@@ -46,17 +43,14 @@ export function useLobbyChat(creatorId?: string) {
           avatarUrl: body.avatarUrl,
           ts: Date.now(),
         };
-        setMessages((prev) => [...prev, msg].slice(-200)); // keep more; viewer/creator share
+        // keep a longer window; creator & viewer share
+        setMessages((prev) => [...prev, msg].slice(-400));
       });
 
-      // status handler
-      ch.subscribe((s) => {
-        if (import.meta.env.DEV) console.debug("[useLobbyChat] status", channelName, s);
-        if (s === "SUBSCRIBED") setStatus("joined");
-        else if (s === "CLOSED") setStatus("reconnecting"); // treat as transient
+      ch.subscribe(() => {
+        // no-op; Supabase will auto-reconnect
       });
 
-      // mark bound
       // @ts-ignore
       (ch as any).__handlersBound = true;
     }

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 type Props = {
-  creatorId: string;
+  creatorId?: string;
 };
 
 export default function CreatorPreviewWithChat({ creatorId }: Props) {
@@ -15,15 +15,28 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const [connected, setConnected] = useState(false);
   const [text, setText] = useState("");
   const [focusHack, setFocusHack] = useState(false);
+  const [effectiveCreatorId, setEffectiveCreatorId] = useState<string | undefined>(creatorId);
+
+  // Ensure we always have a creatorId on creator view
+  useEffect(() => {
+    if (creatorId) { setEffectiveCreatorId(creatorId); return; }
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        const id = data?.user?.id;
+        if (id) setEffectiveCreatorId(id);
+      } catch {}
+    })();
+  }, [creatorId]);
 
   // Debug logging for creatorId stability
   useEffect(() => {
-    console.log(`[CreatorPreviewWithChat] Component updated with creatorId: ${creatorId}`);
-  }, [creatorId]);
+    console.log(`[CreatorPreviewWithChat] Component updated with effectiveCreatorId: ${effectiveCreatorId}`);
+  }, [effectiveCreatorId]);
 
   // Ensure creatorId is stable and valid
-  if (!creatorId) {
-    console.warn("[CreatorPreviewWithChat] No creatorId provided");
+  if (!effectiveCreatorId) {
+    console.warn("[CreatorPreviewWithChat] No effective creatorId available");
     return (
       <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
@@ -136,6 +149,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
+    if (!effectiveCreatorId) return;
     const { data } = await supabase.auth.getUser();
     const userId = data?.user?.id;
     
@@ -152,7 +166,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     const t = text.trim();
     if (!t) return;
     setText("");
-    await sendLobbyMessage({ creatorId, userId, username, avatarUrl, text: t });
+    await sendLobbyMessage({ creatorId: effectiveCreatorId, userId, username, avatarUrl, text: t });
   }
 
   return (
@@ -167,10 +181,10 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         )}
         
         {/* Instagram-style floating chat overlay */}
-        <OverlayChat creatorId={creatorId} />
+        <OverlayChat creatorId={effectiveCreatorId} />
       </div>
 
-      {/* creator input — readable on dark bg */}
+      {/* creator input – visible on dark bg */}
       <form onSubmit={onSend} className="flex gap-2">
         <input
           value={text}
@@ -178,15 +192,11 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
           onFocus={() => setFocusHack(true)}
           onBlur={() => setFocusHack(false)}
           placeholder="Say something to the lobby…"
-          className={
-            "flex-1 rounded-lg border px-3 py-2 focus:outline-none " +
-            "bg-black/70 border-white/20 text-white placeholder-white/60 " +
-            (focusHack ? "ring-1 ring-white/30" : "")
-          }
+          className="flex-1 rounded-lg border border-white/20 bg-neutral-900/90 px-3 py-2 text-white placeholder-white/60 focus:outline-none"
         />
         <button
           type="submit"
-          className="rounded-lg bg-white/15 px-3 py-2 hover:bg-white/25 text-white border border-white/20"
+          className="rounded-lg bg-white/10 px-3 py-2 hover:bg-white/20 text-white"
         >
           Send
         </button>
