@@ -24,6 +24,13 @@ function getSupabaseClient(): SupabaseClient<Database> {
     },
   });
   globalThis.__SUPABASE__ = client;
+  
+  try {
+    // stash anon key for auth header helper
+    // @ts-ignore
+    window.__supabaseAnonKey = SUPABASE_PUBLISHABLE_KEY;
+  } catch {}
+  
   return client;
 }
 

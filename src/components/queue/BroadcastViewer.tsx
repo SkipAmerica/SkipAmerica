@@ -8,11 +8,12 @@ import { generateViewerId } from '@/utils/viewer-id';
 import { resolveCreatorUserId, canonicalChannelFor, legacyQueueChannelFor } from '@/lib/queueResolver';
 import { isQueueFallbackEnabled } from '@/lib/env';
 import { isDebug } from '@/lib/debugFlag';
+import { supabaseAuthHeaders } from "@/lib/supabaseAuthHeaders";
+import { hudLog, hudError } from "@/lib/hud";
 import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard';
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
-import { hudLog, hudError } from '@/lib/hud';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -854,11 +855,13 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           const body = { role: "viewer", creatorId, identity };
           hudLog("[SFU] POST", TOKEN_URL, JSON.stringify(body));
 
-          const resp = await fetch(TOKEN_URL, {
+          const auth = supabaseAuthHeaders();
+          const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
             method: "POST",
-            headers: { 
+            headers: {
               "accept": "application/json",
-              "content-type": "application/json"
+              "content-type": "application/json",
+              ...auth, // REQUIRED to avoid 401
             },
             body: JSON.stringify(body),
           });

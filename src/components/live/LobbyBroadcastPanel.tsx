@@ -8,9 +8,10 @@ import { cn } from '@/lib/utils'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
+import { supabaseAuthHeaders } from "@/lib/supabaseAuthHeaders";
+import { hudLog, hudError } from "@/lib/hud";
 import { canonicalSignalChannel } from '@/lib/queueResolver'
 import { createSFU } from '@/lib/sfu'
-import { hudLog, hudError } from '@/lib/hud'
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -392,11 +393,13 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const body = { role: "creator", creatorId, identity };
         hudLog("[SFU] POST", TOKEN_URL, JSON.stringify(body));
 
-        const resp = await fetch(TOKEN_URL, {
+        const auth = supabaseAuthHeaders();
+        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
           method: "POST",
-          headers: { 
+          headers: {
             "accept": "application/json",
-            "content-type": "application/json"
+            "content-type": "application/json",
+            ...auth, // REQUIRED to avoid 401
           },
           body: JSON.stringify(body),
         });
