@@ -169,21 +169,15 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         // 5. Connect SFU
         const sfu = createSFU();
         
-        // Hook remote video with autoplay handling
-        sfu.onRemoteVideo((videoElement) => {
-          dlog("[SFU] Remote video track received");
-          if (videoRef.current && videoElement !== videoRef.current) {
-            // Attach track to our existing video element instead of replacing
-            const stream = videoElement.srcObject as MediaStream;
-            if (stream) {
-              videoRef.current.srcObject = stream;
-              if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
-              
-              // User-gesture-safe autoplay
-              handleAutoplay();
-            }
-          }
-        });
+        // Attach remote video to our video element
+        if (videoRef.current) {
+          sfu.attachRemoteVideo(videoRef.current);
+          dlog("[SFU] Remote video attached to video element");
+          if (RUNTIME.ENABLE_HUD) setSfuHudData(prev => ({ ...prev, 'VideoReady': true }));
+          
+          // User-gesture-safe autoplay
+          handleAutoplay();
+        }
 
         await sfu.connect(HOST, token);
         dlog('[SFU] Connected successfully, participants:', sfu.room.remoteParticipants.size);

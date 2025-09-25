@@ -27,19 +27,17 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         console.log("[CREATOR SFU] starting…");
         const sfu = createSFU();
 
-        // === PREVIEW CAMERA IMMEDIATELY ===
+        // === PREVIEW CAMERA IMMEDIATELY & GET TRACKS ===
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        const tracks = await (async () => {
-          const { createLocalTracks } = await import("livekit-client");
-          const local = await createLocalTracks({ audio: true, video: { facingMode: "user" } });
-          const vt = local.find(t => t.kind === "video");
-          if (pv && vt) {
-            vt.attach(pv);
-            pv.play?.().catch(()=>{});
-            console.log("[CREATOR SFU] local preview attached");
-          }
-          return local;
-        })();
+        const tracks = await sfu.createLocalAV();
+        
+        // Attach video track to preview element
+        const videoTrack = tracks.find(t => t.kind === "video");
+        if (pv && videoTrack) {
+          videoTrack.attach(pv);
+          pv.play?.().catch(()=>{});
+          console.log("[CREATOR SFU] local preview attached");
+        }
 
         // === GET TOKEN FROM EDGE FUNCTION ===
         const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
@@ -48,7 +46,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         const identity = creatorId || crypto.randomUUID();
         const { supabase } = await import("@/lib/supabaseClient");
         const session = (await supabase.auth.getSession()).data.session;
-        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
+        const resp = await fetch("/functions/v1/get_livekit_token", {
           method: "POST",
           headers: {
             "content-type": "application/json",
@@ -79,10 +77,12 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         sfuRef.current = sfu;
         if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
         setSfuMsg("LIVE ✓");
+        setIsBroadcasting?.(true);
         return; // skip legacy path
       } catch (e) {
         console.error("[CREATOR SFU] start failed", e);
         setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
+        setIsBroadcasting?.(false);
       }
     }
   }
