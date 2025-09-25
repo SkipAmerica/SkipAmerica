@@ -643,21 +643,23 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     };
   }, [queueId, resolvedCreatorId, effectiveCreatorId]);
 
-  // Conditional monitoring with reduced polling (wait for resolution) - UI only
+  // Minimal background monitoring - very infrequent polling, no auto-reconnect
   useEffect(() => {
     if (!queueId || resolvedCreatorId === undefined) return;
     
-    // Only poll if we're in a failed/offline state to detect recovery
+    // Only poll if we're in a failed/offline state, and only for UI feedback
     if (connectionState !== 'offline' && connectionState !== 'failed') return;
 
     const pollInterval = setInterval(async () => {
       const isBroadcasting = await checkCreatorBroadcastStatus();
       
+      // Update UI state only - no automatic reconnection to prevent reloads
       if (isBroadcasting && (connectionState === 'offline' || connectionState === 'failed')) {
-        console.log('[BROADCAST_VIEWER] Polling detected creator is broadcasting - reconnecting');
-        setConnectionState('checking');
+        console.log('[BROADCAST_VIEWER] Background poll detected creator broadcasting (UI feedback only)');
+        // Just update UI state - let user manually retry or rely on SFU room events
+        // setConnectionState('checking'); // Removed auto-reconnect to prevent reloads
       }
-    }, 60000); // Reduced to poll every 60 seconds only when needed
+    }, 300000); // Poll every 5 minutes only (very quiet)
 
     return () => clearInterval(pollInterval);
   }, [queueId, resolvedCreatorId, connectionState]);
