@@ -856,7 +856,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
           const resp = await fetch(TOKEN_URL, {
             method: "POST",
-            headers: { "content-type": "application/json" },
+            headers: { 
+              "accept": "application/json",
+              "content-type": "application/json"
+            },
             body: JSON.stringify(body),
           });
           const raw = await resp.text();
