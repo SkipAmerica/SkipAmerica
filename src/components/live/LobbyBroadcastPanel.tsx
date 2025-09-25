@@ -400,26 +400,27 @@ export function LobbyBroadcastPanel({ onEnd }: LobbyBroadcastPanelProps) {
         const identity = creatorId;
 
         // Fetch token from our edge function
-        const { data: tokenData, error: invokeError } = await supabase.functions.invoke('get_livekit_token', {
-          body: { role: "creator", creatorId, identity }
+        const resp = await fetch("/functions/v1/get_livekit_token", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ role: "creator", creatorId, identity }),
         });
-        
-        hudLog("[SFU] resp", "200", JSON.stringify(tokenData).slice(0, 200));
-        if (invokeError) throw new Error("Function invoke error: " + invokeError.message);
-
-        const { token, url, error } = tokenData;
+        const { token, url, error } = await resp.json();
         if (error) throw new Error(error);
 
         // Choose host (function 'url' or env VITE_LIVEKIT_URL)
-        const HOST = (typeof url === "string" && url) || (import.meta as any).env?.VITE_LIVEKIT_URL;
-        hudLog("[SFU] host", String(HOST));
+        const HOST =
+          (typeof url === "string" && url) ||
+          (import.meta as any).env?.VITE_LIVEKIT_URL;
         if (!HOST) throw new Error("Missing LiveKit URL");
 
         console.log("[CREATOR][SFU] connect", HOST);
         await __creatorSFU.connect(HOST, token);
+        console.log("[CREATOR][SFU] connected, tracks=", __creatorSFU.room.localParticipant.getTrackPublications().length);
 
         console.log("[CREATOR][SFU] publish camera/mic");
         await __creatorSFU.publishCameraMic();
+        console.log("[CREATOR][SFU] published tracks=", __creatorSFU.room.localParticipant.getTrackPublications().length);
 
         // Set UI state
         setMediaState(prev => ({ ...prev, isStreaming: true }));
