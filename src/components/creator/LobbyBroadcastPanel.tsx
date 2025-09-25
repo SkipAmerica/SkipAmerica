@@ -2,42 +2,11 @@ import React from "react";
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
-import { supabase } from "@/lib/supabaseClient";
+import { LIVEKIT_TOKEN_URL, getIdentity } from "@/lib/sfuToken";
 import { useAuth } from "@/app/providers/auth-provider";
 import { RUNTIME } from "@/config/runtime";
 
-// use explicit Supabase Functions URL (replace with your project ref if different)
-const TOKEN_ENDPOINT = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
-
-async function getLiveKitToken(role: "creator" | "viewer", creatorId: string, identity: string) {
-  const session = (await supabase.auth.getSession()).data.session;
-  const headers: Record<string,string> = { "content-type": "application/json" };
-  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
-
-  const body = JSON.stringify({ role, creatorId, identity });
-
-  console.log("[SFU] POST", TOKEN_ENDPOINT, body);
-  const resp = await fetch(TOKEN_ENDPOINT, { method: "POST", headers, body });
-  const raw = await resp.text();
-  console.log("[SFU] resp", resp.status, raw.slice(0, 200) + (raw.length > 200 ? "…" : ""));
-
-  if (!resp.ok) throw new Error(`token http ${resp.status}`);
-
-  const ct = resp.headers.get("content-type") || "";
-  if (!ct.includes("application/json")) {
-    throw new Error(`expected JSON, got "${ct}"`);
-  }
-
-  let parsed: any;
-  try { parsed = JSON.parse(raw); } catch {
-    throw new Error("invalid JSON from token endpoint");
-  }
-  const { token, url, error } = parsed || {};
-  if (error) throw new Error(error);
-  if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
-  if (!token) throw new Error("missing token");
-  return { token, url };
-}
+let __creatorSFU: any;
 
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
@@ -54,52 +23,40 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
   const sfuRef = React.useRef<ReturnType<typeof createSFU> | null>(null);
 
   async function confirmJoin() {
-    if (USE_SFU) {
-      try {
-        console.log("[CREATOR SFU] start");
-        const sfu = createSFU();
-        (window as any).__creatorSFU = sfu;
-
-        // Optional preview: render local video to preview element
-        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        if (pv) sfu.attachRemoteVideoTo(pv);
-
-        // Fetch token for role "creator" (canPublish=true from the Edge Function)
-        const creatorId = user?.id!;
-        const identity = user?.id!;
-        const { token, url } = await getLiveKitToken("creator", creatorId, identity);
-
-        // Connect + publish camera/mic
-        await sfu.connect(url, token);
-        await sfu.publishCameraMic();
-
-        // Set UI broadcasting state
-        setIsBroadcasting?.(true);
-        setSfuMsg("LIVE ✓");
-        console.log("[CREATOR SFU] published camera and microphone");
-        return; // skip legacy P2P
-      } catch (e) {
-        console.error("[CREATOR SFU] failed", e);
-        setIsBroadcasting?.(false);
-        setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
+    if (!USE_SFU) return;
+    try {
+      if (!__creatorSFU) __creatorSFU = createSFU();
+      const identity = getIdentity(user?.id);
+      const creatorId = user?.id!;
+      await __creatorSFU.connect(LIVEKIT_TOKEN_URL, { role: "creator", creatorId, identity });
+      await __creatorSFU.publishCameraMic();
+      const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
+      if (preview) {
+        preview.muted = true;
+        preview.autoplay = true;
+        preview.playsInline = true;
+        const camPub = __creatorSFU.room.localParticipant.videoTracks.values().next().value?.videoTrack;
+        if (camPub) camPub.attach(preview);
       }
+      setIsBroadcasting?.(true);
+      setSfuMsg("LIVE ✓");
+      console.log("[CREATOR SFU] publishing");
+      return;
+    } catch (e) {
+      console.error("[CREATOR SFU] failed", e);
+      setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
+      setIsBroadcasting?.(false);
     }
   }
 
   async function stopBroadcast() {
-    try {
-      dlog("[CREATOR][SFU] stop pressed");
-      setSfuMsg("stopping…");
-      const sfu = (window as any).__creatorSFU;
-      if (sfu) { 
-        try { await sfu.disconnect(); } catch {} 
-        (window as any).__creatorSFU = undefined; 
-      }
+    if (USE_SFU) {
+      try { await __creatorSFU?.disconnect(); } catch {}
+      __creatorSFU = undefined;
       setIsBroadcasting?.(false);
       setSfuMsg("stopped");
-    } catch (e) {
-      dwarn("[CREATOR][SFU] stop error", e);
-      setSfuMsg(`stop error: ${String((e as Error)?.message || e)}`);
+      console.log("[CREATOR SFU] stopped");
+      return;
     }
   }
 
@@ -122,7 +79,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
     <div className="flex flex-col gap-4">
       {/* Creator camera preview (always rendered) */}
       <div className="w-full max-w-xl aspect-video bg-black/80 rounded-xl overflow-hidden">
-        <video id="creatorPreview" className="w-full h-full object-cover" muted playsInline autoPlay />
+        <video id="creator-preview" className="w-full h-full object-cover" muted playsInline autoPlay />
       </div>
       
       {/* SFU Control Panel */}
