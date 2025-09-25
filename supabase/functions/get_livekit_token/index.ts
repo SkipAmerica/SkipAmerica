@@ -5,32 +5,33 @@ const API_KEY = Deno.env.get("LIVEKIT_API_KEY")!;
 const API_SECRET = Deno.env.get("LIVEKIT_API_SECRET")!;
 const HOST = Deno.env.get("VITE_LIVEKIT_URL")!; // echo for clients
 
-const corsHeaders = {
+const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
-}
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: cors });
   }
 
   try {
-    if (req.method !== "POST") return json({ error: "POST only" }, 405);
+    if (req.method !== "POST") {
+      return new Response(JSON.stringify({ error: "POST only" }), {
+        status: 405,
+        headers: { "Content-Type": "application/json", ...cors },
+      });
+    }
     
     const { role, creatorId, identity } = await req.json();
     console.log('[LIVEKIT TOKEN] Request:', { role, creatorId, identity });
     
     if (!role || !creatorId || !identity) {
-      return json({ error: "missing role|creatorId|identity" }, 400);
+      return new Response(JSON.stringify({ error: "missing role|creatorId|identity" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...cors },
+      });
     }
     
     const room = `creator:${creatorId}`;
@@ -47,9 +48,14 @@ serve(async (req) => {
     const token = await at.toJwt();
     console.log('[LIVEKIT TOKEN] Generated token for room:', room);
     
-    return json({ token, host: HOST, room });
+    return new Response(JSON.stringify({ token, host: HOST, room }), {
+      headers: { "Content-Type": "application/json", ...cors },
+    });
   } catch (e) {
     console.error('[LIVEKIT TOKEN] Error:', e);
-    return json({ error: String(e) }, 500);
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...cors },
+    });
   }
 });
