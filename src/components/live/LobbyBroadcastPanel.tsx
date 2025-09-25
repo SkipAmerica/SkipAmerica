@@ -23,68 +23,64 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
   async function startSfuBroadcast() {
     if (USE_SFU) {
       try {
-        dlog("[CREATOR][SFU] start pressed");
-        setSfuMsg("getting local tracks…");
+        console.log("[CREATOR SFU] starting…");
         const sfu = createSFU();
 
-        // 1) Get token
-        setSfuMsg("requesting token…");
+        // === PREVIEW CAMERA IMMEDIATELY ===
+        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
+        const tracks = await (async () => {
+          const { createLocalTracks } = await import("livekit-client");
+          const local = await createLocalTracks({ audio: true, video: { facingMode: "user" } });
+          const vt = local.find(t => t.kind === "video");
+          if (pv && vt) {
+            vt.attach(pv);
+            pv.play?.().catch(()=>{});
+            console.log("[CREATOR SFU] local preview attached");
+          }
+          return local;
+        })();
+
+        // === GET TOKEN FROM EDGE FUNCTION ===
         const creatorId = (window as any)?.supabaseUser?.id || (window as any)?.__creatorId || (await (async () => {
           try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
         })());
         const identity = creatorId || crypto.randomUUID();
-        if (!creatorId) dwarn("[CREATOR][SFU] creatorId not found; using identity only");
-
-        const jwt = await getAuthJWT();
-
-        const resp = await fetch(FUNCTIONS_URL, {
+        const { supabase } = await import("@/lib/supabaseClient");
+        const session = (await supabase.auth.getSession()).data.session;
+        const resp = await fetch("https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token", {
           method: "POST",
           headers: {
             "content-type": "application/json",
-            "authorization": `Bearer ${jwt}`,
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0cWt1bmp4aHRqc2JwZHJ3c2pmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5ODMwMzcsImV4cCI6MjA3MzU1OTAzN30.4cxQkkwnniFt5H4ToiNcpi6CxpXCpu4iiSTRUjDoBbw"
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {})
           },
           body: JSON.stringify({ role: "creator", creatorId, identity }),
         });
-        const { token, url, error } = await resp.json();
-        if (error) throw new Error(error);
+        const dbgTxt = await resp.clone().text().catch(()=>"(no body)");
+        console.log("[CREATOR SFU] token http", resp.status, dbgTxt.slice(0,200)+"…");
+        if (!resp.ok) throw new Error(`token http ${resp.status}`);
 
-        // 2) Connect to LiveKit
-        setSfuMsg(`connecting ${url}…`);
+        const { token, url, room } = JSON.parse(dbgTxt || "{}");
+        console.log("[CREATOR SFU] parsed", { tokenLen: token?.length, url, room });
+        if (!url || !/^wss:\/\//.test(url)) throw new Error(`bad livekit url: ${url}`);
+
+        // === CONNECT & PUBLISH TRACKS ===
+        sfu.room
+          .on("connectionStateChanged", st => console.log("[CREATOR SFU] conn state:", st))
+          .on("participantConnected", p => console.log("[CREATOR SFU] participant:", p?.identity))
+          .on("trackPublished", pub => console.log("[CREATOR SFU] track published:", pub?.kind));
+
         await sfu.connect(url, token);
+        console.log("[CREATOR SFU] connected to LiveKit");
 
-        // Publish mic + camera (this also creates the local tracks)
-        setSfuMsg("publishing tracks…");
-        await sfu.publishCameraMic();
-
-        // Attach creator preview to the local video track
-        const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
-        try {
-          const pubs = sfu.room.localParticipant.getTrackPublications();
-          console.log("[CREATOR SFU] after publish pubs=", pubs.map(p => p.kind));
-
-          const camPub = pubs.find(p => p.kind === "video");
-          const camTrack = camPub?.track;
-          if (pv && camTrack) {
-            pv.muted = true;
-            pv.playsInline = true;
-            pv.autoplay = true;
-            camTrack.attach(pv);
-            pv.play?.().catch(() => {});
-          } else {
-            console.warn("[CREATOR SFU] preview attach skipped (pv or camTrack missing)");
-          }
-        } catch (e) {
-          console.error("[CREATOR SFU] preview attach error", e);
-        }
+        for (const t of tracks) await sfu.room.localParticipant.publishTrack(t);
+        console.log("[CREATOR SFU] published:", tracks.map(t => t.kind));
 
         sfuRef.current = sfu;
         if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
         setSfuMsg("LIVE ✓");
-        dlog("[CREATOR][SFU] LIVE");
         return; // skip legacy path
       } catch (e) {
-        console.error("[CREATOR][SFU] publish failed", e);
+        console.error("[CREATOR SFU] start failed", e);
         setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
       }
     }
