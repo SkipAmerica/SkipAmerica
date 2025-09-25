@@ -11,6 +11,7 @@ import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
+import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
 
 interface QueueEntry {
   id: string
@@ -345,6 +346,13 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             />
           </div>
         )}
+
+        {/* Creator Preview with Chat */}
+        <div className="flex-shrink-0 px-6 mt-4">
+          {user?.id && (
+            <CreatorPreviewWithChat creatorId={user.id} />
+          )}
+        </div>
 
         <div className="flex-1 overflow-y-auto min-h-0">
           {/* Error State */}

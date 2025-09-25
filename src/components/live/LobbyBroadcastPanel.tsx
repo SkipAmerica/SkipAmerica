@@ -34,7 +34,9 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
         identity,
       });
       await __creatorSFU.connect(url, token);
+      window.dispatchEvent(new Event("sfu:creator:connected"));
       await __creatorSFU.publishCameraMic();
+      window.dispatchEvent(new Event("sfu:creator:published"));
       const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
       if (preview) {
         preview.muted = true;
