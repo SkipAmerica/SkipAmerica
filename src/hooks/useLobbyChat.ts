@@ -16,8 +16,8 @@ export function useLobbyChat(creatorId?: string) {
   useEffect(() => {
     if (!creatorId) return;
 
-    // Always use the exact same channel name format as PQ
-    const channelName = `realtime:lobby-chat-${creatorId}`;
+    // Use the exact same channel name and pattern as PQ
+    const channelName = `lobby-chat-${creatorId}`;
     console.log("[useLobbyChat] subscribe ->", channelName);
 
     // Clean any prior channel before re-subscribing
@@ -29,20 +29,80 @@ export function useLobbyChat(creatorId?: string) {
       }
     } catch {}
 
-    const ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });
+    // Fetch initial messages (same as PQ)
+    const fetchInitialMessages = async () => {
+      try {
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('lobby_chat_messages')
+          .select('*')
+          .eq('creator_id', creatorId)
+          .order('created_at', { ascending: true })
+          .limit(50);
 
-    ch.on("broadcast", { event: "message" }, (payload: any) => {
-      const body = (payload?.payload ?? payload ?? {}) as Partial<ChatMsg>;
-      const msg: ChatMsg = {
-        id: body.id ?? crypto.randomUUID(),
-        text: body.text ?? "",
-        userId: body.userId,
-        username: body.username,
-        ts: Date.now(),
-      };
-      // Newest goes first visually; we'll render in reversed order.
-      setMessages((prev) => [...prev, msg].slice(-200));
-    });
+        if (messagesError) throw messagesError;
+
+        if (messagesData && messagesData.length > 0) {
+          // Get unique user IDs
+          const userIds = [...new Set(messagesData.map(msg => msg.user_id))];
+          
+          // Fetch profiles for all users
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .in('id', userIds);
+
+          if (profilesError) throw profilesError;
+
+          // Map profiles to messages
+          const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+          
+          const chatMessages = messagesData.map(msg => ({
+            id: msg.id,
+            text: msg.message,
+            userId: msg.user_id,
+            username: profilesMap.get(msg.user_id)?.full_name || 'User',
+            ts: new Date(msg.created_at).getTime(),
+          }));
+
+          setMessages(chatMessages);
+        }
+      } catch (error) {
+        console.error('[useLobbyChat] Error fetching initial messages:', error);
+      }
+    };
+
+    fetchInitialMessages();
+
+    // Subscribe to new messages using postgres_changes (same as PQ)
+    const ch = supabase.channel(channelName);
+
+    ch.on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'lobby_chat_messages',
+        filter: `creator_id=eq.${creatorId}`
+      },
+      async (payload) => {
+        // Fetch profile for the new message
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', payload.new.user_id)
+          .single();
+
+        const chatMessage: ChatMsg = {
+          id: payload.new.id,
+          text: payload.new.message,
+          userId: payload.new.user_id,
+          username: profileData?.full_name || 'User',
+          ts: new Date(payload.new.created_at).getTime(),
+        };
+
+        setMessages(prev => [...prev, chatMessage].slice(-200));
+      }
+    );
 
     ch.subscribe((status) => {
       console.log("[useLobbyChat] status:", status, channelName);
