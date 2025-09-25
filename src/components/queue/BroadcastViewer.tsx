@@ -33,7 +33,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (!USE_SFU || !queueId) return;
     let sfu = createSFU();
 
-    sfu.onFirstRemoteVideo((incoming) => {
+    sfu.onRemoteVideo((incoming) => {
       const el = videoRef.current;
       if (!el) return;
       if (el !== incoming && el.parentElement) {

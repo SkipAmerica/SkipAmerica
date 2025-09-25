@@ -338,7 +338,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </SheetHeader>
 
         {/* Broadcast Panel */}
-        {store.isLobbyBroadcasting && RUNTIME.SHOW_SFU_CONTROL && (
+        {store.isLobbyBroadcasting && (
           <div className="flex-shrink-0 px-6">
             <LobbyBroadcastPanel 
               onEnd={() => store.setLobbyBroadcasting(false)}

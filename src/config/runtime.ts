@@ -1,6 +1,6 @@
 export const RUNTIME = {
-  USE_SFU: true,            // SFU is the default path
-  ENABLE_HUD: false,        // disable on-screen debug HUD
-  DEBUG_LOGS: false,        // route most logs through a guard
-  SHOW_SFU_CONTROL: false,  // hide SFU control panel
+  USE_SFU: true,
+  ENABLE_HUD: true,
+  DEBUG_LOGS: true,
+  SHOW_SFU_CONTROL: false, // left here for debug-only tools; not used for rendering
 };
