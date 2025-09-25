@@ -14,6 +14,7 @@ import { guardChannelUnsubscribe, allowTeardownOnce } from '@/lib/realtimeGuard'
 import { runWithTeardownAllowed } from '@/lib/realtimeTeardown';
 import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
+import { Track } from 'livekit-client';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
 
@@ -880,6 +881,18 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
           await sfu.connect(HOST, token);
           hudLog("[SFU] connected");
+          
+          // force a catch-up pass now that we're connected
+          sfu.room.remoteParticipants.forEach((p) => {
+            p.trackPublications.forEach((pub) => {
+              const track = pub.track;
+              if (track && track.kind === Track.Kind.Video && videoRef.current) {
+                const el = videoRef.current;
+                track.attach(el);
+                console.log("[SFU] attached existing video track to element");
+              }
+            });
+          });
           
           setConnectionState('connected');
           console.log('[VIEWER] SFU connected successfully');

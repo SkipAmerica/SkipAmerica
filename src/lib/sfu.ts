@@ -1,5 +1,18 @@
-import { Room, RoomEvent, Track, RemoteTrack, createLocalTracks } from "livekit-client";
-import { hudLog } from "@/lib/hud";
+import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, RemoteTrackPublication, createLocalTracks } from "livekit-client";
+
+function attachVideoFromParticipant(p: RemoteParticipant, cb: (el: HTMLVideoElement) => void) {
+  p.trackPublications.forEach((pub: RemoteTrackPublication) => {
+    const track = pub.track;
+    if (track && track.kind === Track.Kind.Video) {
+      const el = document.createElement("video");
+      el.autoplay = true;
+      el.playsInline = true;
+      el.muted = false;
+      track.attach(el);
+      cb(el);
+    }
+  });
+}
 
 export type SFUHandle = {
   room: Room;
@@ -13,17 +26,23 @@ export function createSFU(): SFUHandle {
   const room = new Room({ adaptiveStream: true, dynacast: true });
 
   function onRemoteVideo(cb: (videoEl: HTMLVideoElement) => void) {
-    let attached = false;
-    room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
-      if (track.kind !== Track.Kind.Video || attached) return;
-      const el = document.createElement("video");
-      el.autoplay = true;
-      el.playsInline = true;
-      el.muted = true;      // autoplay-safe
-      track.attach(el);
-      attached = true;
-      hudLog("[SFU] remote video attached");
-      cb(el);
+    // live subscriptions
+    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+      if (track.kind === Track.Kind.Video) {
+        const el = document.createElement("video");
+        el.autoplay = true;
+        el.playsInline = true;
+        el.muted = false;
+        track.attach(el);
+        cb(el);
+      }
+    });
+
+    // catch-up for participants already in the room
+    room.remoteParticipants.forEach((p) => attachVideoFromParticipant(p, cb));
+    // and future joins that might have tracks immediately
+    room.on(RoomEvent.ParticipantConnected, (p) => {
+      attachVideoFromParticipant(p, cb);
     });
   }
 
@@ -31,6 +50,8 @@ export function createSFU(): SFUHandle {
     console.log('[SFU] Connecting to:', host);
     await room.connect(host, token);
     console.log('[SFU] Connected successfully');
+    // after connect, run another catch-up pass (in case participants existed at join)
+    room.remoteParticipants.forEach((p) => attachVideoFromParticipant(p, () => {}));
   }
 
   async function publishCameraMic() {
