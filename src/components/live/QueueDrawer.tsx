@@ -42,6 +42,18 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
+  
+  // IMPORTANT: use the SAME id the PQ uses for chat/video
+  // If you already compute it elsewhere, reuse that variable here.
+  // Common names in this codebase: store.creator_user_id, resolvedCreatorId, creator_user_id
+  const resolvedCreatorId =
+    // try store first (matches PQ):
+    // @ts-ignore
+    (store?.creator_user_id || store?.creatorId) ||
+    // LAST resort: auth user id (only if the above are missing)
+    user?.id;
+
+  console.log("[CREATOR MOUNT] resolvedCreatorId =", resolvedCreatorId, " auth.user =", user?.id);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -349,10 +361,12 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
         {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
         <div className="flex-shrink-0 px-6 mt-4">
-          {user?.id ? (
-            <CreatorPreviewWithChat creatorId={user.id} />
+          {resolvedCreatorId ? (
+            <CreatorPreviewWithChat creatorId={resolvedCreatorId} />
           ) : (
-            <div className="text-xs text-red-400">[CreatorPreview] No user.id — sign in required</div>
+            <div className="text-xs text-red-400">
+              [CreatorPreview] Missing resolvedCreatorId — cannot subscribe to lobby channel
+            </div>
           )}
         </div>
 

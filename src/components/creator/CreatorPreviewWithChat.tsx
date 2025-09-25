@@ -15,7 +15,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const [focusHack, setFocusHack] = useState(false);
 
   useEffect(() => {
-    console.log("[CreatorPreview] mounted for creatorId:", creatorId);
+    console.log("[CreatorPreview] using creatorId:", creatorId, " (will subscribe to realtime:lobby-chat-" + creatorId + ")");
   }, [creatorId]);
 
   // Ensure creatorId is stable and valid

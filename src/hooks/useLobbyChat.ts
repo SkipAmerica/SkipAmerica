@@ -23,6 +23,7 @@ export function useLobbyChat(creatorId?: string) {
 
     // 1) Reuse a single channel per creatorId (do NOT create/destroy on each mount)
     const channelName = `realtime:lobby-chat-${creatorId}`;
+    console.log("[useLobbyChat] subscribe ->", channelName);
     let ch = _lobbyChanRegistry[channelName];
     if (!ch) {
       ch = supabase.channel(channelName, { config: { broadcast: { ack: true } } });

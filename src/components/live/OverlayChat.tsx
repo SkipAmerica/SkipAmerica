@@ -19,8 +19,9 @@ export default function OverlayChat({
   // keep scroll pinned to top (where newest items appear)
   useEffect(() => {
     if (!listRef.current) return;
-    listRef.current.scrollTop = 0;
-  }, [live.length]);
+    listRef.current.scrollTop = 0; // newest at top
+    console.log("[OverlayChat] creatorId", creatorId, " messages:", live.length);
+  }, [live.length, creatorId]);
 
   return (
     <div
