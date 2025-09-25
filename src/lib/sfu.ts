@@ -1,6 +1,6 @@
 import {
   Room, RoomEvent, Track, RemoteTrack, RemoteParticipant,
-  RemoteTrackPublication, createLocalTracks, ConnectionError
+  RemoteTrackPublication, createLocalTracks as lkCreateLocalTracks, ConnectionError
 } from "livekit-client";
 
 console.log("[SFU] helper loaded");
@@ -122,7 +122,7 @@ export function createSFU() {
         room.on(RoomEvent.Connected, h as any);
       });
     }
-    const tracks = await createLocalTracks({ audio: true, video: { facingMode: "user" } });
+    const tracks = await lkCreateLocalTracks({ audio: true, video: { facingMode: "user" } });
     for (const t of tracks) await room.localParticipant.publishTrack(t);
     console.log('[SFU] published tracks:', room.localParticipant.getTrackPublications().length);
   }
@@ -132,5 +132,16 @@ export function createSFU() {
     await room.disconnect();
   }
 
-  return { room, connect, publishCameraMic, attachVideoFromParticipant, onRemoteVideo, disconnect };
+  return { 
+    room, 
+    connect, 
+    createLocalTracks: (opt?: Parameters<typeof lkCreateLocalTracks>[0]) => lkCreateLocalTracks(opt),
+    publishTracks: async (tracks: any[]) => { 
+      for (const t of tracks) await room.localParticipant.publishTrack(t); 
+    },
+    publishCameraMic, 
+    attachVideoFromParticipant, 
+    onRemoteVideo, 
+    disconnect 
+  };
 }

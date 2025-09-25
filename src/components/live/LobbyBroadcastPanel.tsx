@@ -26,8 +26,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         const sfu = createSFU();
 
         // 1) Get local tracks once
-        const { createLocalTracks } = await import("livekit-client");
-        const localTracks = await createLocalTracks({ audio: true, video: { facingMode: "user" } });
+        const tracks = await sfu.createLocalTracks({ audio: true, video: { facingMode: "user" } });
 
         // 2) Attach camera to preview element
         const pv = document.getElementById("creatorPreview") as HTMLVideoElement | null;
@@ -35,7 +34,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
           // detach anything first
           pv.srcObject = null;
           const MediaStreamCls = (window as any).MediaStream;
-          const ms = new MediaStreamCls(localTracks.filter(t => t.kind === "video").map(t => t.mediaStreamTrack));
+          const ms = new MediaStreamCls(tracks.filter(t => t.kind === "video").map(t => t.mediaStreamTrack));
           pv.srcObject = ms;
           try { await pv.play(); } catch {}
         }
@@ -66,9 +65,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         setSfuMsg(`connecting ${url}…`);
         await sfu.connect(url, token);
         setSfuMsg("publishing tracks…");
-        for (const t of localTracks) {
-          await sfu.room.localParticipant.publishTrack(t);
-        }
+        await sfu.publishTracks(tracks);
 
         sfuRef.current = sfu;
         if (RUNTIME.DEBUG_LOGS) (window as any).__creatorSFU = sfu;
