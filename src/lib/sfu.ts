@@ -12,13 +12,13 @@ export function createSFU(): SFUHandle {
   const room = new Room({ adaptiveStream: true, dynacast: true });
 
   function onRemoteVideo(cb: (videoEl: HTMLVideoElement) => void) {
-    room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+    room.on(RoomEvent.TrackSubscribed, (track, pub, participant) => {
       console.log('[SFU] Track subscribed:', track.kind);
       if (track.kind === Track.Kind.Video) {
         const el = document.createElement("video");
         el.autoplay = true;
         el.playsInline = true;
-        el.muted = false;
+        el.muted = true;
         track.attach(el);
         cb(el);
       }
