@@ -1,8 +1,11 @@
 import React from "react";
 import { createSFU } from "@/lib/sfu";
 import { getAuthJWT } from "@/lib/authToken";
+import { RUNTIME } from "@/config/runtime";
 
-const USE_SFU = true;
+// Debug logging functions
+const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
+const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
 
 interface LobbyBroadcastPanelProps {
   onEnd?: () => void;
@@ -14,7 +17,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
 
   async function startSfuBroadcast() {
     try {
-      console.log("[CREATOR][SFU] start pressed");
+      dlog("[CREATOR][SFU] start pressed");
       setSfuMsg("requesting token…");
       if (!sfuRef.current) sfuRef.current = createSFU();
 
@@ -22,7 +25,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         try { const { data } = await (await import("@/lib/supabaseClient")).supabase.auth.getUser(); return data?.user?.id; } catch { return undefined; }
       })());
       const identity = creatorId || crypto.randomUUID();
-      if (!creatorId) console.warn("[CREATOR][SFU] creatorId not found; using identity only");
+      if (!creatorId) dwarn("[CREATOR][SFU] creatorId not found; using identity only");
 
       const jwt = await getAuthJWT();
 
@@ -36,7 +39,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
         body: JSON.stringify({ role: "creator", creatorId, identity }),
       });
       const j = await resp.json();
-      console.log("[CREATOR][SFU] token resp", resp.status, j);
+      dlog("[CREATOR][SFU] token resp", resp.status, j);
       if (!resp.ok || j.error) throw new Error(j.error || `http ${resp.status}`);
 
       setSfuMsg(`connecting ${j.url}…`);
@@ -45,7 +48,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
       await sfuRef.current!.publishCameraMic();
       (window as any).__creatorSFU = sfuRef.current;
       setSfuMsg("LIVE ✓");
-      console.log("[CREATOR][SFU] LIVE");
+      dlog("[CREATOR][SFU] LIVE");
     } catch (e) {
       console.error("[CREATOR][SFU] error", e);
       setSfuMsg(`error: ${String((e as Error)?.message || e)}`);
@@ -54,7 +57,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
 
   async function stopSfuBroadcast() {
     try {
-      console.log("[CREATOR][SFU] stop pressed");
+      dlog("[CREATOR][SFU] stop pressed");
       setSfuMsg("stopping…");
       const sfu = sfuRef.current || (window as any).__creatorSFU;
       if (sfu) { await sfu.disconnect(); }
@@ -62,7 +65,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
       (window as any).__creatorSFU = undefined;
       setSfuMsg("stopped");
     } catch (e) {
-      console.warn("[CREATOR][SFU] stop error", e);
+      dwarn("[CREATOR][SFU] stop error", e);
       setSfuMsg(`stop error: ${String((e as Error)?.message || e)}`);
     }
   }
@@ -71,7 +74,7 @@ export default function LobbyBroadcastPanel(props: LobbyBroadcastPanelProps) {
   React.useEffect(() => {
     (window as any).__creatorStartSFU = startSfuBroadcast;
     (window as any).__creatorStopSFU = stopSfuBroadcast;
-    console.log("[CREATOR][SFU] panel mounted (v1)");
+    dlog("[CREATOR][SFU] panel mounted (v1)");
     return () => {
       delete (window as any).__creatorStartSFU;
       delete (window as any).__creatorStopSFU;

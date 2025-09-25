@@ -16,8 +16,13 @@ import DebugHUD from '@/components/dev/DebugHUD';
 import { createSFU } from '@/lib/sfu';
 import { Track, RoomEvent, RemoteTrack } from 'livekit-client';
 import { getAuthJWT } from '@/lib/authToken';
+import { RUNTIME } from '@/config/runtime';
 
 const TOKEN_URL = "https://ytqkunjxhtjsbpdrwsjf.functions.supabase.co/get_livekit_token";
+
+// Debug logging functions
+const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
+const dwarn = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.warn(...args); };
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -39,7 +44,6 @@ type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'off
 
 export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
   const queueId = creatorId; // The creatorId parameter is actually the queueId from URL
-  const USE_SFU = true; // Feature flag for LiveKit SFU - immediate connect
   
   if (!queueId) {
     return <div className="p-4 text-red-500">No queue ID provided</div>;
@@ -108,22 +112,22 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Immediate SFU connection flow on mount
   useEffect(() => {
-    if (!USE_SFU || !queueId) return;
+    if (!RUNTIME.USE_SFU || !queueId) return;
 
     const connectSFU = async () => {
       try {
-        console.log('[SFU] Starting immediate connection flow');
+        dlog('[SFU] Starting immediate connection flow');
         setSfuHudData(prev => ({ ...prev, 'Ch Status': '(SFU)', 'PC': 'resolving' }));
 
         // 1. Resolve creatorId (existing resolver)
         const resolvedCreatorId = await resolveCreatorUserId(queueId);
         const effectiveCreatorId = resolvedCreatorId || queueId;
-        console.log('[SFU] Resolved creator:', effectiveCreatorId);
+        dlog('[SFU] Resolved creator:', effectiveCreatorId);
 
         // 2. Get identity from supabase.auth.getUser()
         const { data } = await supabase.auth.getUser();
         const identity = data?.user?.id || crypto.randomUUID();
-        console.log('[SFU] Using identity:', identity);
+        dlog('[SFU] Using identity:', identity);
 
         // 3. Fetch token with proper auth
         setSfuHudData(prev => ({ ...prev, 'PC': 'fetching-token' }));
@@ -167,7 +171,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         
         // Hook remote video with autoplay handling
         sfu.onRemoteVideo((videoElement) => {
-          console.log("[SFU] Remote video track received");
+          dlog("[SFU] Remote video track received");
           if (videoRef.current && videoElement !== videoRef.current) {
             // Attach track to our existing video element instead of replacing
             const stream = videoElement.srcObject as MediaStream;
@@ -182,7 +186,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         });
 
         await sfu.connect(HOST, token);
-        console.log('[SFU] Connected successfully, participants:', sfu.room.remoteParticipants.size);
+        dlog('[SFU] Connected successfully, participants:', sfu.room.remoteParticipants.size);
         setSfuHudData(prev => ({ ...prev, 'PC': 'connected' }));
         setConnectionState('connected');
         
@@ -199,7 +203,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     // Small delay to ensure DOM is ready
     setTimeout(connectSFU, 100);
-  }, [USE_SFU, queueId]);
+  }, [RUNTIME.USE_SFU, queueId]);
 
   // User-gesture-safe autoplay handler
   const handleAutoplay = useCallback(() => {
@@ -207,11 +211,11 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (!video) return;
 
     video.play().then(() => {
-      console.log('[SFU] Autoplay succeeded');
+      dlog('[SFU] Autoplay succeeded');
       setSfuHudData(prev => ({ ...prev, 'Autoplay': 'ok' }));
     }).catch((error) => {
       if (error.name === 'AbortError' || error.name === 'NotAllowedError') {
-        console.log('[SFU] Autoplay blocked - awaiting user gesture');
+        dlog('[SFU] Autoplay blocked - awaiting user gesture');
         setSfuHudData(prev => ({ ...prev, 'Autoplay': 'blocked' }));
         
         // Add click handler to resume on user gesture
@@ -228,14 +232,14 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   // Resume WebAudio context on first user click
   const resumeAudioContextOnce = useCallback(() => {
-    console.log('[SFU] User click detected - resuming audio context and video');
+    dlog('[SFU] User click detected - resuming audio context and video');
     
     // Resume any suspended audio contexts (LiveKit needs this)
     if (typeof AudioContext !== 'undefined') {
       const audioContext = new AudioContext();
       if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => {
-          console.log('[SFU] Audio context resumed');
+          dlog('[SFU] Audio context resumed');
         });
       }
     }
@@ -244,7 +248,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     const video = videoRef.current;
     if (video && video.paused) {
       video.play().then(() => {
-        console.log('[SFU] Video resumed after user gesture');
+        dlog('[SFU] Video resumed after user gesture');
         setSfuHudData(prev => ({ ...prev, 'Autoplay': 'resumed' }));
       }).catch(console.error);
     }
@@ -252,12 +256,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     (window as any).__autoplayClickAdded = false;
   }, []);
 
-  const DEBUG =
-    typeof window !== 'undefined' &&
-    /(?:^|[?&])debug=1(?:&|$)/.test(window.location.search);
-
   const InlineHUD = () => {
-    if (!DEBUG) return null;
+    if (!RUNTIME.ENABLE_HUD) return null;
     const pc = pcRef.current;
     const v = videoRef.current;
     const ms = (remoteMsRef?.current as MediaStream | undefined);
@@ -321,7 +321,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       slowRetryRef.current.timer = null;
     }
     slowRetryRef.current.ticks = 0;
-    if (DEBUG && reason) console.log('[VIEWER', viewerIdRef.current, '] slow-retry STOP', reason);
+    if (reason) dlog('[VIEWER', viewerIdRef.current, '] slow-retry STOP', reason);
   }
 
   function sendRequestOffer(reason: string) {
@@ -338,7 +338,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     if (pcRef.current?.connectionState === 'connected' || (offersReceivedRef.current ?? 0) > 0) return;
     if (slowRetryRef.current.timer) return; // already running
 
-    if (DEBUG) console.log('[VIEWER', viewerIdRef.current, `] slow-retry START (${reason}) every ${intervalMs}ms`);
+    dlog('[VIEWER', viewerIdRef.current, `] slow-retry START (${reason}) every ${intervalMs}ms`);
 
     slowRetryRef.current.timer = setInterval(() => {
       const connected = pcRef.current?.connectionState === 'connected';
@@ -1036,7 +1036,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
     const connectToCreatorBroadcast = async () => {
       // Legacy P2P path (only if SFU disabled)
-      if (!USE_SFU) {
+      if (!RUNTIME.USE_SFU) {
 
       try {
         const viewerId = viewerIdRef.current;
@@ -1224,12 +1224,12 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     }
 
     // Only initialize legacy P2P connection for non-SFU mode
-    if (!USE_SFU && (connectionState === 'checking' || connectionState === 'retry')) {
+    if (!RUNTIME.USE_SFU && (connectionState === 'checking' || connectionState === 'retry')) {
       initConnection();
     }
 
     // No cleanup here - let unmount-only effect handle it
-  }, [resolvedCreatorId, viewerIdRef.current, USE_SFU]); // Only re-run when creatorUserId changes, not on UI state
+  }, [resolvedCreatorId, viewerIdRef.current, RUNTIME.USE_SFU]); // Only re-run when creatorUserId changes, not on UI state
 
   // Add visibility change handler for offer burst and video rebind
   useEffect(() => {
@@ -1258,7 +1258,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
       console.log('[VIEWER', viewerIdRef.current, '] removeChannel attempted for', channelRef.current?.topic);
       
       // Cleanup SFU on unmount
-      if (USE_SFU && (window as any).__viewerSFU) {
+      if (RUNTIME.USE_SFU && (window as any).__viewerSFU) {
         try {
           (window as any).__viewerSFU.disconnect();
           (window as any).__viewerSFU = null;
@@ -1457,7 +1457,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         </div>
       )}
 
-      {DEBUG && <InlineHUD />}
+      {RUNTIME.ENABLE_HUD && <InlineHUD />}
 
     </div>
   );
