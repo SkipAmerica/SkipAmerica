@@ -7,6 +7,7 @@ import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
 import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { LiveControlBar } from '@/components/live/LiveControlBar'
 import PreCallLobby from '@/components/live/PreCallLobby'
+import { SFUDebugHUD } from '@/components/dev/SFUDebugHUD'
 import { useLive } from '@/hooks/live'
 
 function App() {
@@ -71,6 +72,7 @@ function AppContent() {
       <AppRouter />
       <PWAInstallPrompt />
       <LiveControlBar />
+      <SFUDebugHUD />
       
       {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
       {live?.state === 'SESSION_PREP' && (
