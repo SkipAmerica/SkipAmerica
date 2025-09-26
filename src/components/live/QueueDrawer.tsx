@@ -98,14 +98,19 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         ...prev,
         openHeightPx,
         collapsedOffset,
-        panelOffset: prev.panelOffset === 0 ? collapsedOffset : prev.panelOffset
+        // Start collapsed if this is initial setup (panelOffset was 0)
+        panelOffset: prev.openHeightPx === 0 ? collapsedOffset : prev.panelOffset
       }))
     }
     
-    updateDimensions()
+    // Use a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(updateDimensions, 100)
     window.addEventListener('resize', updateDimensions)
     
-    return () => window.removeEventListener('resize', updateDimensions)
+    return () => {
+      clearTimeout(timeoutId)
+      window.removeEventListener('resize', updateDimensions)
+    }
   }, [state.entries.length])
   
   // Panel drag handlers
@@ -455,7 +460,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
-        className="h-screen flex flex-col p-0"
+        className="h-screen flex flex-col p-0 relative"
         aria-describedby="queue-description"
       >
         <SheetHeader className="pb-4 flex-shrink-0 px-6">
@@ -573,10 +578,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </div>
 
         {/* Unified Draggable Queue Panel */}
-        {!state.loading && state.entries.length > 0 && (
+        {!state.loading && state.entries.length > 0 && panelState.openHeightPx > 0 && (
           <div
             ref={panelRef}
-            className="fixed bottom-0 left-0 right-0 z-40 pointer-events-auto bg-background border-t shadow-2xl"
+            className="absolute bottom-0 inset-x-0 z-40 pointer-events-auto bg-background border-t shadow-2xl will-change-transform"
             style={{
               height: `${panelState.openHeightPx}px`,
               transform: `translateY(${panelState.panelOffset}px)`,
