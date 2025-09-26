@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
+import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
@@ -42,6 +43,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
+  const navigate = useNavigate()
   
   // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
   // Use the authenticated user ID as the lobby creator ID (creator's own panel)
@@ -49,6 +51,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   console.log("[CREATOR PANEL] lobbyCreatorId =", lobbyCreatorId);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
+  const gestureRef = useRef<HTMLDivElement>(null)
   
   const [state, setLocalState] = useState<QueueState>({
     entries: [],
@@ -59,6 +62,18 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   })
   const [processingInvite, setProcessingInvite] = useState(false)
   const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
+
+  // Gesture tracking state
+  const [gestureState, setGestureState] = useState({
+    tracking: false,
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    swiped: false
+  })
+
+  // Check if user is creator (simple guard)
+  const isCreator = user?.user_metadata?.account_type === 'creator' || user?.user_metadata?.role === 'creator'
 
   // Cleanup on unmount
   useEffect(() => {
@@ -284,6 +299,72 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       .slice(0, 2)
   }
 
+  // Gesture handlers for right-swipe navigation
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Only track for creators
+    if (!isCreator) return
+    
+    // Only primary pointer (left click/first touch)
+    if (!e.isPrimary) return
+    
+    // Don't track if starting on interactive elements
+    const target = e.target as HTMLElement
+    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') return
+    
+    // Only track if within gesture container
+    if (!gestureRef.current?.contains(target)) return
+    
+    setGestureState({
+      tracking: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      startTime: Date.now(),
+      swiped: false
+    })
+  }, [isCreator])
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    if (!gestureState.tracking) return
+    
+    const dx = e.clientX - gestureState.startX
+    const dy = e.clientY - gestureState.startY
+    
+    // If too much vertical movement, treat as scroll
+    if (Math.abs(dy) > 30) {
+      setGestureState(prev => ({ ...prev, tracking: false }))
+      return
+    }
+    
+    // Check for right swipe threshold
+    if (dx > 80 && Date.now() - gestureState.startTime < 600) {
+      setGestureState(prev => ({ ...prev, swiped: true }))
+    }
+  }, [gestureState])
+
+  const handlePointerUp = useCallback(() => {
+    if (gestureState.swiped) {
+      navigate('/creator/blank')
+    }
+    
+    setGestureState({
+      tracking: false,
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      swiped: false
+    })
+  }, [gestureState.swiped, navigate])
+
+  const handlePointerCancel = useCallback(() => {
+    setGestureState({
+      tracking: false,
+      startX: 0,
+      startY: 0,
+      startTime: 0,
+      swiped: false
+    })
+  }, [])
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
@@ -361,7 +442,14 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0"
+          ref={gestureRef}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          style={{ touchAction: 'pan-y' }}
+        >
           {/* Error State */}
           {state.error && (
             <Alert variant="destructive" className="mb-4">
