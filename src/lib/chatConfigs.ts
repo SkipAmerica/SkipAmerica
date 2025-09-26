@@ -60,7 +60,7 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     messageFlow: 'newest-top',
     emptyStateText: 'No messages yet…',
     className: 'bg-transparent border-0',
-    inputClassName: '!bg-transparent border border-white'
+    inputClassName: '[&_input]:!bg-transparent [&_input]:border [&_input]:border-white [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-0 [&_button]:text-white [&_button]:hover:bg-white/10'
   },
   messaging: {
     enabled: true,
