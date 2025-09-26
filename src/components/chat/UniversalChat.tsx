@@ -195,7 +195,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               const profileInfo = getProfileDisplayInfo(message.profiles);
               
               return (
-                <div key={message.id} className="flex gap-3 items-center bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
+                <div key={message.id} className="flex gap-3 items-center">
                   {showProfiles && (
                     <Avatar className={`${avatarSizeClasses} flex-shrink-0`}>
                       <AvatarImage src={profileInfo.avatarUrl} />
@@ -212,14 +212,14 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
                   )}
                   <div className="flex-1 min-w-0">
                     {showUsernames ? (
-                      <div className={`text-foreground break-words ${textSizes.message}`}>
+                      <div className={`text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
                         <span className={`${usernameStyle === 'bold' ? 'font-bold' : 'font-medium'} ${textSizes.name}`}>
                           {profileInfo.fullName}:
                         </span>{' '}
                         <RichTextMessage message={message.message} />
                       </div>
                     ) : (
-                      <div className={`text-foreground break-words ${textSizes.message}`}>
+                      <div className={`text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
                         <RichTextMessage message={message.message} />
                       </div>
                     )}
