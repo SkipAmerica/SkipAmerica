@@ -53,7 +53,6 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
-    height: 'h-full',
     showProfiles: true,
     showUsernames: true,
     usernameStyle: 'bold',
