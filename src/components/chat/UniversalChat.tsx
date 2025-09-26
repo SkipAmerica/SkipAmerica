@@ -185,7 +185,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
       )}
       
       <ScrollArea className={scrollAreaClasses}>
-        <div className={compact ? "space-y-1" : "space-y-2"}>
+        <div className={`pb-2 ${compact ? "space-y-0.5" : "space-y-2"}`}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <p className={textSizes.message}>{emptyStateText}</p>
@@ -233,8 +233,8 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
       </ScrollArea>
       
       {messagingEnabled && !useExternalInput && (
-        <div className={`p-4 border-t ${config.appearance?.inputClassName ? 'bg-transparent border-transparent' : ''}`}>
-          <div className={config.appearance?.inputClassName ? `[&_input]:${config.appearance.inputClassName} [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:${config.appearance.inputClassName} [&_button]:text-white [&_button]:hover:bg-white/10` : ''}>
+        <div className={`pb-2 px-4 pt-2 border-t ${config.appearance?.inputClassName ? 'bg-transparent border-transparent' : ''}`}>
+          <div className={config.appearance?.inputClassName ? `[&_input]:${config.appearance.inputClassName} [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-0 [&_button]:text-white [&_button]:hover:bg-white/10` : ''}>
             <RichTextInput
               value={newMessage}
               onChange={setNewMessage}
