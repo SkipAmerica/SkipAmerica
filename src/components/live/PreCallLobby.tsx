@@ -293,11 +293,18 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] bg-background flex flex-col safe-area-insets overflow-hidden"
+      className="fixed inset-0 z-[9999] bg-black flex flex-col safe-area-insets overflow-hidden"
       role="dialog"
       aria-labelledby="precall-header"
       aria-modal="true"
     >
+      {/* Full-screen video background */}
+      <div className="fixed inset-0 z-0 bg-black">
+        <MediaPreview className="block w-full h-full object-cover" muted />
+      </div>
+      
+      {/* UI content layer */}
+      <div className="relative z-10 flex flex-col h-full">
       {/* Back to Lobby Freeze Pane */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-md border-b sticky top-0 z-50">
         <div className="flex items-center p-3">
@@ -360,7 +367,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
             {/* Your Preview - Full Width and 2.5x Height */}
             <div className="flex flex-col">
               <h2 className="text-sm font-medium mb-2">Your Preview</h2>
-              <Card className="w-full min-h-[750px] overflow-hidden relative">
+              <div className="w-full min-h-[750px] overflow-hidden relative bg-transparent p-0 shadow-none border-0">
                 {previewStarted ? (
                   <MediaPreview className="w-full h-full" />
                 ) : (
@@ -376,7 +383,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
                     </div>
                   </div>
                 )}
-              </Card>
+              </div>
               
               {/* Camera Controls */}
               <div className="flex justify-center gap-4 py-3">
@@ -553,6 +560,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
           </div>
         </div>
       </main>
+      </div>
     </div>
   )
 }
