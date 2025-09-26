@@ -59,7 +59,8 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     compact: true,
     messageFlow: 'newest-top',
     emptyStateText: 'No messages yet…',
-    className: 'bg-transparent border-0'
+    className: 'bg-transparent border-0',
+    inputClassName: 'bg-transparent border border-white'
   },
   messaging: {
     enabled: true,
@@ -68,12 +69,7 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     showSendButton: true
   },
   richText: {
-    enabled: true,
-    allowBold: true,
-    allowItalic: true,
-    allowFontSize: false,
-    allowFontColor: false,
-    toolbar: 'compact'
+    enabled: false
   },
   positioning: {
     mode: 'relative',

@@ -37,6 +37,7 @@ export interface ChatAppearance {
   compact?: boolean;
   reverseOrder?: boolean;
   className?: string;
+  inputClassName?: string;
   emptyStateText?: string;
   position?: 'default' | 'bottom-left' | 'bottom-right' | 'top-left' | 'top-right' | 'center' | 'custom';
   messageFlow?: 'newest-bottom' | 'newest-top';
