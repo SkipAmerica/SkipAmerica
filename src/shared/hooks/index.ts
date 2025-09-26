@@ -15,5 +15,3 @@ export type { LiveState } from '../../hooks/live'
 // Re-export universal chat hooks
 export { useUniversalChat } from '../../hooks/useUniversalChat'
 export { useExternalChatInput } from '../../hooks/useExternalChatInput'
-export { useSmartScroll } from './use-smart-scroll'
-export type { SmartScrollBehavior } from './use-smart-scroll'

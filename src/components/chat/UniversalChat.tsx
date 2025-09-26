@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SmartScrollArea } from '@/components/ui/smart-scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Toggle } from '@/components/ui/toggle';
@@ -26,6 +26,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const { toast } = useToast();
   const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
   const [isFixed, setIsFixed] = useState(config.positioning?.mode === 'fixed');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     messages,
     newMessage,
@@ -33,6 +34,15 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
     sending,
     setSending
   } = useUniversalChat(config);
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user || sending || !config.messaging?.enabled) return;
@@ -171,15 +181,8 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
           )}
         </div>
       )}
-      <SmartScrollArea 
-        className={scrollAreaClasses}
-        items={messages}
-        scrollBehavior={{
-          autoOnNew: true,
-          threshold: 24,
-          messageFlow: messageFlow as 'newest-bottom' | 'newest-top'
-        }}
-      >
+      
+      <ScrollArea className={scrollAreaClasses}>
         <div className={compact ? "space-y-2" : "space-y-4"}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -224,9 +227,9 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               );
             })
           )}
-          
+          <div ref={messagesEndRef} />
         </div>
-      </SmartScrollArea>
+      </ScrollArea>
       
       {messagingEnabled && !useExternalInput && (
         <div className="p-4 border-t">
