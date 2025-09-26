@@ -185,7 +185,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
       )}
       
       <ScrollArea className={scrollAreaClasses}>
-        <div className={compact ? "space-y-2" : "space-y-4"}>
+        <div className={compact ? "space-y-1" : "space-y-2"}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <p className={textSizes.message}>{emptyStateText}</p>
@@ -195,7 +195,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               const profileInfo = getProfileDisplayInfo(message.profiles);
               
               return (
-                <div key={message.id} className="flex gap-3 items-center">
+                <div key={message.id} className="flex gap-3 items-center bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2">
                   {showProfiles && (
                     <Avatar className={`${avatarSizeClasses} flex-shrink-0`}>
                       <AvatarImage src={profileInfo.avatarUrl} />
