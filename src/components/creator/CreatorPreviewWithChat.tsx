@@ -23,7 +23,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   if (!creatorId) {
     console.warn("[CreatorPreviewWithChat] No creatorId available");
     return (
-      <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
+      <div className="relative w-full h-48 rounded-2xl overflow-hidden bg-gray-900 flex items-center justify-center">
         <div className="text-white text-center">
           <p>Loading creator preview...</p>
         </div>
@@ -149,7 +149,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   return (
     <div className="space-y-3 w-full min-w-0">
       {/* ensure overlay can sit above video */}
-      <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl">
+      <div className="relative w-full h-48 bg-black overflow-hidden rounded-xl">
         <video
           id="creator-preview"
           ref={videoRef}
