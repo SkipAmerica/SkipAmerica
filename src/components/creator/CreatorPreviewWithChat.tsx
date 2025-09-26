@@ -161,24 +161,6 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         <OverlayChat creatorId={creatorId} />
       </div>
 
-      {/* creator input – visible on dark bg */}
-      <form onSubmit={onSend} className="flex gap-2">
-        <input
-          id="creator-chat-input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="Say something to the lobby…"
-          className="flex-1 rounded-lg border border-white/10 bg-black/40 text-white placeholder-white/60 px-3 py-2 focus:outline-none"
-          disabled={sending}
-        />
-        <button
-          type="submit"
-          disabled={sending || !text.trim()}
-          className="rounded-lg bg-white/15 px-3 py-2 hover:bg-white/25 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {sending ? 'Sending...' : 'Send'}
-        </button>
-      </form>
     </div>
   );
 }
