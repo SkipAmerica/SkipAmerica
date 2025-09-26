@@ -233,16 +233,18 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
       </ScrollArea>
       
       {messagingEnabled && !useExternalInput && (
-        <div className="p-4 border-t">
-          <RichTextInput
-            value={newMessage}
-            onChange={setNewMessage}
-            onSubmit={handleSendMessage}
-            placeholder={placeholder}
-            disabled={sending}
-            richText={config.richText}
-            showSendButton={config.messaging?.showSendButton ?? true}
-          />
+        <div className={`p-4 border-t ${config.appearance?.className?.includes('bg-transparent') ? 'bg-transparent border-transparent' : ''}`}>
+          <div className={config.appearance?.className?.includes('bg-transparent') ? '[&_input]:bg-transparent [&_input]:border-transparent [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-transparent [&_button]:text-white [&_button]:hover:bg-white/10' : ''}>
+            <RichTextInput
+              value={newMessage}
+              onChange={setNewMessage}
+              onSubmit={handleSendMessage}
+              placeholder={placeholder}
+              disabled={sending}
+              richText={config.richText}
+              showSendButton={config.messaging?.showSendButton ?? true}
+            />
+          </div>
         </div>
       )}
     </div>

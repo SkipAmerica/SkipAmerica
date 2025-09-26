@@ -80,7 +80,7 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
     allowPositionToggle: false
   },
   externalInput: {
-    useExternalInput: true,
+    useExternalInput: false,
     externalInputId: 'creator-chat-input'
   },
   sendMessage: async ({ filterValue, userId, username, text }) => {
