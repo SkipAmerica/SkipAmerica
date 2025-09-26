@@ -94,7 +94,7 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         {/* Video Panes */}
         <div className="flex-1 p-4 space-y-4">
           {/* Creator Local Preview */}
-          <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+          <div className="relative bg-black overflow-hidden h-screen w-screen -mx-4">
             <MediaPreview 
               className="w-full h-full object-cover"
               muted={true}
