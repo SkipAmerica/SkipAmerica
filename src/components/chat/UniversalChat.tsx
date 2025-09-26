@@ -233,7 +233,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
       </ScrollArea>
       
       {messagingEnabled && !useExternalInput && (
-        <div className="pb-2 px-4 pt-2">
+        <div className="pb-2 px-4 pt-px">
           <div className={config.appearance?.inputClassName || ''}>
             <RichTextInput
               value={newMessage}
