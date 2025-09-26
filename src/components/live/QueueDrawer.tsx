@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -61,7 +60,18 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   })
   const [processingInvite, setProcessingInvite] = useState(false)
   const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
-  const [remainingQueueOpen, setRemainingQueueOpen] = useState(false)
+  
+  // Unified draggable panel state
+  const panelRef = useRef<HTMLDivElement>(null)
+  const handleRef = useRef<HTMLDivElement>(null)
+  const [panelState, setPanelState] = useState({
+    panelOffset: 0,
+    isDragging: false,
+    startY: 0,
+    startOffset: 0,
+    openHeightPx: 0,
+    collapsedOffset: 0
+  })
 
   // Gesture tracking state
   const [gestureState, setGestureState] = useState({
@@ -74,6 +84,82 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
   // Check if user is creator (simple guard)
   const isCreator = user?.user_metadata?.account_type === 'creator' || user?.user_metadata?.role === 'creator'
+  
+  // Initialize panel dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (!handleRef.current) return
+      
+      const handleHeight = handleRef.current.offsetHeight
+      const openHeightPx = Math.round(window.innerHeight * 0.6)
+      const collapsedOffset = openHeightPx - handleHeight
+      
+      setPanelState(prev => ({
+        ...prev,
+        openHeightPx,
+        collapsedOffset,
+        panelOffset: prev.panelOffset === 0 ? collapsedOffset : prev.panelOffset
+      }))
+    }
+    
+    updateDimensions()
+    window.addEventListener('resize', updateDimensions)
+    
+    return () => window.removeEventListener('resize', updateDimensions)
+  }, [state.entries.length])
+  
+  // Panel drag handlers
+  const handlePanelPointerDown = useCallback((e: React.PointerEvent) => {
+    if (!e.isPrimary) return
+    
+    // Don't start drag on interactive elements
+    const target = e.target as HTMLElement
+    if (target.closest('button') || target.closest('input') || target.closest('textarea')) return
+    
+    setPanelState(prev => ({
+      ...prev,
+      isDragging: true,
+      startY: e.clientY,
+      startOffset: prev.panelOffset
+    }))
+    
+    e.preventDefault()
+  }, [])
+  
+  const handlePanelPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!panelState.isDragging) return
+    
+    const deltaY = e.clientY - panelState.startY
+    const newOffset = Math.max(0, Math.min(panelState.collapsedOffset, panelState.startOffset + deltaY))
+    
+    setPanelState(prev => ({
+      ...prev,
+      panelOffset: newOffset
+    }))
+  }, [panelState.isDragging, panelState.startY, panelState.startOffset, panelState.collapsedOffset])
+  
+  const handlePanelPointerUp = useCallback(() => {
+    if (!panelState.isDragging) return
+    
+    const threshold = panelState.collapsedOffset * 0.5
+    const shouldOpen = panelState.panelOffset < threshold
+    
+    setPanelState(prev => ({
+      ...prev,
+      isDragging: false,
+      panelOffset: shouldOpen ? 0 : prev.collapsedOffset
+    }))
+  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
+  
+  const handlePanelClick = useCallback(() => {
+    if (panelState.isDragging) return
+    
+    const isOpen = panelState.panelOffset === 0
+    setPanelState(prev => ({
+      ...prev,
+      panelOffset: isOpen ? prev.collapsedOffset : 0
+    }))
+  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -486,13 +572,96 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           ) : null}
         </div>
 
-        {/* First Person - Always Visible at Bottom */}
+        {/* Unified Draggable Queue Panel */}
         {!state.loading && state.entries.length > 0 && (
-          <div className="flex-shrink-0 p-4 border-t bg-background">
-            <Drawer open={remainingQueueOpen} onOpenChange={setRemainingQueueOpen}>
-              {/* First Person as Drawer Trigger */}
-              <DrawerTrigger className="w-full">
-                <div className="relative p-6 rounded-xl border bg-gradient-to-r from-primary/5 to-accent/10 hover:from-primary/10 hover:to-accent/20 transition-all cursor-pointer group">
+          <div
+            ref={panelRef}
+            className="fixed bottom-0 left-0 right-0 z-40 pointer-events-auto bg-background border-t shadow-2xl"
+            style={{
+              height: `${panelState.openHeightPx}px`,
+              transform: `translateY(${panelState.panelOffset}px)`,
+              transition: panelState.isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+            }}
+          >
+            <div className="flex flex-col h-full">
+              {/* Remaining Queue - Scrollable Area Above Handle */}
+              {state.entries.length > 1 && (
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                    <h3 className="font-medium text-sm text-muted-foreground">
+                      {state.entries.length - 1} More in Queue
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {state.entries.slice(1).map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-muted text-muted-foreground text-sm">
+                                {getInitials(entry.profiles?.full_name || 'User')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-background" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm text-foreground">
+                              {entry.profiles?.full_name || 'Anonymous User'}
+                            </p>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatWaitTime(entry.estimated_wait_minutes)}
+                              </div>
+                              <span>#{index + 2} in line</span>
+                            </div>
+                            {entry.discussion_topic && (
+                              <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">
+                                {entry.discussion_topic}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          onClick={() => handleStartCall(entry)}
+                          disabled={processingInvite}
+                          size="sm"
+                          variant="outline"
+                          className="text-xs px-3 h-8"
+                          aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
+                        >
+                          <Phone className="w-3 h-3 mr-1" />
+                          Call
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* First Person - Drag Handle at Bottom */}
+              <div
+                ref={handleRef}
+                className="p-4 border-t bg-background cursor-grab active:cursor-grabbing"
+                onPointerDown={handlePanelPointerDown}
+                onPointerMove={handlePanelPointerMove}
+                onPointerUp={handlePanelPointerUp}
+                onPointerCancel={handlePanelPointerUp}
+                onClick={handlePanelClick}
+                style={{ touchAction: 'none' }}
+                aria-expanded={panelState.panelOffset === 0}
+                role="button"
+                tabIndex={0}
+              >
+                {/* Drag indicator */}
+                <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mb-4" />
+                
+                <div className="relative p-6 rounded-xl border bg-gradient-to-r from-primary/5 to-accent/10 hover:from-primary/10 hover:to-accent/20 transition-all group">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="relative">
@@ -542,72 +711,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                     </div>
                   </div>
                 </div>
-              </DrawerTrigger>
-
-              {/* Remaining Queue in Drawer Content */}
-              {state.entries.length > 1 && (
-                <DrawerContent className="max-h-[60vh]">
-                  <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mt-2 mb-4" />
-                  
-                  <div className="px-4 pb-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Users className="w-5 h-5 text-muted-foreground" />
-                      <h3 className="font-medium text-sm text-muted-foreground">
-                        {state.entries.length - 1} More in Queue
-                      </h3>
-                    </div>
-                    
-                    <div className="space-y-2 max-h-80 overflow-y-auto">
-                      {state.entries.slice(1).map((entry, index) => (
-                        <div
-                          key={entry.id}
-                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="relative">
-                              <Avatar className="w-10 h-10">
-                                <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                                  {getInitials(entry.profiles?.full_name || 'User')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-background" />
-                            </div>
-                            <div>
-                              <p className="font-medium text-sm text-foreground">
-                                {entry.profiles?.full_name || 'Anonymous User'}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Clock className="w-3 h-3" />
-                                  {formatWaitTime(entry.estimated_wait_minutes)}
-                                </div>
-                                <span>#{index + 2} in line</span>
-                              </div>
-                              {entry.discussion_topic && (
-                                <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">
-                                  {entry.discussion_topic}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => handleStartCall(entry)}
-                            disabled={processingInvite}
-                            size="sm"
-                            variant="outline"
-                            className="text-xs px-3 h-8"
-                            aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
-                          >
-                            <Phone className="w-3 h-3 mr-1" />
-                            Call
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </DrawerContent>
-              )}
-            </Drawer>
+              </div>
+            </div>
           </div>
         )}
       </SheetContent>
