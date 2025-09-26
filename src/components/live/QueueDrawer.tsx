@@ -88,18 +88,18 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   // Initialize panel dimensions
   useEffect(() => {
     const updateDimensions = () => {
-      if (!handleRef.current) return
-      
-      const handleHeight = handleRef.current.offsetHeight
       const openHeightPx = Math.round(window.innerHeight * 0.6)
-      const collapsedOffset = openHeightPx - handleHeight
+      const handleHeight = handleRef.current?.offsetHeight || 140 // Safe fallback
+      const collapsedOffset = Math.max(0, openHeightPx - handleHeight)
       
       setPanelState(prev => ({
         ...prev,
         openHeightPx,
         collapsedOffset,
         // Start collapsed if this is initial setup (panelOffset was 0)
-        panelOffset: prev.openHeightPx === 0 ? collapsedOffset : prev.panelOffset
+        panelOffset: prev.openHeightPx === 0 
+          ? collapsedOffset 
+          : Math.min(prev.panelOffset, collapsedOffset) // Clamp to prevent hiding handle
       }))
     }
     
@@ -107,11 +107,23 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     const timeoutId = setTimeout(updateDimensions, 100)
     window.addEventListener('resize', updateDimensions)
     
+    // ResizeObserver for handle height changes
+    let resizeObserver: ResizeObserver | null = null
+    if (handleRef.current && 'ResizeObserver' in window) {
+      resizeObserver = new ResizeObserver(() => {
+        updateDimensions()
+      })
+      resizeObserver.observe(handleRef.current)
+    }
+    
     return () => {
       clearTimeout(timeoutId)
       window.removeEventListener('resize', updateDimensions)
+      if (resizeObserver) {
+        resizeObserver.disconnect()
+      }
     }
-  }, [state.entries.length])
+  }, [state.entries.length, isOpen])
   
   // Panel drag handlers
   const handlePanelPointerDown = useCallback((e: React.PointerEvent) => {
@@ -128,6 +140,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       startOffset: prev.panelOffset
     }))
     
+    // Capture pointer for robust dragging
+    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+    
     e.preventDefault()
   }, [])
   
@@ -143,7 +158,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }))
   }, [panelState.isDragging, panelState.startY, panelState.startOffset, panelState.collapsedOffset])
   
-  const handlePanelPointerUp = useCallback(() => {
+  const handlePanelPointerUp = useCallback((e?: React.PointerEvent) => {
     if (!panelState.isDragging) return
     
     const threshold = panelState.collapsedOffset * 0.5
@@ -154,6 +169,15 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       isDragging: false,
       panelOffset: shouldOpen ? 0 : prev.collapsedOffset
     }))
+    
+    // Release pointer capture
+    if (e?.currentTarget) {
+      try {
+        ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+      } catch {
+        // Ignore errors if capture was already released
+      }
+    }
   }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
   
   const handlePanelClick = useCallback(() => {
@@ -578,7 +602,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </div>
 
         {/* Unified Draggable Queue Panel */}
-        {!state.loading && state.entries.length > 0 && panelState.openHeightPx > 0 && (
+        {!state.loading && state.entries.length > 0 && (
           <div
             ref={panelRef}
             className="absolute bottom-0 inset-x-0 z-40 pointer-events-auto bg-background border-t shadow-2xl will-change-transform"
@@ -655,8 +679,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                 className="p-4 border-t bg-background cursor-grab active:cursor-grabbing"
                 onPointerDown={handlePanelPointerDown}
                 onPointerMove={handlePanelPointerMove}
-                onPointerUp={handlePanelPointerUp}
-                onPointerCancel={handlePanelPointerUp}
+                onPointerUp={(e) => handlePanelPointerUp(e)}
+                onPointerCancel={(e) => handlePanelPointerUp(e)}
                 onClick={handlePanelClick}
                 style={{ touchAction: 'none' }}
                 aria-expanded={panelState.panelOffset === 0}
