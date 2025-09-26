@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/app/providers/auth-provider';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import type { ChatConfig } from '@/shared/types/chat';
 
