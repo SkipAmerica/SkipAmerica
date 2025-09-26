@@ -13,11 +13,11 @@ export default function OverlayChat({ creatorId, className = "" }: Props) {
   return (
     <div
       className={
-        "absolute inset-0 z-20 pointer-events-none " + className
+        "absolute inset-x-0 bottom-0 h-[35vh] z-20 pointer-events-none " + className
       }
       aria-hidden
     >
-      <div className="absolute left-3 right-3 bottom-3 top-3 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
+      <div className="absolute inset-3 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
         style={{ scrollbarWidth: "none" }}
       >
         <UniversalChat 
