@@ -26,6 +26,8 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const { toast } = useToast();
   const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
   const [isFixed, setIsFixed] = useState(config.positioning?.mode === 'fixed');
+  const showUsernames = config.appearance?.showUsernames ?? config.appearance?.showProfiles ?? true;
+  const usernameStyle = config.appearance?.usernameStyle ?? 'bold';
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     messages,
@@ -208,21 +210,21 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <div className="flex-1 min-w-0">
-                    {showProfiles && (
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={`font-medium ${textSizes.name}`}>
-                          {profileInfo.fullName}
-                        </span>
-                        <span className={`text-muted-foreground ${textSizes.timestamp}`}>
-                          {formatMessageTime(message.created_at)}
-                        </span>
-                      </div>
-                    )}
-                    <div className={`text-foreground break-words ${textSizes.message}`}>
-                      <RichTextMessage message={message.message} />
-                    </div>
-                  </div>
+                   <div className="flex-1 min-w-0">
+                     {showUsernames && (
+                       <div className="flex items-center gap-2 mb-1">
+                         <span className={`${usernameStyle === 'bold' ? 'font-bold' : 'font-medium'} ${textSizes.name}`}>
+                           {profileInfo.fullName}
+                         </span>
+                         <span className={`text-muted-foreground ${textSizes.timestamp}`}>
+                           {formatMessageTime(message.created_at)}
+                         </span>
+                       </div>
+                     )}
+                     <div className={`text-foreground break-words ${textSizes.message}`}>
+                       <RichTextMessage message={message.message} />
+                     </div>
+                   </div>
                 </div>
               );
             })

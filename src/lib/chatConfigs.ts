@@ -55,6 +55,8 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   appearance: {
     height: 'h-full',
     showProfiles: false,
+    showUsernames: true,
+    usernameStyle: 'bold',
     compact: true,
     messageFlow: 'newest-top',
     emptyStateText: 'No messages yet…',
