@@ -13,7 +13,7 @@ export default function OverlayChat({ creatorId, className = "" }: Props) {
   return (
     <div
       className={
-        "absolute inset-x-0 bottom-0 h-[35vh] z-20 pointer-events-none " + className
+        "absolute inset-x-0 bottom-0 h-40 z-20 pointer-events-none " + className
       }
       aria-hidden
     >
