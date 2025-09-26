@@ -195,7 +195,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               const profileInfo = getProfileDisplayInfo(message.profiles);
               
               return (
-                <div key={message.id} className="flex gap-3">
+                <div key={message.id} className="flex gap-3 items-center">
                   {showProfiles && (
                     <Avatar className={`${avatarSizeClasses} flex-shrink-0`}>
                       <AvatarImage src={profileInfo.avatarUrl} />
