@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff, Video } from 'lucide-react'
+import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff, Video, ChevronUp } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
@@ -60,6 +61,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   })
   const [processingInvite, setProcessingInvite] = useState(false)
   const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
+  const [remainingQueueOpen, setRemainingQueueOpen] = useState(false)
 
   // Gesture tracking state
   const [gestureState, setGestureState] = useState({
@@ -482,64 +484,147 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               <p className="text-sm">Fans will appear here when they join</p>
             </div>
           ) : (
-            /* Queue Entries */
-            <div className="space-y-3" role="list" aria-label="Queue entries">
-              {state.entries.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                  role="listitem"
-                  aria-labelledby={`queue-entry-${index}`}
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary"
-                        aria-label={`Position ${index + 1}`}
-                      >
-                        {index + 1}
-                      </div>
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-primary/10">
-                          {entry.profiles?.full_name 
-                            ? getInitials(entry.profiles.full_name)
-                            : 'U'
-                          }
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div>
-                      <p id={`queue-entry-${index}`} className="font-medium">
-                        {entry.profiles?.full_name || 'Anonymous User'}
-                      </p>
-                      {entry.discussion_topic && (
-                        <p className="text-sm text-primary mb-1">
-                          {entry.discussion_topic}
-                        </p>
-                      )}
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
-                        <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
-                          Wait: {formatWaitTime(entry.estimated_wait_minutes)}
-                        </span>
-                      </div>
-                    </div>
+            /* Queue Entries with Nested Drawer */
+            <div className="space-y-4" role="list" aria-label="Queue entries">
+              {/* First Person - Always Visible */}
+              {state.entries[0] && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="h-px bg-border flex-1" />
+                    <span className="text-xs font-medium text-muted-foreground px-2">NEXT UP</span>
+                    <div className="h-px bg-border flex-1" />
                   </div>
+                  
+                  <div
+                    className="flex items-center justify-between p-4 bg-primary/5 border border-primary/20 rounded-lg"
+                    role="listitem"
+                    aria-labelledby="queue-entry-0"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary"
+                          aria-label="Position 1"
+                        >
+                          1
+                        </div>
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="bg-primary/10">
+                            {state.entries[0].profiles?.full_name 
+                              ? getInitials(state.entries[0].profiles.full_name)
+                              : 'U'
+                            }
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div>
+                        <p id="queue-entry-0" className="font-semibold text-lg">
+                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                        </p>
+                        {state.entries[0].discussion_topic && (
+                          <p className="text-sm text-primary mb-1 font-medium">
+                            {state.entries[0].discussion_topic}
+                          </p>
+                        )}
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                          <span aria-label={`Estimated wait time: ${formatWaitTime(state.entries[0].estimated_wait_minutes)}`}>
+                            Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                  {index === 0 && (
                     <Button
-                      size="sm"
-                      onClick={() => handleStartCall(entry)}
+                      size="lg"
+                      onClick={() => handleStartCall(state.entries[0])}
                       disabled={processingInvite}
                       className="bg-live hover:bg-live/90 text-white disabled:opacity-50"
-                      aria-label={`Start pre-call with ${entry.profiles?.full_name || 'user'}`}
+                      aria-label={`Start pre-call with ${state.entries[0].profiles?.full_name || 'user'}`}
                     >
-                      <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
+                      <Phone className="w-4 h-4 mr-2" aria-hidden="true" />
                       {processingInvite ? 'Starting...' : 'Start Pre-Call'}
                     </Button>
-                  )}
+                  </div>
                 </div>
-              ))}
+              )}
+
+              {/* Remaining Queue - In Drawer */}
+              {state.entries.length > 1 && (
+                <Drawer open={remainingQueueOpen} onOpenChange={setRemainingQueueOpen}>
+                  <DrawerTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full flex items-center justify-center gap-2 py-6 mt-4"
+                      aria-label={`View ${state.entries.length - 1} more people in queue`}
+                    >
+                      <ChevronUp className="w-4 h-4" />
+                      <span className="font-medium">
+                        {state.entries.length - 1} more waiting
+                      </span>
+                      <ChevronUp className="w-4 h-4" />
+                    </Button>
+                  </DrawerTrigger>
+                  
+                  <DrawerContent className="max-h-[70vh]">
+                    <div className="p-4">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Users className="w-5 h-5 text-muted-foreground" />
+                        <h3 className="font-semibold">Waiting Queue</h3>
+                        <span className="text-sm text-muted-foreground">
+                          ({state.entries.length - 1} people)
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-3 max-h-[50vh] overflow-y-auto">
+                        {state.entries.slice(1).map((entry, index) => (
+                          <div
+                            key={entry.id}
+                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                            role="listitem"
+                            aria-labelledby={`queue-entry-${index + 2}`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="flex items-center space-x-3">
+                                <div 
+                                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground"
+                                  aria-label={`Position ${index + 2}`}
+                                >
+                                  {index + 2}
+                                </div>
+                                <Avatar className="w-10 h-10">
+                                  <AvatarFallback className="bg-primary/10">
+                                    {entry.profiles?.full_name 
+                                      ? getInitials(entry.profiles.full_name)
+                                      : 'U'
+                                    }
+                                  </AvatarFallback>
+                                </Avatar>
+                              </div>
+                              <div>
+                                <p id={`queue-entry-${index + 2}`} className="font-medium">
+                                  {entry.profiles?.full_name || 'Anonymous User'}
+                                </p>
+                                {entry.discussion_topic && (
+                                  <p className="text-sm text-primary mb-1">
+                                    {entry.discussion_topic}
+                                  </p>
+                                )}
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                  <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                                  <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
+                                    Wait: {formatWaitTime(entry.estimated_wait_minutes)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </DrawerContent>
+                </Drawer>
+              )}
             </div>
           )}
         </div>
