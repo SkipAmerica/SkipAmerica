@@ -486,14 +486,67 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           ) : null}
         </div>
 
-        {/* First Person - Fixed at Bottom as Draggable Trigger */}
+        {/* Unified Queue Drawer - First Person as Drag Handle */}
         {!state.loading && state.entries.length > 0 && (
           <Drawer open={remainingQueueOpen} onOpenChange={setRemainingQueueOpen}>
-            <DrawerTrigger asChild>
-              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur p-4 cursor-grab active:cursor-grabbing">
-                {/* Drag Handle */}
-                <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mb-3" />
-                
+            <DrawerContent className="max-h-[80vh]">
+              {/* Drag Handle */}
+              <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mt-2 mb-4" />
+              
+              {/* Remaining Queue - Hidden Above First Person */}
+              {state.entries.length > 1 && (
+                <div className="px-4 pb-4">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-muted-foreground" />
+                    <h3 className="font-semibold">Waiting Queue</h3>
+                    <span className="text-sm text-muted-foreground">
+                      ({state.entries.length - 1} people)
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+                    {state.entries.slice(1).map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        role="listitem"
+                        aria-labelledby={`queue-entry-${index + 2}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
+                            {index + 2}
+                          </div>
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-primary/10">
+                              {entry.profiles?.full_name 
+                                ? getInitials(entry.profiles.full_name)
+                                : 'U'
+                              }
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p id={`queue-entry-${index + 2}`} className="font-medium">
+                              {entry.profiles?.full_name || 'Anonymous User'}
+                            </p>
+                            {entry.discussion_topic && (
+                              <p className="text-sm text-primary mb-1">
+                                {entry.discussion_topic}
+                              </p>
+                            )}
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Clock className="w-3 h-3 mr-1" />
+                              <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* First Person - Always Visible at Bottom */}
+              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur p-4">
                 <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4 border-2 border-primary/20">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -551,61 +604,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                   )}
                 </div>
               </div>
-            </DrawerTrigger>
-            
-            {/* Remaining Queue in Drawer Content */}
-            {state.entries.length > 1 && (
-              <DrawerContent className="max-h-[70vh]">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="font-semibold">Waiting Queue</h3>
-                    <span className="text-sm text-muted-foreground">
-                      ({state.entries.length - 1} people)
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-[50vh] overflow-y-auto">
-                    {state.entries.slice(1).map((entry, index) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                        role="listitem"
-                        aria-labelledby={`queue-entry-${index + 2}`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                            {index + 2}
-                          </div>
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-primary/10">
-                              {entry.profiles?.full_name 
-                                ? getInitials(entry.profiles.full_name)
-                                : 'U'
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p id={`queue-entry-${index + 2}`} className="font-medium">
-                              {entry.profiles?.full_name || 'Anonymous User'}
-                            </p>
-                            {entry.discussion_topic && (
-                              <p className="text-sm text-primary mb-1">
-                                {entry.discussion_topic}
-                              </p>
-                            )}
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Clock className="w-3 h-3 mr-1" />
-                              <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </DrawerContent>
-            )}
+            </DrawerContent>
           </Drawer>
         )}
       </SheetContent>
