@@ -8,7 +8,6 @@ import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
-import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
@@ -43,7 +42,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
-  const navigate = useNavigate()
   
   // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
   // Use the authenticated user ID as the lobby creator ID (creator's own panel)
@@ -343,7 +341,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
   const handlePointerUp = useCallback(() => {
     if (gestureState.swiped) {
-      navigate('/creator/blank')
+      window.location.href = '/creator/blank'
     }
     
     setGestureState({
@@ -353,7 +351,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       startTime: 0,
       swiped: false
     })
-  }, [gestureState.swiped, navigate])
+  }, [gestureState.swiped])
 
   const handlePointerCancel = useCallback(() => {
     setGestureState({
