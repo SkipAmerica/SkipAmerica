@@ -77,9 +77,9 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
       />
       
       {/* Creator Local Preview - Fullscreen Layer */}
-      <div className="absolute inset-0 bg-black overflow-hidden">
+      <div className="fixed inset-0 z-0 bg-black overflow-hidden">
         <MediaPreview 
-          className="w-full h-full object-cover"
+          className="block w-full h-full object-cover"
           muted={true}
         />
         <video 
