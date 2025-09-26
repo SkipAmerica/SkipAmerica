@@ -486,126 +486,129 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           ) : null}
         </div>
 
-        {/* Unified Queue Drawer - First Person as Drag Handle */}
+        {/* First Person - Always Visible at Bottom */}
         {!state.loading && state.entries.length > 0 && (
-          <Drawer open={remainingQueueOpen} onOpenChange={setRemainingQueueOpen}>
-            <DrawerContent className="max-h-[80vh]">
-              {/* Drag Handle */}
-              <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mt-2 mb-4" />
-              
-              {/* Remaining Queue - Hidden Above First Person */}
-              {state.entries.length > 1 && (
-                <div className="px-4 pb-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="font-semibold">Waiting Queue</h3>
-                    <span className="text-sm text-muted-foreground">
-                      ({state.entries.length - 1} people)
-                    </span>
-                  </div>
-                  
-                  <div className="space-y-3 max-h-[40vh] overflow-y-auto">
-                    {state.entries.slice(1).map((entry, index) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                        role="listitem"
-                        aria-labelledby={`queue-entry-${index + 2}`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
-                            {index + 2}
-                          </div>
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-primary/10">
-                              {entry.profiles?.full_name 
-                                ? getInitials(entry.profiles.full_name)
-                                : 'U'
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p id={`queue-entry-${index + 2}`} className="font-medium">
-                              {entry.profiles?.full_name || 'Anonymous User'}
-                            </p>
-                            {entry.discussion_topic && (
-                              <p className="text-sm text-primary mb-1">
-                                {entry.discussion_topic}
-                              </p>
-                            )}
-                            <div className="flex items-center text-sm text-muted-foreground">
-                              <Clock className="w-3 h-3 mr-1" />
-                              <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* First Person - Always Visible at Bottom */}
-              <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur p-4">
-                <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-4 border-2 border-primary/20">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
+          <div className="flex-shrink-0 p-4 border-t bg-background">
+            <Drawer open={remainingQueueOpen} onOpenChange={setRemainingQueueOpen}>
+              {/* First Person as Drawer Trigger */}
+              <DrawerTrigger className="w-full">
+                <div className="relative p-6 rounded-xl border bg-gradient-to-r from-primary/5 to-accent/10 hover:from-primary/10 hover:to-accent/20 transition-all cursor-pointer group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
                       <div className="relative">
-                        <Avatar className="h-12 w-12 ring-2 ring-primary/50">
-                          <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                            {state.entries[0].profiles?.full_name 
-                              ? getInitials(state.entries[0].profiles.full_name)
-                              : 'U'
-                            }
+                        <Avatar className="w-16 h-16 border-2 border-primary/20">
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
+                            {getInitials(state.entries[0].profiles?.full_name || 'User')}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                      </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
+                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                        </h3>
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                          </div>
+                          {state.entries[0].discussion_topic && (
+                            <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                              {state.entries[0].discussion_topic}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-lg text-foreground">
-                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          Next in line • {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                        </p>
-                      </div>
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary">
-                      1
+                    <div className="flex items-center gap-2">
+                      {state.entries.length > 1 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+                          <ChevronUp className="w-3 h-3" />
+                          +{state.entries.length - 1} more
+                        </div>
+                      )}
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleStartCall(state.entries[0])
+                        }}
+                        disabled={processingInvite}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2"
+                        aria-label={`Start call with ${state.entries[0].profiles?.full_name || 'user'}`}
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        {processingInvite ? 'Starting...' : 'Start Call'}
+                      </Button>
                     </div>
                   </div>
-                  
-                  {state.entries[0].discussion_topic && (
-                    <div className="mb-4 p-3 bg-background/50 rounded-md">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Topic:</p>
-                      <p className="text-sm text-foreground">{state.entries[0].discussion_topic}</p>
-                    </div>
-                  )}
-                  
-                  <Button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartCall(state.entries[0]);
-                    }}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-3 text-base"
-                    size="lg"
-                    disabled={processingInvite}
-                  >
-                    <Phone className="w-5 h-5 mr-2" />
-                    {processingInvite ? 'Starting...' : 'Start Pre-Call'}
-                  </Button>
-
-                  {state.entries.length > 1 && (
-                    <p className="text-center text-xs text-muted-foreground mt-2">
-                      Drag up to see {state.entries.length - 1} more waiting ↑
-                    </p>
-                  )}
                 </div>
-              </div>
-            </DrawerContent>
-          </Drawer>
+              </DrawerTrigger>
+
+              {/* Remaining Queue in Drawer Content */}
+              {state.entries.length > 1 && (
+                <DrawerContent className="max-h-[60vh]">
+                  <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mt-2 mb-4" />
+                  
+                  <div className="px-4 pb-4">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Users className="w-5 h-5 text-muted-foreground" />
+                      <h3 className="font-medium text-sm text-muted-foreground">
+                        {state.entries.length - 1} More in Queue
+                      </h3>
+                    </div>
+                    
+                    <div className="space-y-2 max-h-80 overflow-y-auto">
+                      {state.entries.slice(1).map((entry, index) => (
+                        <div
+                          key={entry.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <Avatar className="w-10 h-10">
+                                <AvatarFallback className="bg-muted text-muted-foreground text-sm">
+                                  {getInitials(entry.profiles?.full_name || 'User')}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-background" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm text-foreground">
+                                {entry.profiles?.full_name || 'Anonymous User'}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatWaitTime(entry.estimated_wait_minutes)}
+                                </div>
+                                <span>#{index + 2} in line</span>
+                              </div>
+                              {entry.discussion_topic && (
+                                <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">
+                                  {entry.discussion_topic}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => handleStartCall(entry)}
+                            disabled={processingInvite}
+                            size="sm"
+                            variant="outline"
+                            className="text-xs px-3 h-8"
+                            aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
+                          >
+                            <Phone className="w-3 h-3 mr-1" />
+                            Call
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </DrawerContent>
+              )}
+            </Drawer>
+          </div>
         )}
       </SheetContent>
     </Sheet>
