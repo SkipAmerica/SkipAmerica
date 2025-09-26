@@ -432,7 +432,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         )}
 
         {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
-        <div className="mt-4 w-full min-w-0">
+        <div className="w-full min-w-0">
           {lobbyCreatorId ? (
             <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
           ) : (
