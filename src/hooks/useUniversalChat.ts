@@ -1,37 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatConfig } from '@/shared/types/chat';
 
-export function useUniversalChat(config: ChatConfig) {
+export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const scrollToTop = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const scrollToNewest = () => {
-    const flow = config.appearance?.messageFlow || 'newest-bottom';
-    const shouldScroll = config.appearance?.scrollToNewest !== false;
-    
-    if (!shouldScroll) return;
-    
-    if (flow === 'newest-top') {
-      scrollToTop();
-    } else {
-      scrollToBottom();
-    }
-  };
-
-  useEffect(() => {
-    scrollToNewest();
-  }, [messages]);
 
   // Fetch initial messages - Based on PQ implementation
   useEffect(() => {
@@ -111,11 +85,16 @@ export function useUniversalChat(config: ChatConfig) {
           };
 
           const flow = config.appearance?.messageFlow || 'newest-bottom';
-          setMessages(prev => 
-            flow === 'newest-top' 
+          setMessages(prev => {
+            const newMessages = flow === 'newest-top' 
               ? [enrichedMessage, ...prev]
-              : [...prev, enrichedMessage]
-          );
+              : [...prev, enrichedMessage];
+            
+            // Notify about new message for scroll handling
+            onNewMessage?.();
+            
+            return newMessages;
+          });
         }
       )
       .subscribe();
@@ -134,10 +113,6 @@ export function useUniversalChat(config: ChatConfig) {
     newMessage,
     setNewMessage,
     sending,
-    setSending,
-    messagesEndRef,
-    scrollToBottom,
-    scrollToTop,
-    scrollToNewest
+    setSending
   };
 }

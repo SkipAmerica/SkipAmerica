@@ -6,12 +6,12 @@ export interface UseIntersectionObserverOptions {
   root?: Element | null
 }
 
-export function useIntersectionObserver(
+export function useIntersectionObserver<T extends Element = Element>(
   options: UseIntersectionObserverOptions = {}
 ) {
   const [isIntersecting, setIsIntersecting] = useState(false)
   const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null)
-  const elementRef = useRef<Element | null>(null)
+  const elementRef = useRef<T | null>(null)
 
   useEffect(() => {
     const element = elementRef.current

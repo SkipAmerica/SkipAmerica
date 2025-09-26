@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { SmartScrollArea } from '@/components/ui/smart-scroll-area';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Toggle } from '@/components/ui/toggle';
@@ -31,8 +31,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
     newMessage,
     setNewMessage,
     sending,
-    setSending,
-    messagesEndRef
+    setSending
   } = useUniversalChat(config);
 
   const handleSendMessage = async () => {
@@ -172,7 +171,15 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
           )}
         </div>
       )}
-      <ScrollArea className={scrollAreaClasses}>
+      <SmartScrollArea 
+        className={scrollAreaClasses}
+        items={messages}
+        scrollBehavior={{
+          autoOnNew: true,
+          threshold: 100,
+          messageFlow: messageFlow as 'newest-bottom' | 'newest-top'
+        }}
+      >
         <div className={compact ? "space-y-2" : "space-y-4"}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -217,9 +224,9 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               );
             })
           )}
-          <div ref={messagesEndRef} />
+          
         </div>
-      </ScrollArea>
+      </SmartScrollArea>
       
       {messagingEnabled && !useExternalInput && (
         <div className="p-4 border-t">
