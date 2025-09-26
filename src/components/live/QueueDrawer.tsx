@@ -416,7 +416,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             <div className="flex-1 overflow-y-auto">
               <div className="p-4 space-y-3">
                 {state.entries.slice(1).map((entry, index) => (
-                  <div key={entry.fan_id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  <div key={entry.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <Avatar className="h-10 w-10 flex-shrink-0">
                       <AvatarImage src={entry.profile?.avatar_url} />
                       <AvatarFallback>

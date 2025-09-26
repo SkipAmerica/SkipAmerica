@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import OverlayChat from "@/components/live/OverlayChat";
 import { createOverlayConfig } from "@/lib/chatConfigs";
 import { useExternalChatInput } from "@/hooks/useExternalChatInput";
+import LobbyBroadcastPanel from "@/components/creator/LobbyBroadcastPanel";
 
 type Props = { creatorId: string };
 
@@ -161,6 +162,8 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
         <OverlayChat creatorId={creatorId} />
       </div>
 
+      {/* Broadcast Controls */}
+      <LobbyBroadcastPanel />
     </div>
   );
 }
