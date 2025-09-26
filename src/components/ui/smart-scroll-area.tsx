@@ -13,7 +13,7 @@ interface SmartScrollAreaProps {
 export function SmartScrollArea({ 
   children, 
   items, 
-  scrollBehavior = { autoOnNew: true, threshold: 100, messageFlow: 'newest-bottom' },
+  scrollBehavior = { autoOnNew: true, threshold: 24, messageFlow: 'newest-bottom' },
   onNewItems,
   className 
 }: SmartScrollAreaProps) {

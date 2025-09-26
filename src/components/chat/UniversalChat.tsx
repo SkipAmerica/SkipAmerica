@@ -176,7 +176,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
         items={messages}
         scrollBehavior={{
           autoOnNew: true,
-          threshold: 100,
+          threshold: 24,
           messageFlow: messageFlow as 'newest-bottom' | 'newest-top'
         }}
       >
