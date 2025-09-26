@@ -87,6 +87,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
   const messageFlow = config.appearance?.messageFlow || 'newest-bottom';
   const position = config.appearance?.position || 'default';
   const allowPositionToggle = config.positioning?.allowPositionToggle ?? false;
+  const useExternalInput = config.externalInput?.useExternalInput ?? false;
   
   // Text size classes
   const textSizes = getTextSizeClasses(compact);
@@ -220,7 +221,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
         </div>
       </ScrollArea>
       
-      {messagingEnabled && (
+      {messagingEnabled && !useExternalInput && (
         <div className="p-4 border-t">
           <RichTextInput
             value={newMessage}

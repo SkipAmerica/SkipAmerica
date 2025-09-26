@@ -12,5 +12,6 @@ export { useOnClickOutside } from './use-on-click-outside'
 export { useLive, useLiveSession, useQueueManager } from '../../hooks/live'
 export type { LiveState } from '../../hooks/live'
 
-// Re-export universal chat hook
+// Re-export universal chat hooks
 export { useUniversalChat } from '../../hooks/useUniversalChat'
+export { useExternalChatInput } from '../../hooks/useExternalChatInput'

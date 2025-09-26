@@ -49,6 +49,12 @@ export interface ChatMessaging {
   showSendButton?: boolean;
 }
 
+export interface ChatExternalInput {
+  useExternalInput?: boolean;
+  externalInputId?: string;
+  onExternalMessage?: (message: string) => void;
+}
+
 export interface ChatConfig {
   // Database configuration
   tableName: string;
@@ -67,6 +73,9 @@ export interface ChatConfig {
   
   // Positioning configuration
   positioning?: ChatPositioning;
+  
+  // External input configuration
+  externalInput?: ChatExternalInput;
   
   // Message sending function
   sendMessage?: (params: {

@@ -46,14 +46,14 @@ export const createLobbyConfig = (creatorId: string): ChatConfig => ({
   }
 });
 
-// Creator Overlay Configuration (interactive overlay)
+// Creator Overlay Configuration (interactive overlay with external input)
 export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
   channelPrefix: 'lobby-chat-db',
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
-    height: 'h-64',
+    height: 'h-full',
     showProfiles: false,
     compact: true,
     messageFlow: 'newest-top',
@@ -77,6 +77,10 @@ export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   positioning: {
     mode: 'relative',
     allowPositionToggle: false
+  },
+  externalInput: {
+    useExternalInput: true,
+    externalInputId: 'creator-chat-input'
   },
   sendMessage: async ({ filterValue, userId, username, text }) => {
     await sendLobbyMessage({
