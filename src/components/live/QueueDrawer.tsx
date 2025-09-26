@@ -1,17 +1,16 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff, Video, ChevronUp } from 'lucide-react'
-import { supabase } from '@/lib/supabaseClient'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { supabase } from '@/integrations/supabase/client'
+import { useLiveStore } from '@/stores/live-store'
 import { useAuth } from '@/app/providers/auth-provider'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { X, Users, Loader2, RefreshCw, Clock, MessageSquare, Wifi, WifiOff } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { useLive } from '@/hooks/live'
-import { cn } from '@/lib/utils'
-import { RUNTIME } from '@/config/runtime'
-import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
+import { DraggableBottomPanel } from './DraggableBottomPanel'
+import { debounce } from 'lodash'
 
 interface QueueEntry {
   id: string
@@ -19,7 +18,7 @@ interface QueueEntry {
   joined_at: string
   estimated_wait_minutes: number
   discussion_topic?: string
-  profiles?: {
+  profile?: {
     full_name: string
     avatar_url: string | null
   }
@@ -38,312 +37,191 @@ interface QueueState {
   isConnected: boolean
 }
 
+// Simplified panel state
+interface PanelState {
+  isOpen: boolean
+  isDragging: boolean
+}
+
 export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
+  const store = useLiveStore()
   const { user } = useAuth()
   const { toast } = useToast()
-  const { store } = useLive()
-  
-  // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
-  // Use the authenticated user ID as the lobby creator ID (creator's own panel)
-  const lobbyCreatorId = user?.id || "";
-  console.log("[CREATOR PANEL] lobbyCreatorId =", lobbyCreatorId);
-  const abortControllerRef = useRef<AbortController>()
-  const retryTimeoutRef = useRef<NodeJS.Timeout>()
-  const gestureRef = useRef<HTMLDivElement>(null)
-  
-  const [state, setLocalState] = useState<QueueState>({
+  const creatorId = user?.id
+
+  const [state, setState] = useState<QueueState>({
     entries: [],
-    loading: false,
+    loading: false, 
     error: null,
     retryCount: 0,
     isConnected: true
   })
-  const [processingInvite, setProcessingInvite] = useState(false)
-  const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
-  
-  // Unified draggable panel state
+
+  const [panelState, setPanelState] = useState<PanelState>({
+    isOpen: false,
+    isDragging: false
+  })
+
+  // Refs for draggable panel
   const panelRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLDivElement>(null)
-  const [panelState, setPanelState] = useState({
-    panelOffset: 0,
-    isDragging: false,
-    startY: 0,
-    startOffset: 0,
-    openHeightPx: 0,
-    collapsedOffset: 0
-  })
+  const draggablePanel = useRef<DraggableBottomPanel | null>(null)
 
-  // Gesture tracking state
-  const [gestureState, setGestureState] = useState({
-    tracking: false,
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-    swiped: false
-  })
-
-  // Check if user is creator (simple guard)
-  const isCreator = user?.user_metadata?.account_type === 'creator' || user?.user_metadata?.role === 'creator'
-  
-  // Initialize panel dimensions
+  // Initialize draggable panel
   useEffect(() => {
-    const updateDimensions = () => {
-      const openHeightPx = Math.round(window.innerHeight * 0.6)
-      const handleHeight = handleRef.current?.offsetHeight || 140 // Safe fallback
-      const collapsedOffset = Math.max(0, openHeightPx - handleHeight)
-      
-      setPanelState(prev => ({
-        ...prev,
-        openHeightPx,
-        collapsedOffset,
-        // Start collapsed if this is initial setup (panelOffset was 0)
-        panelOffset: prev.openHeightPx === 0 
-          ? collapsedOffset 
-          : Math.min(prev.panelOffset, collapsedOffset) // Clamp to prevent hiding handle
-      }))
-    }
+    if (!panelRef.current || !handleRef.current || !isOpen) return
     
-    // Use a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(updateDimensions, 100)
-    window.addEventListener('resize', updateDimensions)
-    
-    // ResizeObserver for handle height changes
-    let resizeObserver: ResizeObserver | null = null
-    if (handleRef.current && 'ResizeObserver' in window) {
-      resizeObserver = new ResizeObserver(() => {
-        updateDimensions()
+    if (!draggablePanel.current) {
+      draggablePanel.current = new DraggableBottomPanel({
+        openHeightRatio: 0.6,
+        minHandleHeight: 140,
+        snapThreshold: 0.5
       })
-      resizeObserver.observe(handleRef.current)
     }
+    
+    draggablePanel.current.initialize(
+      panelRef.current,
+      handleRef.current,
+      (newState) => {
+        setPanelState({
+          isOpen: newState.isOpen,
+          isDragging: newState.isDragging
+        })
+      }
+    )
     
     return () => {
-      clearTimeout(timeoutId)
-      window.removeEventListener('resize', updateDimensions)
-      if (resizeObserver) {
-        resizeObserver.disconnect()
+      if (draggablePanel.current) {
+        draggablePanel.current.destroy()
+        draggablePanel.current = null
       }
     }
-  }, [state.entries.length, isOpen])
-  
-  // Panel drag handlers
-  const handlePanelPointerDown = useCallback((e: React.PointerEvent) => {
-    if (!e.isPrimary) return
-    
-    // Don't start drag on interactive elements
-    const target = e.target as HTMLElement
-    if (target.closest('button') || target.closest('input') || target.closest('textarea')) return
-    
-    setPanelState(prev => ({
-      ...prev,
-      isDragging: true,
-      startY: e.clientY,
-      startOffset: prev.panelOffset
-    }))
-    
-    // Capture pointer for robust dragging
-    ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
-    
-    e.preventDefault()
-  }, [])
-  
-  const handlePanelPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!panelState.isDragging) return
-    
-    const deltaY = e.clientY - panelState.startY
-    const newOffset = Math.max(0, Math.min(panelState.collapsedOffset, panelState.startOffset + deltaY))
-    
-    setPanelState(prev => ({
-      ...prev,
-      panelOffset: newOffset
-    }))
-  }, [panelState.isDragging, panelState.startY, panelState.startOffset, panelState.collapsedOffset])
-  
-  const handlePanelPointerUp = useCallback((e?: React.PointerEvent) => {
-    if (!panelState.isDragging) return
-    
-    const threshold = panelState.collapsedOffset * 0.5
-    const shouldOpen = panelState.panelOffset < threshold
-    
-    setPanelState(prev => ({
-      ...prev,
-      isDragging: false,
-      panelOffset: shouldOpen ? 0 : prev.collapsedOffset
-    }))
-    
-    // Release pointer capture
-    if (e?.currentTarget) {
-      try {
-        ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
-      } catch {
-        // Ignore errors if capture was already released
-      }
-    }
-  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
-  
-  const handlePanelClick = useCallback(() => {
-    if (panelState.isDragging) return
-    
-    const isOpen = panelState.panelOffset === 0
-    setPanelState(prev => ({
-      ...prev,
-      panelOffset: isOpen ? prev.collapsedOffset : 0
-    }))
-  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
+  }, [isOpen, state.entries.length])
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-      }
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-      }
+  // Panel control functions  
+  const togglePanel = useCallback(() => {
+    if (draggablePanel.current) {
+      draggablePanel.current.toggle()
     }
   }, [])
 
-  const fetchQueue = useCallback(async (isRetry = false) => {
-    if (!user) return
-
-    // Clean abort of previous request if it exists
-    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-      abortControllerRef.current.abort()
+  const openPanel = useCallback(() => {
+    if (draggablePanel.current) {
+      draggablePanel.current.open()
     }
-    
-    // Create new controller
-    const abortController = new AbortController()
-    abortControllerRef.current = abortController
+  }, [])
 
-    setLocalState(prev => ({ 
-      ...prev, 
-      loading: true, 
-      error: isRetry ? null : prev.error,
-      isConnected: true
-    }))
+  const closePanel = useCallback(() => {
+    if (draggablePanel.current) {
+      draggablePanel.current.close()
+    }
+  }, [])
+
+  // Fetch queue data
+  const fetchQueue = useCallback(async () => {
+    if (!creatorId) return
+
+    setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
-      console.log('[QueueDrawer] Fetching queue entries for creator:', user.id)
+      console.log('Fetching queue entries for creator:', creatorId)
       
-      // Check if we've been aborted before making request
-      if (abortController.signal.aborted) return
-      
-      // First get queue entries, prioritizing by priority field first
-      const { data: queueData, error: queueError } = await supabase
+      // Get queue entries with profiles in one query
+      const { data, error } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic, priority')
-        .eq('creator_id', user.id)
+        .select(`
+          id,
+          fan_id,
+          joined_at,
+          estimated_wait_minutes,
+          discussion_topic,
+          profiles:fan_id (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('creator_id', creatorId)
         .eq('status', 'waiting')
-        .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
-        .abortSignal(abortController.signal)
 
-      // Check abort again after database call
-      if (abortController.signal.aborted) return
+      if (error) throw error
 
-      console.log('[QueueDrawer] Raw queue data:', queueData)
+      // Transform data to match expected structure
+      const entries = data?.map(entry => ({
+        ...entry,
+        profile: entry.profiles as any
+      })) || []
 
-      if (queueError && queueError.code !== 'PGRST116') { // Ignore empty result errors
-        const wrappedError = new Error(`Failed to fetch queue entries: ${queueError.message}`)
-        wrappedError.name = 'DatabaseError'
-        ;(wrappedError as any).code = queueError.code
-        throw wrappedError
-      }
-
-      // Then get profiles for each fan_id
-      let enrichedEntries: QueueEntry[] = []
-      if (queueData?.length > 0 && !abortController.signal.aborted) {
-        const fanIds = queueData.map(entry => entry.fan_id)
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url')
-          .in('id', fanIds)
-          .abortSignal(abortController.signal)
-
-        // Final abort check
-        if (abortController.signal.aborted) return
-
-        if (profilesError && profilesError.code !== 'PGRST116') {
-          console.warn('Error fetching profiles:', profilesError)
-          // Continue with queue data even if profiles fail
-        }
-
-        enrichedEntries = queueData.map(entry => ({
-          ...entry,
-          profiles: profilesData?.find(profile => profile.id === entry.fan_id)
-        }))
-
-        console.log('[QueueDrawer] Enriched queue entries:', enrichedEntries)
-      }
-
-      // Only update state if not aborted
-      if (!abortController.signal.aborted) {
-        setLocalState(prev => ({
-          ...prev,
-          entries: enrichedEntries,
-          loading: false,
-          error: null,
-          retryCount: 0,
-          isConnected: true
-        }))
-      }
+      setState(prev => ({
+        ...prev,
+        entries,
+        loading: false,
+        error: null,
+        retryCount: 0,
+        isConnected: true
+      }))
 
     } catch (error: any) {
-      // Ignore AbortError - this is normal when leaving queue or component cleanup
-      if (error.name === 'AbortError' || abortController.signal.aborted) {
-        console.log('[QueueDrawer] Request aborted (normal cleanup)')
-        return
-      }
-      
       console.error('Error fetching queue:', error)
-      
-      setLocalState(prev => ({
+      setState(prev => ({
         ...prev,
         loading: false,
         error: error.message || 'Failed to load queue',
         retryCount: prev.retryCount + 1,
         isConnected: false
       }))
-
-      // Auto-retry with exponential backoff (max 2 retries)
-      if (state.retryCount < 2 && !abortController.signal.aborted) {
-        const delay = Math.min(2000 * Math.pow(2, state.retryCount), 6000)
-        retryTimeoutRef.current = setTimeout(() => {
-          if (!abortController.signal.aborted) {
-            fetchQueue(true)
-          }
-        }, delay)
-      }
     }
-  }, [user, state.retryCount])
+  }, [creatorId])
 
-  // Setup real-time subscription for queue changes with debounced fetching
+  // Real-time subscription to queue changes
   useEffect(() => {
-    if (!isOpen || !user) return
+    if (!creatorId) return
 
-    console.log('[QueueDrawer] Setting up real-time subscription')
-    
-    let fetchTimeout: NodeJS.Timeout
-    
-    const debouncedFetch = () => {
-      clearTimeout(fetchTimeout)
-      fetchTimeout = setTimeout(() => {
+    let isMounted = true
+    const debouncedFetch = debounce(() => {
+      if (isMounted) {
         fetchQueue()
-      }, 500) // Debounce multiple rapid changes
-    }
-    
+      }
+    }, 300)
+
     const channel = supabase
-      .channel('queue-entries-subscription')
+      .channel('queue-changes')
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: 'INSERT',
           schema: 'public',
           table: 'call_queue',
-          filter: `creator_id=eq.${user.id}`
+          filter: `creator_id=eq.${creatorId}`
         },
         (payload) => {
-          console.log('[QueueDrawer] Real-time queue change:', payload)
-          // Debounced refetch to prevent rapid successive calls
+          console.log('Queue INSERT:', payload)
+          debouncedFetch()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        (payload) => {
+          console.log('Queue DELETE:', payload)
+          debouncedFetch()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        (payload) => {
+          console.log('Queue UPDATE:', payload)
           debouncedFetch()
         }
       )
@@ -353,51 +231,19 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     fetchQueue()
 
     return () => {
-      console.log('[QueueDrawer] Cleaning up real-time subscription')
-      clearTimeout(fetchTimeout)
-      if ((window as any).__allow_ch_teardown) {
-        try { supabase.removeChannel(channel); } catch {}
-      } else {
-        console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
-      }
+      isMounted = false
+      supabase.removeChannel(channel)
+      debouncedFetch.cancel()
     }
-  }, [isOpen, user, fetchQueue])
+  }, [creatorId, fetchQueue])
 
-  const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
-    if (!user || processingInvite) return
-
-    try {
-      setProcessingInvite(true)
-      
-      // Set active invite and transition to SESSION_PREP
-      setActiveInvite(queueEntry)
-      store.dispatch({ type: 'ENTER_PREP' })
-      
-      toast({
-        title: "Starting Pre-Call",
-        description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
-      })
-      
-      // Close drawer after successful transition
-      onClose()
-      
-    } catch (error: any) {
-      console.error('Error starting pre-call:', error)
-      toast({
-        title: "Failed to Start Pre-Call", 
-        description: error.message || "Failed to start pre-call. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setProcessingInvite(false)
-    }
-  }, [user, processingInvite, store, toast, onClose])
-
+  // Retry handler
   const handleRetry = useCallback(() => {
-    setLocalState(prev => ({ ...prev, retryCount: 0 }))
-    fetchQueue(true)
+    setState(prev => ({ ...prev, retryCount: prev.retryCount + 1 }))
+    fetchQueue()
   }, [fetchQueue])
 
+  // Utility functions
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
@@ -405,7 +251,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     return `${hours}h ${remainingMinutes}m`
   }
 
-  const getInitials = (name: string) => {
+  const getInitials = (name?: string) => {
+    if (!name) return 'U'
     return name
       .split(' ')
       .map(word => word.charAt(0))
@@ -414,337 +261,202 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       .slice(0, 2)
   }
 
-  // Gesture handlers for right-swipe navigation
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // Only track for creators
-    if (!isCreator) return
-    
-    // Only primary pointer (left click/first touch)
-    if (!e.isPrimary) return
-    
-    // Don't track if starting on interactive elements
-    const target = e.target as HTMLElement
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') return
-    
-    // Only track if within gesture container
-    if (!gestureRef.current?.contains(target)) return
-    
-    setGestureState({
-      tracking: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      startTime: Date.now(),
-      swiped: false
-    })
-  }, [isCreator])
+  if (!isOpen) return null
 
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!gestureState.tracking) return
-    
-    const dx = e.clientX - gestureState.startX
-    const dy = e.clientY - gestureState.startY
-    
-    // If too much vertical movement, treat as scroll
-    if (Math.abs(dy) > 30) {
-      setGestureState(prev => ({ ...prev, tracking: false }))
-      return
-    }
-    
-    // Check for right swipe threshold
-    if (dx > 80 && Date.now() - gestureState.startTime < 600) {
-      setGestureState(prev => ({ ...prev, swiped: true }))
-    }
-  }, [gestureState])
-
-  const handlePointerUp = useCallback(() => {
-    if (gestureState.swiped) {
-      window.location.href = '/creator/blank'
-    }
-    
-    setGestureState({
-      tracking: false,
-      startX: 0,
-      startY: 0,
-      startTime: 0,
-      swiped: false
-    })
-  }, [gestureState.swiped])
-
-  const handlePointerCancel = useCallback(() => {
-    setGestureState({
-      tracking: false,
-      startX: 0,
-      startY: 0,
-      startTime: 0,
-      swiped: false
-    })
-  }, [])
-
-  return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent 
-        side="bottom" 
-        className="h-screen flex flex-col p-0 relative"
-        aria-describedby="queue-description"
-      >
-        <SheetHeader className="pb-4 flex-shrink-0 px-6">
-          <SheetTitle className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Users className="w-5 h-5" aria-hidden="true" />
-              {user?.user_metadata?.full_name ? 
-                `${user.user_metadata.full_name.split(' ')[0]}'s Lobby (${state.entries.length})` : 
-                `Creator Lobby (${state.entries.length})`
-              }
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                onClick={() => {
-                  supabase
-                    .from('call_queue')
-                    .delete()
-                    .eq('creator_id', user.id)
-                    .eq('status', 'waiting')
-                    .then(() => {
-                      toast({
-                        title: "Queue cleared",
-                        description: "All users have been removed from the queue"
-                      })
-                    })
-                }}
-                variant="outline"
-                size="sm"
-              >
-                Clear Queue
-              </Button>
-              {state.isConnected ? (
-                <Wifi className="w-4 h-4 text-muted-foreground" aria-label="Connected" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-destructive" aria-label="Disconnected" />
-              )}
-            </div>
-          </SheetTitle>
-          <p id="queue-description" className="text-sm text-muted-foreground">
-            Manage your call queue and connect with waiting fans
-          </p>
-          
-          {/* Broadcast Toggle Button */}
+  // Render portal content
+  const portalContent = (
+    <div className="fixed inset-0 z-50 bg-background">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b bg-background">
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          <h2 className="text-lg font-semibold">
+            Creator Lobby ({state.entries.length})
+          </h2>
+        </div>
+        
+        <div className="flex items-center gap-2">
           <Button
-            onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
-            variant={store.isLobbyBroadcasting ? "destructive" : "default"}
-            className="w-full mt-3"
-            aria-pressed={store.isLobbyBroadcasting}
+            onClick={() => {
+              if (creatorId) {
+                supabase
+                  .from('call_queue')
+                  .delete()
+                  .eq('creator_id', creatorId)
+                  .eq('status', 'waiting')
+                  .then(() => {
+                    toast({
+                      title: "Queue cleared",
+                      description: "All users have been removed from the queue"
+                    })
+                  })
+              }
+            }}
+            variant="outline"
+            size="sm"
           >
-            <Video className="w-4 h-4 mr-2" />
-            {store.isLobbyBroadcasting ? "End Broadcast" : "Broadcast to Lobby"}
+            Clear Queue
           </Button>
-        </SheetHeader>
+          
+          {state.isConnected ? (
+            <Wifi className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <WifiOff className="w-4 h-4 text-destructive" />
+          )}
+          
+          <Button
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
 
-        {/* Broadcast Panel */}
-        {store.isLobbyBroadcasting && (
-          <div className="flex-shrink-0 px-6">
-            <LobbyBroadcastPanel 
-              onEnd={() => store.setLobbyBroadcasting(false)}
-            />
+      {/* Creator Preview */}
+      <div className="px-4 py-2 bg-muted/50">
+        <CreatorPreviewWithChat creatorId={creatorId || ''} />
+      </div>
+
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden relative">
+        {/* Error State */}
+        {state.error && (
+          <div className="p-4">
+            <div className="flex items-center justify-between p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <span className="text-destructive">{state.error}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleRetry}
+                disabled={state.loading}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${state.loading ? 'animate-spin' : ''}`} />
+                Retry
+              </Button>
+            </div>
           </div>
         )}
 
-        {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
-        <div className="w-full min-w-0">
-          {lobbyCreatorId ? (
-            <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
-          ) : (
-            <div className="text-sm text-red-400">Missing creator id; overlay disabled.</div>
-          )}
-        </div>
+        {/* Loading State */}
+        {state.loading && !state.error && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+        )}
 
-        <div className="flex-1 overflow-y-auto min-h-0 px-6"
-          ref={gestureRef}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerCancel}
-          style={{ touchAction: 'pan-y' }}
-        >
-          {/* Error State */}
-          {state.error && (
-            <Alert variant="destructive" className="mb-4">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{state.error}</span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleRetry}
-                  disabled={state.loading}
-                  className="ml-2 h-7 px-2 text-xs"
-                  aria-label="Retry loading queue"
-                >
-                  <RotateCcw className={cn("h-3 w-3 mr-1", state.loading && "animate-spin")} />
-                  Retry
-                </Button>
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Loading State */}
-          {state.loading && !state.error ? (
-            <div className="flex items-center justify-center py-8" role="status" aria-label="Loading queue">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : state.entries.length === 0 && !state.error ? (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <Users className="w-12 h-12 mb-4 opacity-50" aria-hidden="true" />
-              <p className="font-medium">No one in queue yet</p>
-              <p className="text-sm">Fans will appear here when they join</p>
-            </div>
-          ) : null}
-        </div>
+        {/* Empty State */}
+        {!state.loading && state.entries.length === 0 && !state.error && (
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <Users className="w-12 h-12 mb-4 opacity-50" />
+            <p className="font-medium">No one in queue yet</p>
+            <p className="text-sm">Fans will appear here when they join</p>
+          </div>
+        )}
 
         {/* Unified Draggable Queue Panel */}
         {!state.loading && state.entries.length > 0 && (
           <div
             ref={panelRef}
             className="absolute bottom-0 inset-x-0 z-40 pointer-events-auto bg-background border-t shadow-2xl will-change-transform"
-            style={{
-              height: `${panelState.openHeightPx}px`,
-              transform: `translateY(${panelState.panelOffset}px)`,
-              transition: panelState.isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
+            style={{ height: '60vh' }}
           >
-            <div className="flex flex-col h-full">
-              {/* Remaining Queue - Scrollable Area Above Handle */}
-              {state.entries.length > 1 && (
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="font-medium text-sm text-muted-foreground">
-                      {state.entries.length - 1} More in Queue
-                    </h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {state.entries.slice(1).map((entry, index) => (
-                      <div
-                        key={entry.id}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="relative">
-                            <Avatar className="w-10 h-10">
-                              <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                                {getInitials(entry.profiles?.full_name || 'User')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-background" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm text-foreground">
-                              {entry.profiles?.full_name || 'Anonymous User'}
-                            </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                {formatWaitTime(entry.estimated_wait_minutes)}
-                              </div>
-                              <span>#{index + 2} in line</span>
-                            </div>
-                            {entry.discussion_topic && (
-                              <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">
-                                {entry.discussion_topic}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          onClick={() => handleStartCall(entry)}
-                          disabled={processingInvite}
-                          size="sm"
-                          variant="outline"
-                          className="text-xs px-3 h-8"
-                          aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
-                        >
-                          <Phone className="w-3 h-3 mr-1" />
-                          Call
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* First Person - Drag Handle at Bottom */}
+            {/* Primary Call Handle (First in Queue) - Acts as drag handle */}
+            {state.entries[0] && (
               <div
                 ref={handleRef}
-                className="p-4 border-t bg-background cursor-grab active:cursor-grabbing"
-                onPointerDown={handlePanelPointerDown}
-                onPointerMove={handlePanelPointerMove}
-                onPointerUp={(e) => handlePanelPointerUp(e)}
-                onPointerCancel={(e) => handlePanelPointerUp(e)}
-                onClick={handlePanelClick}
+                className="p-4 border-b bg-background cursor-grab active:cursor-grabbing hover:bg-muted/50 transition-colors"
                 style={{ touchAction: 'none' }}
-                aria-expanded={panelState.panelOffset === 0}
-                role="button"
-                tabIndex={0}
+                aria-expanded={panelState.isOpen}
+                aria-label="Drag to expand queue or click to toggle"
               >
-                {/* Drag indicator */}
-                <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mb-4" />
-                
-                <div className="relative p-6 rounded-xl border bg-gradient-to-r from-primary/5 to-accent/10 hover:from-primary/10 hover:to-accent/20 transition-all group">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
-                        <Avatar className="w-16 h-16 border-2 border-primary/20">
-                          <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
-                            {getInitials(state.entries[0].profiles?.full_name || 'User')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
-                      </div>
-                      <div className="text-left">
-                        <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                        </h3>
-                        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                          </div>
-                          {state.entries[0].discussion_topic && (
-                            <span className="text-xs bg-muted px-2 py-1 rounded-full">
-                              {state.entries[0].discussion_topic}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12 flex-shrink-0">
+                    <AvatarImage src={state.entries[0].profile?.avatar_url} />
+                    <AvatarFallback>
+                      {getInitials(state.entries[0].profile?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-semibold text-base truncate">
+                        {state.entries[0].profile?.full_name || 'Anonymous Fan'}
+                      </p>
+                      <Badge variant="default" className="bg-primary text-primary-foreground">
+                        Next
+                      </Badge>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {state.entries.length > 1 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                          <ChevronUp className="w-3 h-3" />
-                          +{state.entries.length - 1} more
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>Ready now</span>
+                      </div>
+                      
+                      {state.entries[0].discussion_topic && (
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="h-4 w-4" />
+                          <span className="truncate">{state.entries[0].discussion_topic}</span>
                         </div>
                       )}
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleStartCall(state.entries[0])
-                        }}
-                        disabled={processingInvite}
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2"
-                        aria-label={`Start call with ${state.entries[0].profiles?.full_name || 'user'}`}
-                      >
-                        <Phone className="w-4 h-4 mr-2" />
-                        {processingInvite ? 'Starting...' : 'Start Call'}
-                      </Button>
                     </div>
                   </div>
                 </div>
+                
+                {/* Drag indicator */}
+                <div className="flex justify-center mt-3">
+                  <div className="w-8 h-1 bg-muted-foreground/30 rounded-full" />
+                </div>
+              </div>
+            )}
+            
+            {/* Scrollable Queue List */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-3">
+                {state.entries.slice(1).map((entry, index) => (
+                  <div key={entry.fan_id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <Avatar className="h-10 w-10 flex-shrink-0">
+                      <AvatarImage src={entry.profile?.avatar_url} />
+                      <AvatarFallback>
+                        {getInitials(entry.profile?.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-sm truncate">
+                          {entry.profile?.full_name || 'Anonymous Fan'}
+                        </p>
+                        <Badge variant="secondary" className="text-xs">
+                          #{index + 2}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{formatWaitTime(entry.estimated_wait_minutes)}</span>
+                        </div>
+                        
+                        {entry.discussion_topic && (
+                          <div className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            <span className="truncate max-w-[120px]">{entry.discussion_topic}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   )
+
+  return createPortal(portalContent, document.body)
 }
