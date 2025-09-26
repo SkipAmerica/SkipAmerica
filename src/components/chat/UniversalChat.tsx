@@ -210,18 +210,18 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
                       </AvatarFallback>
                     </Avatar>
                   )}
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0">
                     {showUsernames ? (
-                      <div className={`text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
+                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
                         <span className={`${usernameStyle === 'bold' ? 'font-bold' : 'font-medium'} ${textSizes.name}`}>
                           {profileInfo.fullName}:
                         </span>{' '}
                         <RichTextMessage message={message.message} />
-                      </div>
+                      </span>
                     ) : (
-                      <div className={`text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
+                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
                         <RichTextMessage message={message.message} />
-                      </div>
+                      </span>
                     )}
                   </div>
                 </div>
