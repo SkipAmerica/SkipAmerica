@@ -40,6 +40,19 @@ interface QueueState {
 }
 
 export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
+  const live = useLive();
+  
+  // Check if drawer should be visible based on creator state
+  const isDiscoverable = live?.isDiscoverable || false;
+  const isLive = live?.isLive || false;
+  const liveState = live?.state || 'OFFLINE';
+  
+  // Same visibility logic as LiveControlBar
+  const shouldShowLSB = isDiscoverable && !isLive;
+  const isInDiscoverablePosture = liveState === 'DISCOVERABLE' || liveState === 'SESSION_PREP' || liveState === 'SESSION_JOINING';
+  
+  // Only show drawer when in creator context AND control bar should be visible
+  const shouldRenderDrawer = shouldShowLSB && isInDiscoverablePosture;
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
@@ -401,7 +414,8 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }
   }, [isOpen])
 
-  if (!isOpen) return null
+  // Don't render anything if not open OR not in creator context
+  if (!isOpen || !shouldRenderDrawer) return null
 
   return (
     <div 
