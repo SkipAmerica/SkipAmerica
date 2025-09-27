@@ -97,6 +97,7 @@ function AppContent() {
           creator={creator}
           caller={caller}
           isCreatorView={true}
+          onNavigateHome={() => live?.store?.dispatch({ type: 'START_FAILED' })}
         />
       )}
     </div>

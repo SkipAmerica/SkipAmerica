@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLive } from "@/hooks/live";
@@ -27,11 +26,11 @@ interface LobbyProps {
     avatar?: string;
   };
   isCreatorView?: boolean;
+  onNavigateHome?: () => void;
 }
 
-export default function Lobby({ creator, caller, isCreatorView = false }: LobbyProps) {
+export default function Lobby({ creator, caller, isCreatorView = false, onNavigateHome }: LobbyProps) {
   // Always call all hooks unconditionally at the top level
-  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
   const live = useLive();
@@ -50,10 +49,10 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
 
   // Redirect if not in correct state
   useEffect(() => {
-    if (liveState !== 'SESSION_PREP') {
-      navigate('/');
+    if (liveState !== 'SESSION_PREP' && onNavigateHome) {
+      onNavigateHome();
     }
-  }, [liveState, navigate]);
+  }, [liveState, onNavigateHome]);
 
   const handleConfirmJoin = async () => {
     const videoEl = document.querySelector('#lobby-local-video') as HTMLVideoElement;
@@ -65,7 +64,9 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
 
   const handleGoOffline = async () => {
     await endLive();
-    navigate('/');
+    if (onNavigateHome) {
+      onNavigateHome();
+    }
   };
 
   return (
