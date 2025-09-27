@@ -76,6 +76,7 @@ function AppContent() {
       {live?.state === 'SESSION_PREP' && (
         <PreCallLobby 
           onBack={() => live?.store?.dispatch({ type: 'START_FAILED' })}
+          showQueue={live?.queueCount > 0}
         />
       )}
     </div>

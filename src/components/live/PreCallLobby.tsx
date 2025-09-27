@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, Settings } from 'lucide-react'
+import { Mic, MicOff, Video, VideoOff, X, ArrowLeft, Flag, Wifi, Settings, Users } from 'lucide-react'
 import { MediaPreview } from './MediaPreview'
 import { mediaManager, orchestrateStop, orchestrateInit } from '@/media/MediaOrchestrator'
 import { ReportDialog } from '@/components/safety/ReportDialog'
 import { useLive } from '@/hooks/live'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { QueueDrawer } from './QueueDrawer'
 
 // TODO: Replace with actual config/store source
 const DEV_CANNOT_SAY_LIST = [
@@ -21,9 +22,10 @@ const DEV_CANNOT_SAY_LIST = [
 
 interface PreCallLobbyProps {
   onBack?: () => void
+  showQueue?: boolean
 }
 
-export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
+export default function PreCallLobby({ onBack, showQueue = false }: PreCallLobbyProps) {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true)
   const [isMicEnabled, setIsMicEnabled] = useState(true)
   const [isInitializing, setIsInitializing] = useState(false)
@@ -41,8 +43,20 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
   // Editing state for cannot-say list
   const [editableList, setEditableList] = useState(DEV_CANNOT_SAY_LIST)
   const [newItemText, setNewItemText] = useState('')
+  
+  // Queue drawer state
+  const [showQueueDrawer, setShowQueueDrawer] = useState(showQueue)
 
   const { confirmJoin } = useLive()
+  const live = useLive()
+  const queueCount = live?.queueCount || 0
+  // Update queue drawer when showQueue prop changes
+  useEffect(() => {
+    if (showQueue && queueCount > 0) {
+      setShowQueueDrawer(true)
+    }
+  }, [showQueue, queueCount])
+
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
@@ -300,7 +314,7 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
     >
       {/* Back to Lobby Freeze Pane */}
       <div className="flex-shrink-0 bg-background/95 backdrop-blur-md border-b sticky top-0 z-50">
-        <div className="flex items-center p-3">
+        <div className="flex items-center justify-between p-3">
           <Button
             variant="ghost"
             size="sm"
@@ -310,6 +324,18 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
             <ArrowLeft className="h-4 w-4" />
             <span className="font-medium">Back to Lobby</span>
           </Button>
+          
+          {queueCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowQueueDrawer(!showQueueDrawer)}
+              className="flex items-center gap-2 hover:bg-muted"
+            >
+              <Users className="h-4 w-4" />
+              <span className="font-medium">Queue ({queueCount})</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -553,6 +579,12 @@ export default function PreCallLobby({ onBack }: PreCallLobbyProps) {
           </div>
         </div>
       </main>
+      
+      {/* Embedded Queue Drawer */}
+      <QueueDrawer 
+        isOpen={showQueueDrawer} 
+        onClose={() => setShowQueueDrawer(false)} 
+      />
     </div>
   )
 }
