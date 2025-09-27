@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLive } from "@/hooks/live";
@@ -26,11 +27,11 @@ interface LobbyProps {
     avatar?: string;
   };
   isCreatorView?: boolean;
-  onNavigateHome?: () => void;
 }
 
-export default function Lobby({ creator, caller, isCreatorView = false, onNavigateHome }: LobbyProps) {
+export default function Lobby({ creator, caller, isCreatorView = false }: LobbyProps) {
   // Always call all hooks unconditionally at the top level
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { profile } = useProfile();
   const live = useLive();
@@ -49,10 +50,10 @@ export default function Lobby({ creator, caller, isCreatorView = false, onNaviga
 
   // Redirect if not in correct state
   useEffect(() => {
-    if (liveState !== 'SESSION_PREP' && onNavigateHome) {
-      onNavigateHome();
+    if (liveState !== 'SESSION_PREP') {
+      navigate('/');
     }
-  }, [liveState, onNavigateHome]);
+  }, [liveState, navigate]);
 
   const handleConfirmJoin = async () => {
     const videoEl = document.querySelector('#lobby-local-video') as HTMLVideoElement;
@@ -64,9 +65,7 @@ export default function Lobby({ creator, caller, isCreatorView = false, onNaviga
 
   const handleGoOffline = async () => {
     await endLive();
-    if (onNavigateHome) {
-      onNavigateHome();
-    }
+    navigate('/');
   };
 
   return (
@@ -77,6 +76,47 @@ export default function Lobby({ creator, caller, isCreatorView = false, onNaviga
         style={{ height: 'calc(var(--debug-safe-top) + 4px)' }}
       />
       
+      {/* Creator Local Preview - Fullscreen Layer */}
+      <div className="fixed inset-0 z-0 bg-black overflow-hidden">
+        <MediaPreview 
+          className="block w-full h-full object-cover"
+          muted={true}
+        />
+        <video 
+          id="lobby-local-video" 
+          className="hidden" 
+          muted 
+          playsInline 
+          autoPlay 
+        />
+        <audio id="lobby-local-audio" className="hidden" />
+        
+        <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+          {isCreatorView ? 'You' : creator.name}
+        </div>
+        
+        {/* Creator's custom media or message */}
+        {creator.customLobbyMedia && (
+          <div className="absolute top-2 right-2 w-16 h-16 rounded-lg overflow-hidden bg-black/50">
+            {creator.customLobbyMedia.type === 'image' ? (
+              <img 
+                src={creator.customLobbyMedia.url} 
+                alt="Creator media" 
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <video 
+                src={creator.customLobbyMedia.url}
+                className="w-full h-full object-cover"
+                muted
+                loop
+                autoPlay
+              />
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Main Content */}
       <div className="flex flex-col h-screen pt-[var(--debug-safe-top)]">
         {/* Header */}
@@ -94,46 +134,6 @@ export default function Lobby({ creator, caller, isCreatorView = false, onNaviga
 
         {/* Video Panes */}
         <div className="flex-1 p-4 space-y-4">
-          {/* Creator Local Preview */}
-          <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-            <MediaPreview 
-              className="w-full h-full object-cover"
-              muted={true}
-            />
-            <video 
-              id="lobby-local-video" 
-              className="hidden" 
-              muted 
-              playsInline 
-              autoPlay 
-            />
-            <audio id="lobby-local-audio" className="hidden" />
-            
-            <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
-              {isCreatorView ? 'You' : creator.name}
-            </div>
-            
-            {/* Creator's custom media or message */}
-            {creator.customLobbyMedia && (
-              <div className="absolute top-2 right-2 w-16 h-16 rounded-lg overflow-hidden bg-black/50">
-                {creator.customLobbyMedia.type === 'image' ? (
-                  <img 
-                    src={creator.customLobbyMedia.url} 
-                    alt="Creator media" 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <video 
-                    src={creator.customLobbyMedia.url}
-                    className="w-full h-full object-cover"
-                    muted
-                    loop
-                    autoPlay
-                  />
-                )}
-              </div>
-            )}
-          </div>
 
           {/* Caller Remote View */}
           <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video flex items-center justify-center">

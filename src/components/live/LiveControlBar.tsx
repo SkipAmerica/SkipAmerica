@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
-
+import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
 
 const LiveControlBarContent: React.FC = () => {
   // Always call all hooks unconditionally at the top level
-  
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -53,10 +53,9 @@ const LiveControlBarContent: React.FC = () => {
   const handleQueueClick = useCallback(() => {
     console.log('[LiveControlBar] Queue button clicked, count:', queueCount);
     if (queueCount > 0) {
-      // Navigate to PreCallLobby with embedded queue
-      live?.enterPrep?.();
+      setShowQueueDrawer(true);
     }
-  }, [queueCount, live]);
+  }, [queueCount]);
 
   const handleCounterClick = useCallback(() => {
     if (animatingToggle) return;
@@ -283,7 +282,7 @@ const LiveControlBarContent: React.FC = () => {
         </div>
       </div>
       
-      
+      <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
     </>
   )
 }

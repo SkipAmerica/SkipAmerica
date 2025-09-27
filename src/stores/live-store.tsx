@@ -315,7 +315,6 @@ export interface LiveStoreContextValue {
   goDiscoverable: () => Promise<void>
   goUndiscoverable: () => Promise<void>
   toggleDiscoverable: () => void
-  enterPrep: () => Promise<void>
   confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
   startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
   endLive: () => Promise<void>
@@ -389,45 +388,6 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
       
     } catch (error) {
       console.error('[LIVE][GO_LIVE] Failed:', error)
-      handleDispatch({ type: 'START_FAILED' })
-    } finally {
-      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
-    }
-  }, [user, state.state, state.inFlight.start, handleDispatch])
-
-  // ENTER PREP: transition to SESSION_PREP from OFFLINE or DISCOVERABLE (for queue button)
-  const enterPrep = useCallback(async () => {
-    if (!user || state.inFlight.start) return
-    
-    const controller = new AbortController()
-    dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
-    
-    try {
-      ensureMediaSubscriptions()
-      
-      if (state.state === 'OFFLINE') {
-        console.info('[LIVE][ENTER_PREP] From OFFLINE: Going discoverable first...')
-        handleDispatch({ type: 'GO_LIVE' }) // OFFLINE -> DISCOVERABLE
-        await Promise.resolve() // allow reducer commit
-        
-        console.info('[LIVE][ENTER_PREP] Now entering prep...')
-        handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
-      } else if (state.state === 'DISCOVERABLE') {
-        console.info('[LIVE][ENTER_PREP] From DISCOVERABLE: Entering prep...')
-        handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
-      } else if (state.state === 'SESSION_PREP') {
-        console.info('[LIVE][ENTER_PREP] Already in SESSION_PREP (no-op)')
-        return
-      } else {
-        console.info('[LIVE][ENTER_PREP] Ignored in state:', state.state)
-        return
-      }
-      
-      await Promise.resolve() // allow reducer commit → SESSION_PREP
-      console.info('[LIVE][ENTER_PREP] Now in SESSION_PREP state')
-      
-    } catch (error) {
-      console.error('[LIVE][ENTER_PREP] Failed:', error)
       handleDispatch({ type: 'START_FAILED' })
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
@@ -693,7 +653,6 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     goDiscoverable,
     goUndiscoverable,
     toggleDiscoverable,
-    enterPrep,
     confirmJoin,
     startNext,
     endLive,
