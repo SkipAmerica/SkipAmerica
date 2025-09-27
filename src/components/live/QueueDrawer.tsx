@@ -92,13 +92,15 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       
       const handleHeight = handleRef.current.offsetHeight
       const openHeightPx = Math.round(window.innerHeight * 0.6)
+      // Start collapsed - only handle visible at bottom
       const collapsedOffset = openHeightPx - handleHeight
       
       setPanelState(prev => ({
         ...prev,
         openHeightPx,
         collapsedOffset,
-        panelOffset: prev.panelOffset === 0 ? collapsedOffset : prev.panelOffset
+        // Always start collapsed to show only handle
+        panelOffset: collapsedOffset
       }))
     }
     
@@ -584,9 +586,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             }}
           >
             <div className="flex flex-col h-full">
-              {/* Remaining Queue - Scrollable Area Above Handle */}
+              {/* Remaining Queue - Hidden Above, Revealed When Dragged Up */}
               {state.entries.length > 1 && (
-                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2">
+                <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 min-h-0">
                   <div className="flex items-center gap-2 mb-4">
                     <Users className="w-5 h-5 text-muted-foreground" />
                     <h3 className="font-medium text-sm text-muted-foreground">
@@ -594,7 +596,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                     </h3>
                   </div>
                   
-                  <div className="space-y-2">
+                  <div className="space-y-2 pb-4">
                     {state.entries.slice(1).map((entry, index) => (
                       <div
                         key={entry.id}
@@ -644,10 +646,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                 </div>
               )}
               
-              {/* First Person - Drag Handle at Bottom */}
+              {/* Next Up - Drag Handle (Always Visible) */}
               <div
                 ref={handleRef}
-                className="p-4 border-t bg-background cursor-grab active:cursor-grabbing"
+                className="flex-shrink-0 p-4 border-t bg-background cursor-grab active:cursor-grabbing"
                 onPointerDown={handlePanelPointerDown}
                 onPointerMove={handlePanelPointerMove}
                 onPointerUp={handlePanelPointerUp}
@@ -673,6 +675,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
                       </div>
                       <div className="text-left">
+                        <p className="text-xs font-medium text-primary mb-1">NEXT UP</p>
                         <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
                           {state.entries[0].profiles?.full_name || 'Anonymous User'}
                         </h3>
