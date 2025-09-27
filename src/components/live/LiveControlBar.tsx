@@ -54,7 +54,7 @@ const LiveControlBarContent: React.FC = () => {
     console.log('[LiveControlBar] Queue button clicked, count:', queueCount);
     if (queueCount > 0) {
       // Navigate to PreCallLobby with embedded queue
-      live?.goLive?.();
+      live?.enterPrep?.();
     }
   }, [queueCount, live]);
 

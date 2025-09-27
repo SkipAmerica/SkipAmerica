@@ -30,6 +30,7 @@ export function useLiveSession() {
     
     // Actions
     goLive: store.goLive,
+    enterPrep: store.enterPrep,
     endLive: store.endLive,
     toggleRightDisplay: store.toggleEarningsDisplay,
     incrementCall: store.incrementCall

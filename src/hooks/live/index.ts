@@ -59,6 +59,7 @@ export function useLive() {
     
     // Actions
     goLive: store.goLive,
+    enterPrep: store.enterPrep,
     toggleDiscoverable: store.toggleDiscoverable,
     setDiscoverabilityModal: store.setDiscoverabilityModal,
     endLive: store.endLive,

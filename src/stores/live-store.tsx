@@ -315,6 +315,7 @@ export interface LiveStoreContextValue {
   goDiscoverable: () => Promise<void>
   goUndiscoverable: () => Promise<void>
   toggleDiscoverable: () => void
+  enterPrep: () => Promise<void>
   confirmJoin: (localVideoEl: HTMLVideoElement, localAudioEl?: HTMLAudioElement) => Promise<void>
   startNext: (localVideoEl: HTMLVideoElement) => Promise<void>
   endLive: () => Promise<void>
@@ -388,6 +389,33 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
       
     } catch (error) {
       console.error('[LIVE][GO_LIVE] Failed:', error)
+      handleDispatch({ type: 'START_FAILED' })
+    } finally {
+      dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
+    }
+  }, [user, state.state, state.inFlight.start, handleDispatch])
+
+  // ENTER PREP: go directly from OFFLINE to SESSION_PREP (for queue button)
+  const enterPrep = useCallback(async () => {
+    if (!user || state.state !== 'OFFLINE' || state.inFlight.start) return
+    
+    const controller = new AbortController()
+    dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
+    
+    try {
+      console.info('[LIVE][ENTER_PREP] Going discoverable first...')
+      ensureMediaSubscriptions()
+      handleDispatch({ type: 'GO_LIVE' }) // OFFLINE -> DISCOVERABLE
+      await Promise.resolve() // allow reducer commit
+      
+      console.info('[LIVE][ENTER_PREP] Now entering prep...')
+      handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
+      await Promise.resolve() // allow reducer commit → SESSION_PREP
+      
+      console.info('[LIVE][ENTER_PREP] Now in SESSION_PREP state')
+      
+    } catch (error) {
+      console.error('[LIVE][ENTER_PREP] Failed:', error)
       handleDispatch({ type: 'START_FAILED' })
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'start' })
@@ -653,6 +681,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     goDiscoverable,
     goUndiscoverable,
     toggleDiscoverable,
+    enterPrep,
     confirmJoin,
     startNext,
     endLive,
