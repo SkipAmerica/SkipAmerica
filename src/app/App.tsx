@@ -6,8 +6,10 @@ import { AppRouter } from './router'
 import { PWAInstallPrompt } from '@/components/mobile/PWAInstallPrompt'
 import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { LiveControlBar } from '@/components/live/LiveControlBar'
-import PreCallLobby from '@/components/live/PreCallLobby'
+import Lobby from '@/pages/Lobby'
 import { useLive } from '@/hooks/live'
+import { useAuth } from './providers/auth-provider'
+import { useProfile } from '@/hooks/useProfile'
 
 function App() {
   React.useEffect(() => {
@@ -54,9 +56,26 @@ function App() {
 function AppContent() {
   // Always call hooks unconditionally at the top level
   const live = useLive()
+  const { user } = useAuth()
+  const { profile } = useProfile()
   
   // Compute derived values after hooks
   const isLive = live?.isLive || false
+  
+  // Create props for Lobby component
+  const creator = {
+    id: user?.id || '',
+    name: profile?.full_name || user?.email || 'Creator',
+    avatar: profile?.avatar_url,
+    customLobbyMedia: undefined,
+    lobbyMessage: undefined
+  }
+  
+  const caller = {
+    id: 'placeholder-caller',
+    name: 'Waiting for caller...',
+    avatar: undefined
+  }
   
   return (
     <div 
@@ -72,11 +91,12 @@ function AppContent() {
       <PWAInstallPrompt />
       <LiveControlBar />
       
-      {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
+      {/* Creator Lobby - Mount when in SESSION_PREP state */}
       {live?.state === 'SESSION_PREP' && (
-        <PreCallLobby 
-          onBack={() => live?.store?.dispatch({ type: 'START_FAILED' })}
-          showQueue={live?.queueCount > 0}
+        <Lobby 
+          creator={creator}
+          caller={caller}
+          isCreatorView={true}
         />
       )}
     </div>
