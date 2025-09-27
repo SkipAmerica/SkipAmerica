@@ -361,10 +361,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Error State */}
           {state.error && (
-            <Alert variant="destructive" className="mb-4">
+            <Alert variant="destructive" className="mb-4 flex-shrink-0">
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription className="flex items-center justify-between">
                 <span>{state.error}</span>
@@ -396,65 +396,115 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               <p className="text-sm">Fans will appear here when they join</p>
             </div>
           ) : (
-            /* Queue Entries */
-            <div className="space-y-3" role="list" aria-label="Queue entries">
-              {state.entries.map((entry, index) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                  role="listitem"
-                  aria-labelledby={`queue-entry-${index}`}
-                >
-                  <div className="flex items-center space-x-3">
+            <>
+              {/* First Entry - Sticky */}
+              {state.entries.length > 0 && (
+                <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b pb-3 mb-3 flex-shrink-0">
+                  <div
+                    className="flex items-center justify-between p-4 bg-primary/5 border-2 border-primary/20 rounded-lg"
+                    role="listitem"
+                    aria-labelledby="queue-entry-next"
+                  >
                     <div className="flex items-center space-x-3">
-                      <div 
-                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary"
-                        aria-label={`Position ${index + 1}`}
-                      >
-                        {index + 1}
+                      <div className="flex items-center space-x-3">
+                        <div 
+                          className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-medium text-primary-foreground"
+                          aria-label="Next in line"
+                        >
+                          1
+                        </div>
+                        <Avatar className="w-12 h-12">
+                          <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                            {state.entries[0].profiles?.full_name 
+                              ? getInitials(state.entries[0].profiles.full_name)
+                              : 'U'
+                            }
+                          </AvatarFallback>
+                        </Avatar>
                       </div>
-                      <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-primary/10">
-                          {entry.profiles?.full_name 
-                            ? getInitials(entry.profiles.full_name)
-                            : 'U'
-                          }
-                        </AvatarFallback>
-                      </Avatar>
-                    </div>
-                    <div>
-                      <p id={`queue-entry-${index}`} className="font-medium">
-                        {entry.profiles?.full_name || 'Anonymous User'}
-                      </p>
-                      {entry.discussion_topic && (
-                        <p className="text-sm text-primary mb-1">
-                          {entry.discussion_topic}
+                      <div>
+                        <p id="queue-entry-next" className="font-semibold text-primary">
+                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
                         </p>
-                      )}
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
-                        <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
-                          Wait: {formatWaitTime(entry.estimated_wait_minutes)}
-                        </span>
+                        {state.entries[0].discussion_topic && (
+                          <p className="text-sm text-primary/80 mb-1 font-medium">
+                            {state.entries[0].discussion_topic}
+                          </p>
+                        )}
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                          <span aria-label={`Estimated wait time: ${formatWaitTime(state.entries[0].estimated_wait_minutes)}`}>
+                            Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {index === 0 && (
                     <Button
                       size="sm"
-                      onClick={() => handleStartCall(entry)}
+                      onClick={() => handleStartCall(state.entries[0])}
                       disabled={processingInvite}
                       className="bg-live hover:bg-live/90 text-white disabled:opacity-50"
-                      aria-label={`Start pre-call with ${entry.profiles?.full_name || 'user'}`}
+                      aria-label={`Start pre-call with ${state.entries[0].profiles?.full_name || 'user'}`}
                     >
                       <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
                       {processingInvite ? 'Starting...' : 'Start Pre-Call'}
                     </Button>
-                  )}
+                  </div>
                 </div>
-              ))}
-            </div>
+              )}
+
+              {/* Remaining Entries - Scrollable */}
+              {state.entries.length > 1 && (
+                <div className="flex-1 overflow-y-auto min-h-0">
+                  <div className="space-y-3 pb-4" role="list" aria-label="Waiting queue entries">
+                    {state.entries.slice(1).map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                        role="listitem"
+                        aria-labelledby={`queue-entry-${index + 2}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3">
+                            <div 
+                              className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary"
+                              aria-label={`Position ${index + 2}`}
+                            >
+                              {index + 2}
+                            </div>
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-primary/10">
+                                {entry.profiles?.full_name 
+                                  ? getInitials(entry.profiles.full_name)
+                                  : 'U'
+                                }
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <div>
+                            <p id={`queue-entry-${index + 2}`} className="font-medium">
+                              {entry.profiles?.full_name || 'Anonymous User'}
+                            </p>
+                            {entry.discussion_topic && (
+                              <p className="text-sm text-primary mb-1">
+                                {entry.discussion_topic}
+                              </p>
+                            )}
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                              <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
+                                Wait: {formatWaitTime(entry.estimated_wait_minutes)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </SheetContent>
