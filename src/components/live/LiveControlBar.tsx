@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
-import { QueueDrawer } from './QueueDrawer';
+
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
@@ -297,8 +297,6 @@ const LiveControlBarContent: React.FC = () => {
         </div>
       </div>
       
-      {/* Global Queue Panel - Always Mounted */}
-      <QueueDrawer />
     </>
   )
 }
