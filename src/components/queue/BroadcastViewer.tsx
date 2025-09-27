@@ -89,8 +89,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col relative overflow-hidden">
-      <div className="flex-1 flex">
-        <div className="relative w-full h-full overflow-hidden">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="relative w-full max-w-4xl aspect-video rounded-lg overflow-hidden shadow-2xl">
           <video
             ref={videoRef}
             muted

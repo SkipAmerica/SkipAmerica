@@ -1,13 +1,17 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Users, Clock, Phone, AlertTriangle, RotateCcw, ChevronUp } from 'lucide-react'
+import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff, Video } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
+import { RUNTIME } from '@/config/runtime'
+import LobbyBroadcastPanel from './LobbyBroadcastPanel'
+import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
 
 interface QueueEntry {
   id: string
@@ -21,7 +25,10 @@ interface QueueEntry {
   }
 }
 
-// QueueDrawer is now a self-contained bottom panel - no props needed
+interface QueueDrawerProps {
+  isOpen: boolean
+  onClose: () => void
+}
 
 interface QueueState {
   entries: QueueEntry[]
@@ -31,13 +38,17 @@ interface QueueState {
   isConnected: boolean
 }
 
-export function QueueDrawer() {
+export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
+  
+  // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
+  // Use the authenticated user ID as the lobby creator ID (creator's own panel)
+  const lobbyCreatorId = user?.id || "";
+  console.log("[CREATOR PANEL] lobbyCreatorId =", lobbyCreatorId);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
-  const gestureRef = useRef<HTMLDivElement>(null)
   
   const [state, setLocalState] = useState<QueueState>({
     entries: [],
@@ -48,108 +59,6 @@ export function QueueDrawer() {
   })
   const [processingInvite, setProcessingInvite] = useState(false)
   const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
-  
-  // Unified draggable panel state
-  const panelRef = useRef<HTMLDivElement>(null)
-  const handleRef = useRef<HTMLDivElement>(null)
-  const [panelState, setPanelState] = useState({
-    panelOffset: 0,
-    isDragging: false,
-    startY: 0,
-    startOffset: 0,
-    openHeightPx: 0,
-    collapsedOffset: 0
-  })
-
-  // Gesture tracking state
-  const [gestureState, setGestureState] = useState({
-    tracking: false,
-    startX: 0,
-    startY: 0,
-    startTime: 0,
-    swiped: false
-  })
-
-  // Check if user is creator (simple guard)
-  const isCreator = user?.user_metadata?.account_type === 'creator' || user?.user_metadata?.role === 'creator'
-  
-  // Initialize panel dimensions
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (!handleRef.current) return
-      
-      const handleHeight = handleRef.current.offsetHeight
-      const openHeightPx = Math.round(window.innerHeight * 0.6)
-      // Start collapsed - only handle visible at bottom
-      const collapsedOffset = openHeightPx - handleHeight
-      
-      setPanelState(prev => ({
-        ...prev,
-        openHeightPx,
-        collapsedOffset,
-        // Always start collapsed to show only handle
-        panelOffset: collapsedOffset
-      }))
-    }
-    
-    updateDimensions()
-    window.addEventListener('resize', updateDimensions)
-    
-    return () => window.removeEventListener('resize', updateDimensions)
-  }, [state.entries.length])
-  
-  // Panel drag handlers
-  const handlePanelPointerDown = useCallback((e: React.PointerEvent) => {
-    if (!e.isPrimary) return
-    
-    // Don't start drag on interactive elements
-    const target = e.target as HTMLElement
-    if (target.closest('button') || target.closest('input') || target.closest('textarea')) return
-    
-    setPanelState(prev => ({
-      ...prev,
-      isDragging: true,
-      startY: e.clientY,
-      startOffset: prev.panelOffset
-    }))
-    
-    e.preventDefault()
-  }, [])
-  
-  const handlePanelPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!panelState.isDragging) return
-    
-    const deltaY = e.clientY - panelState.startY
-    const newOffset = Math.max(0, Math.min(panelState.collapsedOffset, panelState.startOffset + deltaY))
-    
-    setPanelState(prev => ({
-      ...prev,
-      panelOffset: newOffset
-    }))
-  }, [panelState.isDragging, panelState.startY, panelState.startOffset, panelState.collapsedOffset])
-  
-  const handlePanelPointerUp = useCallback(() => {
-    if (!panelState.isDragging) return
-    
-    const threshold = panelState.collapsedOffset * 0.5
-    const shouldOpen = panelState.panelOffset < threshold
-    
-    setPanelState(prev => ({
-      ...prev,
-      isDragging: false,
-      panelOffset: shouldOpen ? 0 : prev.collapsedOffset
-    }))
-  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
-  
-  const handlePanelClick = useCallback(() => {
-    if (panelState.isDragging) return
-    
-    const isOpen = panelState.panelOffset === 0
-    setPanelState(prev => ({
-      ...prev,
-      panelOffset: isOpen ? prev.collapsedOffset : 0
-    }))
-  }, [panelState.isDragging, panelState.panelOffset, panelState.collapsedOffset])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -279,7 +188,7 @@ export function QueueDrawer() {
 
   // Setup real-time subscription for queue changes with debounced fetching
   useEffect(() => {
-    if (!user) return
+    if (!isOpen || !user) return
 
     console.log('[QueueDrawer] Setting up real-time subscription')
     
@@ -322,7 +231,7 @@ export function QueueDrawer() {
         console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
       }
     }
-  }, [user, fetchQueue])
+  }, [isOpen, user, fetchQueue])
 
   const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
     if (!user || processingInvite) return
@@ -339,6 +248,9 @@ export function QueueDrawer() {
         description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
       })
       
+      // Close drawer after successful transition
+      onClose()
+      
     } catch (error: any) {
       console.error('Error starting pre-call:', error)
       toast({
@@ -349,7 +261,7 @@ export function QueueDrawer() {
     } finally {
       setProcessingInvite(false)
     }
-  }, [user, processingInvite, store, toast])
+  }, [user, processingInvite, store, toast, onClose])
 
   const handleRetry = useCallback(() => {
     setLocalState(prev => ({ ...prev, retryCount: 0 }))
@@ -372,217 +284,180 @@ export function QueueDrawer() {
       .slice(0, 2)
   }
 
-  // Gesture handlers for right-swipe navigation
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    // Only track for creators
-    if (!isCreator) return
-    
-    // Only primary pointer (left click/first touch)
-    if (!e.isPrimary) return
-    
-    // Don't track if starting on interactive elements
-    const target = e.target as HTMLElement
-    if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') return
-    
-    // Only track if within gesture container
-    if (!gestureRef.current?.contains(target)) return
-    
-    setGestureState({
-      tracking: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      startTime: Date.now(),
-      swiped: false
-    })
-  }, [isCreator])
-
-  const handlePointerMove = useCallback((e: React.PointerEvent) => {
-    if (!gestureState.tracking) return
-    
-    const dx = e.clientX - gestureState.startX
-    const dy = e.clientY - gestureState.startY
-    
-    // If too much vertical movement, treat as scroll
-    if (Math.abs(dy) > 30) {
-      setGestureState(prev => ({ ...prev, tracking: false }))
-      return
-    }
-    
-    // Check for right swipe threshold
-    if (dx > 80 && Date.now() - gestureState.startTime < 600) {
-      setGestureState(prev => ({ ...prev, swiped: true }))
-    }
-  }, [gestureState])
-
-  const handlePointerUp = useCallback(() => {
-    if (gestureState.swiped) {
-      window.location.href = '/creator/blank'
-    }
-    
-    setGestureState({
-      tracking: false,
-      startX: 0,
-      startY: 0,
-      startTime: 0,
-      swiped: false
-    })
-  }, [gestureState.swiped])
-
-  const handlePointerCancel = useCallback(() => {
-    setGestureState({
-      tracking: false,
-      startX: 0,
-      startY: 0,
-      startTime: 0,
-      swiped: false
-    })
-  }, [])
-
-  // Only render when there are queue entries
-  if (!state.entries.length || state.loading) return null
-
   return (
-    <div
-      ref={panelRef}
-      className="fixed bottom-0 left-0 right-0 z-40 pointer-events-auto bg-background border-t shadow-2xl"
-      style={{
-        height: `${panelState.openHeightPx}px`,
-        transform: `translateY(${panelState.panelOffset}px)`,
-        transition: panelState.isDragging ? 'none' : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-        paddingBottom: 'env(safe-area-inset-bottom)'
-      }}
-    >
-      <div className="flex flex-col h-full">
-        {/* Remaining Queue - Hidden Above, Revealed When Dragged Up */}
-        {state.entries.length > 1 && (
-          <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 min-h-0">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-muted-foreground" />
-              <h3 className="font-medium text-sm text-muted-foreground">
-                {state.entries.length - 1} More in Queue
-              </h3>
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent 
+        side="bottom" 
+        className="h-[90vh] rounded-t-2xl flex flex-col"
+        aria-describedby="queue-description"
+      >
+        <SheetHeader className="pb-4 flex-shrink-0">
+          <SheetTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5" aria-hidden="true" />
+              {user?.user_metadata?.full_name ? 
+                `${user.user_metadata.full_name.split(' ')[0]}'s Lobby (${state.entries.length})` : 
+                `Creator Lobby (${state.entries.length})`
+              }
             </div>
-            
-            <div className="space-y-2 pb-4">
-              {state.entries.slice(1).map((entry, index) => (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => {
+                  supabase
+                    .from('call_queue')
+                    .delete()
+                    .eq('creator_id', user.id)
+                    .eq('status', 'waiting')
+                    .then(() => {
+                      toast({
+                        title: "Queue cleared",
+                        description: "All users have been removed from the queue"
+                      })
+                    })
+                }}
+                variant="outline"
+                size="sm"
+              >
+                Clear Queue
+              </Button>
+              {state.isConnected ? (
+                <Wifi className="w-4 h-4 text-muted-foreground" aria-label="Connected" />
+              ) : (
+                <WifiOff className="w-4 h-4 text-destructive" aria-label="Disconnected" />
+              )}
+            </div>
+          </SheetTitle>
+          <p id="queue-description" className="text-sm text-muted-foreground">
+            Manage your call queue and connect with waiting fans
+          </p>
+          
+          {/* Broadcast Toggle Button */}
+          <Button
+            onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
+            variant={store.isLobbyBroadcasting ? "destructive" : "default"}
+            className="w-full mt-3"
+            aria-pressed={store.isLobbyBroadcasting}
+          >
+            <Video className="w-4 h-4 mr-2" />
+            {store.isLobbyBroadcasting ? "End Broadcast" : "Broadcast to Lobby"}
+          </Button>
+        </SheetHeader>
+
+        {/* Broadcast Panel */}
+        {store.isLobbyBroadcasting && (
+          <div className="flex-shrink-0 px-6">
+            <LobbyBroadcastPanel 
+              onEnd={() => store.setLobbyBroadcasting(false)}
+            />
+          </div>
+        )}
+
+        {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
+        <div className="mt-4">
+          {lobbyCreatorId ? (
+            <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
+          ) : (
+            <div className="text-sm text-red-400">Missing creator id; overlay disabled.</div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {/* Error State */}
+          {state.error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription className="flex items-center justify-between">
+                <span>{state.error}</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleRetry}
+                  disabled={state.loading}
+                  className="ml-2 h-7 px-2 text-xs"
+                  aria-label="Retry loading queue"
+                >
+                  <RotateCcw className={cn("h-3 w-3 mr-1", state.loading && "animate-spin")} />
+                  Retry
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Loading State */}
+          {state.loading && !state.error ? (
+            <div className="flex items-center justify-center py-8" role="status" aria-label="Loading queue">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : state.entries.length === 0 && !state.error ? (
+            /* Empty State */
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Users className="w-12 h-12 mb-4 opacity-50" aria-hidden="true" />
+              <p className="font-medium">No one in queue yet</p>
+              <p className="text-sm">Fans will appear here when they join</p>
+            </div>
+          ) : (
+            /* Queue Entries */
+            <div className="space-y-3" role="list" aria-label="Queue entries">
+              {state.entries.map((entry, index) => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                  role="listitem"
+                  aria-labelledby={`queue-entry-${index}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3">
+                      <div 
+                        className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary"
+                        aria-label={`Position ${index + 1}`}
+                      >
+                        {index + 1}
+                      </div>
                       <Avatar className="w-10 h-10">
-                        <AvatarFallback className="bg-muted text-muted-foreground text-sm">
-                          {getInitials(entry.profiles?.full_name || 'User')}
+                        <AvatarFallback className="bg-primary/10">
+                          {entry.profiles?.full_name 
+                            ? getInitials(entry.profiles.full_name)
+                            : 'U'
+                          }
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-yellow-500 rounded-full border border-background" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-foreground">
+                      <p id={`queue-entry-${index}`} className="font-medium">
                         {entry.profiles?.full_name || 'Anonymous User'}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatWaitTime(entry.estimated_wait_minutes)}
-                        </div>
-                        <span>#{index + 2} in line</span>
-                      </div>
                       {entry.discussion_topic && (
-                        <p className="text-xs text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">
+                        <p className="text-sm text-primary mb-1">
                           {entry.discussion_topic}
                         </p>
                       )}
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="w-3 h-3 mr-1" aria-hidden="true" />
+                        <span aria-label={`Estimated wait time: ${formatWaitTime(entry.estimated_wait_minutes)}`}>
+                          Wait: {formatWaitTime(entry.estimated_wait_minutes)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    onClick={() => handleStartCall(entry)}
-                    disabled={processingInvite}
-                    size="sm"
-                    variant="outline"
-                    className="text-xs px-3 h-8"
-                    aria-label={`Start call with ${entry.profiles?.full_name || 'user'}`}
-                  >
-                    <Phone className="w-3 h-3 mr-1" />
-                    Call
-                  </Button>
+
+                  {index === 0 && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStartCall(entry)}
+                      disabled={processingInvite}
+                      className="bg-live hover:bg-live/90 text-white disabled:opacity-50"
+                      aria-label={`Start pre-call with ${entry.profiles?.full_name || 'user'}`}
+                    >
+                      <Phone className="w-4 h-4 mr-1" aria-hidden="true" />
+                      {processingInvite ? 'Starting...' : 'Start Pre-Call'}
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        
-        {/* Next Up - Drag Handle (Always Visible) */}
-        <div
-          ref={handleRef}
-          className="flex-shrink-0 p-4 border-t bg-background cursor-grab active:cursor-grabbing"
-          onPointerDown={handlePanelPointerDown}
-          onPointerMove={handlePanelPointerMove}
-          onPointerUp={handlePanelPointerUp}
-          onPointerCancel={handlePanelPointerUp}
-          onClick={handlePanelClick}
-          style={{ touchAction: 'none' }}
-          aria-expanded={panelState.panelOffset === 0}
-          role="button"
-          tabIndex={0}
-        >
-          {/* Drag indicator */}
-          <div className="mx-auto w-12 h-1 bg-muted-foreground/30 rounded-full mb-4" />
-          
-          <div className="relative p-6 rounded-xl border bg-gradient-to-r from-primary/5 to-accent/10 hover:from-primary/10 hover:to-accent/20 transition-all group">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Avatar className="w-16 h-16 border-2 border-primary/20">
-                    <AvatarFallback className="bg-primary/10 text-primary font-medium text-lg">
-                      {getInitials(state.entries[0].profiles?.full_name || 'User')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-background animate-pulse" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-medium text-primary mb-1">NEXT UP</p>
-                  <h3 className="font-semibold text-lg text-foreground group-hover:text-primary transition-colors">
-                    {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                  </h3>
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                    </div>
-                    {state.entries[0].discussion_topic && (
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full">
-                        {state.entries[0].discussion_topic}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {state.entries.length > 1 && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
-                    <ChevronUp className="w-3 h-3" />
-                    +{state.entries.length - 1} more
-                  </div>
-                )}
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleStartCall(state.entries[0])
-                  }}
-                  disabled={processingInvite}
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2"
-                  aria-label={`Start call with ${state.entries[0].profiles?.full_name || 'user'}`}
-                >
-                  <Phone className="w-4 h-4 mr-2" />
-                  {processingInvite ? 'Starting...' : 'Start Call'}
-                </Button>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   )
 }

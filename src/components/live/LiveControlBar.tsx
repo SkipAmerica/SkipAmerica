@@ -1,15 +1,16 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Users, Clock, DollarSign, Video } from 'lucide-react';
+import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
-
+import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
 type CounterMode = 'SESSION_EARNINGS' | 'TODAY_EARNINGS' | 'SESSION_DURATION'
 
 const LiveControlBarContent: React.FC = () => {
   // Always call all hooks unconditionally at the top level
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [animatingToggle, setAnimatingToggle] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -51,7 +52,9 @@ const LiveControlBarContent: React.FC = () => {
 
   const handleQueueClick = useCallback(() => {
     console.log('[LiveControlBar] Queue button clicked, count:', queueCount);
-    // Queue is now always visible as bottom panel when there are entries
+    if (queueCount > 0) {
+      setShowQueueDrawer(true);
+    }
   }, [queueCount]);
 
   const handleCounterClick = useCallback(() => {
@@ -254,49 +257,32 @@ const LiveControlBarContent: React.FC = () => {
             <span className="text-sm font-bold text-white uppercase">DISCOVERABLE</span>
           </div>
 
-          {/* Right - Broadcast & Counter */}
-          <div className="flex items-center gap-2 justify-self-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => live?.store?.setLobbyBroadcasting(!live?.store?.isLobbyBroadcasting)}
-              className={cn(
-                "flex items-center gap-1 px-2 py-1 h-auto text-white",
-                "transition-all duration-200",
-                live?.store?.isLobbyBroadcasting && "bg-red-500/20 text-red-200"
-              )}
-            >
-              <Video size={14} />
-              <span className="text-xs">
-                {live?.store?.isLobbyBroadcasting ? 'LIVE' : 'Broadcast'}
+          {/* Right - Counter Display */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCounterClick}
+            disabled={animatingToggle}
+            className={cn(
+              "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white justify-self-end",
+              "transition-all duration-200",
+              animatingToggle && "scale-95"
+            )}
+          >
+            <div className="flex items-center gap-1">
+              {counterIcon === 'Clock' ? <Clock size={14} /> : <DollarSign size={14} />}
+              <span className="text-xs font-bold tabular-nums">
+                {counterText}
               </span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCounterClick}
-              disabled={animatingToggle}
-              className={cn(
-                "flex flex-col items-center gap-0 px-3 py-1 h-auto min-w-0 text-white",
-                "transition-all duration-200",
-                animatingToggle && "scale-95"
-              )}
-            >
-              <div className="flex items-center gap-1">
-                {counterIcon === 'Clock' ? <Clock size={14} /> : <DollarSign size={14} />}
-                <span className="text-xs font-bold tabular-nums">
-                  {counterText}
-                </span>
-              </div>
-              <span className="text-xs opacity-90">
-                {counterSubtext}
-              </span>
-            </Button>
-          </div>
+            </div>
+            <span className="text-xs opacity-90">
+              {counterSubtext}
+            </span>
+          </Button>
         </div>
       </div>
       
+      <QueueDrawer isOpen={showQueueDrawer} onClose={() => setShowQueueDrawer(false)} />
     </>
   )
 }

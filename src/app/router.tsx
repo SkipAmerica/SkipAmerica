@@ -13,7 +13,6 @@ const FeedPage = lazy(() => import('@/pages/Feed'))
 const LobbyPage = lazy(() => import('@/pages/Lobby'))
 const CallPage = lazy(() => import('@/pages/Call'))
 const JoinQueuePage = lazy(() => import('@/pages/JoinQueue'))
-const CreatorBlankPage = lazy(() => import('@/pages/CreatorBlank'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 
 // Route wrapper with error boundary and suspense
@@ -80,14 +79,6 @@ export function AppRouter() {
         <Route path="/join-queue/:creatorId" element={
           <RouteWrapper>
             <JoinQueuePage />
-          </RouteWrapper>
-        } />
-        
-        <Route path="/creator/blank" element={
-          <RouteWrapper>
-            <AuthGuard>
-              <CreatorBlankPage />
-            </AuthGuard>
           </RouteWrapper>
         } />
         

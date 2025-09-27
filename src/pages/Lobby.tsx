@@ -76,47 +76,6 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         style={{ height: 'calc(var(--debug-safe-top) + 4px)' }}
       />
       
-      {/* Creator Local Preview - Fullscreen Layer */}
-      <div className="fixed inset-0 z-0 bg-black overflow-hidden">
-        <MediaPreview 
-          className="block w-full h-full object-cover"
-          muted={true}
-        />
-        <video 
-          id="lobby-local-video" 
-          className="hidden" 
-          muted 
-          playsInline 
-          autoPlay 
-        />
-        <audio id="lobby-local-audio" className="hidden" />
-        
-        <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
-          {isCreatorView ? 'You' : creator.name}
-        </div>
-        
-        {/* Creator's custom media or message */}
-        {creator.customLobbyMedia && (
-          <div className="absolute top-2 right-2 w-16 h-16 rounded-lg overflow-hidden bg-black/50">
-            {creator.customLobbyMedia.type === 'image' ? (
-              <img 
-                src={creator.customLobbyMedia.url} 
-                alt="Creator media" 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <video 
-                src={creator.customLobbyMedia.url}
-                className="w-full h-full object-cover"
-                muted
-                loop
-                autoPlay
-              />
-            )}
-          </div>
-        )}
-      </div>
-
       {/* Main Content */}
       <div className="flex flex-col h-screen pt-[var(--debug-safe-top)]">
         {/* Header */}
@@ -134,6 +93,46 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
 
         {/* Video Panes */}
         <div className="flex-1 p-4 space-y-4">
+          {/* Creator Local Preview */}
+          <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+            <MediaPreview 
+              className="w-full h-full object-cover"
+              muted={true}
+            />
+            <video 
+              id="lobby-local-video" 
+              className="hidden" 
+              muted 
+              playsInline 
+              autoPlay 
+            />
+            <audio id="lobby-local-audio" className="hidden" />
+            
+            <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-sm">
+              {isCreatorView ? 'You' : creator.name}
+            </div>
+            
+            {/* Creator's custom media or message */}
+            {creator.customLobbyMedia && (
+              <div className="absolute top-2 right-2 w-16 h-16 rounded-lg overflow-hidden bg-black/50">
+                {creator.customLobbyMedia.type === 'image' ? (
+                  <img 
+                    src={creator.customLobbyMedia.url} 
+                    alt="Creator media" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video 
+                    src={creator.customLobbyMedia.url}
+                    className="w-full h-full object-cover"
+                    muted
+                    loop
+                    autoPlay
+                  />
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Caller Remote View */}
           <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video flex items-center justify-center">

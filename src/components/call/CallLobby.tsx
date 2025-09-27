@@ -5,7 +5,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { IOSNavBar } from "@/components/mobile/IOSNavBar";
-import { MediaPreview } from "@/components/live/MediaPreview";
 import { 
   Play, 
   Clock, 
@@ -95,15 +94,8 @@ export function CallLobby({
   const progressPercentage = ((30 - timeRemaining) / 30) * 100;
 
   return (
-    <div className="min-h-screen relative bg-black animate-slide-in-right">
-      {/* Full-screen video background */}
-      <div className="fixed inset-0 z-0 bg-black">
-        <MediaPreview className="block w-full h-full object-cover" muted />
-      </div>
-      
-      {/* UI content layer */}
-      <div className="relative z-10">
-        {/* iOS Navigation Bar */}
+    <div className="min-h-screen bg-background animate-slide-in-right">
+      {/* iOS Navigation Bar */}
       <IOSNavBar
         title="Safety Lobby"
         leftButton={{
@@ -137,8 +129,8 @@ export function CallLobby({
         {/* Main Content */}
         <div className="px-4 space-y-6">
           {/* Video Preview */}
-          <div className="bg-transparent p-0 shadow-none border-0 animate-scale-in">
-            <div className="aspect-video bg-transparent overflow-hidden flex items-center justify-center relative">
+          <div className="bg-card rounded-xl p-4 shadow-sm border animate-scale-in">
+            <div className="aspect-video bg-muted rounded-xl flex items-center justify-center relative overflow-hidden">
               {showVideoPreview ? (
                 <div className="text-center animate-fade-in">
                   <Avatar className="h-20 w-20 mx-auto mb-4 ring-2 ring-primary/20">
@@ -296,7 +288,6 @@ export function CallLobby({
 
         {/* Bottom Padding for safe area */}
         <div className="h-8" />
-      </div>
       </div>
     </div>
   );
