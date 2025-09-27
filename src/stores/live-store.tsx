@@ -395,23 +395,35 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     }
   }, [user, state.state, state.inFlight.start, handleDispatch])
 
-  // ENTER PREP: go directly from OFFLINE to SESSION_PREP (for queue button)
+  // ENTER PREP: transition to SESSION_PREP from OFFLINE or DISCOVERABLE (for queue button)
   const enterPrep = useCallback(async () => {
-    if (!user || state.state !== 'OFFLINE' || state.inFlight.start) return
+    if (!user || state.inFlight.start) return
     
     const controller = new AbortController()
     dispatch({ type: 'SET_IN_FLIGHT', operation: 'start', controller })
     
     try {
-      console.info('[LIVE][ENTER_PREP] Going discoverable first...')
       ensureMediaSubscriptions()
-      handleDispatch({ type: 'GO_LIVE' }) // OFFLINE -> DISCOVERABLE
-      await Promise.resolve() // allow reducer commit
       
-      console.info('[LIVE][ENTER_PREP] Now entering prep...')
-      handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
+      if (state.state === 'OFFLINE') {
+        console.info('[LIVE][ENTER_PREP] From OFFLINE: Going discoverable first...')
+        handleDispatch({ type: 'GO_LIVE' }) // OFFLINE -> DISCOVERABLE
+        await Promise.resolve() // allow reducer commit
+        
+        console.info('[LIVE][ENTER_PREP] Now entering prep...')
+        handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
+      } else if (state.state === 'DISCOVERABLE') {
+        console.info('[LIVE][ENTER_PREP] From DISCOVERABLE: Entering prep...')
+        handleDispatch({ type: 'ENTER_PREP' }) // DISCOVERABLE -> SESSION_PREP
+      } else if (state.state === 'SESSION_PREP') {
+        console.info('[LIVE][ENTER_PREP] Already in SESSION_PREP (no-op)')
+        return
+      } else {
+        console.info('[LIVE][ENTER_PREP] Ignored in state:', state.state)
+        return
+      }
+      
       await Promise.resolve() // allow reducer commit → SESSION_PREP
-      
       console.info('[LIVE][ENTER_PREP] Now in SESSION_PREP state')
       
     } catch (error) {
