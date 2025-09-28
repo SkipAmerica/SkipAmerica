@@ -21,6 +21,14 @@ const sizeClasses = {
   full: 'max-h-screen'
 };
 
+const peekClasses = {
+  sm: 'h-[100px]',
+  md: 'h-[120px]',
+  lg: 'h-[140px]',
+  xl: 'h-[160px]',
+  full: 'h-[180px]'
+};
+
 const variantClasses = {
   default: 'rounded-t-lg border-0 border-t',
   minimal: 'rounded-t-2xl border-0',
@@ -59,7 +67,9 @@ export function ViewportDrawer({
     }
   };
 
-  const sizeClass = sizeClasses[config.size || 'lg'];
+  const sizeClass = config.peek 
+    ? peekClasses[config.size || 'lg']
+    : sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
 
   const drawerContent = (
@@ -68,6 +78,7 @@ export function ViewportDrawer({
         'w-screen max-w-none',
         sizeClass,
         variantClass,
+        config.peek && 'fixed bottom-0 left-0 right-0 translate-y-0',
         className
       )}
     >
