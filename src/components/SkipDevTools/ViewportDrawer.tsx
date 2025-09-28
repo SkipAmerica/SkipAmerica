@@ -24,7 +24,7 @@ const sizeClasses = {
 const peekFractions = {
   sm: 0.22,
   md: 0.28,
-  lg: 0.34,
+  lg: 0.32,
   xl: 0.36,
   full: 0.40
 };
@@ -70,15 +70,15 @@ export function ViewportDrawer({
   const sizeClass = sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
   
-  // Configure peek mode snapPoints with minimum visible height
+  // Configure peek mode snapPoints
   const snapPoints = config.peekMode !== false 
-    ? [Math.max(200, Math.round(window.innerHeight * (peekFractions[config.size || 'lg']))), window.innerHeight]
+    ? [peekFractions[config.size || 'lg'], 1]
     : config.snapPoints;
 
   const drawerContent = (
     <DrawerContent 
       className={cn(
-        'w-screen max-w-none mt-0',
+        'w-screen max-w-none',
         sizeClass,
         variantClass,
         className
@@ -95,7 +95,7 @@ export function ViewportDrawer({
         )}
 
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 p-4 overflow-y-auto">
           {children || (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Reusable Drawer</h3>
