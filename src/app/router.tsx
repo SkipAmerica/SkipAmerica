@@ -14,6 +14,7 @@ const LobbyPage = lazy(() => import('@/pages/Lobby'))
 const CallPage = lazy(() => import('@/pages/Call'))
 const JoinQueuePage = lazy(() => import('@/pages/JoinQueue'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
+const DevCanvasPage = lazy(() => import('@/pages/DevCanvas'))
 
 // Route wrapper with error boundary and suspense
 function RouteWrapper({ children }: { children: React.ReactNode }) {
@@ -79,6 +80,12 @@ export function AppRouter() {
         <Route path="/join-queue/:creatorId" element={
           <RouteWrapper>
             <JoinQueuePage />
+          </RouteWrapper>
+        } />
+        
+        <Route path="/dev-canvas" element={
+          <RouteWrapper>
+            <DevCanvasPage />
           </RouteWrapper>
         } />
         
