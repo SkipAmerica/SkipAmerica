@@ -278,43 +278,44 @@ export function QueueContent() {
           </div>
         ) : (
           /* Queue Entries */
-          <div className="space-y-3">
-            {state.entries.map((entry, index) => (
-              <div
-                key={entry.id}
-                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-              >
-                <div className="flex items-center space-x-3">
+          <div className="flex flex-col h-full">
+            {/* Sticky First Entry */}
+            {state.entries.length > 0 && (
+              <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
+                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10">
                   <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                      {index + 1}
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-medium text-primary-foreground">
+                        1
+                      </div>
+                      <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+                        <AvatarFallback className="bg-primary/10">
+                          {state.entries[0].profiles?.full_name 
+                            ? getInitials(state.entries[0].profiles.full_name)
+                            : 'U'
+                          }
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                    <Avatar className="w-10 h-10">
-                      <AvatarFallback className="bg-primary/10">
-                        {entry.profiles?.full_name 
-                          ? getInitials(entry.profiles.full_name)
-                          : 'U'
-                        }
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  <div>
-                    <p className="font-medium">
-                      {entry.profiles?.full_name || 'Anonymous User'}
-                    </p>
-                    {entry.discussion_topic && (
-                      <p className="text-sm text-primary mb-1">
-                        {entry.discussion_topic}
+                    <div>
+                      <p className="font-semibold text-primary">
+                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
                       </p>
-                    )}
-                    <div className="flex items-center text-sm text-muted-foreground">
-                      <Clock className="w-3 h-3 mr-1" />
-                      <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
+                      <p className="text-xs text-primary/70 font-medium mb-1">
+                        Next Up
+                      </p>
+                      {state.entries[0].discussion_topic && (
+                        <p className="text-sm text-primary mb-1">
+                          {state.entries[0].discussion_topic}
+                        </p>
+                      )}
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="w-3 h-3 mr-1" />
+                        <span>Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {index === 0 && (
                   <Button
                     size="sm"
                     className="bg-primary hover:bg-primary/90"
@@ -322,9 +323,53 @@ export function QueueContent() {
                     <Phone className="w-4 h-4 mr-1" />
                     Start Call
                   </Button>
-                )}
+                </div>
               </div>
-            ))}
+            )}
+
+            {/* Scrollable Remaining Entries */}
+            {state.entries.length > 1 && (
+              <div className="flex-1 overflow-y-auto pt-3">
+                <div className="space-y-3">
+                  {state.entries.slice(1).map((entry, index) => (
+                    <div
+                      key={entry.id}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                            {index + 2}
+                          </div>
+                          <Avatar className="w-10 h-10">
+                            <AvatarFallback className="bg-primary/10">
+                              {entry.profiles?.full_name 
+                                ? getInitials(entry.profiles.full_name)
+                                : 'U'
+                              }
+                            </AvatarFallback>
+                          </Avatar>
+                        </div>
+                        <div>
+                          <p className="font-medium">
+                            {entry.profiles?.full_name || 'Anonymous User'}
+                          </p>
+                          {entry.discussion_topic && (
+                            <p className="text-sm text-primary mb-1">
+                              {entry.discussion_topic}
+                            </p>
+                          )}
+                          <div className="flex items-center text-sm text-muted-foreground">
+                            <Clock className="w-3 h-3 mr-1" />
+                            <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
