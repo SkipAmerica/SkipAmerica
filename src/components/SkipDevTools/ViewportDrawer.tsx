@@ -24,7 +24,7 @@ export function ViewportDrawer({
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="w-screen max-h-screen max-w-none rounded-t-lg border-0 border-t">
+      <DrawerContent className="w-screen h-[144px] max-w-none rounded-t-lg border-0 border-t">
         <div className="mx-auto w-full h-full flex flex-col">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
