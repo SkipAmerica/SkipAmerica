@@ -18,10 +18,7 @@ export function ViewportDrawer({
   children 
 }: ViewportDrawerProps) {
   return (
-    <Drawer 
-      snapPoints={["144px"]} 
-      activeSnapPoint="144px"
-    >
+    <Drawer>
       <DrawerTrigger asChild>
         {trigger || (
           <Button variant="outline">View Queue</Button>
