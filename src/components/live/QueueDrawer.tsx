@@ -318,7 +318,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               aria-pressed={store.isLobbyBroadcasting}
             >
               <Video className="w-4 h-4 mr-2" />
-              {store.isLobbyBroadcasting ? "End Broadcast" : "Live"}
+              {store.isLobbyBroadcasting ? "End" : "Live"}
             </Button>
             <Button
               variant="default"
