@@ -301,25 +301,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               }
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                onClick={() => {
-                  supabase
-                    .from('call_queue')
-                    .delete()
-                    .eq('creator_id', user.id)
-                    .eq('status', 'waiting')
-                    .then(() => {
-                      toast({
-                        title: "Queue cleared",
-                        description: "All users have been removed from the queue"
-                      })
-                    })
-                }}
-                variant="outline"
-                size="sm"
-              >
-                Clear Queue
-              </Button>
               {state.isConnected ? (
                 <Wifi className="w-4 h-4 text-muted-foreground" aria-label="Connected" />
               ) : (
