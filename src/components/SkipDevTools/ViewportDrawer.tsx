@@ -24,7 +24,7 @@ const sizeClasses = {
 const peekFractions = {
   sm: 0.22,
   md: 0.28,
-  lg: 0.32,
+  lg: 0.5,
   xl: 0.36,
   full: 0.40
 };
