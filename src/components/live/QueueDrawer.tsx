@@ -351,7 +351,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
         {/* Broadcast Panel */}
         {store.isLobbyBroadcasting && (
-          <div className="flex-shrink-0 px-6">
+          <div className="flex-shrink-0 px-6 pb-2">
             <LobbyBroadcastPanel 
               onEnd={() => store.setLobbyBroadcasting(false)}
             />
@@ -359,7 +359,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         )}
 
         {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
-        <div className="w-full min-w-0">
+        <div className="w-full min-w-0 px-6">
           {lobbyCreatorId ? (
             <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
           ) : (
