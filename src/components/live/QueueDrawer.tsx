@@ -291,7 +291,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         className="h-[90vh] rounded-t-2xl flex flex-col"
         aria-describedby="queue-description"
       >
-        <SheetHeader className="pb-4 flex-shrink-0">
+        <SheetHeader className="pb-2 flex-shrink-0">
           <SheetTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5" aria-hidden="true" />
@@ -329,7 +329,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           </SheetTitle>
           
           {/* Broadcast Toggle and Waiting List Buttons */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-2">
             <Button
               onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
               variant={store.isLobbyBroadcasting ? "destructive" : "default"}
