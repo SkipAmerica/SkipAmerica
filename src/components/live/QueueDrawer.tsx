@@ -328,7 +328,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             </div>
           </SheetTitle>
           
-          {/* Broadcast Toggle and Waiting List Buttons */}
+          {/* Broadcast Toggle, Room, and Next Call Buttons */}
           <div className="flex gap-2">
             <Button
               onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
@@ -337,14 +337,21 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               aria-pressed={store.isLobbyBroadcasting}
             >
               <Video className="w-4 h-4 mr-2" />
-              {store.isLobbyBroadcasting ? "End Broadcast" : "Broadcast to Lobby"}
+              {store.isLobbyBroadcasting ? "End Broadcast" : "Go Live"}
             </Button>
             <Button
               variant="default"
               className="flex-1"
             >
               <Users className="w-4 h-4 mr-2" />
-              Waiting List
+              Room
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1"
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Next Call
             </Button>
           </div>
         </SheetHeader>
