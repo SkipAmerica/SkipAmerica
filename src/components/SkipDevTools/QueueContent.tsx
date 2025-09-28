@@ -300,9 +300,22 @@ export function QueueContent() {
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
                 {/* Unified card-style layout */}
                 <div className="p-4">
-                  <p className="text-xs text-primary/70 font-medium mb-2">
-                    Next Up
-                  </p>
+                  {/* Header with Next Up and User Info */}
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-primary font-medium">
+                      Next Up
+                    </p>
+                    <div className="text-right">
+                      <p className="font-semibold text-base leading-tight">
+                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                      </p>
+                      {state.entries[0].discussion_topic && (
+                        <p className="text-sm text-muted-foreground leading-tight">
+                          {state.entries[0].discussion_topic}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                   <div className="relative max-w-md mx-auto">
                     <UserVideoSFU
                       userId={state.entries[0].fan_id}
@@ -316,22 +329,12 @@ export function QueueContent() {
                       className="border border-primary/20 rounded-lg"
                       onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
                     />
-                    {/* Bottom overlay with gradient background */}
+                    {/* Bottom overlay with Start button and wait time */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
                       <div className="flex items-end justify-between">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-lg leading-tight mb-1 text-white truncate">
-                            {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                          </p>
-                          {state.entries[0].discussion_topic && (
-                            <p className="text-sm text-white/90 leading-tight mb-1 truncate">
-                              {state.entries[0].discussion_topic}
-                            </p>
-                          )}
-                          <p className="text-xs text-white/70">
-                            Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                          </p>
-                        </div>
+                        <p className="text-xs text-white/70">
+                          Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                        </p>
                         <Button
                           size="sm"
                           className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
