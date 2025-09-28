@@ -54,7 +54,7 @@ export interface DrawerConfig {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
   variant?: 'default' | 'minimal' | 'floating'
   dismissible?: boolean
-  snapPoints?: number[]
+  snapPoints?: (number | string)[]
   peekMode?: boolean
   peekHeight?: string
 }

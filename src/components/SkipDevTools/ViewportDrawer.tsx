@@ -21,12 +21,12 @@ const sizeClasses = {
   full: 'max-h-screen'
 };
 
-const peekHeights = {
-  sm: '100px',
-  md: '120px',
-  lg: '140px',
-  xl: '160px',
-  full: '200px'
+const peekFractions = {
+  sm: 0.18,
+  md: 0.22,
+  lg: 0.26,
+  xl: 0.30,
+  full: 0.34
 };
 
 const variantClasses = {
@@ -72,8 +72,11 @@ export function ViewportDrawer({
   
   // Configure peek mode snapPoints
   const snapPoints = config.peekMode !== false 
-    ? [config.peekHeight || peekHeights[config.size || 'lg'], '1fr']
+    ? [peekFractions[config.size || 'lg'], 1]
     : config.snapPoints;
+  
+  // Debug logging - remove after verification
+  console.log('ViewportDrawer snapPoints:', snapPoints);
 
   const drawerContent = (
     <DrawerContent 
