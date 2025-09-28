@@ -18,22 +18,22 @@ export function ViewportDrawer({
   children 
 }: ViewportDrawerProps) {
   return (
-    <Drawer>
+    <Drawer dismissible={false}>
       <DrawerTrigger asChild>
         {trigger || (
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
       <DrawerContent 
-        className="w-screen max-w-none rounded-t-lg border-0 border-t"
+        className="w-screen max-w-none rounded-t-lg border-0 border-t max-h-[80vh] overflow-hidden"
       >
-        <div className="mx-auto w-full h-full flex flex-col">
+        <div className="mx-auto w-full flex flex-col h-full">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Development Drawer</h3>
                 <p className="text-muted-foreground">
-                  Free-drag drawer without snap points.
+                  Free-drag drawer without snap points. Max height 80% of viewport.
                 </p>
               </div>
             )}
