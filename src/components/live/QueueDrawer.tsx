@@ -327,9 +327,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               )}
             </div>
           </SheetTitle>
-          <p id="queue-description" className="text-sm text-muted-foreground">
-            Manage your call queue and connect with waiting fans
-          </p>
           
           {/* Broadcast Toggle Button */}
           <Button
