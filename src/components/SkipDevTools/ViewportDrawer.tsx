@@ -21,14 +21,6 @@ const sizeClasses = {
   full: 'max-h-screen'
 };
 
-const peekSnapPoints = {
-  sm: ["100px", "1fr"],
-  md: ["120px", "1fr"], 
-  lg: ["140px", "1fr"],
-  xl: ["160px", "1fr"],
-  full: ["180px", "1fr"]
-};
-
 const variantClasses = {
   default: 'rounded-t-lg border-0 border-t',
   minimal: 'rounded-t-2xl border-0',
@@ -67,12 +59,7 @@ export function ViewportDrawer({
     }
   };
 
-  // Get snap points for peek mode
-  const snapPoints = config.peek ? peekSnapPoints[config.size || 'lg'] : undefined;
-  
-  const sizeClass = config.peek 
-    ? 'max-h-screen' // Let Vaul handle sizing with snapPoints
-    : sizeClasses[config.size || 'lg'];
+  const sizeClass = sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
 
   const drawerContent = (
@@ -130,7 +117,6 @@ export function ViewportDrawer({
         open={open} 
         onOpenChange={handleOpenChange}
         dismissible={config.dismissible}
-        snapPoints={snapPoints}
       >
         {drawerContent}
       </Drawer>
@@ -143,7 +129,6 @@ export function ViewportDrawer({
       open={open} 
       onOpenChange={handleOpenChange}
       dismissible={config.dismissible}
-      snapPoints={snapPoints}
     >
       <DrawerTrigger asChild>
         {trigger || (

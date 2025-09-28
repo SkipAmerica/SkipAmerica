@@ -10,7 +10,7 @@ export function BlankPage() {
         trigger={<Button>View Queue (Enhanced)</Button>}
         title="Development Queue"
         description="Enhanced reusable drawer with queue content"
-        config={{ size: 'lg', variant: 'default', peek: true }}
+        config={{ size: 'lg', variant: 'default' }}
       >
         <QueueContent />
       </ViewportDrawer>
