@@ -36,6 +36,7 @@ export function QueueContent() {
   const { toast } = useToast()
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
+  const containerRef = useRef<HTMLDivElement>(null)
   
   const [state, setLocalState] = useState<QueueState>({
     entries: [],
@@ -47,10 +48,33 @@ export function QueueContent() {
 
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
   const [fullscreenUserId, setFullscreenUserId] = useState<string | null>(null)
+  const [drawerStage, setDrawerStage] = useState<'minimal' | 'single' | 'full'>('minimal')
 
-  // Cleanup on unmount
+  // Cleanup on unmount and detect drawer stage
   useEffect(() => {
+    const detectStage = () => {
+      if (!containerRef.current) return
+      
+      const height = containerRef.current.offsetHeight
+      const viewportHeight = window.innerHeight
+      const heightRatio = height / viewportHeight
+      
+      if (heightRatio < 0.3) {
+        setDrawerStage('minimal')
+      } else if (heightRatio < 0.8) {
+        setDrawerStage('single')
+      } else {
+        setDrawerStage('full')
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(detectStage)
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current)
+    }
+
     return () => {
+      resizeObserver.disconnect()
       if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
@@ -258,145 +282,216 @@ export function QueueContent() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Error State */}
-        {state.error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription className="flex items-center justify-between">
-              <span>{state.error}</span>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleRetry}
-                disabled={state.loading}
-                className="ml-2 h-7 px-2 text-xs"
-              >
-                <RotateCcw className={cn("h-3 w-3 mr-1", state.loading && "animate-spin")} />
-                Retry
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
+    <div ref={containerRef} className="flex flex-col h-full">
+      {/* Error State */}
+      {state.error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{state.error}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleRetry}
+              disabled={state.loading}
+              className="ml-2 h-7 px-2 text-xs"
+            >
+              <RotateCcw className={cn("h-3 w-3 mr-1", state.loading && "animate-spin")} />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {/* Loading State */}
-        {state.loading && !state.error ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : state.entries.length === 0 && !state.error ? (
-          /* Empty State */
-          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <p className="font-medium">No one in queue yet</p>
-            <p className="text-sm">Fans will appear here when they join</p>
-          </div>
-        ) : (
-          /* Queue Entries */
-          <div className="flex flex-col h-full">
-            {/* Sticky First Entry */}
-            {state.entries.length > 0 && (
-              <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
-                {/* Unified card-style layout */}
-                <div className="p-4">
-                  {/* Header with Next Up and User Info */}
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-primary font-medium">
-                      Next Up
+      {/* Loading State */}
+      {state.loading && !state.error ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : state.entries.length === 0 && !state.error ? (
+        /* Empty State */
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <p className="font-medium">No one in queue yet</p>
+          <p className="text-sm">Fans will appear here when they join</p>
+        </div>
+      ) : (
+        /* Queue Content with Stage-based Rendering */
+        <>
+          {/* Stage 1: Minimal Peek - Only show user info */}
+          {drawerStage === 'minimal' && state.entries.length > 0 && (
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-primary font-medium">
+                  Next Up
+                </p>
+                <div className="text-right">
+                  <p className="font-semibold text-base leading-tight">
+                    {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                  </p>
+                  {state.entries[0].discussion_topic && (
+                    <p className="text-sm text-muted-foreground leading-tight">
+                      {state.entries[0].discussion_topic}
                     </p>
-                    <div className="text-right">
-                      <p className="font-semibold text-base leading-tight">
-                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                      </p>
-                      {state.entries[0].discussion_topic && (
-                        <p className="text-sm text-muted-foreground leading-tight">
-                          {state.entries[0].discussion_topic}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="relative max-w-md mx-auto">
-                    <UserVideoSFU
-                      userId={state.entries[0].fan_id}
-                      role="viewer"
-                      dimensions="w-full aspect-video"
-                      showChat={false}
-                      muted={true}
-                      showControls={false}
-                      showFullscreenButton={true}
-                      fallbackName={state.entries[0].profiles?.full_name || 'User'}
-                      className="border border-primary/20 rounded-lg"
-                      onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
-                    />
-                    {/* Bottom overlay with Start button and wait time */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
-                      <div className="flex items-end justify-between">
-                        <p className="text-xs text-white/70">
-                          Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                        </p>
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
-                          onClick={() => {
-                            console.log("Starting call with:", state.entries[0].fan_id);
-                          }}
-                        >
-                          Start
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Scrollable Remaining Entries */}
-            {state.entries.length > 1 && (
-              <div className="flex-1 overflow-y-auto pt-3">
-                <div className="space-y-3">
-                  {state.entries.slice(1).map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+          {/* Stage 2: Single Entry - Show user info + video */}
+          {drawerStage === 'single' && state.entries.length > 0 && (
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm text-primary font-medium">
+                  Next Up
+                </p>
+                <div className="text-right">
+                  <p className="font-semibold text-base leading-tight">
+                    {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                  </p>
+                  {state.entries[0].discussion_topic && (
+                    <p className="text-sm text-muted-foreground leading-tight">
+                      {state.entries[0].discussion_topic}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="relative max-w-md mx-auto">
+                <UserVideoSFU
+                  userId={state.entries[0].fan_id}
+                  role="viewer"
+                  dimensions="w-full aspect-video"
+                  showChat={false}
+                  muted={true}
+                  showControls={false}
+                  showFullscreenButton={true}
+                  fallbackName={state.entries[0].profiles?.full_name || 'User'}
+                  className="border border-primary/20 rounded-lg"
+                  onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
+                  <div className="flex items-end justify-between">
+                    <p className="text-xs text-white/70">
+                      Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                    </p>
+                    <Button
+                      size="sm"
+                      className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
+                      onClick={() => {
+                        console.log("Starting call with:", state.entries[0].fan_id);
+                      }}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                            {index + 2}
-                          </div>
-                          <Avatar className="w-10 h-10">
-                            <AvatarFallback className="bg-primary/10">
-                              {entry.profiles?.full_name 
-                                ? getInitials(entry.profiles.full_name)
-                                : 'U'
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {entry.profiles?.full_name || 'Anonymous User'}
+                      Start
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stage 3: Full View - Show everything */}
+          {drawerStage === 'full' && (
+            <div className="flex flex-col h-full">
+              {/* Sticky First Entry */}
+              {state.entries.length > 0 && (
+                <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
+                  <div className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm text-primary font-medium">
+                        Next Up
+                      </p>
+                      <div className="text-right">
+                        <p className="font-semibold text-base leading-tight">
+                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                        </p>
+                        {state.entries[0].discussion_topic && (
+                          <p className="text-sm text-muted-foreground leading-tight">
+                            {state.entries[0].discussion_topic}
                           </p>
-                          {entry.discussion_topic && (
-                            <p className="text-sm text-primary mb-1">
-                              {entry.discussion_topic}
-                            </p>
-                          )}
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="w-3 h-3 mr-1" />
-                            <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
-                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="relative max-w-md mx-auto">
+                      <UserVideoSFU
+                        userId={state.entries[0].fan_id}
+                        role="viewer"
+                        dimensions="w-full aspect-video"
+                        showChat={false}
+                        muted={true}
+                        showControls={false}
+                        showFullscreenButton={true}
+                        fallbackName={state.entries[0].profiles?.full_name || 'User'}
+                        className="border border-primary/20 rounded-lg"
+                        onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
+                        <div className="flex items-end justify-between">
+                          <p className="text-xs text-white/70">
+                            Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
+                          </p>
+                          <Button
+                            size="sm"
+                            className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
+                            onClick={() => {
+                              console.log("Starting call with:", state.entries[0].fan_id);
+                            }}
+                          >
+                            Start
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              )}
+
+              {/* Scrollable Remaining Entries */}
+              {state.entries.length > 1 && (
+                <div className="flex-1 overflow-y-auto pt-3">
+                  <div className="space-y-3">
+                    {state.entries.slice(1).map((entry, index) => (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                              {index + 2}
+                            </div>
+                            <Avatar className="w-10 h-10">
+                              <AvatarFallback className="bg-primary/10">
+                                {entry.profiles?.full_name 
+                                  ? getInitials(entry.profiles.full_name)
+                                  : 'U'
+                                }
+                              </AvatarFallback>
+                            </Avatar>
+                          </div>
+                          <div>
+                            <p className="font-medium">
+                              {entry.profiles?.full_name || 'Anonymous User'}
+                            </p>
+                            {entry.discussion_topic && (
+                              <p className="text-sm text-primary mb-1">
+                                {entry.discussion_topic}
+                              </p>
+                            )}
+                            <div className="flex items-center text-sm text-muted-foreground">
+                              <Clock className="w-3 h-3 mr-1" />
+                              <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+      )}
       
       {/* Fullscreen Modal */}
       {fullscreenUserId && (
