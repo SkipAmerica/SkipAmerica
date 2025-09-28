@@ -70,9 +70,9 @@ export function ViewportDrawer({
   const sizeClass = sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
   
-  // Configure peek mode snapPoints
+  // Configure peek mode snapPoints with minimum visible height
   const snapPoints = config.peekMode !== false 
-    ? [peekFractions[config.size || 'lg'], 1]
+    ? [Math.max(200, Math.round(window.innerHeight * (peekFractions[config.size || 'lg']))), window.innerHeight]
     : config.snapPoints;
 
   const drawerContent = (
