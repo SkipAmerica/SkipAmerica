@@ -337,7 +337,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               aria-pressed={store.isLobbyBroadcasting}
             >
               <Video className="w-4 h-4 mr-2" />
-              {store.isLobbyBroadcasting ? "End Broadcast" : "Go Live"}
+              {store.isLobbyBroadcasting ? "End Broadcast" : "Live"}
             </Button>
             <Button
               variant="default"
@@ -351,7 +351,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
               className="flex-1"
             >
               <Phone className="w-4 h-4 mr-2" />
-              Next Call
+              Next&gt;
             </Button>
           </div>
         </SheetHeader>
