@@ -4,40 +4,28 @@ import {
   Drawer,
   DrawerClose,
   DrawerContent,
-  DrawerDescription,
   DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
   DrawerTrigger,
 } from '@/components/ui/drawer';
 
 interface ViewportDrawerProps {
   trigger?: React.ReactNode;
-  title?: string;
-  description?: string;
   children?: React.ReactNode;
 }
 
 export function ViewportDrawer({ 
   trigger, 
-  title = "Viewport Drawer", 
-  description = "A drawer that covers 50% of viewport height and 100% width", 
   children 
 }: ViewportDrawerProps) {
   return (
     <Drawer>
       <DrawerTrigger asChild>
         {trigger || (
-          <Button variant="outline">Open Drawer</Button>
+          <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
       <DrawerContent className="w-screen h-[50vh] max-w-none rounded-none border-0 border-t">
         <div className="mx-auto w-full h-full flex flex-col">
-          <DrawerHeader className="text-center">
-            <DrawerTitle>{title}</DrawerTitle>
-            <DrawerDescription>{description}</DrawerDescription>
-          </DrawerHeader>
-          
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
               <div className="space-y-4">
