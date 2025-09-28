@@ -300,13 +300,13 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
                 `Creator Lobby (${state.entries.length})`
               }
             </div>
-            <div className="flex items-center gap-2">
-              {state.isConnected ? (
-                <Wifi className="w-4 h-4 text-muted-foreground" aria-label="Connected" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-destructive" aria-label="Disconnected" />
-              )}
-            </div>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+            >
+              Close
+            </Button>
           </SheetTitle>
           
           {/* Broadcast Toggle, Room, and Next Call Buttons */}
