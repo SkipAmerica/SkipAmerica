@@ -1,4 +1,4 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -17,56 +17,18 @@ export function ViewportDrawer({
   trigger, 
   children 
 }: ViewportDrawerProps) {
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const drawerRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    if (!drawerRef.current || !contentRef.current) return;
-
-    // Allow a brief moment for content to render and height to stabilize
-    const timer = setTimeout(() => {
-      const drawerElement = drawerRef.current;
-      const contentElement = contentRef.current;
-      
-      if (!drawerElement || !contentElement) return;
-
-      // Measure the actual content height
-      const contentHeight = contentElement.scrollHeight;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate how much to hide (all but drag handle + first record ~144px)
-      const visibleHeight = 144;
-      const hideAmount = Math.max(0, contentHeight - visibleHeight);
-      
-      if (hideAmount > 0 && isCollapsed) {
-        // Apply transform to hide most of the drawer
-        drawerElement.style.transform = `translateY(${hideAmount}px)`;
-        drawerElement.style.transition = 'transform 0.3s ease-out';
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [children, isCollapsed]);
-
   return (
-    <Drawer onOpenChange={(open) => {
-      if (open) {
-        setIsCollapsed(true);
-      }
-    }}>
+    <Drawer 
+      snapPoints={["144px"]} 
+      activeSnapPoint="144px"
+    >
       <DrawerTrigger asChild>
         {trigger || (
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
-      <DrawerContent 
-        ref={drawerRef}
-        className="w-screen max-h-screen max-w-none rounded-t-lg border-0 border-t"
-        onInteractOutside={() => setIsCollapsed(false)}
-        onPointerDownOutside={() => setIsCollapsed(false)}
-      >
-        <div ref={contentRef} className="mx-auto w-full h-full flex flex-col">
+      <DrawerContent className="w-screen max-h-screen max-w-none rounded-t-lg border-0 border-t">
+        <div className="mx-auto w-full h-full flex flex-col">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
               <div className="space-y-4">
