@@ -21,6 +21,14 @@ const sizeClasses = {
   full: 'max-h-screen'
 };
 
+const peekHeights = {
+  sm: '100px',
+  md: '120px',
+  lg: '140px',
+  xl: '160px',
+  full: '200px'
+};
+
 const variantClasses = {
   default: 'rounded-t-lg border-0 border-t',
   minimal: 'rounded-t-2xl border-0',
@@ -37,7 +45,7 @@ export function ViewportDrawer({
   // Configuration
   title,
   description,
-  config = { size: 'lg', variant: 'default', dismissible: true },
+  config = { size: 'lg', variant: 'default', dismissible: true, peekMode: true },
   // Content sections
   header,
   footer,
@@ -61,6 +69,11 @@ export function ViewportDrawer({
 
   const sizeClass = sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
+  
+  // Configure peek mode snapPoints
+  const snapPoints = config.peekMode !== false 
+    ? [config.peekHeight || peekHeights[config.size || 'lg'], '1fr']
+    : config.snapPoints;
 
   const drawerContent = (
     <DrawerContent 
@@ -117,6 +130,7 @@ export function ViewportDrawer({
         open={open} 
         onOpenChange={handleOpenChange}
         dismissible={config.dismissible}
+        snapPoints={snapPoints}
       >
         {drawerContent}
       </Drawer>
@@ -129,6 +143,7 @@ export function ViewportDrawer({
       open={open} 
       onOpenChange={handleOpenChange}
       dismissible={config.dismissible}
+      snapPoints={snapPoints}
     >
       <DrawerTrigger asChild>
         {trigger || (

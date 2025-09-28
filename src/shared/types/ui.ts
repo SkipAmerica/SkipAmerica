@@ -55,6 +55,8 @@ export interface DrawerConfig {
   variant?: 'default' | 'minimal' | 'floating'
   dismissible?: boolean
   snapPoints?: number[]
+  peekMode?: boolean
+  peekHeight?: string
 }
 
 export interface DrawerProps extends BaseComponentProps {
