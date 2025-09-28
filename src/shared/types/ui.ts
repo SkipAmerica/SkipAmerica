@@ -49,6 +49,31 @@ export interface ModalProps extends BaseComponentProps {
   title?: string
 }
 
+// Drawer configuration types
+export interface DrawerConfig {
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  variant?: 'default' | 'minimal' | 'floating'
+  dismissible?: boolean
+  snapPoints?: number[]
+}
+
+export interface DrawerProps extends BaseComponentProps {
+  // Controlled mode
+  isOpen?: boolean
+  onClose?: () => void
+  // Uncontrolled mode  
+  trigger?: React.ReactNode
+  // Configuration
+  title?: string
+  description?: string
+  config?: DrawerConfig
+  // Content sections
+  header?: React.ReactNode
+  footer?: React.ReactNode
+  // Behavior
+  onOpenChange?: (open: boolean) => void
+}
+
 // Loading and error states
 export interface LoadingState {
   loading: boolean
