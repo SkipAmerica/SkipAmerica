@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
-import DevCanvas from '@/pages/DevCanvas'
+import { QueueContent } from '@/components/SkipDevTools/QueueContent'
 
 interface QueueEntry {
   id: string
@@ -359,11 +359,11 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </div>
       </SheetContent>
       
-      {/* DevCanvas Overlay */}
+      {/* QueueContent Overlay */}
       {isDevCanvasOpen && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center">
           <div className="w-full h-full max-w-6xl max-h-[90vh] bg-background rounded-lg overflow-hidden">
-            <DevCanvas />
+            <QueueContent />
           </div>
         </div>
       )}
