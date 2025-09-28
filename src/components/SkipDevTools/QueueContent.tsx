@@ -8,6 +8,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { UserVideoSFU } from '@/components/shared/UserVideoSFU'
+import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
   id: string
@@ -283,55 +284,98 @@ export function QueueContent() {
             {/* Sticky First Entry */}
             {state.entries.length > 0 && (
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
-                <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-3">
-                      <Avatar className="w-10 h-10 ring-2 ring-primary/20">
-                        <AvatarFallback className="bg-primary/10">
-                          {state.entries[0].profiles?.full_name 
-                            ? getInitials(state.entries[0].profiles.full_name)
-                            : 'U'
-                          }
-                        </AvatarFallback>
-                      </Avatar>
+                {isMobile() ? (
+                  /* Mobile Layout */
+                  <div className="p-4">
+                    <p className="text-xs text-primary/70 font-medium mb-2">
+                      Next Up
+                    </p>
+                    <div className="relative">
                       <UserVideoSFU
                         userId={state.entries[0].fan_id}
                         role="viewer"
-                        dimensions="w-16 h-12"
+                        dimensions="w-full aspect-video"
                         showChat={false}
                         muted={true}
                         showControls={false}
                         fallbackName={state.entries[0].profiles?.full_name || 'User'}
-                        className="border border-primary/20"
+                        className="border border-primary/20 rounded-lg"
                       />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-primary">
-                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                      </p>
-                      <p className="text-xs text-primary/70 font-medium mb-1">
-                        Next Up
-                      </p>
-                      {state.entries[0].discussion_topic && (
-                        <p className="text-sm text-primary mb-1">
-                          {state.entries[0].discussion_topic}
-                        </p>
-                      )}
-                      <div className="flex items-center text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}</span>
+                      {/* Bottom overlay with gradient background */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
+                        <div className="flex items-end justify-between">
+                          <div className="flex-1 text-white">
+                            <p className="font-semibold text-lg leading-tight mb-1">
+                              {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                            </p>
+                            {state.entries[0].discussion_topic && (
+                              <p className="text-sm text-white/90 leading-tight">
+                                {state.entries[0].discussion_topic}
+                              </p>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            className="bg-primary hover:bg-primary/90 ml-3 px-4"
+                          >
+                            Start
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
+                ) : (
+                  /* Desktop Layout */
+                  <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-3">
+                        <Avatar className="w-10 h-10 ring-2 ring-primary/20">
+                          <AvatarFallback className="bg-primary/10">
+                            {state.entries[0].profiles?.full_name 
+                              ? getInitials(state.entries[0].profiles.full_name)
+                              : 'U'
+                            }
+                          </AvatarFallback>
+                        </Avatar>
+                        <UserVideoSFU
+                          userId={state.entries[0].fan_id}
+                          role="viewer"
+                          dimensions="w-16 h-12"
+                          showChat={false}
+                          muted={true}
+                          showControls={false}
+                          fallbackName={state.entries[0].profiles?.full_name || 'User'}
+                          className="border border-primary/20"
+                        />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-primary">
+                          {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                        </p>
+                        <p className="text-xs text-primary/70 font-medium mb-1">
+                          Next Up
+                        </p>
+                        {state.entries[0].discussion_topic && (
+                          <p className="text-sm text-primary mb-1">
+                            {state.entries[0].discussion_topic}
+                          </p>
+                        )}
+                        <div className="flex items-center text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3 mr-1" />
+                          <span>Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}</span>
+                        </div>
+                      </div>
+                    </div>
 
-                  <Button
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90"
-                  >
-                    <Phone className="w-4 h-4 mr-1" />
-                    Start Call
-                  </Button>
-                </div>
+                    <Button
+                      size="sm"
+                      className="bg-primary hover:bg-primary/90"
+                    >
+                      <Phone className="w-4 h-4 mr-1" />
+                      Start Call
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
 
