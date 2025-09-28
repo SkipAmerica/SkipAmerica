@@ -147,9 +147,9 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   }
 
   return (
-    <div className="w-full min-w-0">
+    <div className="w-full min-w-0 flex-1 flex flex-col">
       {/* ensure overlay can sit above video */}
-      <div className="relative w-full aspect-video bg-black overflow-hidden rounded-xl">
+      <div className="relative w-full flex-1 bg-black overflow-hidden rounded-xl">
         <video
           id="creator-preview"
           ref={videoRef}
