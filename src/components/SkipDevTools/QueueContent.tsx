@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Users, Clock, Phone, AlertTriangle, RotateCcw, Wifi, WifiOff } from 'lucide-react'
+import { Clock, Phone, AlertTriangle, RotateCcw } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
@@ -216,32 +216,6 @@ export function QueueContent() {
     fetchQueue(true)
   }, [fetchQueue])
 
-  const handleClearQueue = useCallback(async () => {
-    if (!user) return
-
-    try {
-      const { error } = await supabase
-        .from('call_queue')
-        .delete()
-        .eq('creator_id', user.id)
-        .eq('status', 'waiting')
-
-      if (error) throw error
-
-      toast({
-        title: "Queue Cleared",
-        description: "All waiting fans have been removed from the queue",
-      })
-    } catch (error: any) {
-      console.error('Error clearing queue:', error)
-      toast({
-        title: "Error",
-        description: "Failed to clear queue",
-        variant: "destructive"
-      })
-    }
-  }, [user, toast])
-
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
@@ -261,45 +235,14 @@ export function QueueContent() {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-        <Users className="w-12 h-12 mb-4 opacity-50" />
         <p className="font-medium">Please sign in</p>
         <p className="text-sm">You need to be signed in to view your queue</p>
       </div>
     )
   }
 
-  const creatorName = user.user_metadata?.full_name || user.email || 'Creator'
-
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4 pb-4 border-b">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            {state.isConnected ? (
-              <Wifi className="w-4 h-4 text-green-500" />
-            ) : (
-              <WifiOff className="w-4 h-4 text-red-500" />
-            )}
-            <Users className="w-5 h-5" />
-            <h2 className="text-lg font-semibold">
-              {creatorName.split(' ')[0]}'s Queue ({state.entries.length})
-            </h2>
-          </div>
-        </div>
-        
-        {state.entries.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClearQueue}
-            className="text-destructive hover:text-destructive"
-          >
-            Clear Queue
-          </Button>
-        )}
-      </div>
-
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {/* Error State */}
@@ -330,7 +273,6 @@ export function QueueContent() {
         ) : state.entries.length === 0 && !state.error ? (
           /* Empty State */
           <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-            <Users className="w-12 h-12 mb-4 opacity-50" />
             <p className="font-medium">No one in queue yet</p>
             <p className="text-sm">Fans will appear here when they join</p>
           </div>
