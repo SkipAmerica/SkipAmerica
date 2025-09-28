@@ -22,11 +22,11 @@ const sizeClasses = {
 };
 
 const peekFractions = {
-  sm: 0.18,
-  md: 0.22,
-  lg: 0.26,
-  xl: 0.30,
-  full: 0.34
+  sm: 0.22,
+  md: 0.28,
+  lg: 0.32,
+  xl: 0.36,
+  full: 0.40
 };
 
 const variantClasses = {
@@ -74,9 +74,6 @@ export function ViewportDrawer({
   const snapPoints = config.peekMode !== false 
     ? [peekFractions[config.size || 'lg'], 1]
     : config.snapPoints;
-  
-  // Debug logging - remove after verification
-  console.log('ViewportDrawer snapPoints:', snapPoints);
 
   const drawerContent = (
     <DrawerContent 
