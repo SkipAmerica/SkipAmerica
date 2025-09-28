@@ -24,7 +24,7 @@ const sizeClasses = {
 const peekFractions = {
   sm: 0.22,
   md: 0.28,
-  lg: 0.32,
+  lg: 0.34,
   xl: 0.36,
   full: 0.40
 };
@@ -78,7 +78,7 @@ export function ViewportDrawer({
   const drawerContent = (
     <DrawerContent 
       className={cn(
-        'w-screen max-w-none',
+        'w-screen max-w-none mt-0',
         sizeClass,
         variantClass,
         className
@@ -95,7 +95,7 @@ export function ViewportDrawer({
         )}
 
         {/* Main Content */}
-        <div className="flex-1 p-4 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto">
           {children || (
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Reusable Drawer</h3>
