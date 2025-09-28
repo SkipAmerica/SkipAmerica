@@ -5,6 +5,8 @@ import {
   DrawerClose,
   DrawerContent,
   DrawerFooter,
+  DrawerTitle,
+  DrawerDescription,
   DrawerTrigger,
 } from '@/components/ui/drawer';
 
@@ -24,7 +26,9 @@ export function ViewportDrawer({
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="w-screen max-w-none rounded-t-lg border-0 border-t">
+      <DrawerContent className="w-screen max-w-none rounded-t-lg border-0 border-t mt-0 min-h-[50vh] max-h-[80vh] bg-background">
+        <DrawerTitle className="sr-only">Queue Viewer</DrawerTitle>
+        <DrawerDescription className="sr-only">View and manage the current queue</DrawerDescription>
         <div className="mx-auto w-full h-full flex flex-col">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
