@@ -24,19 +24,19 @@ export function ViewportDrawer({
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="w-screen h-[50vh] max-w-none rounded-t-lg border-0 border-t">
+      <DrawerContent className="w-screen max-h-screen max-w-none rounded-t-lg border-0 border-t">
         <div className="mx-auto w-full h-full flex flex-col">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Development Drawer</h3>
                 <p className="text-muted-foreground">
-                  This drawer covers exactly 50% of the viewport height and 100% of the viewport width.
+                  This drawer is draggable from its natural height up to 100% of the viewport height.
                   Perfect for development work and testing.
                 </p>
                 <div className="bg-muted p-4 rounded-lg">
                   <p className="text-sm">
-                    Dimensions: 100vw × 50vh
+                    Dimensions: 100vw × auto (draggable to 100vh)
                   </p>
                 </div>
               </div>
