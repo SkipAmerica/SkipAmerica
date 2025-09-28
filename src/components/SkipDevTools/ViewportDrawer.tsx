@@ -18,13 +18,13 @@ export function ViewportDrawer({
   children 
 }: ViewportDrawerProps) {
   return (
-    <Drawer>
+    <Drawer snapPoints={["50vh", "80vh"]} fadeFromIndex={0}>
       <DrawerTrigger asChild>
         {trigger || (
           <Button variant="outline">View Queue</Button>
         )}
       </DrawerTrigger>
-      <DrawerContent className="w-screen h-[50vh] max-w-none rounded-t-lg border-0 border-t">
+      <DrawerContent className="w-screen max-w-none rounded-t-lg border-0 border-t">
         <div className="mx-auto w-full h-full flex flex-col">
           <div className="flex-1 p-4 overflow-y-auto">
             {children || (
