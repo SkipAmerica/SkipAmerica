@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import { UserVideoSFU } from '@/components/shared/UserVideoSFU'
 
 interface QueueEntry {
   id: string
@@ -285,9 +286,6 @@ export function QueueContent() {
                 <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/10">
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-medium text-primary-foreground">
-                        1
-                      </div>
                       <Avatar className="w-10 h-10 ring-2 ring-primary/20">
                         <AvatarFallback className="bg-primary/10">
                           {state.entries[0].profiles?.full_name 
@@ -296,6 +294,16 @@ export function QueueContent() {
                           }
                         </AvatarFallback>
                       </Avatar>
+                      <UserVideoSFU
+                        userId={state.entries[0].fan_id}
+                        role="viewer"
+                        dimensions="w-16 h-12"
+                        showChat={false}
+                        muted={true}
+                        showControls={false}
+                        fallbackName={state.entries[0].profiles?.full_name || 'User'}
+                        className="border border-primary/20"
+                      />
                     </div>
                     <div>
                       <p className="font-semibold text-primary">
