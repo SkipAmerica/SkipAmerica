@@ -55,7 +55,6 @@ import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useKeyboardAware } from "@/hooks/use-keyboard-aware";
 import { CreatorPostPrompt } from "@/components/creator/CreatorPostPrompt";
-import { QueueDrawer } from "@/components/live/QueueDrawer";
 
 // Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
@@ -82,7 +81,6 @@ const Index = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<string | null>(null);
-  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   
   
   // Always call all hooks unconditionally at the top level
@@ -402,14 +400,6 @@ const Index = () => {
 
       {/* Live Control Bar - Shows when live */}
       <LiveControlBar />
-
-      {/* Queue Drawer */}
-      <QueueDrawer 
-        isOpen={showQueueDrawer} 
-        onClose={() => setShowQueueDrawer(false)}
-        isRoomMode={showQueueDrawer}
-        onToggleRoom={() => setShowQueueDrawer(!showQueueDrawer)}
-      />
 
       {/* iOS Tab Bar */}
         <IOSTabBar 
