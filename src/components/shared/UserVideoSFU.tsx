@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Loader2, AlertCircle } from 'lucide-react';
+import { Volume2, VolumeX, Loader2, AlertCircle, Expand } from 'lucide-react';
 import { createSFU } from '@/lib/sfu';
 import { fetchLiveKitToken } from '@/lib/livekitToken';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
@@ -16,9 +16,11 @@ interface UserVideoSFUProps {
   className?: string;
   muted?: boolean;
   showControls?: boolean;
+  showFullscreenButton?: boolean;
   fallbackAvatar?: string;
   fallbackName?: string;
   onConnectionChange?: (state: ConnectionState) => void;
+  onFullscreen?: () => void;
 }
 
 type ConnectionState = 'idle' | 'connecting' | 'connected' | 'failed' | 'disconnected';
@@ -31,9 +33,11 @@ export function UserVideoSFU({
   className = "",
   muted = true,
   showControls = false,
+  showFullscreenButton = false,
   fallbackAvatar,
   fallbackName = "User",
-  onConnectionChange
+  onConnectionChange,
+  onFullscreen
 }: UserVideoSFUProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const sfuRef = useRef<ReturnType<typeof createSFU> | null>(null);
@@ -199,6 +203,20 @@ export function UserVideoSFU({
             className="bg-black/50 border-white/20 text-white hover:bg-black/70"
           >
             {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+          </Button>
+        </div>
+      )}
+
+      {/* Fullscreen Button */}
+      {showFullscreenButton && connectionState === 'connected' && onFullscreen && (
+        <div className="absolute top-2 right-2">
+          <Button
+            onClick={onFullscreen}
+            variant="outline"
+            size="sm"
+            className="bg-black/50 border-white/20 text-white hover:bg-black/70"
+          >
+            <Expand className="w-3 h-3" />
           </Button>
         </div>
       )}

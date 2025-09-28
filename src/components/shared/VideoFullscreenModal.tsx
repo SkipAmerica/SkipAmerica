@@ -1,0 +1,42 @@
+import React from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { UserVideoSFU } from './UserVideoSFU';
+
+interface VideoFullscreenModalProps {
+  userId: string;
+  isOpen: boolean;
+  onClose: () => void;
+  userName?: string;
+}
+
+export function VideoFullscreenModal({
+  userId,
+  isOpen,
+  onClose,
+  userName = "Creator"
+}: VideoFullscreenModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-none w-[95vw] h-[95vh] p-0 bg-black border-0">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Fullscreen Video - {userName}</DialogTitle>
+        </DialogHeader>
+        <div className="w-full h-full">
+          <UserVideoSFU
+            userId={userId}
+            role="viewer"
+            dimensions="w-full h-full"
+            showChat={true}
+            showControls={true}
+            className="rounded-none"
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

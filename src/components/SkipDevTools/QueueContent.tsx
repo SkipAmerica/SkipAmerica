@@ -8,6 +8,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { UserVideoSFU } from '@/components/shared/UserVideoSFU'
+import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -43,6 +44,9 @@ export function QueueContent() {
     retryCount: 0,
     isConnected: true
   })
+
+  const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
+  const [fullscreenUserId, setFullscreenUserId] = useState<string | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -218,6 +222,16 @@ export function QueueContent() {
     fetchQueue(true)
   }, [fetchQueue])
 
+  const handleFullscreen = useCallback((userId: string) => {
+    setFullscreenUserId(userId)
+    setIsFullscreenOpen(true)
+  }, [])
+
+  const handleCloseFullscreen = useCallback(() => {
+    setIsFullscreenOpen(false)
+    setFullscreenUserId(null)
+  }, [])
+
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
     const hours = Math.floor(minutes / 60)
@@ -297,8 +311,10 @@ export function QueueContent() {
                       showChat={false}
                       muted={true}
                       showControls={false}
+                      showFullscreenButton={true}
                       fallbackName={state.entries[0].profiles?.full_name || 'User'}
                       className="border border-primary/20 rounded-lg"
+                      onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
                     />
                     {/* Bottom overlay with gradient background */}
                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
@@ -378,6 +394,16 @@ export function QueueContent() {
           </div>
         )}
       </div>
+      
+      {/* Fullscreen Modal */}
+      {fullscreenUserId && (
+        <VideoFullscreenModal
+          userId={fullscreenUserId}
+          isOpen={isFullscreenOpen}
+          onClose={handleCloseFullscreen}
+          userName={state.entries.find(e => e.fan_id === fullscreenUserId)?.profiles?.full_name || "User"}
+        />
+      )}
     </div>
   )
 }
