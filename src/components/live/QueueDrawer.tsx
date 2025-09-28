@@ -348,10 +348,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             </Button>
             <Button
               variant="default"
-              className="flex-1"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
             >
               <Phone className="w-4 h-4 mr-2" />
-              Next&gt;
+              Next
             </Button>
           </div>
         </SheetHeader>
