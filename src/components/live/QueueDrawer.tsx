@@ -28,6 +28,8 @@ interface QueueEntry {
 interface QueueDrawerProps {
   isOpen: boolean
   onClose: () => void
+  isRoomMode?: boolean
+  onToggleRoom?: () => void
 }
 
 interface QueueState {
@@ -38,7 +40,7 @@ interface QueueState {
   isConnected: boolean
 }
 
-export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
+export function QueueDrawer({ isOpen, onClose, isRoomMode = false, onToggleRoom }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
@@ -323,9 +325,10 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             <Button
               variant="default"
               className="flex-1"
+              onClick={onToggleRoom}
             >
               <Users className="w-4 h-4 mr-2" />
-              Room
+              {isRoomMode ? "Exit" : "Room"}
             </Button>
             <Button
               variant="default"
