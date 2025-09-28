@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/drawer';
 import { DrawerProps } from '@/shared/types/ui';
 import { cn } from '@/lib/utils';
-import { isMobile, isIOS } from '@/shared/lib/platform';
 
 const sizeClasses = {
   sm: 'max-h-[40vh]',
@@ -71,27 +70,15 @@ export function ViewportDrawer({
   const sizeClass = sizeClasses[config.size || 'lg'];
   const variantClass = variantClasses[config.variant || 'default'];
   
-  // Configure cross-platform compatible peek mode snapPoints
+  // Configure peek mode snapPoints
   const snapPoints = config.peekMode !== false 
-    ? (({ maxHeight }: { maxHeight: number }) => {
-        // Calculate responsive peek height that works across all platforms
-        const baseHeight = 150; // Height for first queue entry + padding + divider
-        const safeAreaOffset = isIOS() ? 34 : 0; // Account for iOS home indicator
-        const mobileOffset = isMobile() ? 16 : 0; // Extra padding on mobile
-        
-        const peekHeight = Math.min(
-          baseHeight + safeAreaOffset + mobileOffset,
-          maxHeight * 0.25 // Never exceed 25% of available height
-        );
-        
-        return [peekHeight, maxHeight];
-      })
+    ? [peekFractions[config.size || 'lg'], 1]
     : config.snapPoints;
 
   const drawerContent = (
     <DrawerContent 
       className={cn(
-        'w-screen max-w-none pb-[env(safe-area-inset-bottom)]',
+        'w-screen max-w-none',
         sizeClass,
         variantClass,
         className
@@ -143,7 +130,7 @@ export function ViewportDrawer({
         open={open} 
         onOpenChange={handleOpenChange}
         dismissible={config.dismissible}
-        snapPoints={snapPoints as any}
+        snapPoints={snapPoints}
       >
         {drawerContent}
       </Drawer>
@@ -156,7 +143,7 @@ export function ViewportDrawer({
       open={open} 
       onOpenChange={handleOpenChange}
       dismissible={config.dismissible}
-      snapPoints={snapPoints as any}
+      snapPoints={snapPoints}
     >
       <DrawerTrigger asChild>
         {trigger || (
