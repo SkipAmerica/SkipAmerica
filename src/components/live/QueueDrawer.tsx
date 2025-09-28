@@ -288,7 +288,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
-        className="h-[90vh] rounded-t-2xl flex flex-col"
+        className="h-[90vh] rounded-t-2xl flex flex-col [&>button]:hidden"
         aria-describedby="queue-description"
       >
         <SheetHeader className="pb-2 flex-shrink-0">
