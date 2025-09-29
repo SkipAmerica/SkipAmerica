@@ -24,6 +24,7 @@ export function VideoFullscreenModal({
   creatorId
 }: VideoFullscreenModalProps) {
   const [showNotification, setShowNotification] = useState(false);
+  const [touchStart, setTouchStart] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,9 +37,27 @@ export function VideoFullscreenModal({
     }
   }, [isOpen]);
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.touches[0].clientY);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const touchEnd = e.changedTouches[0].clientY;
+    const swipeDistance = touchEnd - touchStart;
+    
+    // Downward swipe (positive distance) > 100px
+    if (swipeDistance > 100) {
+      onClose();
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-none w-screen h-screen p-0 bg-black border-0 [&>button]:bg-white/20 [&>button]:text-white [&>button]:hover:bg-white/30 [&>button]:opacity-100">
+      <DialogContent 
+        className="max-w-none w-screen h-screen p-0 bg-black border-0 [&>button]:bg-white/20 [&>button]:text-white [&>button]:hover:bg-white/30 [&>button]:opacity-100 [&>button]:w-12 [&>button]:h-12 [&>button>svg]:w-6 [&>button>svg]:h-6"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>Fullscreen Video - {userName}</DialogTitle>
         </DialogHeader>
