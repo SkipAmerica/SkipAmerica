@@ -7,13 +7,15 @@ type Props = {
   chatMode?: 'lobby' | 'private';
   fanId?: string;
   className?: string;
+  leftButton?: React.ReactNode;
 };
 
 export default function OverlayChat({ 
   creatorId, 
   chatMode = 'lobby',
   fanId,
-  className = "" 
+  className = "",
+  leftButton
 }: Props) {
   const config = chatMode === 'private' && fanId
     ? createPrivateConfig(creatorId, fanId)
@@ -38,6 +40,7 @@ export default function OverlayChat({
             }
           }}
           className="bg-transparent"
+          leftButton={leftButton}
         />
       </div>
     </div>

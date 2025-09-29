@@ -15,6 +15,7 @@ interface RichTextInputProps {
   disabled?: boolean;
   richText?: ChatRichText;
   showSendButton?: boolean;
+  leftButton?: React.ReactNode;
 }
 
 export function RichTextInput({
@@ -24,7 +25,8 @@ export function RichTextInput({
   placeholder = 'Type a message...',
   disabled = false,
   richText,
-  showSendButton = true
+  showSendButton = true,
+  leftButton
 }: RichTextInputProps) {
   const [isBold, setIsBold] = useState(false);
   const [isItalic, setIsItalic] = useState(false);
@@ -128,6 +130,7 @@ export function RichTextInput({
     // Simple input without rich text features
     return (
       <div className="flex gap-2 items-end">
+        {leftButton}
         <Textarea
           ref={textareaRef}
           value={value}
@@ -239,6 +242,7 @@ export function RichTextInput({
       
       {/* Input Field */}
       <div className="flex gap-2 items-end">
+        {leftButton}
         <Textarea
           ref={textareaRef}
           value={value}

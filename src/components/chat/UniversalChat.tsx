@@ -19,9 +19,10 @@ import type { ChatConfig } from '@/shared/types/chat';
 interface UniversalChatProps {
   config: ChatConfig;
   className?: string;
+  leftButton?: React.ReactNode;
 }
 
-export function UniversalChat({ config, className = '' }: UniversalChatProps) {
+export function UniversalChat({ config, className = '', leftButton }: UniversalChatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
@@ -243,6 +244,7 @@ export function UniversalChat({ config, className = '' }: UniversalChatProps) {
               disabled={sending}
               richText={config.richText}
               showSendButton={config.messaging?.showSendButton ?? true}
+              leftButton={leftButton}
             />
           </div>
         </div>

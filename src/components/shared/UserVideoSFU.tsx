@@ -198,21 +198,19 @@ export function UserVideoSFU({
           creatorId={resolvedUserId}
           chatMode={chatMode}
           fanId={fanId}
+          leftButton={
+            showControls ? (
+              <Button
+                onClick={toggleMute}
+                variant="outline"
+                size="sm"
+                className="bg-transparent border border-white text-white hover:bg-white/10 shrink-0"
+              >
+                {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
+              </Button>
+            ) : undefined
+          }
         />
-      )}
-
-      {/* Controls */}
-      {showControls && connectionState === 'connected' && (
-        <div className="absolute bottom-14 left-5">
-          <Button
-            onClick={toggleMute}
-            variant="outline"
-            size="sm"
-            className="bg-black/50 border-white/20 text-white hover:bg-black/70"
-          >
-            {isMuted ? <VolumeX className="w-3 h-3" /> : <Volume2 className="w-3 h-3" />}
-          </Button>
-        </div>
       )}
 
       {/* Fullscreen Button */}
