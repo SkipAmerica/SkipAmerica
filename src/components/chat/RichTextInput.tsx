@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Toggle } from '@/components/ui/toggle';
@@ -30,7 +30,15 @@ export function RichTextInput({
   const [isItalic, setIsItalic] = useState(false);
   const [selectedFontSize, setSelectedFontSize] = useState('text-sm');
   const [selectedColor, setSelectedColor] = useState('text-foreground');
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
+    }
+  }, [value]);
 
   const isRichTextEnabled = richText?.enabled ?? false;
   const allowBold = richText?.allowBold ?? true;
@@ -119,15 +127,16 @@ export function RichTextInput({
   if (!isRichTextEnabled) {
     // Simple input without rich text features
     return (
-      <div className="flex gap-2">
-        <Input
-          ref={inputRef}
+      <div className="flex gap-2 items-end">
+        <Textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className="flex-1"
+          rows={1}
+          className="flex-1 resize-none min-h-[40px] max-h-40"
         />
         {showSendButton && (
           <Button 
@@ -229,15 +238,16 @@ export function RichTextInput({
       )}
       
       {/* Input Field */}
-      <div className="flex gap-2">
-        <Input
-          ref={inputRef}
+      <div className="flex gap-2 items-end">
+        <Textarea
+          ref={textareaRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className={getInputClasses()}
+          rows={1}
+          className={`${getInputClasses()} resize-none min-h-[40px] max-h-40`}
         />
         {showSendButton && (
           <Button 
