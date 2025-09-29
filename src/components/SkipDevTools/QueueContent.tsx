@@ -47,6 +47,7 @@ export function QueueContent() {
 
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
   const [fullscreenUserId, setFullscreenUserId] = useState<string | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -217,6 +218,18 @@ export function QueueContent() {
     }
   }, [user, fetchQueue])
 
+  // Show notification when first entry appears
+  useEffect(() => {
+    if (state.entries.length > 0) {
+      setShowNotification(true)
+      const timer = setTimeout(() => {
+        setShowNotification(false)
+      }, 8000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [state.entries[0]?.id])
+
   const handleRetry = useCallback(() => {
     setLocalState(prev => ({ ...prev, retryCount: 0 }))
     fetchQueue(true)
@@ -317,6 +330,17 @@ export function QueueContent() {
                     </div>
                   </div>
                   <div className="relative max-w-md mx-auto">
+                    {/* Privacy Notification */}
+                    <div className={cn(
+                      "absolute top-4 left-1/2 -translate-x-1/2 z-50",
+                      "bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full",
+                      "border border-white/20 text-white text-xs font-medium",
+                      "transition-opacity duration-1000",
+                      showNotification ? "opacity-100" : "opacity-0 pointer-events-none"
+                    )}>
+                      {state.entries[0].profiles?.full_name || 'User'} cannot see you
+                    </div>
+                    
                     <UserVideoSFU
                       userId={state.entries[0].fan_id}
                       role="viewer"
