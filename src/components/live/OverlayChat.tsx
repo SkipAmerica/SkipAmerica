@@ -28,7 +28,7 @@ export default function OverlayChat({
       }
       aria-hidden
     >
-      <div className="absolute inset-y-0 top-3 right-3 left-1 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
+      <div className="absolute inset-y-0 top-3 right-0.5 left-0.5 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
         style={{ scrollbarWidth: "none" }}
       >
         <UniversalChat 
