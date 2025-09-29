@@ -61,7 +61,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   })
   const [processingInvite, setProcessingInvite] = useState(false)
   const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
-  const [isDevCanvasOpen, setIsDevCanvasOpen] = useState(false)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -288,6 +287,47 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   }
 
   return (
+    <ViewportDrawer
+      isOpen={isOpen}
+      onClose={onClose}
+      config={{ size: 'xl', variant: 'default', dismissible: true, peekMode: false }}
+    >
+      <QueueContent />
+    </ViewportDrawer>
+  )
+}
+
+{/* 
+  ============================================================================
+  PRE-CALL LOBBY - PRESERVED FOR FUTURE INTEGRATION
+  ============================================================================
+  This section contains the Pre-Call Lobby interface that was previously shown
+  when QueueDrawer opened. It includes:
+  - Creator preview with chat (CreatorPreviewWithChat)
+  - Live broadcast toggle button
+  - Room navigation button
+  - Next call button
+  - LobbyBroadcastPanel for video streaming
+  
+  This will be integrated into QueueContent component later.
+  
+  Original structure:
+  - Sheet wrapper with bottom slide-in drawer
+  - SheetHeader with title and close button
+  - Control buttons (Live, Room, Next)
+  - Conditional LobbyBroadcastPanel when broadcasting
+  - CreatorPreviewWithChat component
+  
+  State used:
+  - store.isLobbyBroadcasting (from useLive hook)
+  - store.setLobbyBroadcasting (from useLive hook)
+  - lobbyCreatorId (authenticated user's ID)
+  
+  Components:
+  - LobbyBroadcastPanel: Video streaming component for creator
+  - CreatorPreviewWithChat: Preview panel with integrated chat
+  ============================================================================
+
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent 
         side="bottom" 
@@ -312,7 +352,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
             </Button>
           </SheetTitle>
           
-          {/* Broadcast Toggle, Room, and Next Call Buttons */}
           <div className="flex gap-2">
             <Button
               onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
@@ -341,7 +380,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           </div>
         </SheetHeader>
 
-        {/* Broadcast Panel */}
         {store.isLobbyBroadcasting && (
           <div className="flex-shrink-0 px-6">
             <LobbyBroadcastPanel 
@@ -350,7 +388,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           </div>
         )}
 
-        {/* ==== FORCE-MOUNT CREATOR PREVIEW WITH CHAT (no flags) ==== */}
         <div className="w-full min-w-0">
           {lobbyCreatorId ? (
             <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
@@ -359,15 +396,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
           )}
         </div>
       </SheetContent>
-      
-      {/* QueueContent with Drag Behavior */}
-      <ViewportDrawer
-        isOpen={isDevCanvasOpen}
-        onClose={() => setIsDevCanvasOpen(false)}
-        config={{ size: 'lg', variant: 'default', dismissible: true, peekMode: true }}
-      >
-        <QueueContent />
-      </ViewportDrawer>
     </Sheet>
-  )
-}
+  
+  ============================================================================
+*/}
