@@ -54,7 +54,7 @@ export function VideoFullscreenModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent 
-        className="max-w-none w-screen h-screen p-0 bg-black border-0 [&>button]:bg-white/20 [&>button]:text-white [&>button]:hover:bg-white/30 [&>button]:opacity-100 [&>button]:w-12 [&>button]:h-12 [&>button>svg]:w-6 [&>button>svg]:h-6"
+        className="max-w-none w-screen h-screen p-0 bg-black border-0 [&>button]:bg-white/20 [&>button]:text-white [&>button]:hover:bg-white/30 [&>button]:opacity-100 [&>button]:w-12 [&>button]:h-12 [&>button]:rounded-full [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button>svg]:w-6 [&>button>svg]:h-6"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
