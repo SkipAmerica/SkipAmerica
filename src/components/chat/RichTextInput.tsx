@@ -129,7 +129,7 @@ export function RichTextInput({
   if (!isRichTextEnabled) {
     // Simple input without rich text features
     return (
-      <div className="flex gap-1 items-end">
+      <div className="flex gap-0 items-end">
         {leftButton}
         <Textarea
           ref={textareaRef}
@@ -241,7 +241,7 @@ export function RichTextInput({
       )}
       
       {/* Input Field */}
-      <div className="flex gap-1 items-end">
+      <div className="flex gap-0 items-end">
         {leftButton}
         <Textarea
           ref={textareaRef}
