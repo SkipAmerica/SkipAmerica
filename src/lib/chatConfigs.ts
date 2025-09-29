@@ -202,7 +202,7 @@ export const createPrivateConfig = (
       compact: true,
       emptyStateText: 'Start your private conversation...',
       className: 'bg-transparent border-0',
-      inputClassName: '[&_input]:!bg-transparent [&_input]:border [&_input]:border-white [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-0 [&_button]:text-white [&_button]:hover:bg-white/10'
+      inputClassName: '[&_input]:!bg-transparent [&_input]:border [&_input]:border-white [&_input]:text-white [&_input]:placeholder:text-white/70 [&_textarea]:!bg-transparent [&_textarea]:border [&_textarea]:border-white [&_textarea]:text-white [&_textarea]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-0 [&_button]:text-white [&_button]:hover:bg-white/10'
     },
     messaging: {
       enabled: true,
