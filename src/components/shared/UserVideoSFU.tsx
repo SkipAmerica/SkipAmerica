@@ -203,7 +203,7 @@ export function UserVideoSFU({
 
       {/* Controls */}
       {showControls && connectionState === 'connected' && (
-        <div className="absolute bottom-[17rem] left-2">
+        <div className="absolute bottom-14 left-2">
           <Button
             onClick={toggleMute}
             variant="outline"
