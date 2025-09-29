@@ -405,6 +405,7 @@ export function QueueContent() {
           isOpen={isFullscreenOpen}
           onClose={handleCloseFullscreen}
           userName={state.entries.find(e => e.fan_id === fullscreenUserId)?.profiles?.full_name || "User"}
+          creatorId={user?.id}
         />
       )}
     </div>

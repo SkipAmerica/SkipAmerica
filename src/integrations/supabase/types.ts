@@ -385,6 +385,33 @@ export type Database = {
           },
         ]
       }
+      call_private_messages: {
+        Row: {
+          conversation_key: string
+          created_at: string
+          id: string
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          conversation_key: string
+          created_at?: string
+          id?: string
+          message: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          conversation_key?: string
+          created_at?: string
+          id?: string
+          message?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       call_queue: {
         Row: {
           created_at: string
@@ -422,7 +449,22 @@ export type Database = {
           priority?: number
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_call_queue_creator_id"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_call_queue_fan_id"
+            columns: ["fan_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       collaborative_events: {
         Row: {

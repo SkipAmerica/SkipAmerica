@@ -12,13 +12,15 @@ interface VideoFullscreenModalProps {
   isOpen: boolean;
   onClose: () => void;
   userName?: string;
+  creatorId?: string;
 }
 
 export function VideoFullscreenModal({
   userId,
   isOpen,
   onClose,
-  userName = "Creator"
+  userName = "Creator",
+  creatorId
 }: VideoFullscreenModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -32,6 +34,8 @@ export function VideoFullscreenModal({
             role="viewer"
             dimensions="w-full h-full"
             showChat={true}
+            chatMode={creatorId ? "private" : "lobby"}
+            fanId={creatorId ? userId : undefined}
             showControls={true}
             className="rounded-none"
           />

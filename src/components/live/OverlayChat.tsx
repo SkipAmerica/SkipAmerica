@@ -1,14 +1,23 @@
 import React from "react";
 import { UniversalChat } from '@/components/chat/UniversalChat';
-import { createOverlayConfig } from '@/lib/chatConfigs';
+import { createOverlayConfig, createPrivateConfig } from '@/lib/chatConfigs';
 
 type Props = {
   creatorId: string;
+  chatMode?: 'lobby' | 'private';
+  fanId?: string;
   className?: string;
 };
 
-export default function OverlayChat({ creatorId, className = "" }: Props) {
-  const config = createOverlayConfig(creatorId);
+export default function OverlayChat({ 
+  creatorId, 
+  chatMode = 'lobby',
+  fanId,
+  className = "" 
+}: Props) {
+  const config = chatMode === 'private' && fanId
+    ? createPrivateConfig(creatorId, fanId)
+    : createOverlayConfig(creatorId);
   
   return (
     <div

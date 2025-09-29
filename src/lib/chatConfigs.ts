@@ -1,5 +1,6 @@
 import type { ChatConfig } from '@/shared/types/chat';
 import { sendLobbyMessage } from '@/lib/lobbyChat';
+import { supabase } from '@/lib/supabaseClient';
 
 // Lobby Chat Configuration (PQ system) - Bottom Left with Profile Toggle
 export const createLobbyConfig = (creatorId: string): ChatConfig => ({
@@ -154,3 +155,71 @@ export const createBottomLeftConfig = (roomId: string): ChatConfig => ({
     });
   }
 });
+
+// Send private message function for 1-on-1 chat
+const sendPrivateMessage = async (
+  creatorId: string,
+  fanId: string,
+  message: string,
+  userId: string
+) => {
+  // Create conversation_key (sorted to ensure consistency)
+  const conversationKey = [creatorId, fanId].sort().join('|');
+  
+  const receiverId = userId === creatorId ? fanId : creatorId;
+  
+  await supabase.from('call_private_messages').insert({
+    conversation_key: conversationKey,
+    sender_id: userId,
+    receiver_id: receiverId,
+    message
+  });
+};
+
+// Private Chat Configuration for 1-on-1 in-call messaging
+export const createPrivateConfig = (
+  creatorId: string,
+  fanId: string
+): ChatConfig => {
+  const conversationKey = [creatorId, fanId].sort().join('|');
+  
+  return {
+    tableName: 'call_private_messages',
+    filterField: 'conversation_key',
+    filterValue: conversationKey,
+    channelPrefix: 'private-chat',
+    sendMessage: async ({ text, userId }) => {
+      await sendPrivateMessage(creatorId, fanId, text, userId);
+    },
+    appearance: {
+      height: 'h-full',
+      width: 'w-full',
+      showScrollbar: false,
+      messageFlow: 'newest-bottom',
+      showProfiles: false,
+      showUsernames: true,
+      usernameStyle: 'bold',
+      compact: true,
+      emptyStateText: 'Start your private conversation...',
+      className: 'bg-transparent border-0',
+      inputClassName: '[&_input]:!bg-transparent [&_input]:border [&_input]:border-white [&_input]:text-white [&_input]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border-0 [&_button]:text-white [&_button]:hover:bg-white/10'
+    },
+    messaging: {
+      enabled: true,
+      placeholder: 'Send a private message...',
+      requireAuth: true,
+      showSendButton: true
+    },
+    richText: {
+      enabled: false
+    },
+    positioning: {
+      mode: 'relative',
+      allowPositionToggle: false
+    },
+    externalInput: {
+      useExternalInput: false,
+      externalInputId: 'private-chat-input'
+    }
+  };
+};
