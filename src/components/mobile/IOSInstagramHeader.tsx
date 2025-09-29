@@ -1,14 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { MessageCircle, Heart, Menu, Phone } from 'lucide-react';
+import { MessageCircle, Heart, Menu, Phone, Users } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { RUNTIME } from '@/config/runtime';
+import { useLive } from '@/hooks/live';
+import { QueueDrawer } from '@/components/live/QueueDrawer';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
@@ -26,8 +28,16 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
   const { user } = useAuth();
   const { profile } = useProfile();
   const { isKeyboardVisible } = useKeyboardAware();
+  const { queueCount } = useLive();
+  const [showQueueDrawer, setShowQueueDrawer] = useState(false);
 
   const headerRef = useRef<HTMLDivElement>(null);
+
+  const handleQueueClick = () => {
+    if (queueCount > 0) {
+      setShowQueueDrawer(true);
+    }
+  };
 
   const handleRecordVideo = () => {
     const input = document.createElement('input');
@@ -78,6 +88,20 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
         <div className="flex items-center space-x-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="ios-touchable h-11 px-2 relative"
+            onClick={handleQueueClick}
+            disabled={queueCount === 0}
+          >
+            <Users size={24} />
+            {queueCount > 0 && (
+              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                {queueCount}
+              </div>
+            )}
+          </Button>
           <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
             <Heart size={24} />
           </Button>
@@ -134,6 +158,12 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         {/* Online Creator Stories */}
         <OnlineCreatorStories onCreatorSelect={onCreatorSelect} />
       </div>
+
+      {/* Queue Drawer */}
+      <QueueDrawer 
+        isOpen={showQueueDrawer} 
+        onClose={() => setShowQueueDrawer(false)} 
+      />
     </div>
   );
 });
