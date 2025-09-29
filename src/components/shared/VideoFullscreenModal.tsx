@@ -24,7 +24,7 @@ export function VideoFullscreenModal({
 }: VideoFullscreenModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-none w-[95vw] h-[95vh] p-0 bg-black border-0">
+      <DialogContent className="max-w-none w-screen h-screen p-0 bg-black border-0">
         <DialogHeader className="sr-only">
           <DialogTitle>Fullscreen Video - {userName}</DialogTitle>
         </DialogHeader>
