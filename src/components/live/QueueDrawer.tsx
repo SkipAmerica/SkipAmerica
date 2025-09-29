@@ -13,6 +13,7 @@ import { RUNTIME } from '@/config/runtime'
 import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
 import { QueueContent } from '@/components/SkipDevTools/QueueContent'
+import { ViewportDrawer } from '@/components/SkipDevTools/ViewportDrawer'
 
 interface QueueEntry {
   id: string
@@ -359,14 +360,14 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         </div>
       </SheetContent>
       
-      {/* QueueContent Overlay */}
-      {isDevCanvasOpen && (
-        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center">
-          <div className="w-full h-full max-w-6xl max-h-[90vh] bg-background rounded-lg overflow-hidden">
-            <QueueContent />
-          </div>
-        </div>
-      )}
+      {/* QueueContent with Drag Behavior */}
+      <ViewportDrawer
+        isOpen={isDevCanvasOpen}
+        onClose={() => setIsDevCanvasOpen(false)}
+        config={{ size: 'lg', variant: 'default', dismissible: true, peekMode: true }}
+      >
+        <QueueContent />
+      </ViewportDrawer>
     </Sheet>
   )
 }
