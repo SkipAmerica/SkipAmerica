@@ -69,14 +69,15 @@ export default function TabbedOverlayChat({
   return (
     <div
       className={
-        "absolute inset-x-0 max-h-[45vh] pointer-events-none " + className
+        "fixed left-0 right-0 max-h-[45vh] pointer-events-none " + className
       }
       style={{
         bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8px)',
-        zIndex: 40
+        zIndex: 60,
+        minHeight: '3rem'
       }}
     >
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full relative flex flex-col">
         <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto" style={{ zIndex: 50 }}>
           <TabsTrigger 
             value="lobby" 

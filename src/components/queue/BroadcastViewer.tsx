@@ -33,9 +33,14 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
 
-  // Resolve creator ID immediately for chat (don't wait for SFU)
+  // Set resolvedCreatorId immediately so chat mounts without delay
   useEffect(() => {
-    console.log('[BroadcastViewer] Resolving creator ID for chat');
+    setResolvedCreatorId(queueId);
+  }, [queueId]);
+
+  // Resolve creator ID in background for SFU (chat doesn't wait for this)
+  useEffect(() => {
+    console.log('[BroadcastViewer] Resolving creator ID for SFU');
     resolveCreatorUserId(queueId).then(id => {
       const creatorId = id || queueId;
       console.log('[BroadcastViewer] Resolved creator ID:', creatorId);
@@ -168,13 +173,17 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
       )}
       
       {/* Overlay chat - always show lobby, private messages only when in queue */}
-      {resolvedCreatorId && (
-        <TabbedOverlayChat 
-          creatorId={resolvedCreatorId}
-          fanId={fanUserId || ''}
-          isInQueue={isInQueue && !!fanUserId}
-        />
-      )}
+      {(() => {
+        const chatCreatorId = resolvedCreatorId || queueId;
+        console.log('[BroadcastViewer] Rendering TabbedOverlayChat with creatorId:', chatCreatorId, 'fanId:', fanUserId, 'isInQueue:', isInQueue);
+        return (
+          <TabbedOverlayChat 
+            creatorId={chatCreatorId}
+            fanId={fanUserId || ''}
+            isInQueue={isInQueue && !!fanUserId}
+          />
+        );
+      })()}
       
       {/* Fan's Self-View Camera (PiP) - Only shown after joining queue */}
       {isInQueue && fanUserId && (
