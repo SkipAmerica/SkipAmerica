@@ -30,6 +30,7 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
   const showUsernames = config.appearance?.showUsernames ?? config.appearance?.showProfiles ?? true;
   const usernameStyle = config.appearance?.usernameStyle ?? 'bold';
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const prevMessageCountRef = useRef(0);
   const {
     messages,
     newMessage,
@@ -38,14 +39,13 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
     setSending
   } = useUniversalChat(config);
 
-  // Auto-scroll to bottom when messages change
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
+  // Auto-scroll to bottom only when new messages arrive
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (messages.length > prevMessageCountRef.current) {
+      messagesEndRef.current?.scrollIntoView({ block: 'nearest' });
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user || sending || !config.messaging?.enabled) return;

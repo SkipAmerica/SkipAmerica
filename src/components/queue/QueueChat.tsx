@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { UniversalChat } from '@/components/chat/UniversalChat';
@@ -19,8 +19,8 @@ export function QueueChat({
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
 
-  const lobbyConfig = createQueueLobbyConfig(creatorId);
-  const privateConfig = createQueuePrivateConfig(creatorId, fanId);
+  const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId), [creatorId]);
+  const privateConfig = useMemo(() => createQueuePrivateConfig(creatorId, fanId), [creatorId, fanId]);
 
   // Subscribe to private messages for unread count
   useEffect(() => {
