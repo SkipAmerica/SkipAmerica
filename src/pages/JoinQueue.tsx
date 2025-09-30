@@ -101,49 +101,44 @@ export default function JoinQueue() {
       try {
         console.log('[JoinQueue] Looking up creator:', creatorId);
         
-        // First try mock_creators table
-        const { data: mockCreator, error: mockError } = await supabase
-          .from('mock_creators')
-          .select('*')
+        // Query creators table directly (creators.id references profiles.id)
+        const { data: creatorData, error: creatorError } = await supabase
+          .from('creators')
+          .select(`
+            id,
+            full_name,
+            bio,
+            avatar_url,
+            categories,
+            base_rate_min
+          `)
           .eq('id', creatorId)
           .maybeSingle();
 
-        if (mockCreator) {
-          console.log('[JoinQueue] Found in mock_creators:', mockCreator);
-          setCreator(mockCreator);
-          return;
+        if (creatorError) {
+          console.error('[JoinQueue] Creator query error:', creatorError);
+          throw creatorError;
         }
 
-        // If not found in mock_creators, try profiles table
-        console.log('[JoinQueue] Not found in mock_creators, trying profiles...');
-        const { data: profileCreator, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, full_name, account_type')
-          .eq('id', creatorId)
-          .eq('account_type', 'creator')
-          .maybeSingle();
-
-        if (profileCreator) {
-          console.log('[JoinQueue] Found in profiles:', profileCreator);
-          setCreator({
-            id: profileCreator.id,
-            full_name: profileCreator.full_name,
-            bio: 'Creator Profile',
-            avatar_url: undefined,
-            category: 'General',
-            rating: undefined
+        if (!creatorData) {
+          console.warn('[JoinQueue] Creator not found');
+          toast({
+            title: "Creator not found",
+            description: "The creator you're looking for doesn't exist or may have been removed.",
+            variant: "destructive"
           });
+          navigate('/');
           return;
         }
 
-        // Creator not found in either table
-        console.warn('[JoinQueue] Creator not found in any table');
-        toast({
-          title: "Creator not found",
-          description: "The creator you're looking for doesn't exist or may have been removed.",
-          variant: "destructive"
+        setCreator({
+          id: creatorData.id,
+          full_name: creatorData.full_name,
+          bio: creatorData.bio || 'Creator Profile',
+          avatar_url: creatorData.avatar_url,
+          category: creatorData.categories?.[0] || 'General',
+          rating: undefined // Will be calculated from appointments/reviews later
         });
-        navigate('/');
 
       } catch (error) {
         console.error('[JoinQueue] Error fetching creator:', error);

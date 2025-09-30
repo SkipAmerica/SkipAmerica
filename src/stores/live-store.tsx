@@ -11,6 +11,9 @@ import { supabase } from '@/integrations/supabase/client'
 /* Prevent double-taps/races on discoverable toggle */
 let __discToggleInFlight = false;
 
+/* Heartbeat interval for presence tracking */
+let __heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+
 // Core state structure
 export interface LiveStoreState {
   state: LiveState
@@ -347,13 +350,49 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     ensureMediaSubscriptions()
   }, [])
 
+  // Send heartbeat to maintain online presence
+  const sendHeartbeat = useCallback(async (isOnline: boolean) => {
+    if (!user) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        console.warn('[LiveStore] No auth token for heartbeat');
+        return;
+      }
+
+      await supabase.functions.invoke('creator-heartbeat', {
+        body: { isOnline },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+      
+      console.log('[LiveStore] Heartbeat sent:', isOnline);
+    } catch (error) {
+      console.error('[LiveStore] Heartbeat error:', error);
+    }
+  }, [user]);
+
   // GO DISCOVERABLE: just set availability (no media)
   const goDiscoverable = useCallback(async () => {
     if (!user || state.state !== 'OFFLINE' || state.inFlight.start) return
     
     console.log('[LiveStore] Going discoverable...')
     handleDispatch({ type: 'GO_LIVE' }) // -> DISCOVERABLE
-  }, [user, state.state, state.inFlight.start, handleDispatch])
+    
+    // Start heartbeat to mark creator as online
+    sendHeartbeat(true);
+    
+    // Send heartbeat every 30 seconds to maintain presence
+    if (__heartbeatInterval) {
+      clearInterval(__heartbeatInterval);
+    }
+    __heartbeatInterval = setInterval(() => {
+      sendHeartbeat(true);
+    }, 30000);
+    
+  }, [user, state.state, state.inFlight.start, handleDispatch, sendHeartbeat])
 
   // GO UNDISCOVERABLE: return to offline (proper FSM transition)
   const goUndiscoverable = useCallback(async () => {
@@ -361,6 +400,13 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     __discToggleInFlight = true;
     try {
       const st = state.state;
+
+      // Stop heartbeat and mark as offline
+      if (__heartbeatInterval) {
+        clearInterval(__heartbeatInterval);
+        __heartbeatInterval = null;
+      }
+      sendHeartbeat(false);
 
       // Complete the legal FSM path: DISCOVERABLE -> TEARDOWN -> OFFLINE
       await handleDispatch({ type: 'END_LIVE' });      // should move to TEARDOWN
@@ -371,7 +417,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     } finally {
       __discToggleInFlight = false;
     }
-  }, [handleDispatch, state.state])
+  }, [handleDispatch, state.state, sendHeartbeat])
 
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
@@ -497,6 +543,13 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     try {
       console.info('[LIVE][END] Ending session...')
       
+      // Stop heartbeat and mark as offline
+      if (__heartbeatInterval) {
+        clearInterval(__heartbeatInterval);
+        __heartbeatInterval = null;
+      }
+      sendHeartbeat(false);
+      
       handleDispatch({ type: 'END_LIVE' })
       
       // Update session in API if exists
@@ -523,7 +576,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
     }
-  }, [user, state.state, state.sessionId, state.callsTaken, state.totalEarningsCents, state.inFlight.end, handleDispatch])
+  }, [user, state.state, state.sessionId, state.callsTaken, state.totalEarningsCents, state.inFlight.end, handleDispatch, sendHeartbeat])
 
   const toggleEarningsDisplay = useCallback(() => {
     dispatch({ type: 'TOGGLE_EARNINGS' })

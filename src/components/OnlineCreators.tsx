@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Video, Star, Users, Search, Filter, Zap, Sparkles } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface OnlineCreatorsProps {
   onCreatorSelect: (creatorId: string) => void;
@@ -14,109 +15,124 @@ interface OnlineCreatorsProps {
 const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [liveCreators, setLiveCreators] = useState([
-    {
-      id: "1",
-      name: "Emma Stone",
-      username: "@emmastone",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616b9e36b13?w=150",
-      category: "Entertainment & Celebrity",
-      rating: 4.9,
-      totalRatings: 89,
-      pricePerMinute: 8.33,
-      speedGreetPrice: 500.00,
-      currentViewers: 847,
-      responseTime: "< 24 hours",
-      specialties: ["Acting", "Career guidance", "Hollywood insights"],
-      isLive: false,
-      liveFor: "Scheduled",
-      totalFollowers: 2800000,
-      recentActivity: "Available for career advice and entertainment industry insights",
-      influence_type: "celebrity",
-      location: "Los Angeles, CA"
-    },
-    {
-      id: "2", 
-      name: "Dr. Sarah Chen",
-      username: "@drsarahchen",
-      avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150",
-      category: "Technology",
-      rating: 4.95,
-      totalRatings: 234,
-      pricePerMinute: 3.33,
-      speedGreetPrice: 200.00,
-      currentViewers: 28,
-      responseTime: "< 4 hours",
-      specialties: ["AI/ML", "Research", "Tech consulting"],
-      isLive: true,
-      liveFor: "1h 30m",
-      totalFollowers: 45000,
-      recentActivity: "Leading AI researcher discussing machine learning trends",
-      influence_type: "expert",
-      location: "Palo Alto, CA"
-    },
-    {
-      id: "3",
-      name: "Marcus Johnson", 
-      username: "@marcusentrepreneur",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150",
-      category: "Business Leaders",
-      rating: 4.8,
-      totalRatings: 167,
-      pricePerMinute: 5.83,
-      speedGreetPrice: 350.00,
-      currentViewers: 15,
-      responseTime: "< 8 hours", 
-      specialties: ["Startups", "Fundraising", "Business strategy"],
-      isLive: true,
-      liveFor: "45m",
-      totalFollowers: 120000,
-      recentActivity: "Serial entrepreneur mentoring aspiring founders",
-      influence_type: "entrepreneur",
-      location: "San Francisco, CA"
-    },
-    {
-      id: "4",
-      name: "Zoe Rodriguez",
-      username: "@zoerodriguez",
-      avatar: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=150",
-      category: "Beauty & Fashion",
-      rating: 4.7,
-      totalRatings: 892,
-      pricePerMinute: 2.50,
-      speedGreetPrice: 150.00,
-      currentViewers: 234,
-      responseTime: "< 2 hours",
-      specialties: ["Fashion styling", "Social media", "Brand partnerships"],
-      isLive: true,
-      liveFor: "2h 15m",
-      totalFollowers: 10500000,
-      recentActivity: "Fashion influencer sharing style tips and brand collaborations",
-      influence_type: "influencer",
-      location: "New York, NY"
-    }
-  ]);
+  const [liveCreators, setLiveCreators] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = ["all", "Entertainment & Celebrity", "Technology", "Business Leaders", "Beauty & Fashion"];
+  const categories = ["all"];
+
+  // Load real creators with online status and live sessions
+  useEffect(() => {
+    const loadLiveCreators = async () => {
+      setLoading(true);
+      try {
+        console.log('[OnlineCreators] Fetching real live creators');
+
+        const { data, error } = await supabase
+          .from('creators')
+          .select(`
+            id,
+            full_name,
+            avatar_url,
+            bio,
+            headline,
+            categories,
+            base_rate_min,
+            celebrity_tier,
+            creator_presence!inner (
+              is_online
+            ),
+            live_sessions!left (
+              id,
+              started_at,
+              ended_at
+            ),
+            call_queue (
+              id
+            )
+          `)
+          .eq('creator_presence.is_online', true)
+          .eq('is_suppressed', false)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('[OnlineCreators] Error:', error);
+          setLiveCreators([]);
+          return;
+        }
+
+        const creators = (data || []).map((creator: any) => {
+          const activeSessions = creator.live_sessions?.filter((s: any) => !s.ended_at) || [];
+          const isLive = activeSessions.length > 0;
+          const liveSession = activeSessions[0];
+          
+          let liveFor = 'Scheduled';
+          if (isLive && liveSession?.started_at) {
+            const mins = Math.floor((Date.now() - new Date(liveSession.started_at).getTime()) / 60000);
+            liveFor = mins < 60 ? `${mins}m` : `${Math.floor(mins/60)}h ${mins%60}m`;
+          }
+
+          return {
+            id: creator.id,
+            name: creator.full_name,
+            username: `@${creator.full_name.toLowerCase().replace(/\s+/g, '')}`,
+            avatar: creator.avatar_url || '',
+            category: creator.categories?.[0] || 'General',
+            rating: 4.8,
+            totalRatings: 0,
+            pricePerMinute: (creator.base_rate_min || 0) / 60,
+            speedGreetPrice: (creator.base_rate_min || 0) * 2,
+            currentViewers: creator.call_queue?.length || 0,
+            responseTime: '< 24 hours',
+            specialties: creator.categories || [],
+            isLive,
+            liveFor,
+            totalFollowers: 0,
+            recentActivity: creator.headline || creator.bio || 'Available now',
+            influence_type: creator.celebrity_tier?.toLowerCase() || 'creator',
+            location: '',
+          };
+        });
+
+        setLiveCreators(creators);
+        console.log('[OnlineCreators] Loaded', creators.length, 'creators');
+      } catch (error) {
+        console.error('[OnlineCreators] Error loading:', error);
+        setLiveCreators([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLiveCreators();
+
+    // Subscribe to presence changes
+    const presenceChannel = supabase
+      .channel('online-creators-presence')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'creator_presence',
+        },
+        () => {
+          console.log('[OnlineCreators] Presence changed, reloading');
+          loadLiveCreators();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, []);
 
   const filteredCreators = liveCreators.filter(creator => {
     const matchesSearch = creator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         creator.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase()));
+                         creator.specialties.some((s: string) => s.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = filterCategory === "all" || creator.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
-
-  // Simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setLiveCreators(prev => prev.map(creator => ({
-        ...creator,
-        currentViewers: Math.max(1, creator.currentViewers + Math.floor(Math.random() * 3 - 1))
-      })));
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   return (
     <div className="space-y-6">
@@ -142,8 +158,13 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
 
 
       {/* Live Creators Grid */}
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredCreators.map((creator) => (
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="text-muted-foreground">Loading live creators...</div>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredCreators.map((creator) => (
           <Card 
             key={creator.id} 
             className="shadow-creator hover:shadow-glow transition-all duration-300 cursor-pointer group"
@@ -264,10 +285,11 @@ const OnlineCreators = ({ onCreatorSelect, onStartCall }: OnlineCreatorsProps) =
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filteredCreators.length === 0 && (
+      {!loading && filteredCreators.length === 0 && (
         <div className="text-center py-12">
           <div className="text-muted-foreground">
             <Video className="h-12 w-12 mx-auto mb-4 opacity-50" />

@@ -836,6 +836,35 @@ export type Database = {
           },
         ]
       }
+      creator_presence: {
+        Row: {
+          creator_id: string
+          is_online: boolean | null
+          last_heartbeat: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          creator_id: string
+          is_online?: boolean | null
+          last_heartbeat?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          creator_id?: string
+          is_online?: boolean | null
+          last_heartbeat?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_presence_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_press_coverage: {
         Row: {
           article_content: string | null
@@ -994,9 +1023,11 @@ export type Database = {
           full_name: string
           headline: string | null
           id: string
+          is_online: boolean | null
           is_suppressed: boolean | null
           languages: string[] | null
           last_activity_at: string | null
+          last_seen_at: string | null
           location_city: string | null
           location_country: string | null
           long_bio: string | null
@@ -1029,9 +1060,11 @@ export type Database = {
           full_name: string
           headline?: string | null
           id?: string
+          is_online?: boolean | null
           is_suppressed?: boolean | null
           languages?: string[] | null
           last_activity_at?: string | null
+          last_seen_at?: string | null
           location_city?: string | null
           location_country?: string | null
           long_bio?: string | null
@@ -1064,9 +1097,11 @@ export type Database = {
           full_name?: string
           headline?: string | null
           id?: string
+          is_online?: boolean | null
           is_suppressed?: boolean | null
           languages?: string[] | null
           last_activity_at?: string | null
+          last_seen_at?: string | null
           location_city?: string | null
           location_country?: string | null
           long_bio?: string | null
@@ -1313,80 +1348,6 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
-      }
-      mock_creators: {
-        Row: {
-          account_type: string
-          avatar_url: string | null
-          bio: string | null
-          call_rate: number | null
-          category: string | null
-          created_at: string
-          full_name: string
-          id: string
-          interests: string[] | null
-          is_online: boolean | null
-          rating: number | null
-          ratings_count: number | null
-        }
-        Insert: {
-          account_type?: string
-          avatar_url?: string | null
-          bio?: string | null
-          call_rate?: number | null
-          category?: string | null
-          created_at?: string
-          full_name: string
-          id?: string
-          interests?: string[] | null
-          is_online?: boolean | null
-          rating?: number | null
-          ratings_count?: number | null
-        }
-        Update: {
-          account_type?: string
-          avatar_url?: string | null
-          bio?: string | null
-          call_rate?: number | null
-          category?: string | null
-          created_at?: string
-          full_name?: string
-          id?: string
-          interests?: string[] | null
-          is_online?: boolean | null
-          rating?: number | null
-          ratings_count?: number | null
-        }
-        Relationships: []
-      }
-      mock_user_follows: {
-        Row: {
-          created_at: string
-          follower_email: string
-          following_creator_id: string
-          id: string
-        }
-        Insert: {
-          created_at?: string
-          follower_email: string
-          following_creator_id: string
-          id?: string
-        }
-        Update: {
-          created_at?: string
-          follower_email?: string
-          following_creator_id?: string
-          id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mock_user_follows_following_creator_id_fkey"
-            columns: ["following_creator_id"]
-            isOneToOne: false
-            referencedRelation: "mock_creators"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       offer_rates: {
         Row: {
@@ -2106,6 +2067,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_creator_presence: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_stale_queue_entries: {
         Args: Record<PropertyKey, never>
         Returns: undefined

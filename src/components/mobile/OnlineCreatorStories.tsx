@@ -32,89 +32,51 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
     const loadCreators = async () => {
       setLoading(true);
       try {
-        let creators: Creator[] = [];
+        console.log('[OnlineCreatorStories] Loading real creators with presence tracking');
 
-        // Try followed creators first if signed in
-        if (user?.email) {
-          const { data: followedCreators, error } = await supabase
-            .from('mock_user_follows')
-            .select(`
-              following_creator_id,
-              mock_creators!inner (
-                id,
-                full_name,
-                avatar_url,
-                category,
-                is_online,
-                bio
-              )
-            `)
-            .eq('follower_email', user.email);
+        // Query real creators with online status from creator_presence
+        const { data: onlineCreatorsData, error } = await supabase
+          .from('creators')
+          .select(`
+            id,
+            full_name,
+            avatar_url,
+            categories,
+            creator_presence!inner (
+              is_online
+            )
+          `)
+          .eq('creator_presence.is_online', true)
+          .eq('is_suppressed', false)
+          .limit(20);
 
-          if (error) {
-            console.error('Error fetching followed creators:', error);
-          }
-
-          if (followedCreators) {
-            creators = followedCreators.map((follow: any) => {
-              const creator = follow.mock_creators;
-              return {
-                id: creator.id,
-                name: creator.full_name,
-                username: `@${String(creator.full_name || '').toLowerCase().replace(/\s+/g, '')}`,
-                avatar: creator.avatar_url,
-                isOnline: !!creator.is_online,
-                hasStory: Math.random() > 0.6, // Demo
-                category: creator.category,
-                isFollowed: true,
-                hasInteracted: Math.random() > 0.7,
-              } as Creator;
-            });
-          }
+        if (error) {
+          console.error('Error fetching online creators:', error);
+          setOnlineCreators([]);
+          return;
         }
 
-        // Fallback: trending online creators (works even if signed out)
-        if (creators.length === 0) {
-          const { data: trending, error: trendingError } = await supabase
-            .from('mock_creators')
-            .select('id, full_name, avatar_url, category, is_online')
-            .eq('is_online', true)
-            .limit(20);
-
-          if (trendingError) {
-            console.error('Error fetching trending creators:', trendingError);
-          }
-
-          if (trending) {
-            creators = trending.map((creator: any) => ({
-              id: creator.id,
-              name: creator.full_name,
-              username: `@${String(creator.full_name || '').toLowerCase().replace(/\s+/g, '')}`,
-              avatar: creator.avatar_url,
-              isOnline: !!creator.is_online,
-              hasStory: Math.random() > 0.6,
-              category: creator.category,
-              isFollowed: false,
-              hasInteracted: false,
-            }));
-          }
+        if (!onlineCreatorsData || onlineCreatorsData.length === 0) {
+          console.log('[OnlineCreatorStories] No online creators found');
+          setOnlineCreators([]);
+          return;
         }
 
-        // Sort by online + story + interactions
-        const sortedCreators = creators.sort((a, b) => {
-          const score = (c: Creator) => {
-            let s = 0;
-            if (c.isOnline && c.hasStory) s = 1000;
-            else if (c.isOnline) s = 900;
-            else if (c.hasStory) s = 800;
-            else s = 700;
-            if (c.hasInteracted) s += 50;
-            return s;
-          };
-          return score(b) - score(a);
-        });
+        const creators: Creator[] = onlineCreatorsData.map((creator: any) => ({
+          id: creator.id,
+          name: creator.full_name,
+          username: `@${String(creator.full_name || '').toLowerCase().replace(/\s+/g, '')}`,
+          avatar: creator.avatar_url || '',
+          isOnline: true, // Already filtered by is_online = true
+          hasStory: false, // Will implement stories later
+          category: creator.categories?.[0] || 'General',
+          isFollowed: false, // TODO: Check user follows when we add that feature
+          hasInteracted: false, // TODO: Track interactions
+          matchesInterests: false,
+        }));
 
-        setOnlineCreators(sortedCreators);
+        setOnlineCreators(creators);
+        console.log('[OnlineCreatorStories] Loaded', creators.length, 'online creators');
       } catch (error) {
         console.error('Error in OnlineCreatorStories load:', error);
         setOnlineCreators([]);
@@ -124,6 +86,27 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
     };
 
     loadCreators();
+
+    // Subscribe to real-time presence updates
+    const presenceChannel = supabase
+      .channel('creator-presence-stories')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'creator_presence',
+        },
+        () => {
+          console.log('[OnlineCreatorStories] Presence changed, reloading');
+          loadCreators();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
   }, [user]);
 
   const renderSkeletons = (count = 8) => (
