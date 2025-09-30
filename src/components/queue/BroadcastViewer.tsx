@@ -111,7 +111,15 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
       }
     })();
 
-    return () => { sfu?.disconnect().catch(()=>{}); sfu = undefined; };
+    return () => { 
+      console.log('[BroadcastViewer] Cleaning up SFU connection');
+      if (sfu) {
+        sfu.disconnect().catch((err) => {
+          console.error('[BroadcastViewer] Error disconnecting SFU:', err);
+        });
+        sfu = undefined;
+      }
+    };
   }, [queueId, resolvedCreatorId]);
 
   const toggleMute = useCallback(() => {

@@ -22,6 +22,8 @@ export default function TabbedOverlayChat({
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
 
+  console.log('[TabbedOverlayChat] Rendering with:', { creatorId, fanId, isInQueue, activeTab });
+
   const lobbyConfig = createOverlayConfig(creatorId);
   const privateConfig = createPrivateConfig(creatorId, fanId);
 
@@ -67,14 +69,15 @@ export default function TabbedOverlayChat({
   return (
     <div
       className={
-        "absolute inset-x-0 max-h-[45vh] z-40 pointer-events-none " + className
+        "absolute inset-x-0 max-h-[45vh] pointer-events-none " + className
       }
       style={{
-        bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8px)'
+        bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8px)',
+        zIndex: 40
       }}
     >
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
-        <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto z-50">
+        <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto" style={{ zIndex: 50 }}>
           <TabsTrigger 
             value="lobby" 
             className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white pointer-events-auto"

@@ -14,6 +14,7 @@ import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
 import { QueueContent } from '@/components/SkipDevTools/QueueContent'
 import { ViewportDrawer } from '@/components/SkipDevTools/ViewportDrawer'
+import { teardownMedia } from '@/shared/media'
 
 interface QueueEntry {
   id: string
@@ -286,10 +287,21 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       .slice(0, 2)
   }
 
+  const handleClose = useCallback(async () => {
+    console.log('[QueueDrawer] Closing and cleaning up media')
+    try {
+      await teardownMedia()
+      console.log('[QueueDrawer] Media cleanup complete')
+    } catch (error) {
+      console.error('[QueueDrawer] Error during media cleanup:', error)
+    }
+    onClose()
+  }, [onClose])
+
   return (
     <ViewportDrawer
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       config={{ size: 'xl', variant: 'default', dismissible: true, peekMode: false }}
     >
       <QueueContent />
