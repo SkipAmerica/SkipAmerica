@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,10 +47,14 @@ const RatingSystem = ({
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (rating === 0) return;
     onRatingSubmit(rating, comment, selectedTags);
-  };
+  }, [rating, comment, selectedTags, onRatingSubmit]);
+
+  const handleCommentChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setComment(e.target.value);
+  }, []);
 
   const getRatingColor = (stars: number) => {
     if (stars <= 2) return "text-red-500";
@@ -151,7 +155,7 @@ const RatingSystem = ({
                   : "What made this creator great? Any feedback?"
               }
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={handleCommentChange}
               className="min-h-[80px]"
             />
           </div>

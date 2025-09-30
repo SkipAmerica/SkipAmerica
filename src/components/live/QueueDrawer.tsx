@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -48,8 +48,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   
   // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
   // Use the authenticated user ID as the lobby creator ID (creator's own panel)
-  const lobbyCreatorId = user?.id || "";
-  console.log("[CREATOR PANEL] lobbyCreatorId =", lobbyCreatorId);
+  const lobbyCreatorId = useMemo(() => user?.id || "", [user?.id]);
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   

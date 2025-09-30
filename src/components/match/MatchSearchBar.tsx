@@ -21,23 +21,27 @@ export function MatchSearchBar({
   const [inputValue, setInputValue] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isInitializedRef = useRef(false);
 
   // Parse initial value into keywords on mount
   useEffect(() => {
-    if (value) {
+    if (!isInitializedRef.current && value) {
       const initialKeywords = value.split(' ').filter(keyword => keyword.trim().length > 0);
       setKeywords(initialKeywords);
       setInputValue('');
+      isInitializedRef.current = true;
     }
-  }, []);
+  }, [value]);
 
-  // Update parent when keywords change
+  // Update parent when keywords change (but not during initial render)
   useEffect(() => {
+    if (!isInitializedRef.current) return;
+    
     const combinedValue = [...keywords, inputValue.trim()].filter(Boolean).join(' ');
     if (combinedValue !== value) {
       onChange(combinedValue);
     }
-  }, [keywords, inputValue, onChange, value]);
+  }, [keywords, inputValue]);
 
   // Auto-scroll to keep the input visible when keywords are added
   useEffect(() => {

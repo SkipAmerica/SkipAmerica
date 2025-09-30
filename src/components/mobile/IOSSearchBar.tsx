@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -27,9 +27,9 @@ export function IOSSearchBar({
   className,
   fullWidth = false
 }: IOSSearchBarProps) {
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
     onChange('');
-  };
+  }, [onChange]);
 
   return (
     <div className={cn("flex items-center w-full", fullWidth && "px-4 ios-safe-left ios-safe-right", className)}>
