@@ -15,6 +15,13 @@ import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useCreatorPresence } from '@/shared/hooks';
 import { QueueChat } from '@/components/queue/QueueChat';
+import { z } from 'zod';
+
+const displayNameSchema = z.string()
+  .trim()
+  .min(1, 'Name is required')
+  .max(50, 'Name must be less than 50 characters')
+  .regex(/^[^\x00-\x1F\x7F]+$/, 'Name contains invalid characters');
 
 interface Creator {
   id: string;
@@ -54,6 +61,9 @@ export default function JoinQueue() {
   const [displayName, setDisplayName] = useState('');
 
   const isUnloadingRef = useRef(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const userEditedNameRef = useRef(false);
+  const initialNameSetRef = useRef(false);
 
   // Ensure full-viewport scrolling on PQ
   useEffect(() => {
@@ -271,12 +281,16 @@ export default function JoinQueue() {
     };
   }, [creatorId, user]);
 
-  // Set initial display name from profile
+  // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
-    if (profile && !displayName) {
-      setDisplayName(profile.full_name || 'Anonymous Guest');
+    if (initialNameSetRef.current || userEditedNameRef.current || !profile) return;
+    
+    // For anonymous users or users with "Anonymous Guest" as name, leave blank for them to fill
+    if (profile.full_name && profile.full_name !== 'Anonymous Guest') {
+      setDisplayName(profile.full_name);
     }
-  }, [profile, displayName]);
+    initialNameSetRef.current = true;
+  }, [profile]);
 
   // Browser event cleanup and heartbeat system
   useEffect(() => {
@@ -362,6 +376,17 @@ export default function JoinQueue() {
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;
+
+    // Validate display name
+    const validation = displayNameSchema.safeParse(displayName);
+    if (!validation.success) {
+      toast({
+        title: "Invalid name",
+        description: validation.error.issues[0].message,
+        variant: "destructive"
+      });
+      return;
+    }
 
     setJoining(true);
     console.log('[JoinQueue] Attempting to join queue for creator:', creatorId, 'user:', user.id);
@@ -552,9 +577,18 @@ export default function JoinQueue() {
                         Your Name
                       </label>
                       <Input
+                        ref={inputRef}
                         placeholder="Enter your name"
                         value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
+                        onChange={(e) => {
+                          setDisplayName(e.target.value);
+                          userEditedNameRef.current = true;
+                        }}
+                        onFocus={() => {
+                          userEditedNameRef.current = true;
+                        }}
+                        autoComplete="name"
+                        name="displayName"
                         className="h-9"
                       />
                     </div>
