@@ -26,27 +26,35 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
         if (messagesError) throw messagesError;
 
         if (messagesData && messagesData.length > 0) {
-          // Get unique user IDs - cast to any to handle dynamic table structure
-          const userIds = [...new Set(messagesData.map((msg: any) => msg.user_id))];
+          // Get unique user IDs - handle both user_id and sender_id for different table structures
+          const userIds = [...new Set(messagesData.map((msg: any) => msg.user_id ?? msg.sender_id).filter(Boolean))];
           
           // Fetch profiles for all users
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, full_name, avatar_url')
-            .in('id', userIds);
+          let profilesMap = new Map();
+          if (userIds.length > 0) {
+            try {
+              const { data: profilesData, error: profilesError } = await supabase
+                .from('profiles')
+                .select('id, full_name, avatar_url')
+                .in('id', userIds);
 
-          if (profilesError) throw profilesError;
-
-          // Map profiles to messages
-          const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+              if (profilesError) throw profilesError;
+              profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+            } catch (error) {
+              console.error(`[useUniversalChat] Error fetching profiles:`, error);
+            }
+          }
           
-          const enrichedMessages: ChatMessage[] = messagesData.map((msg: any) => ({
-            id: msg.id,
-            user_id: msg.user_id,
-            message: msg.message,
-            created_at: msg.created_at,
-            profiles: profilesMap.get(msg.user_id) || null
-          }));
+          const enrichedMessages: ChatMessage[] = messagesData.map((msg: any) => {
+            const senderId = msg.user_id ?? msg.sender_id;
+            return {
+              id: msg.id,
+              user_id: senderId,
+              message: msg.message,
+              created_at: msg.created_at,
+              profiles: profilesMap.get(senderId) || null
+            };
+          });
 
           setMessages(enrichedMessages);
         }
@@ -69,16 +77,27 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           filter: `${config.filterField}=eq.${config.filterValue}`
         },
         async (payload) => {
-          // Fetch profile for the new message - cast payload to handle dynamic table
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', (payload.new as any).user_id)
-            .single();
+          // Handle both user_id and sender_id for different table structures
+          const senderId = (payload.new as any).user_id ?? (payload.new as any).sender_id;
+          
+          // Fetch profile for the new message - handle errors gracefully
+          let profileData = null;
+          if (senderId) {
+            try {
+              const { data } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', senderId)
+                .single();
+              profileData = data;
+            } catch (error) {
+              console.error(`[useUniversalChat] Error fetching profile for new message:`, error);
+            }
+          }
 
           const enrichedMessage: ChatMessage = {
             id: (payload.new as any).id,
-            user_id: (payload.new as any).user_id,
+            user_id: senderId,
             message: (payload.new as any).message,
             created_at: (payload.new as any).created_at,
             profiles: profileData || undefined

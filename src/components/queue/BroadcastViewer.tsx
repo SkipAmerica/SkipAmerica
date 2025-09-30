@@ -139,18 +139,18 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         </div>
       )}
       
-      {/* Fan's Self-View Camera (PiP) and Chat - Only shown after joining queue */}
+      {/* Overlay chat - always show lobby, private messages only when in queue */}
+      {resolvedCreatorId && (
+        <TabbedOverlayChat 
+          creatorId={resolvedCreatorId}
+          fanId={fanUserId || ''}
+          isInQueue={isInQueue && !!fanUserId}
+        />
+      )}
+      
+      {/* Fan's Self-View Camera (PiP) - Only shown after joining queue */}
       {isInQueue && fanUserId && (
         <>
-          {/* Tabbed chat overlay with lobby and private messages */}
-          {resolvedCreatorId && (
-            <TabbedOverlayChat 
-              creatorId={resolvedCreatorId} 
-              fanId={fanUserId}
-            />
-          )}
-          
-          {/* Fan's Self-View Camera (PiP) */}
           <div className="absolute top-20 right-4 w-28 h-28 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl backdrop-blur-sm z-30">
             <UserVideoSFU
               userId={fanUserId}

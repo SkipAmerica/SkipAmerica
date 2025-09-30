@@ -9,13 +9,15 @@ type Props = {
   fanId: string;
   className?: string;
   leftButton?: React.ReactNode;
+  isInQueue?: boolean;
 };
 
 export default function TabbedOverlayChat({ 
   creatorId, 
   fanId,
   className = "",
-  leftButton
+  leftButton,
+  isInQueue = false
 }: Props) {
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
@@ -65,9 +67,11 @@ export default function TabbedOverlayChat({
   return (
     <div
       className={
-        "absolute inset-x-0 bottom-0 h-64 z-40 pointer-events-none " + className
+        "absolute inset-x-0 max-h-[45vh] z-40 pointer-events-none " + className
       }
-      aria-hidden
+      style={{
+        bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8px)'
+      }}
     >
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
         <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto z-50">
@@ -77,21 +81,23 @@ export default function TabbedOverlayChat({
           >
             Lobby
           </TabsTrigger>
-          <TabsTrigger 
-            value="private" 
-            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white relative pointer-events-auto"
-          >
-            Private Messages
-            {unreadPrivateCount > 0 && activeTab === 'lobby' && (
-              <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full">
-                {unreadPrivateCount > 99 ? '99+' : unreadPrivateCount}
-              </span>
-            )}
-          </TabsTrigger>
+          {isInQueue && (
+            <TabsTrigger 
+              value="private" 
+              className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white relative pointer-events-auto"
+            >
+              Private Messages
+              {unreadPrivateCount > 0 && activeTab === 'lobby' && (
+                <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full">
+                  {unreadPrivateCount > 99 ? '99+' : unreadPrivateCount}
+                </span>
+              )}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="lobby" className="flex-1 m-0 pointer-events-none data-[state=active]:block">
-          <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
+          <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto pb-2"
             style={{ scrollbarWidth: "none" }}
           >
             <UniversalChat 
@@ -108,10 +114,11 @@ export default function TabbedOverlayChat({
           </div>
         </TabsContent>
 
-        <TabsContent value="private" className="flex-1 m-0 pointer-events-none data-[state=active]:block">
-          <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
-            style={{ scrollbarWidth: "none" }}
-          >
+        {isInQueue && (
+          <TabsContent value="private" className="flex-1 m-0 pointer-events-none data-[state=active]:block">
+            <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto pb-2"
+              style={{ scrollbarWidth: "none" }}
+            >
             <UniversalChat 
               config={{
                 ...privateConfig,
@@ -123,8 +130,9 @@ export default function TabbedOverlayChat({
               className="bg-transparent"
               leftButton={leftButton}
             />
-          </div>
-        </TabsContent>
+            </div>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
