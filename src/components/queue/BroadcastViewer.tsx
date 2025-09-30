@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
 import OverlayChat from '@/components/live/OverlayChat';
+import { UserVideoSFU } from '@/components/shared/UserVideoSFU';
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
@@ -122,6 +123,25 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
           
           {/* Instagram-style floating chat overlay */}
           {resolvedCreatorId && <OverlayChat creatorId={resolvedCreatorId} />}
+          
+          {/* Fan's Self-View Camera (PiP) - Published as "publisher" role */}
+          {resolvedCreatorId && (
+            <div className="absolute bottom-20 left-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
+              <UserVideoSFU
+                userId={resolvedCreatorId}
+                role="publisher"
+                dimensions="w-full h-full"
+                showChat={false}
+                muted={true}
+                showControls={false}
+                fallbackName="You"
+                className="bg-muted"
+              />
+              <div className="absolute bottom-1 left-1 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">
+                You
+              </div>
+            </div>
+          )}
           
           <div className="absolute bottom-4 left-4">
             <Button

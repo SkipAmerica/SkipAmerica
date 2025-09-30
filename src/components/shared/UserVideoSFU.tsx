@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface UserVideoSFUProps {
   userId: string;
-  role: 'creator' | 'viewer';
+  role: 'creator' | 'viewer' | 'publisher';
   dimensions?: string; // CSS classes for sizing
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
@@ -120,8 +120,8 @@ export function UserVideoSFU({
         await sfu.connect(url, token);
         updateConnectionState('connected');
 
-        // Handle local video for creator role
-        if (role === 'creator') {
+        // Handle local video for creator and publisher roles
+        if (role === 'creator' || role === 'publisher') {
           await sfu.publishCameraMic();
           
           // Attach local video to preview

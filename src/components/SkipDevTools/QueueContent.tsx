@@ -7,8 +7,8 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
-import { UserVideoSFU } from '@/components/shared/UserVideoSFU'
 import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
+import { NextUserPreview } from '@/components/queue/NextUserPreview'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -329,48 +329,16 @@ export function QueueContent() {
                       )}
                     </div>
                   </div>
-                  <div className="relative max-w-md mx-auto">
-                    {/* Privacy Notification */}
-                    <div className={cn(
-                      "absolute top-4 left-1/2 -translate-x-1/2 z-50",
-                      "bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full",
-                      "border border-white/20 text-white text-xs font-medium",
-                      "transition-opacity duration-1000",
-                      showNotification ? "opacity-100" : "opacity-0 pointer-events-none"
-                    )}>
-                      {state.entries[0].profiles?.full_name || 'User'} cannot see you
-                    </div>
-                    
-                    <UserVideoSFU
-                      userId={state.entries[0].fan_id}
-                      role="viewer"
-                      dimensions="w-full aspect-video"
-                      showChat={false}
-                      muted={true}
-                      showControls={false}
-                      showFullscreenButton={true}
-                      fallbackName={state.entries[0].profiles?.full_name || 'User'}
-                      className="border border-primary/20 rounded-lg"
-                      onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
-                    />
-                    {/* Bottom overlay with Start button and wait time */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">
-                      <div className="flex items-end justify-between">
-                        <p className="text-xs text-white/70">
-                          Wait: {formatWaitTime(state.entries[0].estimated_wait_minutes)}
-                        </p>
-                        <Button
-                          size="sm"
-                          className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
-                          onClick={() => {
-                            console.log("Starting call with:", state.entries[0].fan_id);
-                          }}
-                        >
-                          Start
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+                  <NextUserPreview
+                    fanId={state.entries[0].fan_id}
+                    userName={state.entries[0].profiles?.full_name}
+                    discussionTopic={state.entries[0].discussion_topic}
+                    waitTime={state.entries[0].estimated_wait_minutes}
+                    onStartCall={() => {
+                      console.log("Starting call with:", state.entries[0].fan_id);
+                    }}
+                    onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
+                  />
                 </div>
               </div>
             )}

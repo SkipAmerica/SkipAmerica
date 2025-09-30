@@ -2,7 +2,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
 export async function fetchLiveKitToken(payload: {
-  role: "viewer" | "creator";
+  role: "viewer" | "creator" | "publisher";
   creatorId: string;
   identity: string;
 }) {
