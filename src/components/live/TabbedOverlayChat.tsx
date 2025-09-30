@@ -72,7 +72,7 @@ export default function TabbedOverlayChat({
         "fixed left-0 right-0 max-h-[45vh] pointer-events-none " + className
       }
       style={{
-        bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8px)',
+        bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 208px)',
         zIndex: 60,
         minHeight: '3rem'
       }}
