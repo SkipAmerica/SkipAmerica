@@ -33,11 +33,34 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
 
+  // Resolve creator ID immediately for chat (don't wait for SFU)
+  useEffect(() => {
+    console.log('[BroadcastViewer] Resolving creator ID for chat');
+    resolveCreatorUserId(queueId).then(id => {
+      const creatorId = id || queueId;
+      console.log('[BroadcastViewer] Resolved creator ID:', creatorId);
+      setResolvedCreatorId(creatorId);
+    }).catch(err => {
+      console.error('[BroadcastViewer] Failed to resolve creator ID:', err);
+      // Fallback to queueId even on error
+      setResolvedCreatorId(queueId);
+    });
+  }, [queueId]);
+
   // Keep fanUserId in sync with auth (handles delayed anonymous login)
   useEffect(() => {
+    // Get initial user
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.id) {
+        console.log('[BroadcastViewer] Initial fan user ID:', data.user.id);
+        setFanUserId(data.user.id);
+      }
+    });
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       const uid = session?.user?.id;
       if (uid) {
+        console.log('[BroadcastViewer] Fan user ID updated:', uid);
         setFanUserId(uid);
       }
     });
@@ -48,7 +71,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
 
   // SFU connection effect
   useEffect(() => {
-    if (!USE_SFU || !queueId) return;
+    if (!USE_SFU || !queueId || !resolvedCreatorId) return;
+    console.log('[BroadcastViewer] Starting SFU connection');
     let sfu = createSFU();
 
     sfu.onRemoteVideo((incoming) => {
@@ -66,33 +90,29 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
 
     (async () => {
       try {
-        const resolvedId = await resolveCreatorUserId(queueId);
-        const creatorId = resolvedId || queueId;
-        setResolvedCreatorId(creatorId); // Store for chat overlay
         const { data } = await supabase.auth.getUser();
         const identity = data?.user?.id || crypto.randomUUID();
-        if (data?.user?.id) {
-          setFanUserId(data.user.id); // Store fan user ID
-        }
         
+        console.log('[BroadcastViewer] Fetching LiveKit token with identity:', identity);
         // Fetch LiveKit token using Supabase Functions SDK
         const { token, url } = await fetchLiveKitToken({
           role: "viewer",
-          creatorId,
+          creatorId: resolvedCreatorId,
           identity,
         });
         
+        console.log('[BroadcastViewer] Connecting to SFU');
         await sfu.connect(url, token);
-        console.log("[VIEWER SFU] connected");
+        console.log("[BroadcastViewer] SFU connected");
         setConnectionState("connected");
       } catch (e) {
-        console.error("[VIEWER SFU] failed", e);
+        console.error("[BroadcastViewer] SFU failed:", e);
         setConnectionState("failed");
       }
     })();
 
     return () => { sfu?.disconnect().catch(()=>{}); sfu = undefined; };
-  }, [queueId]);
+  }, [queueId, resolvedCreatorId]);
 
   const toggleMute = useCallback(() => {
     if (videoRef.current) {

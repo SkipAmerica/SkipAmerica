@@ -52,7 +52,7 @@ export function NextUserPreview({
       {/* Fan's Camera Feed */}
       <UserVideoSFU
         userId={fanId}
-        role="viewer"
+        role="publisher"
         dimensions="w-full aspect-video"
         showChat={false}
         muted={true}
