@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,12 +23,16 @@ const LiveControlBarContent: React.FC = () => {
   const rafIdRef = useRef<number | null>(null);
 
   const live = useLive();
+  const location = useLocation();
   
   // Safely access live store values with debugging
   const isLive = live?.isLive || false;
   const isDiscoverable = live?.isDiscoverable || false;
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
+  
+  // Check if on Priority Queue page
+  const isOnJoinQueuePage = location.pathname.startsWith('/join-queue/');
 
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {
@@ -84,8 +89,8 @@ const LiveControlBarContent: React.FC = () => {
     };
   }, [state])
   
-  // Show LSB when discoverable but not in active call
-  const shouldShowLSB = isDiscoverable && !isLive;
+  // Show LSB when discoverable but not in active call, and not on Priority Queue page
+  const shouldShowLSB = isDiscoverable && !isLive && !isOnJoinQueuePage;
 
   // Publish CSS variables for FAB positioning
   useEffect(() => {

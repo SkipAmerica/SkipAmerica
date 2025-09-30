@@ -21,7 +21,7 @@ interface UserStatusHeaderProps {
 
 const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
   const { user } = useAuth();
-  const { isLive } = useLive();
+  const { isLive, isDiscoverable } = useLive();
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({
     totalEarnings: 0,
@@ -102,8 +102,12 @@ const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
             <div className="text-sm font-medium">
               {profile?.full_name || user?.email?.split('@')[0] || 'Creator'}
             </div>
-            <div className="text-xs text-ios-secondary">
-              {isLive ? "Available" : "Offline"}
+            <div className={`text-xs px-2 py-0.5 rounded-full font-medium transition-colors ${
+              isDiscoverable 
+                ? 'bg-green-500 text-white' 
+                : 'bg-ios-tertiary text-ios-secondary'
+            }`}>
+              {isDiscoverable ? "Online" : "Offline"}
             </div>
           </div>
           
@@ -115,7 +119,7 @@ const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
               </AvatarFallback>
             </Avatar>
             <div className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-background ${
-              isLive ? 'bg-green-500' : 'bg-ios-tertiary'
+              isDiscoverable ? 'bg-green-500' : 'bg-ios-tertiary'
             }`} />
           </div>
         </div>
