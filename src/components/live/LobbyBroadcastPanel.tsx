@@ -5,7 +5,7 @@ import { RUNTIME } from "@/config/runtime";
 
 const USE_SFU = true;
 
-let __creatorSFU: any;
+let __creatorSFU: ReturnType<typeof createSFU> | null = null;
 
 // Debug logging functions
 const dlog = (...args: any[]) => { if (RUNTIME.DEBUG_LOGS) console.log(...args); };
@@ -23,19 +23,37 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
   async function startSfuBroadcast() {
     if (!USE_SFU) return;
     try {
+      dlog("[CREATOR SFU] Starting broadcast...");
+      
       if (!__creatorSFU) {
         __creatorSFU = createSFU();
+        sfuRef.current = __creatorSFU;
         
         // expose handle early so other components can subscribe to events
         (window as any).__creatorSFU = __creatorSFU;
         
-        // add event relays right after createSFU
+        // add event relays and track listeners
         __creatorSFU.room
-          .on("connectionstatechanged", () => {
+          .on("connectionStateChanged", (state) => {
+            dlog("[CREATOR SFU] Connection state:", state);
             try { window.dispatchEvent(new Event("sfu:creator:connected")); } catch {}
           })
-          .on("localtrackpublished", () => {
+          .on("trackPublished", (publication) => {
+            dlog("[CREATOR SFU] Track published:", publication.kind);
             try { window.dispatchEvent(new Event("sfu:creator:published")); } catch {}
+            
+            // Attach video track to preview when published
+            if (publication.kind === "video") {
+              attachVideoTrack();
+            }
+          })
+          .on("trackUnpublished", (publication) => {
+            dwarn("[CREATOR SFU] Track unpublished:", publication.kind);
+          })
+          .on("disconnected", () => {
+            dwarn("[CREATOR SFU] Room disconnected");
+            setIsBroadcasting?.(false);
+            setSfuMsg("Disconnected");
           });
       }
       
@@ -43,6 +61,8 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       const { data } = await supabase.auth.getUser();
       const identity = data?.user?.id || crypto.randomUUID();
       const creatorId = data?.user?.id!;
+      
+      dlog("[CREATOR SFU] Fetching token for:", creatorId);
       const { token, url } = await fetchLiveKitToken({
         role: "creator",
         creatorId,
@@ -50,29 +70,21 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       });
       
       // when LiveKit room connects
+      dlog("[CREATOR SFU] Connecting to LiveKit...");
       await __creatorSFU.connect(url, token);
       try { window.dispatchEvent(new Event("sfu:creator:connected")); } catch {}
       
       // when local camera/mic are published
+      dlog("[CREATOR SFU] Publishing camera/mic...");
       await __creatorSFU.publishCameraMic();
       try { window.dispatchEvent(new Event("sfu:creator:published")); } catch {}
       
-      const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
-      if (preview) {
-        preview.muted = true;
-        preview.autoplay = true;
-        preview.playsInline = true;
-        const sfu = (window as any).__creatorSFU;
-        const room = sfu?.room;
-        const lp = room?.localParticipant;
-        const camPub = lp?.videoTracks
-          ? (Array.from(lp.videoTracks.values()).find((p: any) => p?.videoTrack) as any)?.videoTrack
-          : null;
-        if (camPub) camPub.attach(preview);
-      }
+      // Attach video track immediately after publishing
+      attachVideoTrack();
+      
       setIsBroadcasting?.(true);
       setSfuMsg("LIVE ✓");
-      console.log("[CREATOR SFU] publishing");
+      dlog("[CREATOR SFU] Broadcasting successfully started");
       return;
     } catch (e) {
       console.error("[CREATOR SFU] failed", e);
@@ -81,13 +93,71 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
     }
   }
 
+  function attachVideoTrack() {
+    try {
+      const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
+      if (!preview) {
+        dwarn("[CREATOR SFU] Preview element not found");
+        return;
+      }
+
+      const sfu = __creatorSFU || (window as any).__creatorSFU;
+      if (!sfu?.room?.localParticipant) {
+        dwarn("[CREATOR SFU] No local participant yet");
+        return;
+      }
+
+      const lp = sfu.room.localParticipant;
+      const videoTrackPub = Array.from(lp.videoTrackPublications.values())[0] as any;
+      
+      if (!videoTrackPub?.videoTrack) {
+        dwarn("[CREATOR SFU] No video track available");
+        return;
+      }
+
+      // Detach any existing tracks first
+      preview.srcObject = null;
+      
+      // Configure video element
+      preview.muted = true;
+      preview.autoplay = true;
+      preview.playsInline = true;
+      
+      // Attach the track
+      videoTrackPub.videoTrack.attach(preview);
+      dlog("[CREATOR SFU] Video track attached successfully");
+      
+      // Handle track ended
+      videoTrackPub.videoTrack.once("ended", () => {
+        dwarn("[CREATOR SFU] Video track ended, attempting re-attach...");
+        setTimeout(() => attachVideoTrack(), 1000);
+      });
+      
+    } catch (e) {
+      console.error("[CREATOR SFU] Error attaching video track:", e);
+    }
+  }
+
   async function stopSfuBroadcast() {
     if (USE_SFU) {
-      try { await __creatorSFU?.disconnect(); } catch {}
-      __creatorSFU = undefined;
+      dlog("[CREATOR SFU] Stopping broadcast...");
+      try { 
+        await __creatorSFU?.disconnect(); 
+        
+        // Clean up preview element
+        const preview = document.getElementById("creator-preview") as HTMLVideoElement | null;
+        if (preview) {
+          preview.srcObject = null;
+        }
+      } catch (e) {
+        console.error("[CREATOR SFU] Error stopping:", e);
+      }
+      __creatorSFU = null;
+      sfuRef.current = null;
+      delete (window as any).__creatorSFU;
       setIsBroadcasting?.(false);
       setSfuMsg("stopped");
-      console.log("[CREATOR SFU] stopped");
+      dlog("[CREATOR SFU] stopped");
       return;
     }
   }
@@ -98,8 +168,13 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       (window as any).__creatorStartSFU = startSfuBroadcast;
       (window as any).__creatorStopSFU = stopSfuBroadcast;
     }
-    dlog("[CREATOR][SFU] panel mounted (v1)");
+    dlog("[CREATOR][SFU] panel mounted (v2 - improved)");
     return () => {
+      // Cleanup on unmount
+      if (sfuRef.current) {
+        dlog("[CREATOR][SFU] Cleaning up on unmount");
+        stopSfuBroadcast();
+      }
       if (RUNTIME.DEBUG_LOGS) {
         delete (window as any).__creatorStartSFU;
         delete (window as any).__creatorStopSFU;
