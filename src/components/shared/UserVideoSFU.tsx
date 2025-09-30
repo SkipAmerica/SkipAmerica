@@ -101,8 +101,10 @@ export function UserVideoSFU({
         }
 
         // Resolve user ID and get auth info
-        const resolvedId = await resolveCreatorUserId(userId);
-        const finalUserId = resolvedId || userId;
+        // For publishers (fans), use their userId directly; for creators/viewers, resolve it
+        const finalUserId = role === 'publisher' 
+          ? userId 
+          : (await resolveCreatorUserId(userId)) || userId;
         setResolvedUserId(finalUserId);
 
         const { supabase } = await import('@/lib/supabaseClient');

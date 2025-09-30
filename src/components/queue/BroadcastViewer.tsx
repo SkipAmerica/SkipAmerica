@@ -150,17 +150,19 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             </div>
           )}
           
-          {/* Instagram-style floating chat overlay */}
-          {resolvedCreatorId && fanUserId && (
-            <TabbedOverlayChat 
-              creatorId={resolvedCreatorId} 
-              fanId={fanUserId}
-            />
-          )}
-          
-          {/* Fan's Self-View Camera (PiP) - Published as "publisher" role */}
+          {/* Fan's Self-View Camera (PiP) and Chat - Only shown after joining queue */}
           {isInQueue && fanUserId && (
-            <div className="absolute bottom-20 left-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
+            <>
+              {/* Instagram-style floating chat overlay */}
+              {resolvedCreatorId && (
+                <TabbedOverlayChat 
+                  creatorId={resolvedCreatorId} 
+                  fanId={fanUserId}
+                />
+              )}
+              
+              {/* Fan's Self-View Camera (PiP) - Published as "publisher" role */}
+              <div className="absolute bottom-20 left-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
               <UserVideoSFU
                 userId={fanUserId}
                 role="publisher"
@@ -175,6 +177,7 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
                 You
               </div>
             </div>
+            </>
           )}
           
           <div className="absolute bottom-4 left-4">
