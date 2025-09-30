@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
 import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
+import { useCreatorPresence } from '@/shared/hooks';
 
 interface Creator {
   id: string;
@@ -35,12 +36,14 @@ export default function JoinQueue() {
   const { user, loading: authLoading, signInAnonymously } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  
+  // Use centralized presence hook for online status
+  const { isOnline } = useCreatorPresence(creatorId || null);
 
   const [creator, setCreator] = useState<Creator | null>(null);
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [isInQueue, setIsInQueue] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
   const [discussionTopic, setDiscussionTopic] = useState('');
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -142,17 +145,7 @@ export default function JoinQueue() {
           rating: undefined // Will be calculated from appointments/reviews later
         });
 
-        // Fetch initial online status from creator_presence
-        const { data: presenceData } = await supabase
-          .from('creator_presence')
-          .select('is_online, last_heartbeat')
-          .eq('creator_id', creatorId)
-          .maybeSingle();
-
-        if (presenceData) {
-          setIsOnline(presenceData.is_online || false);
-          console.log('[JoinQueue] Initial online status:', presenceData.is_online);
-        }
+        // Note: Online status now managed by useCreatorPresence hook
 
       } catch (error) {
         console.error('[JoinQueue] Error fetching creator:', error);
@@ -244,31 +237,12 @@ export default function JoinQueue() {
       )
       .subscribe();
 
-    // Subscribe to creator presence changes for online/offline status
-    const presenceChannel = supabase
-      .channel(`presence-${creatorId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'creator_presence',
-          filter: `creator_id=eq.${creatorId}`
-        },
-        (payload) => {
-          console.log('[JoinQueue] Presence update:', payload);
-          if (payload.new && 'is_online' in payload.new) {
-            setIsOnline(payload.new.is_online || false);
-          }
-        }
-      )
-      .subscribe();
+    // Note: Presence subscription now handled by useCreatorPresence hook
 
     return () => {
       if ((window as any).__allow_ch_teardown) {
         try { supabase.removeChannel(queueChannel); } catch {}
         try { supabase.removeChannel(liveChannel); } catch {}
-        try { supabase.removeChannel(presenceChannel); } catch {}
       } else {
         console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
       }

@@ -7,12 +7,10 @@ import { transition, canGoLive, canEndLive, LiveState, LiveEvent, isTransitionin
 import { ensureMediaSubscriptions, orchestrateInit, orchestrateStop, routeMediaError, mediaManager } from '@/media/MediaOrchestrator'
 import { useAuth } from '@/app/providers/auth-provider'
 import { supabase } from '@/integrations/supabase/client'
+import { creatorPresenceService } from '@/services/creator-presence.service'
 
 /* Prevent double-taps/races on discoverable toggle */
 let __discToggleInFlight = false;
-
-/* Heartbeat interval for presence tracking */
-let __heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 
 // Core state structure
 export interface LiveStoreState {
@@ -350,29 +348,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     ensureMediaSubscriptions()
   }, [])
 
-  // Send heartbeat to maintain online presence
-  const sendHeartbeat = useCallback(async (isOnline: boolean) => {
-    if (!user) return;
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) {
-        console.warn('[LiveStore] No auth token for heartbeat');
-        return;
-      }
-
-      await supabase.functions.invoke('creator-heartbeat', {
-        body: { isOnline },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-      
-      console.log('[LiveStore] Heartbeat sent:', isOnline);
-    } catch (error) {
-      console.error('[LiveStore] Heartbeat error:', error);
-    }
-  }, [user]);
+  // Removed sendHeartbeat - now using CreatorPresenceService
 
   // GO DISCOVERABLE: just set availability (no media)
   const goDiscoverable = useCallback(async () => {
@@ -381,18 +357,10 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     console.log('[LiveStore] Going discoverable...')
     handleDispatch({ type: 'GO_LIVE' }) // -> DISCOVERABLE
     
-    // Start heartbeat to mark creator as online
-    sendHeartbeat(true);
+    // Start heartbeat using centralized service
+    await creatorPresenceService.startHeartbeat(true)
     
-    // Send heartbeat every 30 seconds to maintain presence
-    if (__heartbeatInterval) {
-      clearInterval(__heartbeatInterval);
-    }
-    __heartbeatInterval = setInterval(() => {
-      sendHeartbeat(true);
-    }, 30000);
-    
-  }, [user, state.state, state.inFlight.start, handleDispatch, sendHeartbeat])
+  }, [user, state.state, state.inFlight.start, handleDispatch])
 
   // GO UNDISCOVERABLE: return to offline (proper FSM transition)
   const goUndiscoverable = useCallback(async () => {
@@ -401,12 +369,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     try {
       const st = state.state;
 
-      // Stop heartbeat and mark as offline
-      if (__heartbeatInterval) {
-        clearInterval(__heartbeatInterval);
-        __heartbeatInterval = null;
-      }
-      sendHeartbeat(false);
+      // Stop heartbeat using centralized service
+      await creatorPresenceService.stopHeartbeat()
 
       // Complete the legal FSM path: DISCOVERABLE -> TEARDOWN -> OFFLINE
       await handleDispatch({ type: 'END_LIVE' });      // should move to TEARDOWN
@@ -417,7 +381,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     } finally {
       __discToggleInFlight = false;
     }
-  }, [handleDispatch, state.state, sendHeartbeat])
+  }, [handleDispatch, state.state])
 
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
@@ -543,12 +507,8 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     try {
       console.info('[LIVE][END] Ending session...')
       
-      // Stop heartbeat and mark as offline
-      if (__heartbeatInterval) {
-        clearInterval(__heartbeatInterval);
-        __heartbeatInterval = null;
-      }
-      sendHeartbeat(false);
+      // Stop heartbeat using centralized service
+      await creatorPresenceService.stopHeartbeat()
       
       handleDispatch({ type: 'END_LIVE' })
       
@@ -576,7 +536,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     } finally {
       dispatch({ type: 'SET_IN_FLIGHT', operation: 'end' })
     }
-  }, [user, state.state, state.sessionId, state.callsTaken, state.totalEarningsCents, state.inFlight.end, handleDispatch, sendHeartbeat])
+  }, [user, state.state, state.sessionId, state.callsTaken, state.totalEarningsCents, state.inFlight.end, handleDispatch])
 
   const toggleEarningsDisplay = useCallback(() => {
     dispatch({ type: 'TOGGLE_EARNINGS' })

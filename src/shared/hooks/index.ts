@@ -15,3 +15,7 @@ export type { LiveState } from '../../hooks/live'
 // Re-export universal chat hooks
 export { useUniversalChat } from '../../hooks/useUniversalChat'
 export { useExternalChatInput } from '../../hooks/useExternalChatInput'
+
+// Re-export presence hooks
+export { useCreatorPresence } from './use-creator-presence'
+export { usePresenceManager } from './use-presence-manager'
