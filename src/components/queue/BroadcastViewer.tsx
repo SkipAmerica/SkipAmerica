@@ -5,7 +5,7 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
-import OverlayChat from '@/components/live/OverlayChat';
+import TabbedOverlayChat from '@/components/live/TabbedOverlayChat';
 import { UserVideoSFU } from '@/components/shared/UserVideoSFU';
 
 const USE_SFU = true;
@@ -30,6 +30,8 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [isMuted, setIsMuted] = useState(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
+  const [fanUserId, setFanUserId] = useState<string | null>(null);
+  const [isInQueue, setIsInQueue] = useState(false);
 
   // SFU connection effect
   useEffect(() => {
@@ -56,6 +58,9 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
         setResolvedCreatorId(creatorId); // Store for chat overlay
         const { data } = await supabase.auth.getUser();
         const identity = data?.user?.id || crypto.randomUUID();
+        if (data?.user?.id) {
+          setFanUserId(data.user.id); // Store fan user ID
+        }
         
         // Fetch LiveKit token using Supabase Functions SDK
         const { token, url } = await fetchLiveKitToken({
@@ -86,6 +91,10 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const handleRetry = useCallback(() => {
     setConnectionState('connecting');
     window.location.reload();
+  }, []);
+
+  const handleJoinQueue = useCallback(() => {
+    setIsInQueue(true);
   }, []);
 
   return (
@@ -121,14 +130,39 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
             </div>
           )}
           
+          {/* Join Queue Gate */}
+          {!isInQueue && connectionState === 'connected' && (
+            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-30">
+              <div className="text-center text-white max-w-md px-6">
+                <h2 className="text-2xl font-bold mb-4">Join the Queue</h2>
+                <p className="text-sm text-white/80 mb-6">
+                  By joining the queue, you'll start broadcasting your camera to the creator. 
+                  They'll be able to see you while you wait for your turn.
+                </p>
+                <Button 
+                  onClick={handleJoinQueue}
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90"
+                >
+                  Join Queue & Start Broadcasting
+                </Button>
+              </div>
+            </div>
+          )}
+          
           {/* Instagram-style floating chat overlay */}
-          {resolvedCreatorId && <OverlayChat creatorId={resolvedCreatorId} />}
+          {resolvedCreatorId && fanUserId && (
+            <TabbedOverlayChat 
+              creatorId={resolvedCreatorId} 
+              fanId={fanUserId}
+            />
+          )}
           
           {/* Fan's Self-View Camera (PiP) - Published as "publisher" role */}
-          {resolvedCreatorId && (
+          {isInQueue && fanUserId && (
             <div className="absolute bottom-20 left-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
               <UserVideoSFU
-                userId={resolvedCreatorId}
+                userId={fanUserId}
                 role="publisher"
                 dimensions="w-full h-full"
                 showChat={false}
