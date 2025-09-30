@@ -40,6 +40,7 @@ export default function JoinQueue() {
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
   const [isInQueue, setIsInQueue] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
   const [discussionTopic, setDiscussionTopic] = useState('');
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
@@ -110,7 +111,8 @@ export default function JoinQueue() {
             bio,
             avatar_url,
             categories,
-            base_rate_min
+            base_rate_min,
+            is_online
           `)
           .eq('id', creatorId)
           .maybeSingle();
@@ -139,6 +141,18 @@ export default function JoinQueue() {
           category: creatorData.categories?.[0] || 'General',
           rating: undefined // Will be calculated from appointments/reviews later
         });
+
+        // Fetch initial online status from creator_presence
+        const { data: presenceData } = await supabase
+          .from('creator_presence')
+          .select('is_online, last_heartbeat')
+          .eq('creator_id', creatorId)
+          .maybeSingle();
+
+        if (presenceData) {
+          setIsOnline(presenceData.is_online || false);
+          console.log('[JoinQueue] Initial online status:', presenceData.is_online);
+        }
 
       } catch (error) {
         console.error('[JoinQueue] Error fetching creator:', error);
@@ -230,10 +244,31 @@ export default function JoinQueue() {
       )
       .subscribe();
 
+    // Subscribe to creator presence changes for online/offline status
+    const presenceChannel = supabase
+      .channel(`presence-${creatorId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'creator_presence',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        (payload) => {
+          console.log('[JoinQueue] Presence update:', payload);
+          if (payload.new && 'is_online' in payload.new) {
+            setIsOnline(payload.new.is_online || false);
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       if ((window as any).__allow_ch_teardown) {
         try { supabase.removeChannel(queueChannel); } catch {}
         try { supabase.removeChannel(liveChannel); } catch {}
+        try { supabase.removeChannel(presenceChannel); } catch {}
       } else {
         console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
       }
@@ -477,6 +512,8 @@ export default function JoinQueue() {
             <div className="flex items-center gap-2 mt-0.5">
               {liveSession ? (
                 <Badge className="bg-red-500 text-white text-xs h-5">🔴 LIVE</Badge>
+              ) : isOnline ? (
+                <Badge className="bg-green-500 text-white text-xs h-5">🟢 Online</Badge>
               ) : (
                 <Badge variant="secondary" className="text-xs h-5">Offline</Badge>
               )}
