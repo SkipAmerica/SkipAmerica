@@ -14,6 +14,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useCreatorPresence } from '@/shared/hooks';
+import { QueueChat } from '@/components/queue/QueueChat';
 
 interface Creator {
   id: string;
@@ -461,97 +462,137 @@ export default function JoinQueue() {
   };
 
   return (
-    <div className="relative h-screen bg-black overflow-y-auto overflow-x-hidden" style={{ paddingBottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8rem)' }}>
-      {/* Full-screen video broadcast */}
-      <div className="absolute inset-0">
-        <BroadcastViewer 
-          creatorId={creatorId!} 
-          sessionId={liveSession?.id || 'connecting'}
-          isInQueue={isInQueue}
-        />
-      </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-6 max-w-7xl">
+        {/* Creator info header */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between gap-4 bg-card rounded-lg p-4 border">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12 border-2 border-border">
+                <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
+                <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="font-semibold text-lg">{creator.full_name}</h2>
+                {creator.bio && (
+                  <p className="text-sm text-muted-foreground line-clamp-1">{creator.bio}</p>
+                )}
+                <div className="flex items-center gap-2 mt-1">
+                  {liveSession ? (
+                    <Badge className="bg-red-500 text-white">🔴 LIVE</Badge>
+                  ) : isOnline ? (
+                    <Badge className="bg-green-500 text-white">🟢 Online</Badge>
+                  ) : (
+                    <Badge variant="secondary">Offline</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
 
-      {/* Creator info overlay - top left */}
-      <div className="absolute top-4 left-4 z-10">
-        <div className="flex items-center gap-3 bg-black/70 backdrop-blur-md rounded-lg p-3 border border-white/10">
-          <Avatar className="h-10 w-10 border-2 border-white/20">
-            <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
-            <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <h2 className="font-semibold text-white text-sm">{creator.full_name}</h2>
-            {creator.bio && (
-              <p className="text-xs text-white/80 line-clamp-1 max-w-[200px]">{creator.bio}</p>
-            )}
-            <div className="flex items-center gap-2 mt-0.5">
-              {liveSession ? (
-                <Badge className="bg-red-500 text-white text-xs h-5">🔴 LIVE</Badge>
-              ) : isOnline ? (
-                <Badge className="bg-green-500 text-white text-xs h-5">🟢 Online</Badge>
-              ) : (
-                <Badge variant="secondary" className="text-xs h-5">Offline</Badge>
-              )}
+            {/* Queue status */}
+            <div className="text-right">
+              <div className="text-sm">
+                <p className="font-semibold mb-1">Queue Status</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-foreground">{queueCount}</span>
+                  <span className="text-muted-foreground">people waiting</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Queue status - top right */}
-      <div className="absolute top-4 right-4 z-10">
-        <div className="bg-black/70 backdrop-blur-md rounded-lg p-3 border border-white/10 text-center min-w-[80px]">
-          <p className="text-xs text-white/70">In Queue</p>
-          <p className="text-2xl font-bold text-white">{queueCount}</p>
-        </div>
-      </div>
-
-      {/* Join queue form - bottom center (only when not in queue) */}
-      {!isInQueue && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 2rem)' }}>
-          <Card className="bg-black/80 backdrop-blur-md border-white/10">
-            <CardContent className="p-4 space-y-3">
-              <Input
-                placeholder="Your display name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
-                maxLength={50}
+        {/* Main content grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Video section - takes 2/3 on large screens */}
+          <div className="lg:col-span-2">
+            <div className="aspect-video bg-black rounded-lg overflow-hidden border">
+              <BroadcastViewer 
+                creatorId={creatorId!} 
+                sessionId={liveSession?.id || 'connecting'}
+                isInQueue={isInQueue}
               />
-              
-              <Textarea
-                placeholder="Discussion topic (optional)"
-                value={discussionTopic}
-                onChange={(e) => setDiscussionTopic(e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-20"
-              />
-              
-              <Button
-                onClick={handleJoinQueue}
-                disabled={joining || !user || !displayName.trim()}
-                className="w-full bg-primary hover:bg-primary/90"
-              >
-                {joining ? "Joining..." : "Join Queue"}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          </div>
 
-      {/* In queue indicator - bottom center (only when in queue) */}
-      {isInQueue && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 2rem)' }}>
-          <div className="flex items-center gap-3 bg-green-500/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg">
-            <span className="text-white font-semibold">🎉 You're in the queue!</span>
-            <Button
-              onClick={handleLeaveQueue}
-              variant="ghost"
-              size="sm"
-              className="text-white hover:bg-white/20 h-7"
-            >
-              Leave
-            </Button>
+          {/* Join/Leave queue card - takes 1/3 on large screens */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {isInQueue ? 'In Queue' : 'Join the Queue'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!isInQueue ? (
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">
+                        Your Name
+                      </label>
+                      <Input
+                        placeholder="Enter your name"
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1.5 block">
+                        What would you like to discuss? (optional)
+                      </label>
+                      <Textarea
+                        placeholder="e.g., Career advice, project feedback..."
+                        value={discussionTopic}
+                        onChange={(e) => setDiscussionTopic(e.target.value)}
+                        className="min-h-[60px] resize-none"
+                      />
+                    </div>
+                    <Button
+                      onClick={handleJoinQueue}
+                      disabled={joining || !displayName.trim()}
+                      className="w-full"
+                    >
+                      {joining ? 'Joining...' : 'Join Queue'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <div className="text-3xl mb-2">✅</div>
+                      <p className="font-medium mb-1">You're in queue!</p>
+                      <p className="text-muted-foreground text-sm">
+                        The creator will connect with you soon
+                      </p>
+                      {discussionTopic && (
+                        <div className="mt-3 p-2 bg-muted rounded border">
+                          <p className="text-xs text-muted-foreground mb-1">Your topic:</p>
+                          <p className="text-sm">{discussionTopic}</p>
+                        </div>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleLeaveQueue}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Leave Queue
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
-      )}
+
+        {/* Chat section below video */}
+        <div className="mt-6">
+          <QueueChat 
+            creatorId={creatorId!}
+            fanId={user?.id || ''}
+            isInQueue={isInQueue}
+          />
+        </div>
+      </div>
     </div>
   );
 }

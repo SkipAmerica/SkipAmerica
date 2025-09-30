@@ -5,8 +5,6 @@ import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
-import TabbedOverlayChat from '@/components/live/TabbedOverlayChat';
-import { UserVideoSFU } from '@/components/shared/UserVideoSFU';
 
 const USE_SFU = true;
 import { createSFU } from "@/lib/sfu";
@@ -172,47 +170,13 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         </div>
       )}
       
-      {/* Overlay chat - always show lobby, private messages only when in queue */}
-      {(() => {
-        const chatCreatorId = resolvedCreatorId || queueId;
-        console.log('[BroadcastViewer] Rendering TabbedOverlayChat with creatorId:', chatCreatorId, 'fanId:', fanUserId, 'isInQueue:', isInQueue);
-        return (
-          <TabbedOverlayChat 
-            creatorId={chatCreatorId}
-            fanId={fanUserId || ''}
-            isInQueue={isInQueue && !!fanUserId}
-          />
-        );
-      })()}
-      
-      {/* Fan's Self-View Camera (PiP) - Only shown after joining queue */}
-      {isInQueue && fanUserId && (
-        <>
-          <div className="absolute top-20 right-4 w-28 h-28 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl backdrop-blur-sm z-30">
-            <UserVideoSFU
-              userId={fanUserId}
-              role="publisher"
-              dimensions="w-full h-full"
-              showChat={false}
-              muted={true}
-              showControls={false}
-              fallbackName="You"
-              className="bg-muted"
-            />
-            <div className="absolute bottom-1 left-1 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">
-              You
-            </div>
-          </div>
-        </>
-      )}
-      
-      {/* Mute button - positioned in bottom left corner */}
-      <div className="absolute bottom-4 left-4 z-30">
+      {/* Mute button */}
+      <div className="absolute bottom-4 right-4 z-30">
         <Button
           onClick={toggleMute}
           variant="outline"
           size="sm"
-          className="w-12 h-12 rounded-full bg-black/50 border-white/20 text-white hover:bg-black/70 backdrop-blur-sm shadow-lg"
+          className="w-10 h-10 rounded-full"
         >
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </Button>

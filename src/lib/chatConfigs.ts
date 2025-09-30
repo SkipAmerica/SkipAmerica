@@ -223,3 +223,80 @@ export const createPrivateConfig = (
     }
   };
 };
+
+// Queue Chat Configurations (non-overlay versions)
+export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
+  tableName: 'lobby_chat_messages',
+  channelPrefix: 'queue-lobby-chat',
+  filterField: 'creator_id',
+  filterValue: creatorId,
+  appearance: {
+    height: 'h-full',
+    showProfiles: true,
+    showUsernames: true,
+    usernameStyle: 'bold',
+    messageFlow: 'newest-bottom',
+    emptyStateText: 'No messages yet. Start the conversation!',
+    showScrollbar: true
+  },
+  messaging: {
+    enabled: true,
+    placeholder: 'Type a message...',
+    requireAuth: true,
+    showSendButton: true
+  },
+  richText: {
+    enabled: false
+  },
+  positioning: {
+    mode: 'relative',
+    allowPositionToggle: false
+  },
+  sendMessage: async ({ filterValue, userId, username, text }) => {
+    await sendLobbyMessage({
+      creatorId: filterValue,
+      userId,
+      username,
+      text
+    });
+  }
+});
+
+export const createQueuePrivateConfig = (
+  creatorId: string,
+  fanId: string
+): ChatConfig => {
+  const conversationKey = [creatorId, fanId].sort().join('|');
+  
+  return {
+    tableName: 'call_private_messages',
+    filterField: 'conversation_key',
+    filterValue: conversationKey,
+    channelPrefix: 'queue-private-chat',
+    sendMessage: async ({ text, userId }) => {
+      await sendPrivateMessage(creatorId, fanId, text, userId);
+    },
+    appearance: {
+      height: 'h-full',
+      showScrollbar: true,
+      messageFlow: 'newest-bottom',
+      showProfiles: false,
+      showUsernames: true,
+      usernameStyle: 'bold',
+      emptyStateText: 'Start your private conversation...'
+    },
+    messaging: {
+      enabled: true,
+      placeholder: 'Send a private message...',
+      requireAuth: true,
+      showSendButton: true
+    },
+    richText: {
+      enabled: false
+    },
+    positioning: {
+      mode: 'relative',
+      allowPositionToggle: false
+    }
+  };
+};
