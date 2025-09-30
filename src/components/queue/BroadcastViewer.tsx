@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { Volume2, VolumeX, RefreshCw, Video, VideoOff } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
@@ -26,10 +26,13 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   }
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const selfVideoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
+  const [showSelfVideo, setShowSelfVideo] = useState(false);
+  const [localStream, setLocalStream] = useState<MediaStream | null>(null);
 
   // Set resolvedCreatorId immediately so chat mounts without delay
   useEffect(() => {
@@ -137,6 +140,52 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
     window.location.reload();
   }, []);
 
+  const toggleSelfVideo = useCallback(async () => {
+    if (showSelfVideo) {
+      // Stop local stream
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        setLocalStream(null);
+      }
+      setShowSelfVideo(false);
+    } else {
+      // Start local stream
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            width: { ideal: 320 },
+            height: { ideal: 240 },
+            facingMode: 'user'
+          },
+          audio: false 
+        });
+        setLocalStream(stream);
+        if (selfVideoRef.current) {
+          selfVideoRef.current.srcObject = stream;
+        }
+        setShowSelfVideo(true);
+      } catch (error) {
+        console.error('[BroadcastViewer] Failed to access camera:', error);
+      }
+    }
+  }, [showSelfVideo, localStream]);
+
+  // Update self video ref when stream changes
+  useEffect(() => {
+    if (selfVideoRef.current && localStream) {
+      selfVideoRef.current.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Cleanup local stream on unmount
+  useEffect(() => {
+    return () => {
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [localStream]);
+
   return (
     <div className="relative w-full h-full">
       <video
@@ -170,8 +219,29 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         </div>
       )}
       
-      {/* Mute button */}
-      <div className="absolute bottom-4 right-4 z-30">
+      {/* Self video PIP */}
+      {showSelfVideo && (
+        <div className="absolute bottom-20 right-4 z-30 w-32 h-24 sm:w-40 sm:h-30 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+          <video
+            ref={selfVideoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover mirror"
+          />
+        </div>
+      )}
+
+      {/* Control buttons */}
+      <div className="absolute bottom-4 right-4 z-30 flex gap-2">
+        <Button
+          onClick={toggleSelfVideo}
+          variant="outline"
+          size="sm"
+          className="w-10 h-10 rounded-full"
+        >
+          {showSelfVideo ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
+        </Button>
         <Button
           onClick={toggleMute}
           variant="outline"

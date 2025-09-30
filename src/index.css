@@ -180,6 +180,11 @@ body.pq-scroll {
   min-height: 100%;
 }
 
+/* Mirror video for front-facing camera */
+.mirror {
+  transform: scaleX(-1);
+}
+
 /* iOS-Specific Styles */
 :root {
   /* iOS Safe Area Support with Smart Responsive Fallbacks */
