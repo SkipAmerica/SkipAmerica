@@ -1,5 +1,4 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -19,9 +18,9 @@ const LiveControlBarContent: React.FC = () => {
   const [counterMode, setCounterMode] = useState<CounterMode>(() => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
+  const [isOnJoinQueuePage, setIsOnJoinQueuePage] = useState(false);
   const shellRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
-  const location = useLocation();
 
   const live = useLive();
   
@@ -31,8 +30,22 @@ const LiveControlBarContent: React.FC = () => {
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
   
-  // Track route changes to hide LSB on Priority Queue page using React Router
-  const isOnJoinQueuePage = location.pathname.startsWith('/join-queue/');
+  // Track route changes to hide LSB on Priority Queue page
+  // Use polling since React Router events don't reach components outside Router context
+  useEffect(() => {
+    const checkRoute = () => {
+      const onPQPage = window.location.pathname.startsWith('/join-queue/');
+      setIsOnJoinQueuePage(onPQPage);
+    };
+    
+    // Initial check
+    checkRoute();
+    
+    // Poll every 500ms for route changes
+    const intervalId = setInterval(checkRoute, 500);
+    
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {
