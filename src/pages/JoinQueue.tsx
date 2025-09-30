@@ -506,7 +506,7 @@ export default function JoinQueue() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video section - takes 2/3 on large screens */}
           <div className="lg:col-span-2">
-            <div className="aspect-video bg-black rounded-lg overflow-hidden border">
+            <div className="h-[300px] sm:h-[400px] bg-black rounded-lg overflow-hidden border">
               <BroadcastViewer 
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
@@ -523,57 +523,58 @@ export default function JoinQueue() {
                   {isInQueue ? 'In Queue' : 'Join the Queue'}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4">
                 {!isInQueue ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1.5 block">
+                      <label className="text-xs text-muted-foreground mb-1 block">
                         Your Name
                       </label>
                       <Input
                         placeholder="Enter your name"
                         value={displayName}
                         onChange={(e) => setDisplayName(e.target.value)}
+                        className="h-9"
                       />
                     </div>
                     <div>
-                      <label className="text-xs text-muted-foreground mb-1.5 block">
-                        What would you like to discuss? (optional)
+                      <label className="text-xs text-muted-foreground mb-1 block">
+                        Discussion topic (optional)
                       </label>
                       <Textarea
-                        placeholder="e.g., Career advice, project feedback..."
+                        placeholder="e.g., Career advice..."
                         value={discussionTopic}
                         onChange={(e) => setDiscussionTopic(e.target.value)}
-                        className="min-h-[60px] resize-none"
+                        className="min-h-[50px] resize-none text-sm"
                       />
                     </div>
                     <Button
                       onClick={handleJoinQueue}
                       disabled={joining || !displayName.trim()}
-                      className="w-full"
+                      className="w-full h-9"
                     >
                       {joining ? 'Joining...' : 'Join Queue'}
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     <div className="text-center">
-                      <div className="text-3xl mb-2">✅</div>
-                      <p className="font-medium mb-1">You're in queue!</p>
-                      <p className="text-muted-foreground text-sm">
+                      <div className="text-2xl mb-1">✅</div>
+                      <p className="font-medium text-sm mb-1">You're in queue!</p>
+                      <p className="text-muted-foreground text-xs">
                         The creator will connect with you soon
                       </p>
                       {discussionTopic && (
-                        <div className="mt-3 p-2 bg-muted rounded border">
-                          <p className="text-xs text-muted-foreground mb-1">Your topic:</p>
-                          <p className="text-sm">{discussionTopic}</p>
+                        <div className="mt-2 p-2 bg-muted rounded border">
+                          <p className="text-xs text-muted-foreground mb-0.5">Your topic:</p>
+                          <p className="text-xs">{discussionTopic}</p>
                         </div>
                       )}
                     </div>
                     <Button
                       onClick={handleLeaveQueue}
                       variant="outline"
-                      className="w-full"
+                      className="w-full h-9"
                     >
                       Leave Queue
                     </Button>
