@@ -12,7 +12,6 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
 import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
-import { LobbyChat } from '@/components/queue/LobbyChat';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 
 interface Creator {
@@ -458,123 +457,92 @@ export default function JoinQueue() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto relative h-screen overflow-y-auto">
-        {/* Header */}
-        <div className="bg-card p-4 border-b">
-          <h1 className="text-xl font-semibold">Join Queue</h1>
-        </div>
+    <div className="relative h-screen bg-black overflow-hidden">
+      {/* Full-screen video broadcast */}
+      <div className="absolute inset-0">
+        <BroadcastViewer 
+          creatorId={creatorId!} 
+          sessionId={liveSession?.id || 'connecting'}
+          isInQueue={isInQueue}
+        />
+      </div>
 
-        {/* Creator Info */}
-        <div className="p-4 bg-card border-b">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
-              <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h2 className="font-semibold">{creator.full_name}</h2>
-              <p className="text-sm text-muted-foreground">{creator.bio}</p>
-              <div className="flex items-center gap-2 mt-1">
-                {getStatusBadge()}
-                {creator.rating && (
-                  <Badge variant="outline">⭐ {creator.rating}</Badge>
-                )}
-              </div>
+      {/* Creator info overlay - top left */}
+      <div className="absolute top-4 left-4 z-10">
+        <div className="flex items-center gap-3 bg-black/70 backdrop-blur-md rounded-lg p-3 border border-white/10">
+          <Avatar className="h-10 w-10 border-2 border-white/20">
+            <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
+            <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div>
+            <h2 className="font-semibold text-white text-sm">{creator.full_name}</h2>
+            <div className="flex items-center gap-2 mt-0.5">
+              {liveSession ? (
+                <Badge className="bg-red-500 text-white text-xs h-5">🔴 LIVE</Badge>
+              ) : (
+                <Badge variant="secondary" className="text-xs h-5">Offline</Badge>
+              )}
             </div>
           </div>
         </div>
-
-        {/* Live Broadcast Card - Always show to establish WebRTC connection */}
-        <Card className="m-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Live Broadcast</CardTitle>
-              {liveSession && (
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-red-500">LIVE</span>
-                </div>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <BroadcastViewer 
-              creatorId={creatorId!} 
-              sessionId={liveSession?.id || 'connecting'}
-              isInQueue={isInQueue}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Queue Status & Actions */}
-        <Card className="m-4 mb-[150px]">
-          <CardHeader>
-            <CardTitle>Queue Status</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground">People in queue</p>
-              <p className="text-3xl font-bold">{queueCount}</p>
-            </div>
-
-            {!isInQueue ? (
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Your Display Name</label>
-                  <Input
-                    placeholder="Enter your name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="mt-1"
-                    maxLength={50}
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium">Discussion Topic (Optional)</label>
-                  <Textarea
-                    placeholder="What would you like to discuss?"
-                    value={discussionTopic}
-                    onChange={(e) => setDiscussionTopic(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                
-                <Button
-                  onClick={handleJoinQueue}
-                  disabled={joining || !user || !displayName.trim()}
-                  className="w-full"
-                  size="lg"
-                >
-                  {joining ? "Joining..." : "Join Queue (Priority Access)"}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="text-center p-4 bg-green-50 dark:bg-green-950 rounded-lg border border-green-200 dark:border-green-800">
-                  <p className="font-medium text-green-800 dark:text-green-200">
-                    🎉 You're in the queue!
-                  </p>
-                </div>
-                
-                <Button
-                  onClick={handleLeaveQueue}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Leave Queue
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Lobby Chat - Only show when user is in queue */}
-        {isInQueue && (
-          <LobbyChat creatorId={creatorId!} />
-        )}
       </div>
+
+      {/* Queue status - top right */}
+      <div className="absolute top-4 right-4 z-10">
+        <div className="bg-black/70 backdrop-blur-md rounded-lg p-3 border border-white/10 text-center min-w-[80px]">
+          <p className="text-xs text-white/70">In Queue</p>
+          <p className="text-2xl font-bold text-white">{queueCount}</p>
+        </div>
+      </div>
+
+      {/* Join queue form - bottom center (only when not in queue) */}
+      {!isInQueue && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4">
+          <Card className="bg-black/80 backdrop-blur-md border-white/10">
+            <CardContent className="p-4 space-y-3">
+              <Input
+                placeholder="Your display name"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+                maxLength={50}
+              />
+              
+              <Textarea
+                placeholder="Discussion topic (optional)"
+                value={discussionTopic}
+                onChange={(e) => setDiscussionTopic(e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 h-20"
+              />
+              
+              <Button
+                onClick={handleJoinQueue}
+                disabled={joining || !user || !displayName.trim()}
+                className="w-full bg-primary hover:bg-primary/90"
+              >
+                {joining ? "Joining..." : "Join Queue"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* In queue indicator - bottom center (only when in queue) */}
+      {isInQueue && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+          <div className="flex items-center gap-3 bg-green-500/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg">
+            <span className="text-white font-semibold">🎉 You're in the queue!</span>
+            <Button
+              onClick={handleLeaveQueue}
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 h-7"
+            >
+              Leave
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

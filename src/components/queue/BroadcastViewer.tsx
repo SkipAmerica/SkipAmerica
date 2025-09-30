@@ -35,10 +35,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
 
   // Keep fanUserId in sync with auth (handles delayed anonymous login)
   useEffect(() => {
-    console.log('[BroadcastViewer] Setting up auth listener');
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       const uid = session?.user?.id;
-      console.log('[BroadcastViewer] Auth state changed, uid:', uid);
       if (uid) {
         setFanUserId(uid);
       }
@@ -109,82 +107,78 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   }, []);
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col relative overflow-hidden">
-      <div className="flex-1 flex">
-        <div className="relative w-full h-full overflow-hidden">
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            autoPlay
-            className="w-full h-full object-cover bg-black"
-          />
-          
-          {connectionState !== 'connected' && (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
-              <div className="text-center text-white">
-                {connectionState === 'checking' && (
-                  <div className="animate-pulse">
-                    <div className="text-lg mb-2">Connecting to stream...</div>
-                  </div>
-                )}
-                {connectionState === 'failed' && (
-                  <div>
-                    <div className="text-lg mb-4">Connection failed</div>
-                    <Button onClick={handleRetry} variant="outline">
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Retry
-                    </Button>
-                  </div>
-                )}
+    <div className="relative w-full h-full">
+      <video
+        ref={videoRef}
+        muted
+        playsInline
+        autoPlay
+        className="w-full h-full object-cover bg-black"
+      />
+      
+      {connectionState !== 'connected' && (
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-20">
+          <div className="text-center text-white">
+            {connectionState === 'checking' && (
+              <div className="animate-pulse">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
+                <div className="text-sm">Connecting to stream...</div>
               </div>
-            </div>
-          )}
-          
-          {/* Fan's Self-View Camera (PiP) and Chat - Only shown after joining queue */}
-          {(() => {
-            console.log('[BroadcastViewer] Render check - isInQueue:', isInQueue, 'fanUserId:', fanUserId, 'resolvedCreatorId:', resolvedCreatorId);
-            return isInQueue && fanUserId;
-          })() && (
-            <>
-              {/* Instagram-style floating chat overlay */}
-              {resolvedCreatorId && (
-                <TabbedOverlayChat 
-                  creatorId={resolvedCreatorId} 
-                  fanId={fanUserId}
-                />
-              )}
-              
-              {/* Fan's Self-View Camera (PiP) - Published as "publisher" role */}
-              <div className="absolute bottom-20 left-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white/20 shadow-lg z-10">
-              <UserVideoSFU
-                userId={fanUserId}
-                role="publisher"
-                dimensions="w-full h-full"
-                showChat={false}
-                muted={true}
-                showControls={false}
-                fallbackName="You"
-                className="bg-muted"
-              />
-              <div className="absolute bottom-1 left-1 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">
-                You
+            )}
+            {connectionState === 'failed' && (
+              <div>
+                <div className="text-6xl mb-4">📡</div>
+                <div className="text-lg mb-4">Connection failed</div>
+                <Button onClick={handleRetry} variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
               </div>
-            </div>
-            </>
-          )}
-          
-          <div className="absolute bottom-4 left-4">
-            <Button
-              onClick={toggleMute}
-              variant="outline"
-              size="sm"
-              className="bg-black/50 border-white/20 text-white hover:bg-black/70"
-            >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-            </Button>
+            )}
           </div>
         </div>
+      )}
+      
+      {/* Fan's Self-View Camera (PiP) and Chat - Only shown after joining queue */}
+      {isInQueue && fanUserId && (
+        <>
+          {/* Tabbed chat overlay with lobby and private messages */}
+          {resolvedCreatorId && (
+            <TabbedOverlayChat 
+              creatorId={resolvedCreatorId} 
+              fanId={fanUserId}
+            />
+          )}
+          
+          {/* Fan's Self-View Camera (PiP) */}
+          <div className="absolute top-20 right-4 w-28 h-28 rounded-xl overflow-hidden border-2 border-white/30 shadow-2xl backdrop-blur-sm z-30">
+            <UserVideoSFU
+              userId={fanUserId}
+              role="publisher"
+              dimensions="w-full h-full"
+              showChat={false}
+              muted={true}
+              showControls={false}
+              fallbackName="You"
+              className="bg-muted"
+            />
+            <div className="absolute bottom-1 left-1 text-[10px] text-white bg-black/50 px-1.5 py-0.5 rounded">
+              You
+            </div>
+          </div>
+        </>
+      )}
+      
+      {/* Mute button */}
+      <div className="absolute bottom-20 left-4 z-30">
+        <Button
+          onClick={toggleMute}
+          variant="outline"
+          size="sm"
+          className="w-12 h-12 rounded-full bg-black/50 border-white/20 text-white hover:bg-black/70 backdrop-blur-sm shadow-lg"
+        >
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </Button>
       </div>
     </div>
   );

@@ -65,21 +65,21 @@ export default function TabbedOverlayChat({
   return (
     <div
       className={
-        "absolute inset-x-0 bottom-0 h-64 z-20 pointer-events-none " + className
+        "absolute inset-x-0 bottom-0 h-64 z-40 pointer-events-none " + className
       }
       aria-hidden
     >
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
-        <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto">
+        <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto z-50">
           <TabsTrigger 
             value="lobby" 
-            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white"
+            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white pointer-events-auto"
           >
             Lobby
           </TabsTrigger>
           <TabsTrigger 
             value="private" 
-            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white relative"
+            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white relative pointer-events-auto"
           >
             Private Messages
             {unreadPrivateCount > 0 && activeTab === 'lobby' && (
@@ -90,7 +90,7 @@ export default function TabbedOverlayChat({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lobby" className="flex-1 m-0 pointer-events-none">
+        <TabsContent value="lobby" className="flex-1 m-0 pointer-events-none data-[state=active]:block">
           <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
             style={{ scrollbarWidth: "none" }}
           >
@@ -108,7 +108,7 @@ export default function TabbedOverlayChat({
           </div>
         </TabsContent>
 
-        <TabsContent value="private" className="flex-1 m-0 pointer-events-none">
+        <TabsContent value="private" className="flex-1 m-0 pointer-events-none data-[state=active]:block">
           <div className="absolute inset-y-0 top-3 right-0 left-0 overflow-y-auto flex flex-col gap-2 pointer-events-auto"
             style={{ scrollbarWidth: "none" }}
           >
