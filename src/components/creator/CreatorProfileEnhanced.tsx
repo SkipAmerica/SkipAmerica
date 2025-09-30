@@ -22,6 +22,7 @@ import { SocialVerification } from '@/components/social/SocialVerification';
 import { CreatorContent } from '@/components/social/CreatorContent';
 import { AppointmentBooking } from '@/components/appointments/AppointmentBooking';
 import { CallSettings } from '@/components/creator/CallSettings';
+import { ProfilePictureManager } from '@/components/creator/ProfilePictureManager';
 
 interface CreatorProfileProps {
   creator: {
@@ -162,6 +163,12 @@ export function CreatorProfileEnhanced({ creator, isOwnProfile = false }: Creato
           {isOwnProfile && (
             <>
               <IOSListItem 
+                onClick={() => setActiveSection('profile-pic')}
+                chevron
+              >
+                <span>Profile Picture</span>
+              </IOSListItem>
+              <IOSListItem 
                 onClick={() => setActiveSection('settings')}
                 chevron
               >
@@ -249,6 +256,13 @@ export function CreatorProfileEnhanced({ creator, isOwnProfile = false }: Creato
             </IOSListItem>
           </IOSListSection>
         </IOSListView>
+      )}
+
+      {isOwnProfile && activeSection === 'profile-pic' && (
+        <ProfilePictureManager 
+          creatorId={creator.id}
+          currentAvatarUrl={creator.avatar_url}
+        />
       )}
 
       {isOwnProfile && activeSection === 'settings' && <CallSettings creatorId={creator.id} />}
