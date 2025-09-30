@@ -55,6 +55,27 @@ export default function JoinQueue() {
 
   const isUnloadingRef = useRef(false);
 
+  // Ensure full-viewport scrolling on PQ
+  useEffect(() => {
+    const htmlEl = document.documentElement;
+    const bodyEl = document.body;
+    const rootEl = document.getElementById('root');
+
+    htmlEl.classList.add('pq-scroll');
+    bodyEl.classList.add('pq-scroll');
+    rootEl?.classList.add('pq-scroll-root');
+
+    // Mark scroll container for hooks that look it up
+    bodyEl.setAttribute('data-scroll-container', 'true');
+
+    return () => {
+      htmlEl.classList.remove('pq-scroll');
+      bodyEl.classList.remove('pq-scroll');
+      rootEl?.classList.remove('pq-scroll-root');
+      bodyEl.removeAttribute('data-scroll-container');
+    };
+  }, []);
+
   // Stable cleanup function using useCallback
   const cleanupQueue = useCallback(async (reason: string = 'unknown') => {
     if (!user || !creatorId || !isInQueue || isUnloadingRef.current) return;

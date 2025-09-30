@@ -164,6 +164,22 @@
   }
 }
 
+/* PQ viewport scroll overrides */
+html.pq-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+body.pq-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+#root.pq-scroll-root {
+  overflow: visible;
+  min-height: 100%;
+}
+
 /* iOS-Specific Styles */
 :root {
   /* iOS Safe Area Support with Smart Responsive Fallbacks */
