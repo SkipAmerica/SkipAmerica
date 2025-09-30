@@ -1,5 +1,4 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -22,7 +21,6 @@ const LiveControlBarContent: React.FC = () => {
   const shellRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
 
-  const location = useLocation();
   const live = useLive();
   
   // Safely access live store values with debugging
@@ -32,7 +30,8 @@ const LiveControlBarContent: React.FC = () => {
   const queueCount = live?.queueCount || 0;
   
   // Check if we're on the join-queue page - hide LSB there
-  const isOnJoinQueuePage = location.pathname.startsWith('/join-queue');
+  const pathname = window.location.pathname;
+  const isOnJoinQueuePage = pathname === '/join-queue' || pathname.startsWith('/join-queue/');
 
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {
