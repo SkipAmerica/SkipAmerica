@@ -56,17 +56,18 @@ export function ProfilePictureManager({
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
-        .from('creator-files')
+        .from('avatars')
         .upload(filePath, file, {
           upsert: true,
-          contentType: file.type
+          contentType: file.type,
+          cacheControl: '3600'
         });
 
       if (uploadError) throw uploadError;
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
-        .from('creator-files')
+        .from('avatars')
         .getPublicUrl(filePath);
 
       // Update profile and creator records

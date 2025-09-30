@@ -76,15 +76,18 @@ const ProfileSettings = () => {
       const filePath = `${user?.id}/avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('creator-files')
-        .upload(filePath, file);
+        .from('avatars')
+        .upload(filePath, file, {
+          upsert: true,
+          cacheControl: '3600'
+        });
 
       if (uploadError) {
         throw uploadError;
       }
 
       const { data } = supabase.storage
-        .from('creator-files')
+        .from('avatars')
         .getPublicUrl(filePath);
 
       setProfile(prev => ({ ...prev, avatar_url: data.publicUrl }));
