@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -18,11 +19,9 @@ const LiveControlBarContent: React.FC = () => {
   const [counterMode, setCounterMode] = useState<CounterMode>(() => {
     return (localStorage.getItem('lsb-counter-mode') as CounterMode) || 'SESSION_EARNINGS'
   });
-  const [isOnJoinQueuePage, setIsOnJoinQueuePage] = useState(() => 
-    window.location.pathname.startsWith('/join-queue/')
-  );
   const shellRef = useRef<HTMLDivElement>(null);
   const rafIdRef = useRef<number | null>(null);
+  const location = useLocation();
 
   const live = useLive();
   
@@ -32,25 +31,8 @@ const LiveControlBarContent: React.FC = () => {
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
   
-  // Track route changes to hide LSB on Priority Queue page
-  useEffect(() => {
-    const checkRoute = () => {
-      const onPQPage = window.location.pathname.startsWith('/join-queue/');
-      console.log('[LSB] Route check:', window.location.pathname, 'isOnPQPage:', onPQPage);
-      setIsOnJoinQueuePage(onPQPage);
-    };
-    
-    // Listen for browser navigation (back/forward)
-    window.addEventListener('popstate', checkRoute);
-    
-    // Also check on mount and when hash changes
-    window.addEventListener('hashchange', checkRoute);
-    
-    return () => {
-      window.removeEventListener('popstate', checkRoute);
-      window.removeEventListener('hashchange', checkRoute);
-    };
-  }, []);
+  // Track route changes to hide LSB on Priority Queue page using React Router
+  const isOnJoinQueuePage = location.pathname.startsWith('/join-queue/');
 
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {

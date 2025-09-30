@@ -452,7 +452,7 @@ export default function JoinQueue() {
   };
 
   return (
-    <div className="relative h-screen bg-black overflow-hidden">
+    <div className="relative h-screen bg-black overflow-y-auto overflow-x-hidden pb-24">
       {/* Full-screen video broadcast */}
       <div className="absolute inset-0">
         <BroadcastViewer 
@@ -471,6 +471,9 @@ export default function JoinQueue() {
           </Avatar>
           <div>
             <h2 className="font-semibold text-white text-sm">{creator.full_name}</h2>
+            {creator.bio && (
+              <p className="text-xs text-white/80 line-clamp-1 max-w-[200px]">{creator.bio}</p>
+            )}
             <div className="flex items-center gap-2 mt-0.5">
               {liveSession ? (
                 <Badge className="bg-red-500 text-white text-xs h-5">🔴 LIVE</Badge>

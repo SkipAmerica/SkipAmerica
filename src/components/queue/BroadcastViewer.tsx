@@ -169,8 +169,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         </>
       )}
       
-      {/* Mute button */}
-      <div className="absolute bottom-20 left-4 z-30">
+      {/* Mute button - positioned to avoid chat overlap */}
+      <div className="absolute top-4 left-4 z-30">
         <Button
           onClick={toggleMute}
           variant="outline"
