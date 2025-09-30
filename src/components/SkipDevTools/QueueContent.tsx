@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Clock, Phone, AlertTriangle, RotateCcw } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
@@ -359,6 +359,7 @@ export function QueueContent() {
                             {index + 2}
                           </div>
                           <Avatar className="w-10 h-10">
+                            <AvatarImage src={entry.profiles?.avatar_url || undefined} />
                             <AvatarFallback className="bg-primary/10">
                               {entry.profiles?.full_name 
                                 ? getInitials(entry.profiles.full_name)

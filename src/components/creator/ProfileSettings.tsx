@@ -72,8 +72,8 @@ const ProfileSettings = () => {
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `profile-${Date.now()}.${fileExt}`;
+      const filePath = `${user?.id}/avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('creator-files')
