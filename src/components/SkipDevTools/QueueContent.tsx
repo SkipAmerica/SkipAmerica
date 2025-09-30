@@ -331,6 +331,7 @@ export function QueueContent() {
                   </div>
                   <NextUserPreview
                     fanId={state.entries[0].fan_id}
+                    creatorId={user.id}
                     userName={state.entries[0].profiles?.full_name}
                     discussionTopic={state.entries[0].discussion_topic}
                     waitTime={state.entries[0].estimated_wait_minutes}

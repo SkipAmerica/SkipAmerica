@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 
 interface NextUserPreviewProps {
   fanId: string;
+  creatorId: string;
   userName?: string;
   discussionTopic?: string;
   waitTime?: number;
@@ -14,6 +15,7 @@ interface NextUserPreviewProps {
 
 export function NextUserPreview({
   fanId,
+  creatorId,
   userName = 'Anonymous User',
   discussionTopic,
   waitTime,
@@ -49,7 +51,7 @@ export function NextUserPreview({
       
       {/* Fan's Camera Feed */}
       <UserVideoSFU
-        userId={fanId}
+        userId={creatorId}
         role="viewer"
         dimensions="w-full aspect-video"
         showChat={false}

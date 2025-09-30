@@ -33,6 +33,19 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
 
+  // Keep fanUserId in sync with auth (handles delayed anonymous login)
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id;
+      if (uid) {
+        setFanUserId(uid);
+      }
+    });
+    return () => {
+      try { authListener?.subscription?.unsubscribe(); } catch {}
+    };
+  }, []);
+
   // SFU connection effect
   useEffect(() => {
     if (!USE_SFU || !queueId) return;
