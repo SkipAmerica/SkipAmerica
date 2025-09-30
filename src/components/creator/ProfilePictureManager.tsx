@@ -51,8 +51,8 @@ export function ProfilePictureManager({
       setUploading(true);
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${creatorId}-${Date.now()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const fileName = `profile-${Date.now()}.${fileExt}`;
+      const filePath = `${creatorId}/avatars/${fileName}`;
 
       // Upload to storage
       const { error: uploadError } = await supabase.storage
