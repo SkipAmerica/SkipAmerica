@@ -294,7 +294,7 @@ export const createQueuePrivateConfig = (
     tableName: 'call_private_messages',
     filterField: 'conversation_key',
     filterValue: conversationKey,
-    channelPrefix: 'queue-private-chat',
+    channelPrefix: 'private-chat',
     sendMessage: async ({ text, userId }) => {
       await sendPrivateMessage(creatorId, fanId, text, userId);
     },
