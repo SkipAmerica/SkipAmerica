@@ -30,8 +30,19 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
   const { isKeyboardVisible } = useKeyboardAware();
   const { queueCount } = useLive();
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
+  const [, forceUpdate] = useState({});
 
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // Listen for queue count updates to trigger re-render
+  useEffect(() => {
+    const handleQueueUpdate = () => {
+      forceUpdate({});
+    };
+
+    window.addEventListener('queue-count-updated', handleQueueUpdate);
+    return () => window.removeEventListener('queue-count-updated', handleQueueUpdate);
+  }, []);
 
   const handleQueueClick = () => {
     if (queueCount > 0) {

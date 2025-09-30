@@ -461,7 +461,7 @@ export default function JoinQueue() {
   };
 
   return (
-    <div className="relative h-screen bg-black overflow-y-auto overflow-x-hidden" style={{ paddingBottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 6rem)' }}>
+    <div className="relative h-screen bg-black overflow-y-auto overflow-x-hidden" style={{ paddingBottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 8rem)' }}>
       {/* Full-screen video broadcast */}
       <div className="absolute inset-0">
         <BroadcastViewer 
@@ -506,7 +506,7 @@ export default function JoinQueue() {
 
       {/* Join queue form - bottom center (only when not in queue) */}
       {!isInQueue && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 1rem)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 2rem)' }}>
           <Card className="bg-black/80 backdrop-blur-md border-white/10">
             <CardContent className="p-4 space-y-3">
               <Input
@@ -538,7 +538,7 @@ export default function JoinQueue() {
 
       {/* In queue indicator - bottom center (only when in queue) */}
       {isInQueue && (
-        <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 1rem)' }}>
+        <div className="absolute left-1/2 -translate-x-1/2 z-10" style={{ bottom: 'calc(var(--lsb-height, 0px) * var(--lsb-visible, 0) + 2rem)' }}>
           <div className="flex items-center gap-3 bg-green-500/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg">
             <span className="text-white font-semibold">🎉 You're in the queue!</span>
             <Button
