@@ -50,7 +50,7 @@ export const createLobbyConfig = (creatorId: string): ChatConfig => ({
 // Creator Overlay Configuration (interactive overlay with external input)
 export const createOverlayConfig = (creatorId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
-  channelPrefix: 'lobby-chat-db',
+  channelPrefix: 'lobby-chat',
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
@@ -112,7 +112,7 @@ export const createGeneralConfig = (roomId: string): ChatConfig => ({
 // Bottom-left positioned chat with newest messages at top
 export const createBottomLeftConfig = (roomId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
-  channelPrefix: 'bottom-left-chat',
+  channelPrefix: 'lobby-chat',
   filterField: 'creator_id',
   filterValue: roomId,
   appearance: {
@@ -166,14 +166,36 @@ const sendPrivateMessage = async (
   // Create conversation_key (sorted to ensure consistency)
   const conversationKey = [creatorId, fanId].sort().join('|');
   
+  // Determine receiver: if sender is creator, receiver is fan; if sender is fan, receiver is creator
   const receiverId = userId === creatorId ? fanId : creatorId;
   
-  await supabase.from('call_private_messages').insert({
-    conversation_key: conversationKey,
-    sender_id: userId,
-    receiver_id: receiverId,
-    message
+  console.log('[sendPrivateMessage] Sending:', {
+    conversationKey,
+    senderId: userId,
+    receiverId,
+    creatorId,
+    fanId,
+    message: message.substring(0, 50)
   });
+  
+  try {
+    const { data, error } = await supabase.from('call_private_messages').insert({
+      conversation_key: conversationKey,
+      sender_id: userId,
+      receiver_id: receiverId,
+      message
+    });
+    
+    if (error) {
+      console.error('[sendPrivateMessage] Insert failed:', error);
+      throw error;
+    }
+    
+    console.log('[sendPrivateMessage] Success:', data);
+  } catch (e) {
+    console.error('[sendPrivateMessage] Exception:', e);
+    throw e;
+  }
 };
 
 // Private Chat Configuration for 1-on-1 in-call messaging
@@ -227,7 +249,7 @@ export const createPrivateConfig = (
 // Queue Chat Configurations (non-overlay versions)
 export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
   tableName: 'lobby_chat_messages',
-  channelPrefix: 'queue-lobby-chat',
+  channelPrefix: 'lobby-chat',
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
