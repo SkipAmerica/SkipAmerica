@@ -12,7 +12,7 @@ export function IOSAppShell({ children, className }: IOSAppShellProps) {
       "ios-app",
       "min-h-screen bg-background",
       "flex flex-col",
-      "overflow-hidden",
+      "overflow-auto",
       "relative",
       className
     )}>
