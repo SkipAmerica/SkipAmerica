@@ -21,7 +21,8 @@ interface UserStatusHeaderProps {
 
 const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
   const { user } = useAuth();
-  const { isLive, isDiscoverable } = useLive();
+  const live = useLive();
+  const { isLive, isDiscoverable, todayEarningsCents, todayCalls, sessionElapsed } = live || {};
   const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState<UserStats>({
     totalEarnings: 0,
@@ -33,7 +34,6 @@ const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
   useEffect(() => {
     if (user?.id) {
       loadProfile();
-      loadStats();
     }
   }, [user?.id]);
 
@@ -55,24 +55,19 @@ const UserStatusHeader = ({ className }: UserStatusHeaderProps) => {
     }
   };
 
-  const loadStats = async () => {
-    try {
-      // This would normally load real stats from the database
-      // For now, using mock data
-      setStats({
-        totalEarnings: 1250,
-        totalFans: 156,
-        callTime: 24.5,
-        onlineStatus: isLive,
-      });
-    } catch (error) {
-      console.error("Error loading stats:", error);
-    }
-  };
-
+  // Update stats from live store in real-time
   useEffect(() => {
-    setStats(prev => ({ ...prev, onlineStatus: isLive }));
-  }, [isLive]);
+    const earningsDollars = (todayEarningsCents || 0) / 100;
+    const callsToday = todayCalls || 0;
+    const sessionMinutes = sessionElapsed ? (sessionElapsed / 60000).toFixed(1) : 0;
+    
+    setStats({
+      totalEarnings: earningsDollars,
+      totalFans: callsToday,
+      callTime: Number(sessionMinutes),
+      onlineStatus: isDiscoverable || false,
+    });
+  }, [todayEarningsCents, todayCalls, sessionElapsed, isDiscoverable]);
 
   return (
     <div className={`ios-status-bar ${className || ''}`}>
