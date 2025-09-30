@@ -35,8 +35,10 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
 
   // Keep fanUserId in sync with auth (handles delayed anonymous login)
   useEffect(() => {
+    console.log('[BroadcastViewer] Setting up auth listener');
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       const uid = session?.user?.id;
+      console.log('[BroadcastViewer] Auth state changed, uid:', uid);
       if (uid) {
         setFanUserId(uid);
       }
@@ -140,7 +142,10 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
           )}
           
           {/* Fan's Self-View Camera (PiP) and Chat - Only shown after joining queue */}
-          {isInQueue && fanUserId && (
+          {(() => {
+            console.log('[BroadcastViewer] Render check - isInQueue:', isInQueue, 'fanUserId:', fanUserId, 'resolvedCreatorId:', resolvedCreatorId);
+            return isInQueue && fanUserId;
+          })() && (
             <>
               {/* Instagram-style floating chat overlay */}
               {resolvedCreatorId && (
