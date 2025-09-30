@@ -14,6 +14,7 @@ interface UserVideoSFUProps {
   dimensions?: string; // CSS classes for sizing
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
+  chatCreatorId?: string;
   fanId?: string;
   className?: string;
   muted?: boolean;
@@ -33,6 +34,7 @@ export function UserVideoSFU({
   dimensions = "w-full h-full",
   showChat = false,
   chatMode = 'lobby',
+  chatCreatorId,
   fanId,
   className = "",
   muted = true,
@@ -197,7 +199,7 @@ export function UserVideoSFU({
       {/* Chat overlay */}
       {showChat && resolvedUserId && connectionState === 'connected' && (
         <OverlayChat 
-          creatorId={resolvedUserId}
+          creatorId={chatCreatorId || resolvedUserId}
           chatMode={chatMode}
           fanId={fanId}
           leftButton={

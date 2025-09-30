@@ -14,6 +14,7 @@ interface VideoFullscreenModalProps {
   onClose: () => void;
   userName?: string;
   creatorId?: string;
+  viewerIsCreator?: boolean;
 }
 
 export function VideoFullscreenModal({
@@ -21,7 +22,8 @@ export function VideoFullscreenModal({
   isOpen,
   onClose,
   userName = "Creator",
-  creatorId
+  creatorId,
+  viewerIsCreator = false
 }: VideoFullscreenModalProps) {
   const [showNotification, setShowNotification] = useState(false);
   const [touchStart, setTouchStart] = useState(0);
@@ -80,7 +82,8 @@ export function VideoFullscreenModal({
             dimensions="w-full h-full"
             showChat={true}
             chatMode={creatorId ? "private" : "lobby"}
-            fanId={creatorId ? userId : undefined}
+            chatCreatorId={viewerIsCreator ? creatorId : userId}
+            fanId={viewerIsCreator ? userId : creatorId}
             showControls={true}
             className="rounded-none"
           />
