@@ -502,6 +502,7 @@ export default function JoinQueue() {
             <BroadcastViewer 
               creatorId={creatorId!} 
               sessionId={liveSession?.id || 'connecting'}
+              isInQueue={isInQueue}
             />
           </CardContent>
         </Card>

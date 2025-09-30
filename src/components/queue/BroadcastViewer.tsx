@@ -15,11 +15,12 @@ import { fetchLiveKitToken } from "@/lib/livekitToken";
 interface BroadcastViewerProps {
   creatorId: string;
   sessionId: string;
+  isInQueue: boolean;
 }
 
 type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'offline' | 'retry';
 
-export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) {
+export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastViewerProps) {
   const queueId = creatorId; // The creatorId parameter is actually the queueId from URL
   
   if (!queueId) {
@@ -31,7 +32,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
-  const [isInQueue, setIsInQueue] = useState(false);
 
   // SFU connection effect
   useEffect(() => {
@@ -93,10 +93,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
     window.location.reload();
   }, []);
 
-  const handleJoinQueue = useCallback(() => {
-    setIsInQueue(true);
-  }, []);
-
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col relative overflow-hidden">
       <div className="flex-1 flex">
@@ -126,26 +122,6 @@ export function BroadcastViewer({ creatorId, sessionId }: BroadcastViewerProps) 
                     </Button>
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-          
-          {/* Join Queue Gate */}
-          {!isInQueue && connectionState === 'connected' && (
-            <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-30">
-              <div className="text-center text-white max-w-md px-6">
-                <h2 className="text-2xl font-bold mb-4">Join the Queue</h2>
-                <p className="text-sm text-white/80 mb-6">
-                  By joining the queue, you'll start broadcasting your camera to the creator. 
-                  They'll be able to see you while you wait for your turn.
-                </p>
-                <Button 
-                  onClick={handleJoinQueue}
-                  size="lg"
-                  className="bg-primary hover:bg-primary/90"
-                >
-                  Join Queue & Start Broadcasting
-                </Button>
               </div>
             </div>
           )}
