@@ -102,12 +102,13 @@ export function UserVideoSFU({
           });
         }
 
-        // Resolve user ID and get auth info
-        // For publishers (fans), use their userId directly; for creators/viewers, resolve it
-        const finalUserId = role === 'publisher' 
+        // Determine room creator ID
+        // If chatCreatorId is provided, use it for the room (common when creator views fan)
+        // Otherwise: publishers join their own room, viewers join the creator's resolved room
+        const roomCreatorId = chatCreatorId || (role === 'publisher' 
           ? userId 
-          : (await resolveCreatorUserId(userId)) || userId;
-        setResolvedUserId(finalUserId);
+          : (await resolveCreatorUserId(userId)) || userId);
+        setResolvedUserId(roomCreatorId);
 
         const { supabase } = await import('@/lib/supabaseClient');
         const { data } = await supabase.auth.getUser();
@@ -116,7 +117,7 @@ export function UserVideoSFU({
         // Get LiveKit token
         const { token, url } = await fetchLiveKitToken({
           role,
-          creatorId: finalUserId,
+          creatorId: roomCreatorId,
           identity,
         });
 
