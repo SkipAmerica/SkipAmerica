@@ -217,14 +217,14 @@ export function UserVideoSFU({
 
       {/* Fullscreen Button */}
       {showFullscreenButton && connectionState === 'connected' && onFullscreen && (
-        <div className="absolute top-2 right-2">
+        <div className="absolute top-2 right-2 z-30">
           <Button
             onClick={onFullscreen}
             variant="outline"
-            size="sm"
-            className="bg-black/50 border-white/20 text-white hover:bg-black/70"
+            size="icon"
+            className="bg-black/50 border-white/20 text-white hover:bg-black/70 h-8 w-8"
           >
-            <Expand className="w-3 h-3" />
+            <Expand className="w-4 h-4" />
           </Button>
         </div>
       )}
