@@ -7,8 +7,7 @@ import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { RUNTIME } from '@/config/runtime';
 
 const USE_SFU = true;
-import { createSFU } from "@/lib/sfu";
-import { fetchLiveKitToken } from "@/lib/livekitToken";
+import { sfuConnectionManager } from "@/services/sfu-connection-manager";
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -33,7 +32,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   const [fanUserId, setFanUserId] = useState<string | null>(null);
   const [showSelfVideo, setShowSelfVideo] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
-  const fanSfuRef = useRef<any>(null); // SFU for publishing fan's video
+  const viewerRoomKeyRef = useRef<string | null>(null);
+  const publisherRoomKeyRef = useRef<string | null>(null);
 
   // Set resolvedCreatorId immediately so chat mounts without delay
   useEffect(() => {
@@ -76,55 +76,82 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
     };
   }, []);
 
-  // SFU connection effect
+  // SFU connection effect - viewing creator's stream
   useEffect(() => {
     if (!USE_SFU || !queueId || !resolvedCreatorId) return;
-    console.log('[BroadcastViewer] Starting SFU connection');
-    let sfu = createSFU();
-
-    sfu.onRemoteVideo((incoming) => {
-      const el = videoRef.current;
-      if (!el) return;
-      if (el !== incoming && el.parentElement) {
-        incoming.className = el.className;
-        incoming.muted = false;
-        el.parentElement.replaceChild(incoming, el);
-        // @ts-ignore
-        videoRef.current = incoming;
-        try { incoming.play().catch(()=>{}); } catch {}
-      }
-    });
+    
+    console.log('[BroadcastViewer] Starting viewer SFU connection to creator room:', resolvedCreatorId);
+    let isActive = true;
 
     (async () => {
       try {
         const { data } = await supabase.auth.getUser();
         const identity = data?.user?.id || crypto.randomUUID();
         
-        console.log('[BroadcastViewer] Fetching LiveKit token with identity:', identity);
-        // Fetch LiveKit token using Supabase Functions SDK
-        const { token, url } = await fetchLiveKitToken({
-          role: "viewer",
+        console.log('[BroadcastViewer] Connecting as viewer with identity:', identity);
+        setConnectionState('connecting');
+        
+        const roomKey = await sfuConnectionManager.connect({
+          role: 'viewer',
           creatorId: resolvedCreatorId,
           identity,
         });
         
-        console.log('[BroadcastViewer] Connecting to SFU');
-        await sfu.connect(url, token);
-        console.log("[BroadcastViewer] SFU connected");
-        setConnectionState("connected");
+        if (!isActive) {
+          await sfuConnectionManager.disconnect(roomKey);
+          return;
+        }
+        
+        viewerRoomKeyRef.current = roomKey;
+        console.log('[BroadcastViewer] Viewer connected, room key:', roomKey);
+        
+        // Subscribe to video tracks
+        const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (videoEl, participantIdentity) => {
+          console.log('[BroadcastViewer] Received video element from:', participantIdentity);
+          if (!videoRef.current || !videoRef.current.parentElement) return;
+          
+          // Configure the incoming video element
+          videoEl.className = videoRef.current.className;
+          videoEl.muted = false;
+          videoEl.playsInline = true;
+          videoEl.autoplay = true;
+          
+          // Replace existing video element
+          videoRef.current.parentElement.replaceChild(videoEl, videoRef.current);
+          // @ts-ignore
+          videoRef.current = videoEl;
+          
+          videoEl.play().catch(e => console.error('[BroadcastViewer] Play error:', e));
+        });
+        
+        // Subscribe to state changes
+        const unsubState = sfuConnectionManager.onStateChange(roomKey, (state) => {
+          console.log('[BroadcastViewer] Connection state:', state);
+          if (state === 'connected') setConnectionState('connected');
+          else if (state === 'failed') setConnectionState('failed');
+          else if (state === 'connecting') setConnectionState('connecting');
+        });
+        
+        setConnectionState('connected');
+        
+        return () => {
+          unsubVideo();
+          unsubState();
+        };
       } catch (e) {
-        console.error("[BroadcastViewer] SFU failed:", e);
-        setConnectionState("failed");
+        console.error("[BroadcastViewer] Viewer SFU failed:", e);
+        if (isActive) setConnectionState("failed");
       }
     })();
 
     return () => { 
-      console.log('[BroadcastViewer] Cleaning up SFU connection');
-      if (sfu) {
-        sfu.disconnect().catch((err) => {
-          console.error('[BroadcastViewer] Error disconnecting SFU:', err);
+      isActive = false;
+      console.log('[BroadcastViewer] Cleaning up viewer SFU connection');
+      if (viewerRoomKeyRef.current) {
+        sfuConnectionManager.disconnect(viewerRoomKeyRef.current).catch(err => {
+          console.error('[BroadcastViewer] Error disconnecting viewer:', err);
         });
-        sfu = undefined;
+        viewerRoomKeyRef.current = null;
       }
     };
   }, [queueId, resolvedCreatorId]);
@@ -191,40 +218,46 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   useEffect(() => {
     if (!USE_SFU || !isInQueue || !fanUserId) return;
     
-    console.log('[BroadcastViewer] Fan publishing video to their room');
-    let sfu = createSFU();
-    fanSfuRef.current = sfu;
+    console.log('[BroadcastViewer] Fan publishing video to their own room:', fanUserId);
+    let isActive = true;
 
     (async () => {
       try {
         const identity = fanUserId;
         
-        console.log('[BroadcastViewer] Fan fetching LiveKit token to publish');
-        const { token, url } = await fetchLiveKitToken({
-          role: "publisher",
-          creatorId: fanUserId, // Fan joins their own room as publisher
+        console.log('[BroadcastViewer] Fan connecting as publisher with identity:', identity);
+        
+        const roomKey = await sfuConnectionManager.connect({
+          role: 'publisher',
+          creatorId: fanUserId, // Fan publishes to their own room
           identity,
         });
         
-        console.log('[BroadcastViewer] Fan connecting to SFU to publish');
-        await sfu.connect(url, token);
-        console.log("[BroadcastViewer] Fan SFU connected, publishing camera/mic");
+        if (!isActive) {
+          await sfuConnectionManager.disconnect(roomKey);
+          return;
+        }
         
-        // Publish fan's camera and mic
-        await sfu.publishCameraMic();
-        console.log("[BroadcastViewer] Fan video published successfully");
+        publisherRoomKeyRef.current = roomKey;
+        console.log('[BroadcastViewer] Fan connected as publisher, room key:', roomKey);
+        
+        // Publish camera and mic
+        await sfuConnectionManager.publishCameraMic(roomKey);
+        console.log("[BroadcastViewer] Fan video/audio published successfully to room:", fanUserId);
+        
       } catch (e) {
         console.error("[BroadcastViewer] Fan SFU publish failed:", e);
       }
     })();
 
     return () => { 
-      console.log('[BroadcastViewer] Cleaning up fan SFU connection');
-      if (fanSfuRef.current) {
-        fanSfuRef.current.disconnect().catch((err: any) => {
-          console.error('[BroadcastViewer] Error disconnecting fan SFU:', err);
+      isActive = false;
+      console.log('[BroadcastViewer] Cleaning up fan publisher SFU connection');
+      if (publisherRoomKeyRef.current) {
+        sfuConnectionManager.disconnect(publisherRoomKeyRef.current).catch(err => {
+          console.error('[BroadcastViewer] Error disconnecting fan publisher:', err);
         });
-        fanSfuRef.current = null;
+        publisherRoomKeyRef.current = null;
       }
     };
   }, [isInQueue, fanUserId]);
