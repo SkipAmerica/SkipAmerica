@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/app/providers/auth-provider'
-import { Loader2, Users, Crown, LogIn, Mail, HelpCircle } from 'lucide-react'
+import { Loader2, Binoculars, TowerControl, LogIn, Mail, HelpCircle } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
 import { toast } from 'sonner'
 import {
@@ -146,7 +146,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                  <Crown className="h-5 w-5 text-white" />
+                  <TowerControl className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-xl text-white">Creator</h3>
               </div>
@@ -158,7 +158,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-white" />
+                  <Binoculars className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-xl text-white">User</h3>
               </div>
@@ -195,7 +195,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
               className="w-full h-16 text-lg font-semibold bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm transition-all"
               disabled={isLoading || loading}
             >
-              <Crown className="mr-3 h-6 w-6" />
+              <TowerControl className="mr-3 h-6 w-6" />
               I'm a Creator
             </Button>
 
@@ -207,7 +207,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
               className="w-full h-16 text-lg font-semibold bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm transition-all"
               disabled={isLoading || loading}
             >
-              <Users className="mr-3 h-6 w-6" />
+              <Binoculars className="mr-3 h-6 w-6" />
               I'm a User
             </Button>
           </div>
@@ -229,7 +229,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       {step === 'creator-setup' && (
         <div className="w-full max-w-md space-y-6 animate-scale-in">
           <div className="text-center mb-8">
-            <Crown className="h-16 w-16 text-white mx-auto mb-4" />
+            <TowerControl className="h-16 w-16 text-white mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Join as Creator</h2>
             <p className="text-white/80">Share your expertise and build your audience</p>
           </div>
@@ -290,7 +290,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       {step === 'user-setup' && (
         <div className="w-full max-w-md space-y-6 animate-scale-in">
           <div className="text-center mb-8">
-            <Users className="h-16 w-16 text-white mx-auto mb-4" />
+            <Binoculars className="h-16 w-16 text-white mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Join as User</h2>
             <p className="text-white/80">Discover and connect with creators</p>
           </div>
@@ -412,7 +412,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       {step === 'creator-email' && (
         <div className="w-full max-w-md space-y-6 animate-scale-in">
           <div className="text-center mb-8">
-            <Crown className="h-16 w-16 text-white mx-auto mb-4" />
+            <TowerControl className="h-16 w-16 text-white mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Join as Creator</h2>
             <p className="text-white/80">Create your account with email</p>
           </div>
@@ -489,7 +489,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       {step === 'user-email' && (
         <div className="w-full max-w-md space-y-6 animate-scale-in">
           <div className="text-center mb-8">
-            <Users className="h-16 w-16 text-white mx-auto mb-4" />
+            <Binoculars className="h-16 w-16 text-white mx-auto mb-4" />
             <h2 className="text-3xl font-bold text-white mb-2">Join as User</h2>
             <p className="text-white/80">Create your account with email</p>
           </div>
