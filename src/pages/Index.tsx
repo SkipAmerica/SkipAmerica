@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu } from "lucide-react";
+import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu, LogOut } from "lucide-react";
 import { useAuth } from "@/app/providers/auth-provider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
@@ -50,6 +50,7 @@ import { IOSNavBar } from "@/components/mobile/IOSNavBar";
 import { IOSInstagramHeader } from "@/components/mobile/IOSInstagramHeader";
 import { IOSSearchBar } from "@/components/mobile/IOSSearchBar";
 import { IOSActionSheet, IOSActionSheetItem } from "@/components/mobile/IOSActionSheet";
+import { Separator } from "@/components/ui/separator";
 import { LiveControlBar } from "@/components/live/LiveControlBar";
 import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
@@ -84,7 +85,7 @@ const Index = () => {
   
   
   // Always call all hooks unconditionally at the top level
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { profile } = useProfile();
   const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
@@ -458,6 +459,20 @@ const Index = () => {
                 Creator Hub
               </IOSActionSheetItem>
             )}
+            
+            <Separator className="my-2" />
+            
+            <IOSActionSheetItem
+              onClick={async () => {
+                await signOut();
+                setShowMenu(false);
+                navigate("/auth");
+              }}
+              icon={LogOut}
+              destructive
+            >
+              Sign Out
+            </IOSActionSheetItem>
           </>
         )}
         {!user && (
