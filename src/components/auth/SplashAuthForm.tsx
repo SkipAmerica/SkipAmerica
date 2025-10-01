@@ -1,20 +1,29 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useAuth } from '@/app/providers/auth-provider'
-import { Loader2, Users, Crown, LogIn } from 'lucide-react'
+import { Loader2, Users, Crown, LogIn, Mail } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
+import { toast } from 'sonner'
 
 interface SplashAuthFormProps {
   onSuccess?: () => void
 }
 
-type AuthStep = 'main' | 'creator-setup' | 'user-setup' | 'signin' | 'interests'
+type AuthStep = 'main' | 'creator-setup' | 'user-setup' | 'signin' | 'interests' | 'creator-email' | 'user-email' | 'signin-email'
 
 export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
-  const { signInWithGoogle, signInWithApple, loading, user } = useAuth()
+  const { signInWithGoogle, signInWithApple, signIn, signUp, loading, user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<AuthStep>('main')
   const [accountType, setAccountType] = useState<'creator' | 'fan'>('fan')
+  
+  // Email/password form state
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
+  const [formError, setFormError] = useState('')
 
   const handleSocialAuth = async (provider: 'google' | 'apple') => {
     setIsLoading(true)
@@ -36,6 +45,62 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
   const handleInterestsComplete = () => {
     setStep('main')
     onSuccess?.()
+  }
+
+  const handleEmailSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    
+    if (!email || !password || !fullName) {
+      setFormError('All fields are required')
+      return
+    }
+    
+    if (password.length < 6) {
+      setFormError('Password must be at least 6 characters')
+      return
+    }
+    
+    setIsLoading(true)
+    const { error } = await signUp(email, password, fullName, accountType)
+    setIsLoading(false)
+    
+    if (error) {
+      setFormError(error.message || 'Failed to sign up')
+      toast.error(error.message || 'Failed to sign up')
+    } else {
+      toast.success('Account created! Please check your email to verify.')
+      setStep('interests')
+    }
+  }
+
+  const handleEmailSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormError('')
+    
+    if (!email || !password) {
+      setFormError('Email and password are required')
+      return
+    }
+    
+    setIsLoading(true)
+    const { error } = await signIn(email, password)
+    setIsLoading(false)
+    
+    if (error) {
+      setFormError(error.message || 'Failed to sign in')
+      toast.error(error.message || 'Failed to sign in')
+    } else {
+      toast.success('Welcome back!')
+      onSuccess?.()
+    }
+  }
+
+  const resetForm = () => {
+    setEmail('')
+    setPassword('')
+    setFullName('')
+    setFormError('')
   }
 
   // Show interests selection if user just signed up and is logged in
@@ -133,6 +198,28 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
               )}
               Continue with Google
             </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/20"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gradient-splash px-2 text-white/70">Or</span>
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm()
+                setStep('creator-email')
+              }}
+              className="w-full h-14 text-base font-semibold bg-white/5 hover:bg-white/10 text-white border-white/30 transition-all"
+              disabled={isLoading || loading}
+            >
+              <Mail className="mr-3 h-5 w-5" />
+              Sign up with Email
+            </Button>
           </div>
 
           <Button
@@ -171,6 +258,28 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
                 </svg>
               )}
               Continue with Google
+            </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/20"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gradient-splash px-2 text-white/70">Or</span>
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm()
+                setStep('user-email')
+              }}
+              className="w-full h-14 text-base font-semibold bg-white/5 hover:bg-white/10 text-white border-white/30 transition-all"
+              disabled={isLoading || loading}
+            >
+              <Mail className="mr-3 h-5 w-5" />
+              Sign up with Email
             </Button>
           </div>
 
@@ -211,11 +320,250 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
               )}
               Sign in with Google
             </Button>
+            
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/20"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-gradient-splash px-2 text-white/70">Or</span>
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => {
+                resetForm()
+                setStep('signin-email')
+              }}
+              className="w-full h-14 text-base font-semibold bg-white/5 hover:bg-white/10 text-white border-white/30 transition-all"
+              disabled={isLoading || loading}
+            >
+              <Mail className="mr-3 h-5 w-5" />
+              Sign in with Email
+            </Button>
           </div>
 
           <Button
             variant="link"
             onClick={() => setStep('main')}
+            className="w-full text-white/90 hover:text-white"
+          >
+            ← Back
+          </Button>
+        </div>
+      )}
+
+      {/* Creator Email Signup */}
+      {step === 'creator-email' && (
+        <div className="w-full max-w-md space-y-6 animate-scale-in">
+          <div className="text-center mb-8">
+            <Crown className="h-16 w-16 text-white mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-2">Join as Creator</h2>
+            <p className="text-white/80">Create your account with email</p>
+          </div>
+
+          <form onSubmit={handleEmailSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-white">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password (min 6 characters)"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+                minLength={6}
+              />
+            </div>
+
+            {formError && (
+              <p className="text-sm text-red-300 bg-red-500/20 p-3 rounded-md">{formError}</p>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
+              disabled={isLoading || loading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+          </form>
+
+          <Button
+            variant="link"
+            onClick={() => setStep('creator-setup')}
+            className="w-full text-white/90 hover:text-white"
+          >
+            ← Back
+          </Button>
+        </div>
+      )}
+
+      {/* User Email Signup */}
+      {step === 'user-email' && (
+        <div className="w-full max-w-md space-y-6 animate-scale-in">
+          <div className="text-center mb-8">
+            <Users className="h-16 w-16 text-white mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-2">Join as User</h2>
+            <p className="text-white/80">Create your account with email</p>
+          </div>
+
+          <form onSubmit={handleEmailSignUp} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-white">Full Name</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Enter your full name"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create a password (min 6 characters)"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+                minLength={6}
+              />
+            </div>
+
+            {formError && (
+              <p className="text-sm text-red-300 bg-red-500/20 p-3 rounded-md">{formError}</p>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
+              disabled={isLoading || loading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                'Create Account'
+              )}
+            </Button>
+          </form>
+
+          <Button
+            variant="link"
+            onClick={() => setStep('user-setup')}
+            className="w-full text-white/90 hover:text-white"
+          >
+            ← Back
+          </Button>
+        </div>
+      )}
+
+      {/* Email Sign In */}
+      {step === 'signin-email' && (
+        <div className="w-full max-w-md space-y-6 animate-scale-in">
+          <div className="text-center mb-8">
+            <LogIn className="h-16 w-16 text-white mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+            <p className="text-white/80">Sign in with your email</p>
+          </div>
+
+          <form onSubmit={handleEmailSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-white">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
+                className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+                required
+              />
+            </div>
+
+            {formError && (
+              <p className="text-sm text-red-300 bg-red-500/20 p-3 rounded-md">{formError}</p>
+            )}
+
+            <Button
+              type="submit"
+              className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
+              disabled={isLoading || loading}
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                'Sign In'
+              )}
+            </Button>
+          </form>
+
+          <Button
+            variant="link"
+            onClick={() => setStep('signin')}
             className="w-full text-white/90 hover:text-white"
           >
             ← Back
