@@ -34,20 +34,28 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
   const [showHelp, setShowHelp] = useState(false)
 
   const handleSocialAuth = async (provider: 'google' | 'apple') => {
-    setIsLoading(true)
-    
-    // Store account type in localStorage so we can use it after OAuth redirect
-    if (accountType) {
-      localStorage.setItem('pending_account_type', accountType)
+    try {
+      console.log(`Starting ${provider} OAuth flow...`)
+      
+      // Store account type in localStorage so we can use it after OAuth redirect
+      if (accountType) {
+        localStorage.setItem('pending_account_type', accountType)
+        console.log('Stored account type:', accountType)
+      }
+      
+      // Don't set loading state for OAuth - it will redirect away from the page
+      const { error } = provider === 'google' 
+        ? await signInWithGoogle()
+        : await signInWithApple()
+      
+      if (error) {
+        console.error(`${provider} OAuth error:`, error)
+        toast.error(error.message || `Failed to sign in with ${provider}`)
+      }
+    } catch (err) {
+      console.error(`${provider} OAuth exception:`, err)
+      toast.error(`An error occurred during ${provider} sign-in`)
     }
-    
-    if (provider === 'google') {
-      await signInWithGoogle()
-    } else {
-      await signInWithApple()
-    }
-    
-    setIsLoading(false)
   }
 
   const handleInterestsComplete = () => {
