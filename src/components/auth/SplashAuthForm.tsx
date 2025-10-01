@@ -145,7 +145,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
           <div className="space-y-8 pt-6">
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
                   <TowerControl className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-xl text-white">Creator</h3>
@@ -157,7 +157,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             
             <div className="space-y-3 animate-fade-in">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center">
                   <Binoculars className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-xl text-white">User</h3>
