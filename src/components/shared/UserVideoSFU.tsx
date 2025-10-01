@@ -85,7 +85,15 @@ export function UserVideoSFU({
 
         // Handle remote video for viewer role
         if (role === 'viewer') {
-          sfu.onRemoteVideo((incomingVideo) => {
+          sfu.onRemoteVideo((incomingVideo, participantIdentity) => {
+            console.debug('[UserVideoSFU] Remote video received:', { participantIdentity, fanId, shouldAttach: !fanId || participantIdentity === fanId });
+            
+            // If fanId is provided, only attach video from that specific participant
+            if (fanId && participantIdentity !== fanId) {
+              console.debug('[UserVideoSFU] Ignoring video from non-matching participant');
+              return;
+            }
+            
             const currentVideo = videoRef.current;
             if (!currentVideo) return;
             
