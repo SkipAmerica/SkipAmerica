@@ -36,6 +36,11 @@ export function NextUserPreview({
     return `${hours}h ${remainingMinutes}m`;
   };
 
+  useEffect(() => {
+    console.log(`[NextUserPreview] 🎯 Creator viewing fan's video - Fan ID: ${userId}, Creator ID: ${creatorId}`);
+    console.log(`[NextUserPreview] 📺 Target Room: lobby_${userId}`);
+  }, [userId, creatorId]);
+
   return (
     <div className="relative max-w-md mx-auto">
       {/* Privacy Notification */}

@@ -221,10 +221,12 @@ class SFUConnectionManager {
   private setupRoomHandlers(roomKey: string, entry: ConnectionEntry): void {
     const { room } = entry;
 
+    console.log(`[SFUConnectionManager] 🎬 Setting up room handlers for ${roomKey}, room name: ${room.name}`);
+
     // Handle video track subscriptions
     room.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _publication: any, participant: RemoteParticipant) => {
       if (track.kind === Track.Kind.Video) {
-        console.log(`[SFUConnectionManager] Video track subscribed for ${roomKey}:`, participant.identity);
+        console.log(`[SFUConnectionManager] 📹 Video track subscribed - Room: ${room.name}, Participant: ${participant.identity}, Track: ${track.sid}`);
         
         // Create video element and attach track
         const videoEl = document.createElement("video");
@@ -233,10 +235,14 @@ class SFUConnectionManager {
         videoEl.muted = false;
         track.attach(videoEl);
         
+        console.log(`[SFUConnectionManager] ✅ Track attached to video element, readyState: ${videoEl.readyState}`);
+        
         // Notify all handlers
         entry.videoHandlers.forEach(handler => {
           handler(videoEl, participant.identity);
         });
+        
+        console.log(`[SFUConnectionManager] 📢 Notified ${entry.videoHandlers.size} video handlers`);
       }
     });
 
@@ -289,22 +295,36 @@ class SFUConnectionManager {
   private async performConnection(roomKey: string, entry: ConnectionEntry): Promise<void> {
     const { config, room } = entry;
     
-    // Fetch token
-    const { token, url } = await fetchLiveKitToken({
-      role: config.role,
-      creatorId: config.creatorId,
-      identity: config.identity,
-    });
+    try {
+      this.updateState(roomKey, 'connecting');
+      
+      // Fetch token
+      const { token, url, room: liveKitRoom } = await fetchLiveKitToken({
+        role: config.role,
+        creatorId: config.creatorId,
+        identity: config.identity,
+      });
 
-    console.log(`[SFUConnectionManager] Connecting to ${url} for ${roomKey}`);
-    await room.connect(url, token);
-    
-    this.updateState(roomKey, 'connected');
-    console.log(`[SFUConnectionManager] Connected ${roomKey}`);
+      console.log(`[SFUConnectionManager] 🎫 Token fetched for ${roomKey}`);
+      console.log(`[SFUConnectionManager] 🏠 LiveKit Room Name: "${liveKitRoom}", Role: ${config.role}, Identity: ${config.identity}`);
 
-    // Publish if role is publisher
-    if (config.role === 'publisher') {
-      await this.publishCameraMic(roomKey);
+      await room.connect(url, token);
+      console.log(`[SFUConnectionManager] ✅ Connected to LiveKit room: "${liveKitRoom}"`);
+      
+      this.updateState(roomKey, 'connected');
+
+      // Publish if role is publisher
+      if (config.role === 'publisher') {
+        console.log(`[SFUConnectionManager] 📤 Publishing camera/mic to room: "${liveKitRoom}"`);
+        await this.publishCameraMic(roomKey);
+        console.log(`[SFUConnectionManager] ✅ Published tracks to room: "${liveKitRoom}"`);
+      } else {
+        console.log(`[SFUConnectionManager] 👁️ Viewer connected to room: "${liveKitRoom}", waiting for tracks...`);
+      }
+    } catch (error) {
+      console.error(`[SFUConnectionManager] ❌ Connection failed for ${roomKey}:`, error);
+      this.updateState(roomKey, 'failed');
+      throw error;
     }
   }
 

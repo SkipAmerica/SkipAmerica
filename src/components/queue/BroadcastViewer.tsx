@@ -218,14 +218,15 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   useEffect(() => {
     if (!USE_SFU || !isInQueue || !fanUserId) return;
     
-    console.log('[BroadcastViewer] Fan publishing video to their own room:', fanUserId);
+    console.log(`[BroadcastViewer] 📹 Fan publishing video to their own room: ${fanUserId}`);
+    console.log(`[BroadcastViewer] 📺 Publishing to Room: lobby_${fanUserId}`);
     let isActive = true;
 
     (async () => {
       try {
         const identity = fanUserId;
         
-        console.log('[BroadcastViewer] Fan connecting as publisher with identity:', identity);
+        console.log(`[BroadcastViewer] 🔌 Fan connecting as publisher with identity: ${identity}`);
         
         const roomKey = await sfuConnectionManager.connect({
           role: 'publisher',
@@ -239,14 +240,14 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         }
         
         publisherRoomKeyRef.current = roomKey;
-        console.log('[BroadcastViewer] Fan connected as publisher, room key:', roomKey);
+        console.log(`[BroadcastViewer] ✅ Fan connected as publisher, room key: ${roomKey}`);
         
         // Publish camera and mic
         await sfuConnectionManager.publishCameraMic(roomKey);
-        console.log("[BroadcastViewer] Fan video/audio published successfully to room:", fanUserId);
+        console.log(`[BroadcastViewer] ✅ Fan video/audio published successfully to room: lobby_${fanUserId}`);
         
       } catch (e) {
-        console.error("[BroadcastViewer] Fan SFU publish failed:", e);
+        console.error(`[BroadcastViewer] ❌ Fan SFU publish failed:`, e);
       }
     })();
 
