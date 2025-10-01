@@ -79,7 +79,7 @@ export function VideoFullscreenModal({
           <UserVideoSFU
             userId={userId}
             role="viewer"
-            chatCreatorId={viewerIsCreator ? creatorId : userId}
+            chatCreatorId={viewerIsCreator ? userId : userId}
             dimensions="w-full h-full"
             showChat={true}
             chatMode={creatorId ? "private" : "lobby"}

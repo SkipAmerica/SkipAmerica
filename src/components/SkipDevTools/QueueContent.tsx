@@ -86,13 +86,12 @@ export function QueueContent() {
       // Check if we've been aborted before making request
       if (abortController.signal.aborted) return
       
-      // First get queue entries, prioritizing by priority field first
+      // Get queue entries in pure FCFS order (first come, first served)
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic, priority')
+        .select('*, discussion_topic')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
-        .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 

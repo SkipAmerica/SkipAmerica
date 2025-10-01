@@ -33,6 +33,7 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
   const [fanUserId, setFanUserId] = useState<string | null>(null);
   const [showSelfVideo, setShowSelfVideo] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const fanSfuRef = useRef<any>(null); // SFU for publishing fan's video
 
   // Set resolvedCreatorId immediately so chat mounts without delay
   useEffect(() => {
@@ -185,6 +186,48 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
       }
     };
   }, [localStream]);
+
+  // Fan video publishing when in queue
+  useEffect(() => {
+    if (!USE_SFU || !isInQueue || !fanUserId) return;
+    
+    console.log('[BroadcastViewer] Fan publishing video to their room');
+    let sfu = createSFU();
+    fanSfuRef.current = sfu;
+
+    (async () => {
+      try {
+        const identity = fanUserId;
+        
+        console.log('[BroadcastViewer] Fan fetching LiveKit token to publish');
+        const { token, url } = await fetchLiveKitToken({
+          role: "publisher",
+          creatorId: fanUserId, // Fan joins their own room as publisher
+          identity,
+        });
+        
+        console.log('[BroadcastViewer] Fan connecting to SFU to publish');
+        await sfu.connect(url, token);
+        console.log("[BroadcastViewer] Fan SFU connected, publishing camera/mic");
+        
+        // Publish fan's camera and mic
+        await sfu.publishCameraMic();
+        console.log("[BroadcastViewer] Fan video published successfully");
+      } catch (e) {
+        console.error("[BroadcastViewer] Fan SFU publish failed:", e);
+      }
+    })();
+
+    return () => { 
+      console.log('[BroadcastViewer] Cleaning up fan SFU connection');
+      if (fanSfuRef.current) {
+        fanSfuRef.current.disconnect().catch((err: any) => {
+          console.error('[BroadcastViewer] Error disconnecting fan SFU:', err);
+        });
+        fanSfuRef.current = null;
+      }
+    };
+  }, [isInQueue, fanUserId]);
 
   return (
     <div className="relative w-full h-full">

@@ -125,7 +125,7 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
         console.warn('[UniversalChat-GUARD] prevented runtime removeChannel', new Error().stack);
       }
     };
-  }, [config.tableName, config.filterField, config.filterValue, config.channelPrefix]);
+  }, [config.tableName, config.filterField, config.filterValue, config.channelPrefix, config.appearance?.messageFlow, onNewMessage]);
 
   return {
     messages,

@@ -49,11 +49,11 @@ export function NextUserPreview({
         {userName} cannot see you
       </div>
       
-      {/* Fan's Camera Feed */}
+      {/* Fan's Camera Feed - Creator viewing fan's room */}
       <UserVideoSFU
         userId={fanId}
         role="viewer"
-        chatCreatorId={creatorId}
+        chatCreatorId={fanId}
         dimensions="w-full aspect-video"
         showChat={false}
         muted={true}
