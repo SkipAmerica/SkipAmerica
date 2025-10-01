@@ -33,7 +33,7 @@ export function createSFU(): SFUHandle {
   function onTrackUnsubscribed(cb: () => void) {
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _publication: any, participant: RemoteParticipant) => {
       if (track.kind === Track.Kind.Video) {
-        console.warn("[SFU] Video track unsubscribed:", participant.identity);
+        console.log("[SFU] Video track unsubscribed (normal):", participant.identity);
         cb();
       }
     });

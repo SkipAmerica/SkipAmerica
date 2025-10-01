@@ -84,33 +84,37 @@ export function UserVideoSFU({
       sfuRef.current = sfu;
 
       // Set up disconnection handlers
+      // Don't reconnect on track unsubscribed - it's normal during stream changes
       sfu.onTrackUnsubscribed(() => {
-        console.warn('[UserVideoSFU] Track unsubscribed - connection may be lost');
-        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
-          reconnectAttemptsRef.current++;
-          console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            connectSFU();
-          }, 2000);
-        } else {
-          updateConnectionState('failed');
-        }
+        console.log('[UserVideoSFU] Track unsubscribed (normal during stream changes)');
       });
 
+      // Only reconnect if the room itself disconnects unexpectedly
       sfu.onDisconnected(() => {
-        console.warn('[UserVideoSFU] Room disconnected');
+        console.warn('[UserVideoSFU] Room disconnected unexpectedly');
         updateConnectionState('disconnected');
+        
+        // Only reconnect if we haven't exceeded max attempts
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
-          console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
+          const backoffDelay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current - 1), 10000); // Exponential: 1s, 2s, 4s, 8s, max 10s
+          console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} after ${backoffDelay}ms`);
           reconnectTimeoutRef.current = setTimeout(() => {
             connectSFU();
-          }, 2000);
+          }, backoffDelay);
+        } else {
+          console.error('[UserVideoSFU] Max reconnect attempts reached');
+          updateConnectionState('failed');
         }
       });
 
       sfu.onConnectionStateChange((state) => {
         console.log('[UserVideoSFU] Connection state:', state);
+        if (state === 'connected') {
+          updateConnectionState('connected');
+        } else if (state === 'connecting') {
+          updateConnectionState('connecting');
+        }
       });
 
       // Handle remote video for viewer role
@@ -191,13 +195,19 @@ export function UserVideoSFU({
       console.error('[UserVideoSFU] Connection failed:', error);
       updateConnectionState('failed');
       
-      // Attempt reconnect on failure
-      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+      // Only retry if it's a recoverable error (e.g., internal/network errors)
+      const isRecoverable = error && typeof error === 'object' && 'reason' in error && (error as any).reason === 2; // InternalError
+      
+      if (isRecoverable && reconnectAttemptsRef.current < maxReconnectAttempts) {
         reconnectAttemptsRef.current++;
-        console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} after error`);
+        const backoffDelay = Math.min(2000 * Math.pow(2, reconnectAttemptsRef.current - 1), 15000); // Exponential: 2s, 4s, 8s, 15s max
+        console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} after ${backoffDelay}ms (recoverable error)`);
         reconnectTimeoutRef.current = setTimeout(() => {
           connectSFU();
-        }, 3000);
+        }, backoffDelay);
+      } else {
+        console.error('[UserVideoSFU] Connection failed permanently or max attempts reached');
+        updateConnectionState('failed');
       }
       
       if (sfu) {
