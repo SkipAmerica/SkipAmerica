@@ -50,6 +50,9 @@ export function UserVideoSFU({
   const [connectionState, setConnectionState] = useState<ConnectionState>('idle');
   const [isMuted, setIsMuted] = useState(muted);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 3;
 
   const updateConnectionState = useCallback((state: ConnectionState) => {
     setConnectionState(state);
@@ -72,20 +75,47 @@ export function UserVideoSFU({
       .slice(0, 2);
   };
 
-  useEffect(() => {
-    if (!userId) return;
-
+  const connectSFU = useCallback(async () => {
     let sfu: ReturnType<typeof createSFU> | null = null;
     
-    const connectSFU = async () => {
-      try {
-        updateConnectionState('connecting');
-        sfu = createSFU();
-        sfuRef.current = sfu;
+    try {
+      updateConnectionState('connecting');
+      sfu = createSFU();
+      sfuRef.current = sfu;
 
-        // Handle remote video for viewer role
-        if (role === 'viewer') {
-          sfu.onRemoteVideo((incomingVideo, participantIdentity) => {
+      // Set up disconnection handlers
+      sfu.onTrackUnsubscribed(() => {
+        console.warn('[UserVideoSFU] Track unsubscribed - connection may be lost');
+        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+          reconnectAttemptsRef.current++;
+          console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectSFU();
+          }, 2000);
+        } else {
+          updateConnectionState('failed');
+        }
+      });
+
+      sfu.onDisconnected(() => {
+        console.warn('[UserVideoSFU] Room disconnected');
+        updateConnectionState('disconnected');
+        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+          reconnectAttemptsRef.current++;
+          console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts}`);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connectSFU();
+          }, 2000);
+        }
+      });
+
+      sfu.onConnectionStateChange((state) => {
+        console.log('[UserVideoSFU] Connection state:', state);
+      });
+
+      // Handle remote video for viewer role
+      if (role === 'viewer') {
+        sfu.onRemoteVideo((incomingVideo, participantIdentity) => {
             console.debug('[UserVideoSFU] Remote video received:', { participantIdentity, chatParticipantFilter, shouldAttach: !chatParticipantFilter || participantIdentity === chatParticipantFilter });
             
             // If chatParticipantFilter is provided, only attach video from that specific participant
@@ -135,6 +165,10 @@ export function UserVideoSFU({
         // Connect to LiveKit
         await sfu.connect(url, token);
         updateConnectionState('connected');
+        
+        // Reset reconnect attempts on successful connection
+        reconnectAttemptsRef.current = 0;
+        console.log('[UserVideoSFU] Successfully connected');
 
         // Handle local video for publisher role
         if (role === 'publisher') {
@@ -153,21 +187,42 @@ export function UserVideoSFU({
           }
         }
 
-      } catch (error) {
-        console.error('[UserVideoSFU] Connection failed:', error);
-        updateConnectionState('failed');
+    } catch (error) {
+      console.error('[UserVideoSFU] Connection failed:', error);
+      updateConnectionState('failed');
+      
+      // Attempt reconnect on failure
+      if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+        reconnectAttemptsRef.current++;
+        console.log(`[UserVideoSFU] Scheduling reconnect attempt ${reconnectAttemptsRef.current}/${maxReconnectAttempts} after error`);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectSFU();
+        }, 3000);
       }
-    };
-
-    connectSFU();
-
-    return () => {
+      
       if (sfu) {
         sfu.disconnect().catch(() => {});
         sfuRef.current = null;
       }
-    };
+    }
   }, [userId, role, isMuted, updateConnectionState]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    connectSFU();
+
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (sfuRef.current) {
+        sfuRef.current.disconnect().catch(() => {});
+        sfuRef.current = null;
+      }
+      reconnectAttemptsRef.current = 0;
+    };
+  }, [userId, connectSFU]);
 
   const renderFallback = () => (
     <div className="flex items-center justify-center w-full h-full bg-muted/20 rounded-lg">
