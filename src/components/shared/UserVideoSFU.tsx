@@ -14,6 +14,7 @@ export interface UserVideoSFUProps {
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
   chatCreatorId?: string; // Override which room to join for chat
+  videoRoomCreatorId?: string; // Override which room to connect for video
   chatParticipantFilter?: string; // Filter chat messages by specific participant
   className?: string;
   muted?: boolean;
@@ -32,6 +33,7 @@ export function UserVideoSFU({
   showChat = false,
   chatMode = 'lobby',
   chatCreatorId,
+  videoRoomCreatorId,
   chatParticipantFilter,
   className = "",
   muted = true,
@@ -63,24 +65,31 @@ export function UserVideoSFU({
       .slice(0, 2);
   };
 
-  // Resolve room creator ID
+  // Resolve room creator ID for VIDEO connection
   useEffect(() => {
     const resolveRoom = async () => {
-      // ROOM LOGIC:
-      // - If chatCreatorId is provided: use it as the room (e.g., creator viewing fan's room)
+      // VIDEO ROOM LOGIC:
+      // - If videoRoomCreatorId is explicitly provided: use it
       // - Publishers: join their own room (userId as room)
       // - Viewers: join the resolved creator's room
-      const resolved = chatCreatorId || (role === 'publisher' 
+      const resolved = videoRoomCreatorId || (role === 'publisher' 
         ? userId 
         : (await resolveCreatorUserId(userId)) || userId);
       
-      console.debug('[UserVideoSFU] Room logic:', { role, userId, chatCreatorId, resolved });
+      console.debug('[UserVideoSFU] Video room logic:', { 
+        role, 
+        userId, 
+        videoRoomCreatorId, 
+        chatCreatorId, 
+        resolvedVideoRoom: resolved 
+      });
+      
       setResolvedUserId(resolved);
       setRoomCreatorId(resolved);
     };
 
     resolveRoom();
-  }, [userId, role, chatCreatorId]);
+  }, [userId, role, videoRoomCreatorId, chatCreatorId]);
 
   // Use centralized video connection manager
   const { connectionState, isConnected } = useVideoConnection({

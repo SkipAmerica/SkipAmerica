@@ -53,6 +53,7 @@ export function NextUserPreview({
       <UserVideoSFU
         userId={userId}
         role="viewer"
+        videoRoomCreatorId={userId}
         chatCreatorId={creatorId}
         dimensions="w-full aspect-video"
         showChat={false}

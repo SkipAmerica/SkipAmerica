@@ -81,6 +81,7 @@ export function VideoFullscreenModal({
           <UserVideoSFU
             userId={userId}
             role="viewer"
+            videoRoomCreatorId={userId}
             chatCreatorId={chatCreatorId}
             dimensions="w-full h-full"
             showChat={true}
