@@ -1,4 +1,4 @@
-import { AuthForm } from '@/components/auth/AuthForm'
+import { SplashAuthForm } from '@/components/auth/SplashAuthForm'
 import { InterestsSelection } from '@/components/auth/InterestsSelection'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useEffect, useState } from 'react'
@@ -78,23 +78,7 @@ const Auth = () => {
     return null // Will redirect via useEffect
   }
 
-  return (
-    <IOSAppShell>
-      <IOSNavBar 
-        title="Sign In"
-        rightButton={{
-          icon: Home,
-          onClick: () => navigate('/')
-        }}
-      />
-      
-      <div className="ios-content flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <AuthForm onSuccess={() => navigate('/')} />
-        </div>
-      </div>
-    </IOSAppShell>
-  )
+  return <SplashAuthForm onSuccess={() => navigate('/')} />
 }
 
 export default Auth

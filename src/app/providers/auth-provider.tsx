@@ -13,6 +13,8 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: any }>
   resendConfirmation: (email: string) => Promise<{ error: any }>
   signInAnonymously: () => Promise<{ error: any }>
+  signInWithGoogle: () => Promise<{ error: any }>
+  signInWithApple: () => Promise<{ error: any }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -154,6 +156,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    })
+    return { error }
+  }
+
+  const signInWithApple = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: {
+        redirectTo: `${window.location.origin}/auth`,
+      },
+    })
+    return { error }
+  }
+
   const value: AuthContextType = {
     user,
     session,
@@ -164,6 +190,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     resetPassword,
     resendConfirmation,
     signInAnonymously,
+    signInWithGoogle,
+    signInWithApple,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
