@@ -9,7 +9,7 @@ export type ConnectionConfig = {
 
 export type ConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
 
-export type VideoTrackHandler = (videoEl: HTMLVideoElement, participantIdentity: string) => void;
+export type VideoTrackHandler = (track: RemoteTrack, participantIdentity: string) => void;
 export type StateChangeHandler = (state: ConnectionState) => void;
 export type DisconnectHandler = () => void;
 
@@ -24,7 +24,7 @@ type ConnectionEntry = {
   disconnectHandlers: Set<DisconnectHandler>;
   videoHandlers: Set<VideoTrackHandler>;
   localTracks: LocalTrack[];
-  remoteVideoCache: Map<string, HTMLVideoElement>; // Cache video elements for late subscribers
+  remoteTrackCache: Map<string, RemoteTrack>; // Cache RemoteTracks for late subscribers
 };
 
 const MAX_RECONNECT_ATTEMPTS = 3;
@@ -84,7 +84,7 @@ class SFUConnectionManager {
       disconnectHandlers: new Set(),
       videoHandlers: new Set(),
       localTracks: [],
-      remoteVideoCache: new Map(),
+      remoteTrackCache: new Map(),
     };
 
     this.connections.set(roomKey, entry);
@@ -141,12 +141,12 @@ class SFUConnectionManager {
 
     entry.videoHandlers.add(handler);
     
-    // Replay cached video elements to new handler (for late subscribers)
-    const cachedCount = entry.remoteVideoCache.size;
+    // Replay cached RemoteTracks to new handler (for late subscribers)
+    const cachedCount = entry.remoteTrackCache.size;
     if (cachedCount > 0) {
-      console.log(`[SFUConnectionManager] 🔄 Replaying ${cachedCount} cached video(s) to new handler for ${roomKey}`);
-      entry.remoteVideoCache.forEach((videoEl, participantIdentity) => {
-        handler(videoEl, participantIdentity);
+      console.log(`[SFUConnectionManager] 🔄 Replaying ${cachedCount} cached track(s) to new handler for ${roomKey}`);
+      entry.remoteTrackCache.forEach((track, participantIdentity) => {
+        handler(track, participantIdentity);
       });
     }
     
@@ -239,22 +239,13 @@ class SFUConnectionManager {
       if (track.kind === Track.Kind.Video) {
         console.log(`[SFUConnectionManager] 📹 Video track subscribed - Room: ${room.name}, Participant: ${participant.identity}, Track: ${track.sid}`);
         
-        // Create video element and attach track
-        const videoEl = document.createElement("video");
-        videoEl.autoplay = true;
-        videoEl.playsInline = true;
-        videoEl.muted = true; // Safe default to prevent audio feedback
-        track.attach(videoEl);
+        // Cache the RemoteTrack for late subscribers
+        entry.remoteTrackCache.set(participant.identity, track);
+        console.log(`[SFUConnectionManager] 💾 Cached track for ${participant.identity}, cache size: ${entry.remoteTrackCache.size}`);
         
-        console.log(`[SFUConnectionManager] ✅ Track attached to video element, readyState: ${videoEl.readyState}`);
-        
-        // Cache the video element for late subscribers
-        entry.remoteVideoCache.set(participant.identity, videoEl);
-        console.log(`[SFUConnectionManager] 💾 Cached video for ${participant.identity}, cache size: ${entry.remoteVideoCache.size}`);
-        
-        // Notify all current handlers
+        // Notify all current handlers with the track
         entry.videoHandlers.forEach(handler => {
-          handler(videoEl, participant.identity);
+          handler(track, participant.identity);
         });
         
         console.log(`[SFUConnectionManager] 📢 Notified ${entry.videoHandlers.size} video handlers`);
@@ -264,11 +255,11 @@ class SFUConnectionManager {
     // Handle track unsubscription (normal during stream changes)
     room.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _publication: any, participant: RemoteParticipant) => {
       if (track.kind === Track.Kind.Video) {
-        console.log(`[SFUConnectionManager] Video track unsubscribed for ${roomKey}:`, participant.identity);
+        console.log(`[SFUConnectionManager] 🔇 Video track unsubscribed for ${roomKey}:`, participant.identity);
         
         // Remove from cache
-        entry.remoteVideoCache.delete(participant.identity);
-        console.log(`[SFUConnectionManager] 🗑️ Removed ${participant.identity} from cache, cache size: ${entry.remoteVideoCache.size}`);
+        entry.remoteTrackCache.delete(participant.identity);
+        console.log(`[SFUConnectionManager] 🗑️ Removed ${participant.identity} from cache, cache size: ${entry.remoteTrackCache.size}`);
       }
     });
 

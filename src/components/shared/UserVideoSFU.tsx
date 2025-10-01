@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { RemoteTrack } from 'livekit-client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Loader2, AlertCircle, Expand } from 'lucide-react';
@@ -47,6 +48,7 @@ export function UserVideoSFU({
   onFullscreen
 }: UserVideoSFUProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const lastTrackRef = useRef<RemoteTrack | null>(null);
   const [isMuted, setIsMuted] = useState(muted);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [roomCreatorId, setRoomCreatorId] = useState<string | null>(null);
@@ -103,38 +105,59 @@ export function UserVideoSFU({
         ? userId 
         : (identityOverride || `${userId}-viewer-${Date.now()}`),
     },
-    onVideoElement: (videoEl, participantIdentity) => {
-      console.log(`[UserVideoSFU] Received video element for ${participantIdentity}`);
+    onRemoteTrack: (track, participantIdentity) => {
+      console.log(`[UserVideoSFU] 📹 Received RemoteTrack for ${participantIdentity}`);
       
       // Only attach video if it matches the filter (for QCC fan video filtering)
       if (chatParticipantFilter && participantIdentity !== chatParticipantFilter) {
-        console.debug('[UserVideoSFU] Ignoring video from non-matching participant');
+        console.debug('[UserVideoSFU] Ignoring track from non-matching participant');
         return;
       }
       
-      // Use the video element directly - no DOM replacement
-      if (videoRef.current && videoRef.current !== videoEl) {
-        // Copy the srcObject from the manager's video element to our React-managed element
-        if (videoEl.srcObject) {
-          videoRef.current.srcObject = videoEl.srcObject;
-          videoRef.current.muted = isMuted;
-          videoRef.current.autoplay = true;
-          videoRef.current.playsInline = true;
-          
-          // Ensure playback
-          videoRef.current.play().catch((err) => {
-            console.warn('[UserVideoSFU] Autoplay prevented:', err);
-          });
-          
-          console.log('[UserVideoSFU] Video stream attached successfully');
-        }
+      if (!videoRef.current) {
+        console.warn('[UserVideoSFU] Video ref not ready');
+        return;
       }
+      
+      // Detach previous track if exists
+      if (lastTrackRef.current) {
+        console.log('[UserVideoSFU] 🔄 Detaching previous track');
+        lastTrackRef.current.detach(videoRef.current);
+      }
+      
+      // Attach the new RemoteTrack directly to our video element
+      videoRef.current.autoplay = true;
+      videoRef.current.playsInline = true;
+      videoRef.current.muted = isMuted;
+      
+      track.attach(videoRef.current);
+      lastTrackRef.current = track;
+      
+      // Attempt playback
+      videoRef.current.play().catch((err) => {
+        console.warn('[UserVideoSFU] Autoplay prevented:', err);
+      });
+      
+      const { clientWidth, clientHeight } = videoRef.current;
+      console.log(`[UserVideoSFU] ✅ Track attached, element size: ${clientWidth}x${clientHeight}, readyState: ${videoRef.current.readyState}`);
     },
     onDisconnected: () => {
       console.warn('[UserVideoSFU] Connection disconnected');
     },
     autoConnect: !!roomCreatorId, // Only connect once room is resolved
   });
+  
+  // Cleanup: detach track on unmount
+  useEffect(() => {
+    return () => {
+      if (lastTrackRef.current && videoRef.current) {
+        console.log('[UserVideoSFU] 🧹 Cleanup: detaching track');
+        lastTrackRef.current.detach(videoRef.current);
+        videoRef.current.srcObject = null;
+        lastTrackRef.current = null;
+      }
+    };
+  }, []);
 
   // Notify parent of connection state changes
   useEffect(() => {

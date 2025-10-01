@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { RemoteTrack } from 'livekit-client';
 import { sfuConnectionManager, ConnectionConfig, ConnectionState } from '@/services/sfu-connection-manager';
 
 export interface UseVideoConnectionOptions {
   config: ConnectionConfig;
-  onVideoElement?: (videoEl: HTMLVideoElement, participantIdentity: string) => void;
+  onRemoteTrack?: (track: RemoteTrack, participantIdentity: string) => void;
   onDisconnected?: () => void;
   autoConnect?: boolean;
 }
@@ -23,7 +24,7 @@ export interface UseVideoConnectionResult {
  */
 export function useVideoConnection({
   config,
-  onVideoElement,
+  onRemoteTrack,
   onDisconnected,
   autoConnect = true,
 }: UseVideoConnectionOptions): UseVideoConnectionResult {
@@ -52,9 +53,9 @@ export function useVideoConnection({
       unsubscribersRef.current.push(unsubState);
 
       // Subscribe to video tracks if handler provided
-      if (onVideoElement) {
-        const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (videoEl, identity) => {
-          onVideoElement(videoEl, identity);
+      if (onRemoteTrack) {
+        const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (track, identity) => {
+          onRemoteTrack(track, identity);
         });
         unsubscribersRef.current.push(unsubVideo);
       }

@@ -106,22 +106,18 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         console.log('[BroadcastViewer] Viewer connected, room key:', roomKey);
         
         // Subscribe to video tracks
-        const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (videoEl, participantIdentity) => {
-          console.log('[BroadcastViewer] Received video element from:', participantIdentity);
-          if (!videoRef.current || !videoRef.current.parentElement) return;
+        const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (track, participantIdentity) => {
+          console.log('[BroadcastViewer] Received track from:', participantIdentity);
+          if (!videoRef.current) return;
           
-          // Configure the incoming video element
-          videoEl.className = videoRef.current.className;
-          videoEl.muted = false;
-          videoEl.playsInline = true;
-          videoEl.autoplay = true;
+          // Attach track directly to the video element
+          videoRef.current.autoplay = true;
+          videoRef.current.playsInline = true;
+          videoRef.current.muted = false;
           
-          // Replace existing video element
-          videoRef.current.parentElement.replaceChild(videoEl, videoRef.current);
-          // @ts-ignore
-          videoRef.current = videoEl;
+          track.attach(videoRef.current);
           
-          videoEl.play().catch(e => console.error('[BroadcastViewer] Play error:', e));
+          videoRef.current.play().catch(e => console.error('[BroadcastViewer] Play error:', e));
         });
         
         // Subscribe to state changes
