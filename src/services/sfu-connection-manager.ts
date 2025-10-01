@@ -1,4 +1,4 @@
-import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, createLocalTracks, LocalTrack } from "livekit-client";
+import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, createLocalTracks, LocalTrack, DisconnectReason } from "livekit-client";
 import { fetchLiveKitToken } from "@/lib/livekitToken";
 
 export type ConnectionConfig = {
@@ -122,8 +122,11 @@ class SFUConnectionManager {
       }
       entry.localTracks = [];
 
+      // Remove all event listeners before disconnect
+      entry.room.removeAllListeners();
       await entry.room.disconnect();
       this.connections.delete(roomKey);
+      this.updateState(roomKey, 'idle');
     }
   }
 
@@ -245,15 +248,17 @@ class SFUConnectionManager {
     });
 
     // Handle disconnection
-    room.on(RoomEvent.Disconnected, (reason?: any) => {
+    room.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
       console.warn(`[SFUConnectionManager] Room disconnected for ${roomKey}:`, reason);
       this.updateState(roomKey, 'disconnected');
       
       // Notify disconnect handlers
       entry.disconnectHandlers.forEach(handler => handler());
       
-      // Attempt reconnection with circuit breaker
-      this.scheduleReconnect(roomKey);
+      // Only reconnect if it's an unexpected disconnect (not client-initiated)
+      if (reason !== DisconnectReason.CLIENT_INITIATED) {
+        this.scheduleReconnect(roomKey);
+      }
     });
 
     // Handle connection state changes
@@ -305,7 +310,10 @@ class SFUConnectionManager {
 
   private scheduleReconnect(roomKey: string): void {
     const entry = this.connections.get(roomKey);
-    if (!entry) return;
+    if (!entry || entry.refCount === 0) {
+      console.debug('[SFUConnectionManager] Skipping reconnect - connection no longer needed');
+      return;
+    }
 
     if (entry.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       console.error(`[SFUConnectionManager] Max reconnect attempts reached for ${roomKey}`);
@@ -318,9 +326,9 @@ class SFUConnectionManager {
       clearTimeout(entry.reconnectTimeout);
     }
 
-    // Calculate exponential backoff
+    // Calculate exponential backoff: 2s, 4s, 8s
     const backoffDelay = Math.min(
-      INITIAL_BACKOFF_MS * Math.pow(2, entry.reconnectAttempts),
+      2000 * Math.pow(2, entry.reconnectAttempts),
       MAX_BACKOFF_MS
     );
 
@@ -328,6 +336,10 @@ class SFUConnectionManager {
     console.log(`[SFUConnectionManager] Scheduling reconnect attempt ${entry.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} for ${roomKey} after ${backoffDelay}ms`);
 
     entry.reconnectTimeout = setTimeout(async () => {
+      if (!entry || entry.refCount === 0) {
+        console.debug('[SFUConnectionManager] Aborting reconnect - no active consumers');
+        return;
+      }
       try {
         await this.performConnection(roomKey, entry);
       } catch (error) {

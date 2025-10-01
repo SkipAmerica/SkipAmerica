@@ -34,11 +34,12 @@ export function useVideoConnection({
 
   const connect = useCallback(async () => {
     if (isConnectingRef.current || roomKeyRef.current) {
-      console.log('[useVideoConnection] Already connected or connecting');
+      console.debug('[useVideoConnection] Already connected or connecting, skipping');
       return;
     }
 
     isConnectingRef.current = true;
+    setConnectionState('connecting');
 
     try {
       const roomKey = await sfuConnectionManager.connect(config);
@@ -73,7 +74,7 @@ export function useVideoConnection({
     } finally {
       isConnectingRef.current = false;
     }
-  }, [config, onVideoElement, onDisconnected]);
+  }, [config.role, config.creatorId, config.identity]);
 
   const disconnect = useCallback(async () => {
     // Unsubscribe from all events
@@ -91,14 +92,14 @@ export function useVideoConnection({
 
   // Auto-connect on mount if enabled
   useEffect(() => {
-    if (autoConnect) {
+    if (autoConnect && !roomKeyRef.current) {
       connect();
     }
 
     return () => {
       disconnect();
     };
-  }, [autoConnect, connect, disconnect]);
+  }, [autoConnect]);
 
   return {
     connectionState,

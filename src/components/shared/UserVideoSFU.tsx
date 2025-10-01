@@ -43,7 +43,6 @@ export function UserVideoSFU({
   onFullscreen
 }: UserVideoSFUProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const currentVideoElementRef = useRef<HTMLVideoElement | null>(null);
   const [isMuted, setIsMuted] = useState(muted);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [roomCreatorId, setRoomCreatorId] = useState<string | null>(null);
@@ -94,31 +93,26 @@ export function UserVideoSFU({
       console.log(`[UserVideoSFU] Received video element for ${participantIdentity}`);
       
       // Only attach video if it matches the filter (for QCC fan video filtering)
-      // Note: For general viewing (no filter), always attach
       if (chatParticipantFilter && participantIdentity !== chatParticipantFilter) {
         console.debug('[UserVideoSFU] Ignoring video from non-matching participant');
         return;
       }
       
-      // Track-based attachment: replace DOM node with the new video element
-      if (videoRef.current && currentVideoElementRef.current !== videoEl) {
-        const parent = videoRef.current.parentElement;
-        if (parent) {
-          // Copy properties to new element
-          videoEl.className = cn("w-full h-full object-cover", dimensions);
-          videoEl.muted = isMuted;
-          videoEl.autoplay = true;
-          videoEl.playsInline = true;
-          
-          // Replace in DOM
-          parent.replaceChild(videoEl, videoRef.current);
-          videoRef.current = videoEl;
-          currentVideoElementRef.current = videoEl;
+      // Use the video element directly - no DOM replacement
+      if (videoRef.current && videoRef.current !== videoEl) {
+        // Copy the srcObject from the manager's video element to our React-managed element
+        if (videoEl.srcObject) {
+          videoRef.current.srcObject = videoEl.srcObject;
+          videoRef.current.muted = isMuted;
+          videoRef.current.autoplay = true;
+          videoRef.current.playsInline = true;
           
           // Ensure playback
-          videoEl.play().catch(() => {});
+          videoRef.current.play().catch((err) => {
+            console.warn('[UserVideoSFU] Autoplay prevented:', err);
+          });
           
-          console.log('[UserVideoSFU] Video element attached and configured');
+          console.log('[UserVideoSFU] Video stream attached successfully');
         }
       }
     },
