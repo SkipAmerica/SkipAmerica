@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 
 export type TokenPayload = {
-  role: "viewer" | "creator" | "publisher";
+  role: "viewer" | "publisher";
   creatorId: string;
   identity: string;
 };

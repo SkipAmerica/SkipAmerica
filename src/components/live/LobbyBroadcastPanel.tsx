@@ -64,7 +64,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
       
       dlog("[CREATOR SFU] Fetching token for:", creatorId);
       const { token, url } = await fetchLiveKitToken({
-        role: "creator",
+        role: "publisher",
         creatorId,
         identity,
       });

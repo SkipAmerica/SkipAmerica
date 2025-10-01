@@ -31,7 +31,7 @@ serve(async (req) => {
     at.addGrant({
       room,
       roomJoin: true,
-      canPublish: ["creator", "publisher"].includes(role),
+      canPublish: role === "publisher",
       canSubscribe: true,
     });
 

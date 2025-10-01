@@ -8,9 +8,9 @@ import { resolveCreatorUserId } from '@/lib/queueResolver';
 import OverlayChat from '@/components/live/OverlayChat';
 import { cn } from '@/lib/utils';
 
-interface UserVideoSFUProps {
+export interface UserVideoSFUProps {
   userId: string;
-  role: 'creator' | 'viewer' | 'publisher';
+  role: 'viewer' | 'publisher';
   dimensions?: string; // CSS classes for sizing
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
@@ -111,11 +111,14 @@ export function UserVideoSFU({
         }
 
         // Determine room creator ID
-        // If chatCreatorId is provided, use it for the room (common when creator views fan)
-        // Otherwise: publishers join their own room, viewers join the creator's resolved room
+        // ROOM LOGIC:
+        // - If chatCreatorId is provided: use it as the room (e.g., creator viewing fan's room)
+        // - Publishers: join their own room (userId as room)
+        // - Viewers: join the resolved creator's room
         const roomCreatorId = chatCreatorId || (role === 'publisher' 
           ? userId 
           : (await resolveCreatorUserId(userId)) || userId);
+        console.debug('[UserVideoSFU] Room logic:', { role, userId, chatCreatorId, roomCreatorId });
         setResolvedUserId(roomCreatorId);
 
         const { supabase } = await import('@/lib/supabaseClient');
@@ -124,7 +127,7 @@ export function UserVideoSFU({
 
         // Get LiveKit token
         const { token, url } = await fetchLiveKitToken({
-          role,
+          role: role as "viewer" | "publisher",
           creatorId: roomCreatorId,
           identity,
         });
@@ -133,8 +136,8 @@ export function UserVideoSFU({
         await sfu.connect(url, token);
         updateConnectionState('connected');
 
-        // Handle local video for creator and publisher roles
-        if (role === 'creator' || role === 'publisher') {
+        // Handle local video for publisher role
+        if (role === 'publisher') {
           await sfu.publishCameraMic();
           
           // Attach local video to preview

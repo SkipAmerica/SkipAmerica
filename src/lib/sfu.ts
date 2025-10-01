@@ -1,6 +1,6 @@
 import { Room, RoomEvent, Track, RemoteTrack, RemoteParticipant, createLocalTracks } from "livekit-client";
 
-export type ConnectArgs = { role: "creator" | "viewer"; creatorId: string; identity: string };
+export type ConnectArgs = { role: "publisher" | "viewer"; creatorId: string; identity: string };
 
 export type SFUHandle = {
   room: Room;
