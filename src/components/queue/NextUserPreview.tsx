@@ -60,6 +60,8 @@ export function NextUserPreview({
         role="viewer"
         videoRoomCreatorId={userId}
         chatCreatorId={creatorId}
+        identityOverride={creatorId}
+        chatParticipantFilter={userId}
         dimensions="w-full aspect-video"
         showChat={false}
         muted={true}

@@ -83,6 +83,7 @@ export function VideoFullscreenModal({
             role="viewer"
             videoRoomCreatorId={userId}
             chatCreatorId={chatCreatorId}
+            identityOverride={chatCreatorId}
             dimensions="w-full h-full"
             showChat={true}
             chatMode={chatParticipantFilter ? "private" : "lobby"}

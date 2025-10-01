@@ -16,6 +16,7 @@ export interface UserVideoSFUProps {
   chatCreatorId?: string; // Override which room to join for chat
   videoRoomCreatorId?: string; // Override which room to connect for video
   chatParticipantFilter?: string; // Filter chat messages by specific participant
+  identityOverride?: string; // Override identity to prevent LiveKit collisions
   className?: string;
   muted?: boolean;
   showControls?: boolean;
@@ -35,6 +36,7 @@ export function UserVideoSFU({
   chatCreatorId,
   videoRoomCreatorId,
   chatParticipantFilter,
+  identityOverride,
   className = "",
   muted = true,
   showControls = false,
@@ -96,7 +98,10 @@ export function UserVideoSFU({
     config: {
       role,
       creatorId: roomCreatorId || userId,
-      identity: userId,
+      // Unique identity: publishers use their userId, viewers use override or create unique identity
+      identity: role === 'publisher' 
+        ? userId 
+        : (identityOverride || `${userId}-viewer-${Date.now()}`),
     },
     onVideoElement: (videoEl, participantIdentity) => {
       console.log(`[UserVideoSFU] Received video element for ${participantIdentity}`);
