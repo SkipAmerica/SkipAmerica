@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { RemoteTrack } from 'livekit-client';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Volume2, VolumeX, Loader2, AlertCircle, Expand } from 'lucide-react';
+import { Volume2, VolumeX, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
 import { useVideoConnection } from '@/hooks/use-video-connection';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import OverlayChat from '@/components/live/OverlayChat';
@@ -24,6 +24,7 @@ export interface UserVideoSFUProps {
   showFullscreenButton?: boolean;
   fallbackAvatar?: string;
   fallbackName?: string;
+  userName?: string;
   onConnectionChange?: (state: 'idle' | 'connecting' | 'connected' | 'failed' | 'disconnected') => void;
   onFullscreen?: () => void;
 }
@@ -44,6 +45,7 @@ export function UserVideoSFU({
   showFullscreenButton = false,
   fallbackAvatar,
   fallbackName = "User",
+  userName,
   onConnectionChange,
   onFullscreen
 }: UserVideoSFUProps) {
@@ -232,16 +234,17 @@ export function UserVideoSFU({
         />
       )}
 
-      {/* Fullscreen Button */}
+      {/* Private Chat Button */}
       {showFullscreenButton && isConnected && onFullscreen && (
         <div className="absolute top-2 right-2 z-30">
           <Button
             onClick={onFullscreen}
             variant="outline"
-            size="icon"
-            className="bg-black/50 border-white/20 text-white hover:bg-black/70 h-8 w-8"
+            size="sm"
+            className="bg-black/50 border-white/20 text-white hover:bg-black/70 flex items-center gap-2"
           >
-            <Expand className="w-4 h-4" />
+            <MessageCircle className="w-4 h-4" />
+            <span className="text-xs">Private Chat{userName ? ` with ${userName}` : ''}</span>
           </Button>
         </div>
       )}

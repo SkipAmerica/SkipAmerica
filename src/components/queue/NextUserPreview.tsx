@@ -68,6 +68,7 @@ export function NextUserPreview({
         showControls={false}
         showFullscreenButton={true}
         fallbackName={userName}
+        userName={userName}
         className="border border-primary/20 rounded-lg"
         onFullscreen={onFullscreen}
       />
