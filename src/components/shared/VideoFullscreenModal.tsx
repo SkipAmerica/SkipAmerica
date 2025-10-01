@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface VideoFullscreenModalProps {
   userId: string; // The target user whose video we're viewing
+  chatCreatorId: string; // The creator whose chat room to connect to
   isOpen: boolean;
   onClose: () => void;
   userName?: string;
@@ -19,6 +20,7 @@ interface VideoFullscreenModalProps {
 
 export function VideoFullscreenModal({
   userId,
+  chatCreatorId,
   isOpen,
   onClose,
   userName = "Creator",
@@ -79,7 +81,7 @@ export function VideoFullscreenModal({
           <UserVideoSFU
             userId={userId}
             role="viewer"
-            chatCreatorId={userId}
+            chatCreatorId={chatCreatorId}
             dimensions="w-full h-full"
             showChat={true}
             chatMode={chatParticipantFilter ? "private" : "lobby"}

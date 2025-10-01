@@ -392,9 +392,10 @@ export function QueueContent() {
       </div>
       
       {/* Fullscreen Modal */}
-      {fullscreenUserId && (
+      {fullscreenUserId && user && (
         <VideoFullscreenModal
           userId={fullscreenUserId}
+          chatCreatorId={user.id}
           isOpen={isFullscreenOpen}
           onClose={handleCloseFullscreen}
           userName={state.entries.find(e => e.fan_id === fullscreenUserId)?.profiles?.full_name || "User"}
