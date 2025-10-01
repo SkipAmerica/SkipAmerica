@@ -135,30 +135,34 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
 
       {/* Help Dialog */}
       <Dialog open={showHelp} onOpenChange={setShowHelp}>
-        <DialogContent className="bg-background border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle>Choose Your Role</DialogTitle>
+        <DialogContent className="bg-white/10 backdrop-blur-lg border-white/30 max-w-md animate-scale-in">
+          <DialogHeader className="space-y-3">
+            <DialogTitle className="text-2xl text-white/90 font-semibold">Choose Your Role</DialogTitle>
             <DialogDescription className="sr-only">
               Learn about Creator and User roles
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6 pt-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">Creator</h3>
+          <div className="space-y-8 pt-6">
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <Crown className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-xl text-white">Creator</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/70 leading-relaxed pl-13">
                 Skip empowers you to share your expertise, cultivate meaningful connections, and turn influence into lasting impact.
               </p>
             </div>
             
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <h3 className="font-semibold text-lg">User</h3>
+            <div className="space-y-3 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="font-semibold text-xl text-white">User</h3>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/70 leading-relaxed pl-13">
                 Gain rare, one-on-one access to the people who can inspire, guide, and transform your life and journey.
               </p>
             </div>
