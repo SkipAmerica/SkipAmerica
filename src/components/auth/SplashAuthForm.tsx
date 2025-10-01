@@ -3,9 +3,16 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/app/providers/auth-provider'
-import { Loader2, Users, Crown, LogIn, Mail } from 'lucide-react'
+import { Loader2, Users, Crown, LogIn, Mail, HelpCircle } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface SplashAuthFormProps {
   onSuccess?: () => void
@@ -24,6 +31,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [formError, setFormError] = useState('')
+  const [showHelp, setShowHelp] = useState(false)
 
   const handleSocialAuth = async (provider: 'google' | 'apple') => {
     setIsLoading(true)
@@ -116,6 +124,48 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
 
   return (
     <div className="fixed inset-0 bg-gradient-splash flex flex-col items-center justify-center p-6 overflow-y-auto">
+      {/* Help Button */}
+      <button
+        onClick={() => setShowHelp(true)}
+        className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-all"
+        aria-label="Help"
+      >
+        <HelpCircle className="h-5 w-5" />
+      </button>
+
+      {/* Help Dialog */}
+      <Dialog open={showHelp} onOpenChange={setShowHelp}>
+        <DialogContent className="bg-background border-border max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose Your Role</DialogTitle>
+            <DialogDescription className="sr-only">
+              Learn about Creator and User roles
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">Creator</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Skip empowers you to share your expertise, cultivate meaningful connections, and turn influence into lasting impact.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-lg">User</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Gain rare, one-on-one access to the people who can inspire, guide, and transform your life and journey.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Skip Logo */}
       <div className="mb-12 animate-fade-in">
         <h1 className="text-5xl font-bold text-white">
