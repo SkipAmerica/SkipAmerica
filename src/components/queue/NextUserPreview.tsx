@@ -4,7 +4,7 @@ import { UserVideoSFU } from '@/components/shared/UserVideoSFU';
 import { cn } from '@/lib/utils';
 
 interface NextUserPreviewProps {
-  fanId: string;
+  userId: string; // The fan whose video we're viewing
   creatorId: string;
   userName?: string;
   discussionTopic?: string;
@@ -14,7 +14,7 @@ interface NextUserPreviewProps {
 }
 
 export function NextUserPreview({
-  fanId,
+  userId,
   creatorId,
   userName = 'Anonymous User',
   discussionTopic,
@@ -51,9 +51,9 @@ export function NextUserPreview({
       
       {/* Fan's Camera Feed - Creator viewing fan's room */}
       <UserVideoSFU
-        userId={fanId}
+        userId={userId}
         role="viewer"
-        chatCreatorId={fanId}
+        chatCreatorId={userId}
         dimensions="w-full aspect-video"
         showChat={false}
         muted={true}

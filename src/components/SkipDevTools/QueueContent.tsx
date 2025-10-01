@@ -329,7 +329,7 @@ export function QueueContent() {
                     </div>
                   </div>
                   <NextUserPreview
-                    fanId={state.entries[0].fan_id}
+                    userId={state.entries[0].fan_id}
                     creatorId={user.id}
                     userName={state.entries[0].profiles?.full_name}
                     discussionTopic={state.entries[0].discussion_topic}
@@ -398,7 +398,7 @@ export function QueueContent() {
           isOpen={isFullscreenOpen}
           onClose={handleCloseFullscreen}
           userName={state.entries.find(e => e.fan_id === fullscreenUserId)?.profiles?.full_name || "User"}
-          creatorId={user?.id}
+          chatParticipantFilter={fullscreenUserId}
           viewerIsCreator={true}
         />
       )}

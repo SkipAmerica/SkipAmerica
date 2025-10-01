@@ -9,11 +9,11 @@ import { UserVideoSFU } from './UserVideoSFU';
 import { cn } from '@/lib/utils';
 
 interface VideoFullscreenModalProps {
-  userId: string;
+  userId: string; // The target user whose video we're viewing
   isOpen: boolean;
   onClose: () => void;
   userName?: string;
-  creatorId?: string;
+  chatParticipantFilter?: string; // For private chat filtering
   viewerIsCreator?: boolean;
 }
 
@@ -22,7 +22,7 @@ export function VideoFullscreenModal({
   isOpen,
   onClose,
   userName = "Creator",
-  creatorId,
+  chatParticipantFilter,
   viewerIsCreator = false
 }: VideoFullscreenModalProps) {
   const [showNotification, setShowNotification] = useState(false);
@@ -79,11 +79,11 @@ export function VideoFullscreenModal({
           <UserVideoSFU
             userId={userId}
             role="viewer"
-            chatCreatorId={viewerIsCreator ? userId : userId}
+            chatCreatorId={userId}
             dimensions="w-full h-full"
             showChat={true}
-            chatMode={creatorId ? "private" : "lobby"}
-            fanId={viewerIsCreator ? userId : creatorId}
+            chatMode={chatParticipantFilter ? "private" : "lobby"}
+            chatParticipantFilter={chatParticipantFilter}
             showControls={true}
             className="rounded-none"
           />

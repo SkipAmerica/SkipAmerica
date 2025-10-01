@@ -5,7 +5,7 @@ import { createOverlayConfig, createPrivateConfig } from '@/lib/chatConfigs';
 type Props = {
   creatorId: string;
   chatMode?: 'lobby' | 'private';
-  fanId?: string;
+  participantFilter?: string; // For filtering private chat messages
   className?: string;
   leftButton?: React.ReactNode;
 };
@@ -13,12 +13,12 @@ type Props = {
 export default function OverlayChat({ 
   creatorId, 
   chatMode = 'lobby',
-  fanId,
+  participantFilter,
   className = "",
   leftButton
 }: Props) {
-  const config = chatMode === 'private' && fanId
-    ? createPrivateConfig(creatorId, fanId)
+  const config = chatMode === 'private' && participantFilter
+    ? createPrivateConfig(creatorId, participantFilter)
     : createOverlayConfig(creatorId);
   
   return (

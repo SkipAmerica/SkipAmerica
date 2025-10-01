@@ -9,13 +9,13 @@ import OverlayChat from '@/components/live/OverlayChat';
 import { cn } from '@/lib/utils';
 
 export interface UserVideoSFUProps {
-  userId: string;
+  userId: string; // Target user whose video/room we're joining
   role: 'viewer' | 'publisher';
   dimensions?: string; // CSS classes for sizing
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
-  chatCreatorId?: string;
-  fanId?: string;
+  chatCreatorId?: string; // Override which room to join for chat
+  chatParticipantFilter?: string; // Filter chat messages by specific participant
   className?: string;
   muted?: boolean;
   showControls?: boolean;
@@ -35,7 +35,7 @@ export function UserVideoSFU({
   showChat = false,
   chatMode = 'lobby',
   chatCreatorId,
-  fanId,
+  chatParticipantFilter,
   className = "",
   muted = true,
   showControls = false,
@@ -86,10 +86,10 @@ export function UserVideoSFU({
         // Handle remote video for viewer role
         if (role === 'viewer') {
           sfu.onRemoteVideo((incomingVideo, participantIdentity) => {
-            console.debug('[UserVideoSFU] Remote video received:', { participantIdentity, fanId, shouldAttach: !fanId || participantIdentity === fanId });
+            console.debug('[UserVideoSFU] Remote video received:', { participantIdentity, chatParticipantFilter, shouldAttach: !chatParticipantFilter || participantIdentity === chatParticipantFilter });
             
-            // If fanId is provided, only attach video from that specific participant
-            if (fanId && participantIdentity !== fanId) {
+            // If chatParticipantFilter is provided, only attach video from that specific participant
+            if (chatParticipantFilter && participantIdentity !== chatParticipantFilter) {
               console.debug('[UserVideoSFU] Ignoring video from non-matching participant');
               return;
             }
@@ -213,7 +213,7 @@ export function UserVideoSFU({
         <OverlayChat 
           creatorId={chatCreatorId || resolvedUserId}
           chatMode={chatMode}
-          fanId={fanId}
+          participantFilter={chatParticipantFilter}
           leftButton={
             showControls ? (
               <Button
