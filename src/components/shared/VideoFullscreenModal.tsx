@@ -87,6 +87,7 @@ export function VideoFullscreenModal({
             chatMode={chatParticipantFilter ? "private" : "lobby"}
             chatParticipantFilter={chatParticipantFilter}
             showControls={true}
+            fallbackName={userName}
             className="rounded-none"
           />
         </div>
