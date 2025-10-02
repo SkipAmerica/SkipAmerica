@@ -183,11 +183,11 @@ export default function Inbox() {
           </div>
         )}
 
-        {/* Inbox Tabs */}
-        <InboxTabs />
-
         {/* Search & Filters */}
         <InboxSearch />
+
+        {/* Inbox Tabs */}
+        <InboxTabs />
 
         {/* Thread List */}
         <div className="flex-1 overflow-hidden">
