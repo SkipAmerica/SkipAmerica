@@ -146,24 +146,23 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         </div>
         <div className="flex items-center space-x-4">
           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="ios-touchable h-[70px] px-3 relative"
+            variant="ghost"
+            className="ios-touchable h-[70px] w-[70px] p-0 relative"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
           >
-            <Users size={38} />
+            <Users className="w-[38px] h-[38px]" />
             {queueCount > 0 && (
               <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {queueCount}
               </div>
             )}
           </Button>
-          <Button variant="ghost" size="sm" className="ios-touchable h-[70px] px-3">
-            <Heart size={38} />
+          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0">
+            <Heart className="w-[38px] h-[38px]" />
           </Button>
-          <Button variant="ghost" size="sm" className="ios-touchable h-[70px] px-3 relative">
-            <Phone size={38} />
+          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0 relative">
+            <Phone className="w-[38px] h-[38px]" />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
@@ -172,12 +171,11 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           {/* Mail Icon with Badges - Only for creators */}
           {profile?.account_type === 'creator' && (
             <Button 
-              variant="ghost" 
-              size="sm" 
-              className="ios-touchable h-[70px] px-3 relative"
+              variant="ghost"
+              className="ios-touchable h-[70px] w-[70px] p-0 relative"
               onClick={() => navigate('/inbox')}
             >
-              <Mail size={38} />
+              <Mail className="w-[38px] h-[38px]" />
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
@@ -193,12 +191,11 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
             </Button>
           )}
           <Button 
-            variant="ghost" 
-            size="sm" 
-            className="ios-touchable h-[70px] px-3"
+            variant="ghost"
+            className="ios-touchable h-[70px] w-[70px] p-0"
             onClick={onMenuClick}
           >
-            <Menu size={38} />
+            <Menu className="w-[38px] h-[38px]" />
           </Button>
         </div>
       </div>
