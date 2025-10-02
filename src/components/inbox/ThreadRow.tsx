@@ -31,15 +31,19 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
     addSuffix: true,
   });
 
-  const getTypePill = () => {
+  const renderOfferBadge = () => {
     if (thread.type === 'offer' && thread.offer) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 border border-green-200 text-xs text-green-700">
-          <DollarSign className="w-3 h-3" />
-          Offer • ${(thread.offer.amount_cents / 100).toFixed(0)}/{thread.offer.duration_minutes}m
-        </span>
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-green-600 text-white font-semibold text-sm mb-2">
+          <Star className="w-4 h-4 fill-white" />
+          ${(thread.offer.amount_cents / 100).toFixed(0)} • {thread.offer.duration_minutes}m
+        </div>
       );
     }
+    return null;
+  };
+
+  const getTypePill = () => {
     if (thread.type === 'priority') {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-50 border border-yellow-200 text-xs text-yellow-700">
@@ -71,6 +75,9 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
 
         {/* Content */}
         <div className="flex-1 min-w-0">
+          {/* Offer Badge - Prominent */}
+          {renderOfferBadge()}
+          
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex items-center gap-2">
               <h3 className="font-medium text-gray-900 truncate">
