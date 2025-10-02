@@ -98,12 +98,12 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900">
-      {/* Glass container */}
+    <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50">
+      {/* Main container */}
       <div className="h-screen flex flex-col">
         {/* Header with Dev Seeding */}
         {import.meta.env.DEV && (
-          <div className="p-4 border-b border-white/10 flex justify-end">
+          <div className="p-4 border-b border-gray-200 flex justify-end">
             <button
               onClick={async () => {
                 const { supabase } = await import('@/integrations/supabase/client');
@@ -176,7 +176,7 @@ export default function Inbox() {
 
                 window.location.reload();
               }}
-              className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-lg text-sm text-white transition-colors"
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-sm text-gray-900 transition-colors"
             >
               Seed Inbox Data
             </button>

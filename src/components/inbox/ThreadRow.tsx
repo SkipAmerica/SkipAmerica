@@ -34,7 +34,7 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
   const getTypePill = () => {
     if (thread.type === 'offer' && thread.offer) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-accent/20 border border-accent/30 text-xs text-foreground">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 border border-green-200 text-xs text-green-700">
           <DollarSign className="w-3 h-3" />
           Offer • ${(thread.offer.amount_cents / 100).toFixed(0)}/{thread.offer.duration_minutes}m
         </span>
@@ -42,7 +42,7 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
     }
     if (thread.type === 'priority') {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/20 border border-primary/30 text-xs text-foreground">
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-50 border border-yellow-200 text-xs text-yellow-700">
           <Star className="w-3 h-3" />
           Priority
         </span>
@@ -55,17 +55,16 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
     <button
       onClick={onClick}
       className={cn(
-        'w-full p-4 rounded-2xl transition-all duration-200 text-left',
-        'bg-muted/50 border border-border/50 hover:bg-muted',
-        'shadow-[0_8px_30px_rgba(0,0,0,0.12)]',
-        isUnread && 'ring-1 ring-primary/30'
+        'w-full p-4 rounded-xl transition-all duration-200 text-left border-b border-gray-100',
+        'bg-white hover:bg-gray-50',
+        isUnread && 'bg-blue-50/50'
       )}
     >
       <div className="flex items-start gap-3">
         {/* Avatar */}
-        <Avatar className="w-12 h-12 ring-2 ring-border/50">
+        <Avatar className="w-12 h-12 ring-2 ring-gray-200">
           <AvatarImage src={thread.user.avatar_url} alt={thread.user.full_name} />
-          <AvatarFallback className="bg-primary/20 text-foreground">
+          <AvatarFallback className="bg-gray-100 text-gray-900">
             {thread.user.full_name.charAt(0).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -74,14 +73,14 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-medium text-foreground truncate">
+              <h3 className="font-medium text-gray-900 truncate">
                 {thread.user.full_name}
               </h3>
               {isUnread && (
                 <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
               )}
             </div>
-            <span className="text-xs text-muted-foreground flex-shrink-0">
+            <span className="text-xs text-gray-500 flex-shrink-0">
               {formattedTime}
             </span>
           </div>
@@ -94,7 +93,7 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
           )}
 
           {/* Message Preview */}
-          <p className="text-sm text-muted-foreground line-clamp-2">
+          <p className="text-sm text-gray-600 line-clamp-2">
             {thread.last_message_preview || 'No messages yet'}
           </p>
         </div>
