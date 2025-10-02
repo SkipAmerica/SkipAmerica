@@ -38,7 +38,7 @@ export function InboxTabs() {
       <div className="relative flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
         {/* Sliding active indicator */}
         <div
-          className="absolute top-1 bottom-1 bg-white rounded-lg shadow-sm border border-gray-200 transition-all duration-300 ease-out"
+          className="absolute top-1 bottom-1 bg-cyan-500 rounded-lg shadow-sm transition-all duration-300 ease-out"
           style={{
             left: `${activeIndex * 25}%`,
             width: 'calc(25% - 0.5rem)',
@@ -58,13 +58,13 @@ export function InboxTabs() {
               className={cn(
                 'relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 z-10',
                 isActive
-                  ? 'text-gray-900'
+                  ? 'text-white'
                   : 'text-gray-600 hover:text-gray-900'
               )}
             >
               <Icon className={cn(
                 'w-4 h-4 transition-colors',
-                isActive ? 'text-primary' : 'text-gray-500'
+                isActive ? 'text-white' : 'text-gray-500'
               )} />
               <span className={cn(
                 'text-sm font-medium transition-colors'

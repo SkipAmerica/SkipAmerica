@@ -12,8 +12,11 @@ import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLive } from '@/hooks/live';
 import DiscoverabilityModal from '@/components/DiscoverabilityModal';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export default function Inbox() {
+  const [isSeeding, setIsSeeding] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useProfile();
@@ -122,10 +125,10 @@ export default function Inbox() {
             variant="ghost"
             size="sm"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 -ml-2 text-primary hover:text-primary/80 hover:bg-transparent"
+            className="flex items-center gap-1 -ml-2 text-black hover:text-black/80 hover:bg-transparent"
           >
-            <ChevronLeft className="h-6 w-6" />
-            <span className="text-base font-semibold">Inbox</span>
+            <ChevronLeft className="h-7 w-7" />
+            <span className="text-xl font-bold">Inbox</span>
           </Button>
         </div>
       </div>
@@ -135,79 +138,101 @@ export default function Inbox() {
         <div className="fixed top-14 left-0 right-0 z-40 p-4 border-b border-border bg-background flex justify-end safe-top">
           <button
             onClick={async () => {
-              const { supabase } = await import('@/integrations/supabase/client');
-              const { data: { user } } = await supabase.auth.getUser();
-              if (!user) return;
-
-              // Create sample fan profiles  
-              const fan1 = await supabase.from('profiles').insert({
-                id: crypto.randomUUID(),
-                full_name: 'Sarah Johnson',
-                account_type: 'fan' as const
-              } as any).select().single();
+              if (isSeeding) return;
               
-              const fan2 = await supabase.from('profiles').insert({
-                id: crypto.randomUUID(),
-                full_name: 'Mike Davis',
-                account_type: 'fan' as const
-              } as any).select().single();
-
-              if (!fan1.data || !fan2.data) return;
-
-              // Offer threads
-              await supabase.from('offers').insert([
-                {
-                  creator_id: user.id,
-                  user_id: fan1.data.id,
-                  amount_cents: 20000,
-                  currency: 'USD',
-                  duration_minutes: 30,
-                  status: 'pending',
-                  note: 'Would love to discuss your latest project!'
+              setIsSeeding(true);
+              try {
+                console.log('Starting inbox data seeding...');
+                const { supabase } = await import('@/integrations/supabase/client');
+                const { data: { user } } = await supabase.auth.getUser();
+                
+                if (!user) {
+                  throw new Error('No user found');
                 }
-              ]);
 
-              // Priority threads
-              await supabase.from('threads').insert([
-                {
-                  creator_id: user.id,
-                  user_id: fan2.data.id,
-                  type: 'priority',
-                  last_message_at: new Date().toISOString(),
-                  last_message_preview: 'Thanks for taking the time to chat!',
-                  unread_count_creator: 1
+                // Create sample fan profiles  
+                console.log('Creating fan profiles...');
+                const fan1 = await supabase.from('profiles').insert({
+                  id: crypto.randomUUID(),
+                  full_name: 'Sarah Johnson',
+                  account_type: 'fan' as const
+                } as any).select().single();
+                
+                const fan2 = await supabase.from('profiles').insert({
+                  id: crypto.randomUUID(),
+                  full_name: 'Mike Davis',
+                  account_type: 'fan' as const
+                } as any).select().single();
+
+                if (!fan1.data || !fan2.data) {
+                  throw new Error('Failed to create fan profiles');
                 }
-              ]);
 
-              // Standard threads
-              await supabase.from('threads').insert([
-                {
-                  creator_id: user.id,
-                  user_id: fan1.data.id,
-                  type: 'standard',
-                  last_message_at: new Date(Date.now() - 3600000).toISOString(),
-                  last_message_preview: 'Looking forward to our next session',
-                  unread_count_creator: 0
-                }
-              ]);
+                console.log('Creating offers...');
+                await supabase.from('offers').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan1.data.id,
+                    amount_cents: 20000,
+                    currency: 'USD',
+                    duration_minutes: 30,
+                    status: 'pending',
+                    note: 'Would love to discuss your latest project!'
+                  }
+                ]);
 
-              // Request threads
-              await supabase.from('threads').insert([
-                {
-                  creator_id: user.id,
-                  user_id: fan2.data.id,
-                  type: 'request',
-                  last_message_at: new Date(Date.now() - 7200000).toISOString(),
-                  last_message_preview: 'Hi! Would love to connect with you',
-                  unread_count_creator: 1
-                }
-              ]);
+                console.log('Creating priority threads...');
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan2.data.id,
+                    type: 'priority',
+                    last_message_at: new Date().toISOString(),
+                    last_message_preview: 'Thanks for taking the time to chat!',
+                    unread_count_creator: 1
+                  }
+                ]);
 
-              window.location.reload();
+                console.log('Creating standard threads...');
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan1.data.id,
+                    type: 'standard',
+                    last_message_at: new Date(Date.now() - 3600000).toISOString(),
+                    last_message_preview: 'Looking forward to our next session',
+                    unread_count_creator: 0
+                  }
+                ]);
+
+                console.log('Creating request threads...');
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan2.data.id,
+                    type: 'request',
+                    last_message_at: new Date(Date.now() - 7200000).toISOString(),
+                    last_message_preview: 'Hi! Would love to connect with you',
+                    unread_count_creator: 1
+                  }
+                ]);
+
+                console.log('✅ Inbox data seeded successfully!');
+                toast.success('Inbox data seeded successfully!');
+                
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1000);
+              } catch (error) {
+                console.error('❌ Failed to seed inbox data:', error);
+                toast.error('Failed to seed inbox data. Check console for details.');
+                setIsSeeding(false);
+              }
             }}
-            className="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm text-foreground transition-colors"
+            disabled={isSeeding}
+            className="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Seed Inbox Data
+            {isSeeding ? 'Seeding...' : 'Seed Inbox Data'}
           </button>
         </div>
       )}
