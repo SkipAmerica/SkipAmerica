@@ -147,22 +147,22 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         <div className="flex items-center space-x-4">
           <Button 
             variant="ghost"
-            className="ios-touchable h-[70px] w-[70px] p-0 relative"
+            className="ios-touchable h-[70px] w-[70px] p-0 relative [&_svg]:!w-[38px] [&_svg]:!h-[38px]"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
           >
-            <Users className="w-[38px] h-[38px]" />
+            <Users size={38} />
             {queueCount > 0 && (
               <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {queueCount}
               </div>
             )}
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0">
-            <Heart className="w-[38px] h-[38px]" />
+          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0 [&_svg]:!w-[38px] [&_svg]:!h-[38px]">
+            <Heart size={38} />
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0 relative">
-            <Phone className="w-[38px] h-[38px]" />
+          <Button variant="ghost" className="ios-touchable h-[70px] w-[70px] p-0 relative [&_svg]:!w-[38px] [&_svg]:!h-[38px]">
+            <Phone size={38} />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
@@ -172,10 +172,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           {profile?.account_type === 'creator' && (
             <Button 
               variant="ghost"
-              className="ios-touchable h-[70px] w-[70px] p-0 relative"
+              className="ios-touchable h-[70px] w-[70px] p-0 relative [&_svg]:!w-[38px] [&_svg]:!h-[38px]"
               onClick={() => navigate('/inbox')}
             >
-              <Mail className="w-[38px] h-[38px]" />
+              <Mail size={38} />
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
@@ -192,10 +192,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           )}
           <Button 
             variant="ghost"
-            className="ios-touchable h-[70px] w-[70px] p-0"
+            className="ios-touchable h-[70px] w-[70px] p-0 [&_svg]:!w-[38px] [&_svg]:!h-[38px]"
             onClick={onMenuClick}
           >
-            <Menu className="w-[38px] h-[38px]" />
+            <Menu size={38} />
           </Button>
         </div>
       </div>
