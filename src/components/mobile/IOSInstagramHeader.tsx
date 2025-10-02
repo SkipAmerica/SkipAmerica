@@ -186,9 +186,9 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
                 </span>
               )}
               
-              {/* Green dot for priority/offers */}
+              {/* Green badge for priority/offers - same size, positioned below */}
               {(inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0) && (
-                <span className="absolute top-4 -right-0.5 w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="absolute top-2 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light"></span>
               )}
             </Button>
           )}
