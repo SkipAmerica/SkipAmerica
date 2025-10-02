@@ -11,23 +11,23 @@ export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
     <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in">
       <div className="w-full max-w-md space-y-8">
         {/* Glass card */}
-        <div className="relative backdrop-blur-md bg-background/95 rounded-2xl p-8 shadow-2xl border border-border/50">
+        <div className="relative backdrop-blur-sm bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/30">
           {/* Glow effect */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl blur-xl -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl blur-xl -z-10" />
           
           {/* Icon */}
           <div className="flex justify-center mb-6">
-            <div className="p-4 rounded-full bg-primary/20 backdrop-blur-sm">
-              <Sparkles className="w-12 h-12 text-primary" />
+            <div className="p-4 rounded-full bg-white/20 backdrop-blur-sm">
+              <Sparkles className="w-12 h-12 text-white" />
             </div>
           </div>
 
           {/* Content */}
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold text-white">
               Welcome to Skip Creator
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-white/80">
               Let's set up your profile so people can discover you
             </p>
           </div>
@@ -37,7 +37,7 @@ export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
             <Button
               onClick={onContinue}
               size="lg"
-              className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 transition-opacity"
+              className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm"
             >
               Get Started
             </Button>
@@ -45,7 +45,7 @@ export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
               onClick={onSkip}
               variant="ghost"
               size="lg"
-              className="w-full"
+              className="w-full text-white hover:bg-white/10"
             >
               Skip for now
             </Button>
@@ -53,7 +53,7 @@ export function WelcomeScreen({ onContinue, onSkip }: WelcomeScreenProps) {
         </div>
 
         {/* Info text */}
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-white/70">
           You can always complete this later, but you'll need a complete profile to appear in search
         </p>
       </div>

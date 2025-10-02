@@ -155,25 +155,25 @@ export function ProfileSetupStep({
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in">
       <div className="w-full max-w-md space-y-8">
-        <div className="relative backdrop-blur-md bg-background/95 rounded-2xl p-8 shadow-2xl border border-border/50">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl blur-xl -z-10" />
+        <div className="relative backdrop-blur-sm bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/30">
+          <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl blur-xl -z-10" />
 
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold">
+              <h2 className="text-3xl font-bold text-white">
                 {hasExistingData ? 'Review Your Profile' : 'Setup Your Profile'}
               </h2>
-              <p className="text-muted-foreground mt-2">
+              <p className="text-white/80 mt-2">
                 {hasExistingData ? 'Edit your details or continue' : 'Help fans find and recognize you'}
               </p>
             </div>
 
             {/* Photo Upload */}
             <div className="flex flex-col items-center gap-4">
-              <Avatar className="w-32 h-32 border-4 border-border">
+              <Avatar className="w-32 h-32 border-4 border-white/30">
                 <AvatarImage src={preview || undefined} />
-                <AvatarFallback className="bg-muted">
-                  <Camera className="w-12 h-12 text-muted-foreground" />
+                <AvatarFallback className="bg-white/10">
+                  <Camera className="w-12 h-12 text-white/70" />
                 </AvatarFallback>
               </Avatar>
 
@@ -188,26 +188,26 @@ export function ProfileSetupStep({
               <div
                 onDrop={handleDrop}
                 onDragOver={(e) => e.preventDefault()}
-                className="w-full p-4 border-2 border-dashed border-border rounded-lg text-center cursor-pointer hover:border-primary transition-colors"
+                className="w-full p-4 border-2 border-dashed border-white/30 rounded-lg text-center cursor-pointer hover:border-white/50 transition-colors bg-white/5"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="w-6 h-6 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
+                <Upload className="w-6 h-6 mx-auto mb-2 text-white/70" />
+                <p className="text-sm text-white/80">
                   {uploading ? 'Uploading...' : preview ? 'Change Photo' : 'Upload Photo'}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Max 5MB • JPG, PNG, GIF, WEBP</p>
+                <p className="text-xs text-white/60 mt-1">Max 5MB • JPG, PNG, GIF, WEBP</p>
               </div>
             </div>
 
             {/* Display Name Field */}
             <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name</Label>
+              <Label htmlFor="displayName" className="text-white/90">Display Name</Label>
               <Input
                 id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Your name or stage name"
-                className="backdrop-blur-sm bg-background/50 border-border/50 focus:border-primary transition-colors"
+                className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 transition-colors"
                 maxLength={50}
                 disabled={saving || uploading}
               />
@@ -215,21 +215,21 @@ export function ProfileSetupStep({
 
             {/* Tagline/Bio Field */}
             <div className="space-y-2">
-              <Label htmlFor="tagline">
+              <Label htmlFor="tagline" className="text-white/90">
                 Your Bio
-                <span className="text-muted-foreground text-xs ml-2">({tagline.length}/100)</span>
+                <span className="text-white/60 text-xs ml-2">({tagline.length}/100)</span>
               </Label>
               <Textarea
                 id="tagline"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
                 placeholder="Describe what you do..."
-                className="backdrop-blur-sm bg-background/50 border-border/50 focus:border-primary transition-colors resize-none"
+                className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 transition-colors resize-none"
                 rows={3}
                 maxLength={100}
                 disabled={saving || uploading}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/60">
                 Example: "Fitness coach helping you achieve your goals"
               </p>
             </div>
@@ -240,7 +240,7 @@ export function ProfileSetupStep({
                 onClick={handleContinue}
                 disabled={saving || uploading || !displayName.trim() || !tagline.trim()}
                 size="lg"
-                className="w-full"
+                className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm"
               >
                 {saving ? (
                   <>
@@ -255,7 +255,7 @@ export function ProfileSetupStep({
                 onClick={onSkip}
                 variant="ghost"
                 size="lg"
-                className="w-full"
+                className="w-full text-white hover:bg-white/10"
                 disabled={saving || uploading}
               >
                 Skip for now
@@ -264,7 +264,7 @@ export function ProfileSetupStep({
           </div>
         </div>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-white/70">
           {displayName && tagline ? (photoUrl ? '60%' : '50%') : '30%'} of profile completion
         </p>
       </div>

@@ -72,10 +72,10 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
   const selectedIndustries = INDUSTRIES.filter(i => selected.includes(i.id));
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-to-b from-background via-background to-background/50">
+    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-splash">
       {/* Fixed Selection Bar at Top */}
       <div className={cn(
-        "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/30 transition-all duration-500",
+        "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/10 border-b border-white/20 transition-all duration-500",
         selected.length > 0 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       )}>
         <div className={cn(
@@ -84,12 +84,12 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
         )}>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-muted-foreground">My Industries</h3>
+              <h3 className="text-sm font-semibold text-white/80">My Industries</h3>
               <span className={cn(
                 "text-sm font-bold transition-colors duration-300",
-                selected.length === 1 && "text-blue-500",
-                selected.length === 2 && "text-blue-600",
-                selected.length === 3 && "text-primary"
+                selected.length === 1 && "text-white/90",
+                selected.length === 2 && "text-white/95",
+                selected.length === 3 && "text-white"
               )}>
                 {selected.length} of 3
               </span>
@@ -130,7 +130,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                 );
               })}
               {selected.length === 0 && (
-                <p className="text-sm text-muted-foreground italic">
+                <p className="text-sm text-white/70 italic">
                   Tap a card below to add it here
                 </p>
               )}
@@ -150,10 +150,10 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
         <div className="w-full max-w-6xl mx-auto space-y-12">
           {/* Header */}
           <div className="text-center space-y-4">
-            <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+            <h2 className="text-4xl sm:text-5xl font-bold text-white">
               Choose Your Industries
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-white/80 text-lg max-w-2xl mx-auto">
               Select up to 3 categories that best describe what you do. Swipe through the wheel to explore all options.
             </p>
           </div>
@@ -193,8 +193,8 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                           isAnimating && "animate-[flyUp_0.4s_ease-in-out] pointer-events-none",
                           !isSelected && !isAnimating && "hover:scale-105 active:scale-100 cursor-pointer",
                           isSelected 
-                            ? "border-border/20 bg-background/10" 
-                            : "border-border/40 hover:border-primary/40 bg-background/30"
+                            ? "border-white/20 bg-white/5" 
+                            : "border-white/30 hover:border-white/50 bg-white/10"
                         )}
                       >
                         {/* Glass reflection overlay */}
@@ -227,12 +227,12 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                           
                           {/* Label */}
                           <div className="text-center space-y-3">
-                            <h3 className="font-bold text-2xl tracking-tight">
+                            <h3 className="font-bold text-2xl tracking-tight text-white">
                               {industry.label}
                             </h3>
                             <p className={cn(
                               "text-sm font-medium transition-colors duration-300",
-                              isSelected ? "text-muted-foreground" : "text-primary"
+                              isSelected ? "text-white/60" : "text-white/90"
                             )}>
                               {isSelected ? "✓ Selected" : "Tap to select"}
                             </p>
@@ -241,7 +241,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
 
                         {/* Bottom gradient fade */}
                         <div className={cn(
-                          "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-background/40 to-transparent",
+                          "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-white/10 to-transparent",
                           "opacity-0 transition-opacity duration-500",
                           !isSelected && !isAnimating && "group-hover:opacity-100"
                         )} />
@@ -254,12 +254,12 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
 
             {/* Center indicator line */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-full 
-                          bg-gradient-to-b from-transparent via-primary/20 to-transparent pointer-events-none" />
+                          bg-gradient-to-b from-transparent via-white/20 to-transparent pointer-events-none" />
           </div>
 
           {/* Helper Text */}
           <div className="text-center space-y-2">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-white/70">
               <span className="inline-block mr-2">👈👉</span>
               Swipe or drag to explore all industries
             </p>
@@ -272,10 +272,10 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
               disabled={selected.length === 0}
               size="lg"
               className={cn(
-                "w-full transition-all duration-300 relative overflow-hidden group",
+                "w-full transition-all duration-300 relative overflow-hidden group bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm",
                 selected.length === 0 && "opacity-50 cursor-not-allowed",
-                selected.length > 0 && selected.length < 3 && "shadow-[0_0_20px_rgba(var(--primary),0.3)]",
-                selected.length === 3 && "shadow-[0_0_40px_rgba(var(--primary),0.6)] scale-105"
+                selected.length > 0 && selected.length < 3 && "shadow-[0_0_20px_rgba(255,255,255,0.3)]",
+                selected.length === 3 && "shadow-[0_0_40px_rgba(255,255,255,0.6)] scale-105"
               )}
             >
               <span className="relative z-10">
@@ -289,7 +289,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                 )}
               </span>
               {selected.length === 3 && (
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0 
+                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 
                               animate-[shimmer_2s_ease-in-out_infinite]" />
               )}
             </Button>
@@ -298,7 +298,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
               onClick={onSkip}
               variant="ghost"
               size="lg"
-              className="w-full hover:bg-background/50"
+              className="w-full text-white hover:bg-white/10"
             >
               Skip for now
             </Button>
@@ -308,9 +308,9 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
           <div className="text-center">
             <p className={cn(
               "text-sm font-medium transition-all duration-300",
-              selected.length === 0 && "text-muted-foreground",
-              selected.length > 0 && selected.length < 3 && "text-blue-500",
-              selected.length === 3 && "text-primary"
+              selected.length === 0 && "text-white/70",
+              selected.length > 0 && selected.length < 3 && "text-white/85",
+              selected.length === 3 && "text-white"
             )}>
               {selected.length === 0 && "Choose your first industry to get started"}
               {selected.length > 0 && selected.length < 3 && `Add ${3 - selected.length} more to complete your profile`}
