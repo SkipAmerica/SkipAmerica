@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Clock, DollarSign } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLive } from '@/hooks/live';
+import { useProfile } from '@/hooks/useProfile';
 import { QueueDrawer } from './QueueDrawer';
 import { LiveErrorBoundary } from './LiveErrorBoundary';
 
@@ -22,6 +23,7 @@ const LiveControlBarContent: React.FC = () => {
   const rafIdRef = useRef<number | null>(null);
 
   const live = useLive();
+  const { profile } = useProfile();
   
   // Safely access live store values with debugging
   const isLive = live?.isLive || false;
@@ -29,10 +31,13 @@ const LiveControlBarContent: React.FC = () => {
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
   
+  // Check if user is a creator
+  const isCreator = profile?.account_type === 'creator';
+  
   // Check if we're on the join-queue page - hide LSB there
   const pathname = window.location.pathname;
   const isOnJoinQueuePage = pathname === '/join-queue' || pathname.startsWith('/join-queue/');
-
+  
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {
     const handleQueueUpdate = (event: CustomEvent) => {
@@ -88,8 +93,8 @@ const LiveControlBarContent: React.FC = () => {
     };
   }, [state])
   
-  // Show LSB when discoverable but not in active call, and not on Priority Queue page
-  const shouldShowLSB = isDiscoverable && !isLive && !isOnJoinQueuePage;
+  // Show LSB only for creators who are discoverable, not live, and not on join-queue pages
+  const shouldShowLSB = isCreator && isDiscoverable && !isLive && !isOnJoinQueuePage;
 
   // Publish CSS variables for FAB positioning
   useEffect(() => {

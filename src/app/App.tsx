@@ -70,7 +70,6 @@ function AppContent() {
     >
       <AppRouter />
       <PWAInstallPrompt />
-      <LiveControlBar />
       
       {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
       {live?.state === 'SESSION_PREP' && (
