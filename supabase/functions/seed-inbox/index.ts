@@ -29,11 +29,34 @@ Deno.serve(async (req) => {
 
     console.log('Starting inbox seeding for creator:', creatorId);
 
-    // Generate deterministic UUIDs for test fans
-    const fan1Id = crypto.randomUUID();
-    const fan2Id = crypto.randomUUID();
+    // Create test fan auth users (required due to FK on profiles.id -> auth.users.id)
+    const alphaEmail = `seed.alpha.${creatorId}.${Date.now()}@example.com`;
+    const betaEmail = `seed.beta.${creatorId}.${Date.now()}@example.com`;
 
-    // Create fan profiles
+    const { data: alphaUser, error: alphaErr } = await supabaseAdmin.auth.admin.createUser({
+      email: alphaEmail,
+      email_confirm: true,
+      user_metadata: { full_name: 'Test Fan Alpha', account_type: 'fan' },
+    });
+    if (alphaErr || !alphaUser?.user) {
+      console.error('Error creating alpha user:', alphaErr);
+      throw alphaErr || new Error('Failed to create alpha user');
+    }
+
+    const { data: betaUser, error: betaErr } = await supabaseAdmin.auth.admin.createUser({
+      email: betaEmail,
+      email_confirm: true,
+      user_metadata: { full_name: 'Test Fan Beta', account_type: 'fan' },
+    });
+    if (betaErr || !betaUser?.user) {
+      console.error('Error creating beta user:', betaErr);
+      throw betaErr || new Error('Failed to create beta user');
+    }
+
+    const fan1Id = alphaUser.user.id;
+    const fan2Id = betaUser.user.id;
+
+    // Ensure profiles exist for test users
     const { error: profilesError } = await supabaseAdmin
       .from('profiles')
       .upsert([
