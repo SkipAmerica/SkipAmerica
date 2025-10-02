@@ -50,14 +50,14 @@ const Auth = () => {
         // Wait a bit for OAuth account type updates to complete
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Check if user has already set interests
+        // Check account type first
         const { data: profile } = await supabase
           .from('profiles')
           .select('interests, account_type')
           .eq('id', user.id)
           .single()
 
-        // Creators: Check onboarding status first, skip interests entirely
+        // Creators: Handle onboarding flow, NEVER show interests
         if (profile?.account_type === 'creator') {
           // Wait for creator record and onboarding to be initialized
           let attempts = 0
@@ -82,15 +82,16 @@ const Auth = () => {
           // Redirect to onboarding if incomplete and not skipped
           if (onboarding && onboarding.percent_complete < 100 && !onboarding.onboarding_skipped) {
             navigate('/onboarding/creator')
-            return
+          } else {
+            // Creator has completed onboarding, redirect to home
+            navigate('/')
           }
-
-          // Creator has completed onboarding, redirect to home
-          navigate('/')
-          return
+          
+          setCheckingInterests(false)
+          return // Exit early - never set showInterestsSelection for creators
         }
 
-        // Users/Fans: Check interests
+        // Users/Fans ONLY: Check interests
         if (!profile?.interests || profile.interests.length === 0) {
           setShowInterestsSelection(true)
         } else {
