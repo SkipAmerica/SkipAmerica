@@ -118,7 +118,7 @@ export function ProfilePictureManager({
                 <img
                   src={preview || currentAvatarUrl}
                   alt="Profile"
-                  className="w-32 h-32 rounded-full object-contain border-4 border-border"
+                  className="w-32 h-32 rounded-full object-cover border-4 border-border"
                 />
                 {preview && (
                   <button
