@@ -43,12 +43,16 @@ export function PhotoUploadStep({ creatorId, onComplete, onSkip }: PhotoUploadSt
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${creatorId}-${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const fileName = `profile-${Date.now()}.${fileExt}`;
+      const filePath = `${creatorId}/avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, {
+          upsert: true,
+          contentType: file.type,
+          cacheControl: '3600'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -56,11 +60,21 @@ export function PhotoUploadStep({ creatorId, onComplete, onSkip }: PhotoUploadSt
         .from('avatars')
         .getPublicUrl(filePath);
 
-      // Update profiles and creators tables
-      await Promise.all([
-        supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', creatorId),
-        supabase.from('creators').update({ avatar_url: publicUrl }).eq('id', creatorId),
-      ]);
+      // Update profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', creatorId);
+
+      if (profileError) throw profileError;
+
+      // Update creators table
+      const { error: creatorError } = await supabase
+        .from('creators')
+        .update({ avatar_url: publicUrl })
+        .eq('id', creatorId);
+
+      if (creatorError) throw creatorError;
 
       toast.success('Photo uploaded!');
       onComplete(publicUrl);
