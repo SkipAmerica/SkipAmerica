@@ -1,7 +1,7 @@
 // Centralized authentication provider
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase } from '@/integrations/supabase/client'
 import { isIOS } from '@/shared/lib/platform'
 
 interface AuthContextType {

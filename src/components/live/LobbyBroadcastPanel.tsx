@@ -57,7 +57,7 @@ export default function LobbyBroadcastPanel({ onEnd, setIsBroadcasting }: LobbyB
           });
       }
       
-      const { supabase } = await import("@/lib/supabaseClient");
+      const { supabase } = await import("@/integrations/supabase/client");
       const { data } = await supabase.auth.getUser();
       const identity = data?.user?.id || crypto.randomUUID();
       const creatorId = data?.user?.id!;

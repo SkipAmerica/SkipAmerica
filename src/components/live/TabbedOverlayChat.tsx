@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UniversalChat } from '@/components/chat/UniversalChat';
 import { createOverlayConfig, createPrivateConfig } from '@/lib/chatConfigs';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 type Props = {
   creatorId: string;

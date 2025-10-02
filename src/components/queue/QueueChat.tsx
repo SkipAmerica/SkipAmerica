@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
 import { UniversalChat } from '@/components/chat/UniversalChat';
 import { createQueueLobbyConfig, createQueuePrivateConfig } from '@/lib/chatConfigs';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 type Props = {
   creatorId: string;

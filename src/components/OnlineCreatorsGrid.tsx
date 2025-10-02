@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Phone, Heart } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useCreatorSearch } from '@/hooks/useCreatorSearch';
 import { useSearch } from '@/app/providers/search-provider';

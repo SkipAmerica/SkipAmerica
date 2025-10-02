@@ -1,6 +1,6 @@
 import type { ChatConfig } from '@/shared/types/chat';
 import { sendLobbyMessage } from '@/lib/lobbyChat';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '@/integrations/supabase/client';
 
 // Lobby Chat Configuration (PQ system) - Bottom Left with Profile Toggle
 export const createLobbyConfig = (creatorId: string): ChatConfig => ({

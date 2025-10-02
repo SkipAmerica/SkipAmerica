@@ -1,5 +1,5 @@
 // LiveKit token utilities
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/integrations/supabase/client";
 
 export async function fetchLiveKitToken(payload: {
   role: "viewer" | "publisher";
