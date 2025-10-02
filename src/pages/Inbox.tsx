@@ -3,14 +3,19 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useInboxStore, InboxTab } from '@/stores/inbox-store';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useAuth } from '@/app/providers/auth-provider';
 import { InboxTabs } from '@/components/inbox/InboxTabs';
 import { InboxSearch } from '@/components/inbox/InboxSearch';
 import { ThreadList } from '@/components/inbox/ThreadList';
+import { IOSTabBar } from '@/components/mobile/IOSTabBar';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function Inbox() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useProfile();
+  const { user } = useAuth();
   
   const { 
     setCounts, 
@@ -98,91 +103,106 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-white to-gray-50">
-      {/* Main container */}
-      <div className="h-screen flex flex-col">
-        {/* Header with Dev Seeding */}
-        {import.meta.env.DEV && (
-          <div className="p-4 border-b border-gray-200 flex justify-end">
-            <button
-              onClick={async () => {
-                const { supabase } = await import('@/integrations/supabase/client');
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) return;
+    <div className="h-screen w-full bg-background flex flex-col">
+      {/* Custom Instagram-style Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border safe-top">
+        <div className="flex items-center h-14 px-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-1 -ml-2 text-primary hover:text-primary/80 hover:bg-transparent"
+          >
+            <ChevronLeft className="h-6 w-6" />
+            <span className="text-base font-semibold">Inbox</span>
+          </Button>
+        </div>
+      </div>
 
-                // Create sample fan profiles  
-                const fan1 = await supabase.from('profiles').insert({
-                  id: crypto.randomUUID(),
-                  full_name: 'Sarah Johnson',
-                  account_type: 'fan' as const
-                } as any).select().single();
-                
-                const fan2 = await supabase.from('profiles').insert({
-                  id: crypto.randomUUID(),
-                  full_name: 'Mike Davis',
-                  account_type: 'fan' as const
-                } as any).select().single();
+      {/* Dev Seeding Button */}
+      {import.meta.env.DEV && (
+        <div className="fixed top-14 left-0 right-0 z-40 p-4 border-b border-border bg-background flex justify-end safe-top">
+          <button
+            onClick={async () => {
+              const { supabase } = await import('@/integrations/supabase/client');
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
 
-                if (!fan1.data || !fan2.data) return;
+              // Create sample fan profiles  
+              const fan1 = await supabase.from('profiles').insert({
+                id: crypto.randomUUID(),
+                full_name: 'Sarah Johnson',
+                account_type: 'fan' as const
+              } as any).select().single();
+              
+              const fan2 = await supabase.from('profiles').insert({
+                id: crypto.randomUUID(),
+                full_name: 'Mike Davis',
+                account_type: 'fan' as const
+              } as any).select().single();
 
-                // Offer threads
-                await supabase.from('offers').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan1.data.id,
-                    amount_cents: 20000,
-                    currency: 'USD',
-                    duration_minutes: 30,
-                    status: 'pending',
-                    note: 'Would love to discuss your latest project!'
-                  }
-                ]);
+              if (!fan1.data || !fan2.data) return;
 
-                // Priority threads
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan2.data.id,
-                    type: 'priority',
-                    last_message_at: new Date().toISOString(),
-                    last_message_preview: 'Thanks for taking the time to chat!',
-                    unread_count_creator: 1
-                  }
-                ]);
+              // Offer threads
+              await supabase.from('offers').insert([
+                {
+                  creator_id: user.id,
+                  user_id: fan1.data.id,
+                  amount_cents: 20000,
+                  currency: 'USD',
+                  duration_minutes: 30,
+                  status: 'pending',
+                  note: 'Would love to discuss your latest project!'
+                }
+              ]);
 
-                // Standard threads
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan1.data.id,
-                    type: 'standard',
-                    last_message_at: new Date(Date.now() - 3600000).toISOString(),
-                    last_message_preview: 'Looking forward to our next session',
-                    unread_count_creator: 0
-                  }
-                ]);
+              // Priority threads
+              await supabase.from('threads').insert([
+                {
+                  creator_id: user.id,
+                  user_id: fan2.data.id,
+                  type: 'priority',
+                  last_message_at: new Date().toISOString(),
+                  last_message_preview: 'Thanks for taking the time to chat!',
+                  unread_count_creator: 1
+                }
+              ]);
 
-                // Request threads
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan2.data.id,
-                    type: 'request',
-                    last_message_at: new Date(Date.now() - 7200000).toISOString(),
-                    last_message_preview: 'Hi! Would love to connect with you',
-                    unread_count_creator: 1
-                  }
-                ]);
+              // Standard threads
+              await supabase.from('threads').insert([
+                {
+                  creator_id: user.id,
+                  user_id: fan1.data.id,
+                  type: 'standard',
+                  last_message_at: new Date(Date.now() - 3600000).toISOString(),
+                  last_message_preview: 'Looking forward to our next session',
+                  unread_count_creator: 0
+                }
+              ]);
 
-                window.location.reload();
-              }}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-sm text-gray-900 transition-colors"
-            >
-              Seed Inbox Data
-            </button>
-          </div>
-        )}
+              // Request threads
+              await supabase.from('threads').insert([
+                {
+                  creator_id: user.id,
+                  user_id: fan2.data.id,
+                  type: 'request',
+                  last_message_at: new Date(Date.now() - 7200000).toISOString(),
+                  last_message_preview: 'Hi! Would love to connect with you',
+                  unread_count_creator: 1
+                }
+              ]);
 
+              window.location.reload();
+            }}
+            className="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm text-foreground transition-colors"
+          >
+            Seed Inbox Data
+          </button>
+        </div>
+      )}
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden" style={{ paddingTop: import.meta.env.DEV ? '120px' : '56px', paddingBottom: 'var(--ios-tab-bar-height, 80px)' }}>
         {/* Search & Filters */}
         <InboxSearch />
 
@@ -194,6 +214,21 @@ export default function Inbox() {
           <ThreadList tab={activeTab} />
         </div>
       </div>
+
+      {/* Bottom Navigation */}
+      <IOSTabBar
+        activeTab="following"
+        onTabChange={(tab) => {
+          if (tab === 'home') navigate('/');
+          else if (tab === 'browse') navigate('/?tab=browse');
+          else if (tab === 'following') navigate('/?tab=following');
+          else if (tab === 'profile') navigate('/profile');
+        }}
+        showFollowing={true}
+        isCreator={profile?.account_type === 'creator'}
+        isLive={false}
+        isDiscoverable={false}
+      />
     </div>
   );
 }
