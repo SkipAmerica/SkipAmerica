@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
-import { Capacitor } from '@capacitor/core'
 import { isIOS } from '@/shared/lib/platform'
 
 interface AuthContextType {
@@ -160,9 +159,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = async () => {
     try {
+      // Dynamic import to avoid loading on web
+      const { Capacitor } = await import('@capacitor/core')
+      
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && isIOS()) {
-        // Dynamic import to avoid loading on web
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
         
         // Initialize Google Auth
@@ -203,9 +204,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithApple = async () => {
     try {
+      // Dynamic import to avoid loading on web
+      const { Capacitor } = await import('@capacitor/core')
+      
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && isIOS()) {
-        // Dynamic import to avoid loading on web
         const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
         
         const result = await SignInWithApple.authorize({
