@@ -80,26 +80,7 @@ const Auth = () => {
     return null // Will redirect via useEffect
   }
 
-  return (
-    <>
-      {inIframe && (
-        <Alert className="m-4 border-primary/20 bg-primary/5">
-          <ExternalLink className="h-4 w-4" />
-          <AlertDescription>
-            For the best login experience, <a 
-              href={window.location.href} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="underline font-medium"
-            >
-              open this page in a new tab
-            </a>.
-          </AlertDescription>
-        </Alert>
-      )}
-      <SplashAuthForm onSuccess={() => navigate('/')} />
-    </>
-  )
+  return <SplashAuthForm onSuccess={() => navigate('/')} />
 }
 
 export default Auth

@@ -49,7 +49,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Listen for OAuth completion from popup
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'oauth-success') {
+        // Refresh session after OAuth success
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          setSession(session)
+          setUser(session?.user ?? null)
+        })
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('message', handleMessage)
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
@@ -184,11 +200,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow with iframe handling
+      // Check if we're in an iframe
+      const inIframe = window.self !== window.top
+      
+      // Use web OAuth flow with popup for iframe contexts
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: inIframe 
+            ? `${window.location.origin}/oauth-callback` 
+            : `${window.location.origin}/`,
           skipBrowserRedirect: true,
           queryParams: {
             access_type: 'offline',
@@ -199,13 +220,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       if (error) return { error }
       
-      // Check if we're in an iframe
-      const inIframe = window.self !== window.top
-      
       if (data?.url) {
         if (inIframe) {
-          // Open in new tab to avoid iframe restrictions
-          window.open(data.url, '_blank', 'noopener,noreferrer')
+          // Open popup for OAuth
+          const popup = window.open(
+            data.url, 
+            'oauth-popup', 
+            'width=500,height=600,scrollbars=yes,resizable=yes,left=200,top=100'
+          )
+          
+          if (!popup) {
+            return { error: new Error('Popup blocked. Please allow popups and try again.') }
+          }
         } else {
           // Redirect in current window
           window.location.href = data.url
@@ -244,24 +270,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow with iframe handling
+      // Check if we're in an iframe
+      const inIframe = window.self !== window.top
+      
+      // Use web OAuth flow with popup for iframe contexts
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}/`,
+          redirectTo: inIframe 
+            ? `${window.location.origin}/oauth-callback` 
+            : `${window.location.origin}/`,
           skipBrowserRedirect: true,
         },
       })
       
       if (error) return { error }
       
-      // Check if we're in an iframe
-      const inIframe = window.self !== window.top
-      
       if (data?.url) {
         if (inIframe) {
-          // Open in new tab to avoid iframe restrictions
-          window.open(data.url, '_blank', 'noopener,noreferrer')
+          // Open popup for OAuth
+          const popup = window.open(
+            data.url, 
+            'oauth-popup', 
+            'width=500,height=600,scrollbars=yes,resizable=yes,left=200,top=100'
+          )
+          
+          if (!popup) {
+            return { error: new Error('Popup blocked. Please allow popups and try again.') }
+          }
         } else {
           // Redirect in current window
           window.location.href = data.url

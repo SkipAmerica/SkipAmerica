@@ -8,6 +8,7 @@ import { AuthGuard } from './guards/auth-guard'
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@/pages/Index'))
 const AuthPage = lazy(() => import('@/pages/Auth'))
+const OAuthCallbackPage = lazy(() => import('@/pages/OAuthCallback'))
 const ProfilePage = lazy(() => import('@/pages/Profile'))
 const FeedPage = lazy(() => import('@/pages/Feed'))
 const LobbyPage = lazy(() => import('@/pages/Lobby'))
@@ -34,6 +35,12 @@ export function AppRouter() {
         <Route path="/auth" element={
           <RouteWrapper>
             <AuthPage />
+          </RouteWrapper>
+        } />
+        
+        <Route path="/oauth-callback" element={
+          <RouteWrapper>
+            <OAuthCallbackPage />
           </RouteWrapper>
         } />
         
