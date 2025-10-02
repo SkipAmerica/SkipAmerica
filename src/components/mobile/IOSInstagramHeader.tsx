@@ -140,7 +140,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
       )}
     >
       {/* Top Row - Skip Logo */}
-      <div className="flex items-center justify-between h-11 mb-2">
+      <div className="flex items-center justify-between h-[70px] mb-2">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
@@ -148,24 +148,24 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           <Button 
             variant="ghost" 
             size="sm" 
-            className="ios-touchable h-11 px-2 relative"
+            className="ios-touchable h-[70px] px-3 relative"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
           >
-            <Users size={24} />
+            <Users size={38} />
             {queueCount > 0 && (
-              <div className="absolute top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+              <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {queueCount}
               </div>
             )}
           </Button>
-          <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
-            <Heart size={24} />
+          <Button variant="ghost" size="sm" className="ios-touchable h-[70px] px-3">
+            <Heart size={38} />
           </Button>
-          <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2 relative">
-            <Phone size={24} />
+          <Button variant="ghost" size="sm" className="ios-touchable h-[70px] px-3 relative">
+            <Phone size={38} />
             {/* Badge for pending callers - you can add logic here */}
-            <div className="absolute top-0.5 -right-0.5 bg-red-500 text-white text-[10px] rounded-full h-4 w-4 flex items-center justify-center">
+            <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
             </div>
           </Button>
@@ -174,31 +174,31 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
             <Button 
               variant="ghost" 
               size="sm" 
-              className="ios-touchable h-11 px-2 relative"
+              className="ios-touchable h-[70px] px-3 relative"
               onClick={() => navigate('/inbox')}
             >
-              <Mail size={24} />
+              <Mail size={38} />
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-[10px] leading-5 text-center text-white font-medium">
+                <span className="absolute -top-0.5 -right-0.5 min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-xs leading-6 text-center text-white font-medium">
                   {inboxCounts.standard_unread}
                 </span>
               )}
               
               {/* Green badge for priority/offers - same size, positioned below */}
               {(inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0) && (
-                <span className="absolute top-2 -right-1 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light"></span>
+                <span className="absolute top-3 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light"></span>
               )}
             </Button>
           )}
           <Button 
             variant="ghost" 
             size="sm" 
-            className="ios-touchable h-11 px-2"
+            className="ios-touchable h-[70px] px-3"
             onClick={onMenuClick}
           >
-            <Menu size={24} />
+            <Menu size={38} />
           </Button>
         </div>
       </div>
