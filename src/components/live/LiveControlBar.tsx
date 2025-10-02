@@ -99,16 +99,16 @@ const LiveControlBarContent: React.FC = () => {
   // Publish CSS variables for FAB positioning
   useEffect(() => {
     const shell = shellRef.current;
-    const isLSBVisible = shouldShowLSB;
     
-    // Set visibility variable - use discoverable posture for immediate response
-    document.documentElement.style.setProperty('--lsb-visible', (isLSBVisible && isInDiscoverablePosture) ? '1' : '0');
+    // Set visibility variable based on shouldShowLSB (single source of truth)
+    console.log('[LiveControlBar] Setting LSB visibility:', shouldShowLSB, { isCreator, isDiscoverable, isLive, isOnJoinQueuePage, state });
+    document.documentElement.style.setProperty('--lsb-visible', shouldShowLSB ? '1' : '0');
     
     // Set height variable
     if (shell && shell.offsetHeight > 0) {
       document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
     }
-  }, [shouldShowLSB, isInDiscoverablePosture]);
+  }, [shouldShowLSB, isCreator, isDiscoverable, isLive, isOnJoinQueuePage, state]);
 
   // ResizeObserver to keep --lsb-height current
   useEffect(() => {
