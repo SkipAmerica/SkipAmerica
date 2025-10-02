@@ -4,8 +4,7 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { supabase } from '@/integrations/supabase/client';
 import { WelcomeScreen } from '@/components/onboarding/WelcomeScreen';
-import { PhotoUploadStep } from '@/components/onboarding/PhotoUploadStep';
-import { DisplayNameTaglineStep } from '@/components/onboarding/DisplayNameTaglineStep';
+import { ProfileSetupStep } from '@/components/onboarding/ProfileSetupStep';
 import { IndustryCarouselStep } from '@/components/onboarding/IndustryCarouselStep';
 import { CompletionMeter } from '@/components/onboarding/CompletionMeter';
 import { Progress } from '@/components/ui/progress';
@@ -13,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
 import { toast } from 'sonner';
 
-type OnboardingStep = 'welcome' | 'photo' | 'profile' | 'industries' | 'completion';
+type OnboardingStep = 'welcome' | 'profileSetup' | 'industries' | 'completion';
 
 export default function CreatorOnboarding() {
   const navigate = useNavigate();
@@ -76,7 +75,7 @@ export default function CreatorOnboarding() {
     }
   };
 
-  const progressSteps: OnboardingStep[] = ['welcome', 'photo', 'profile', 'industries', 'completion'];
+  const progressSteps: OnboardingStep[] = ['welcome', 'profileSetup', 'industries', 'completion'];
   const currentStepIndex = progressSteps.indexOf(currentStep);
   const progressValue = ((currentStepIndex + 1) / progressSteps.length) * 100;
 
@@ -116,28 +115,21 @@ export default function CreatorOnboarding() {
       <div className={currentStep !== 'welcome' ? 'pt-20' : ''}>
         {currentStep === 'welcome' && (
           <WelcomeScreen
-            onContinue={() => setCurrentStep('photo')}
+            onContinue={() => setCurrentStep('profileSetup')}
             onSkip={handleSkip}
           />
         )}
 
-        {currentStep === 'photo' && (
-          <PhotoUploadStep
+        {currentStep === 'profileSetup' && (
+          <ProfileSetupStep
             creatorId={user!.id}
             existingPhotoUrl={creatorData?.avatar_url}
-            onComplete={async (url) => {
-              await markPhotoComplete(url);
-              setCurrentStep('profile');
-            }}
-            onSkip={() => setCurrentStep('profile')}
-          />
-        )}
-
-        {currentStep === 'profile' && (
-          <DisplayNameTaglineStep
             existingDisplayName={creatorData?.full_name}
             existingTagline={creatorData?.headline}
-            onComplete={async (name, tagline) => {
+            onComplete={async (photoUrl, name, tagline) => {
+              if (photoUrl) {
+                await markPhotoComplete(photoUrl);
+              }
               await setDisplayName(name);
               await setTagline(tagline);
               setCurrentStep('industries');
