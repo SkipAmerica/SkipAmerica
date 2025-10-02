@@ -10,6 +10,8 @@ import { ThreadList } from '@/components/inbox/ThreadList';
 import { IOSTabBar } from '@/components/mobile/IOSTabBar';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLive } from '@/hooks/live';
+import DiscoverabilityModal from '@/components/DiscoverabilityModal';
 
 export default function Inbox() {
   const navigate = useNavigate();
@@ -24,6 +26,15 @@ export default function Inbox() {
     activeTab,
     clearTags 
   } = useInboxStore();
+
+  const { 
+    isLive, 
+    isDiscoverable, 
+    toggleDiscoverable, 
+    isTransitioning,
+    showDiscoverabilityModal,
+    setDiscoverabilityModal 
+  } = useLive();
 
   // Sync URL params to store on mount
   useEffect(() => {
@@ -226,8 +237,15 @@ export default function Inbox() {
         }}
         showFollowing={true}
         isCreator={profile?.account_type === 'creator'}
-        isLive={false}
-        isDiscoverable={false}
+        isLive={isLive}
+        isDiscoverable={isDiscoverable}
+        onToggleDiscoverable={toggleDiscoverable}
+        isTransitioning={isTransitioning}
+      />
+      
+      <DiscoverabilityModal 
+        open={showDiscoverabilityModal} 
+        onClose={() => setDiscoverabilityModal(false)} 
       />
     </div>
   );
