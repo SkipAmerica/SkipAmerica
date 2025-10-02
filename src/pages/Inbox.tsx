@@ -98,9 +98,91 @@ export default function Inbox() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-background via-background/95 to-background/90">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-950 via-slate-900 to-slate-900">
       {/* Glass container */}
       <div className="h-screen flex flex-col">
+        {/* Header with Dev Seeding */}
+        {import.meta.env.DEV && (
+          <div className="p-4 border-b border-white/10 flex justify-end">
+            <button
+              onClick={async () => {
+                const { supabase } = await import('@/integrations/supabase/client');
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
+
+                // Create sample fan profiles  
+                const fan1 = await supabase.from('profiles').insert({
+                  id: crypto.randomUUID(),
+                  full_name: 'Sarah Johnson',
+                  account_type: 'fan' as const
+                } as any).select().single();
+                
+                const fan2 = await supabase.from('profiles').insert({
+                  id: crypto.randomUUID(),
+                  full_name: 'Mike Davis',
+                  account_type: 'fan' as const
+                } as any).select().single();
+
+                if (!fan1.data || !fan2.data) return;
+
+                // Offer threads
+                await supabase.from('offers').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan1.data.id,
+                    amount_cents: 20000,
+                    currency: 'USD',
+                    duration_minutes: 30,
+                    status: 'pending',
+                    note: 'Would love to discuss your latest project!'
+                  }
+                ]);
+
+                // Priority threads
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan2.data.id,
+                    type: 'priority',
+                    last_message_at: new Date().toISOString(),
+                    last_message_preview: 'Thanks for taking the time to chat!',
+                    unread_count_creator: 1
+                  }
+                ]);
+
+                // Standard threads
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan1.data.id,
+                    type: 'standard',
+                    last_message_at: new Date(Date.now() - 3600000).toISOString(),
+                    last_message_preview: 'Looking forward to our next session',
+                    unread_count_creator: 0
+                  }
+                ]);
+
+                // Request threads
+                await supabase.from('threads').insert([
+                  {
+                    creator_id: user.id,
+                    user_id: fan2.data.id,
+                    type: 'request',
+                    last_message_at: new Date(Date.now() - 7200000).toISOString(),
+                    last_message_preview: 'Hi! Would love to connect with you',
+                    unread_count_creator: 1
+                  }
+                ]);
+
+                window.location.reload();
+              }}
+              className="px-4 py-2 bg-primary/20 hover:bg-primary/30 border border-primary/30 rounded-lg text-sm text-white transition-colors"
+            >
+              Seed Inbox Data
+            </button>
+          </div>
+        )}
+
         {/* Inbox Tabs */}
         <InboxTabs />
 

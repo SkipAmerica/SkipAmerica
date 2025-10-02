@@ -44,10 +44,10 @@ export function InboxSearch() {
   };
 
   return (
-    <div className="p-4 space-y-3 border-b border-white/10">
+    <div className="p-4 space-y-3 border-b border-border/50">
       {/* Search Input */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           type="text"
           placeholder="Search by name, @handle, or keywords..."
@@ -55,9 +55,9 @@ export function InboxSearch() {
           onChange={(e) => setLocalQuery(e.target.value)}
           className={cn(
             'pl-10 pr-4 py-3 w-full',
-            'bg-white/8 backdrop-blur-xl border border-white/20',
-            'text-white/90 placeholder:text-white/40',
-            'focus:bg-white/12 focus:ring-1 focus:ring-white/30',
+            'bg-muted/50 backdrop-blur-xl border border-border/50',
+            'text-foreground placeholder:text-muted-foreground',
+            'focus:bg-muted focus:ring-1 focus:ring-ring',
             'rounded-xl transition-all'
           )}
         />
@@ -73,7 +73,7 @@ export function InboxSearch() {
               className={cn(
                 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full',
                 'bg-primary/20 border border-primary/30',
-                'text-sm text-white/90 hover:bg-primary/30',
+                'text-sm text-foreground hover:bg-primary/30',
                 'transition-all duration-200'
               )}
             >

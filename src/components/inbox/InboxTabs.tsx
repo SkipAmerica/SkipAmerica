@@ -32,7 +32,7 @@ export function InboxTabs() {
   };
 
   return (
-    <div className="flex gap-2 p-4 border-b border-white/10">
+    <div className="flex gap-2 p-4 border-b border-border/50">
       {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -44,17 +44,17 @@ export function InboxTabs() {
             className={cn(
               'flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl transition-all duration-200',
               isActive
-                ? 'bg-white/12 backdrop-blur-xl border border-white/20 shadow-lg ring-1 ring-white/30'
-                : 'bg-white/6 border border-white/10 hover:bg-white/10'
+                ? 'bg-accent/20 backdrop-blur-xl border border-accent/30 shadow-lg'
+                : 'bg-muted/50 border border-border/50 hover:bg-muted'
             )}
           >
             <Icon className={cn(
               'w-4 h-4',
-              isActive ? 'text-primary' : 'text-white/60'
+              isActive ? 'text-primary' : 'text-muted-foreground'
             )} />
             <span className={cn(
               'text-sm font-medium',
-              isActive ? 'text-white/90' : 'text-white/60'
+              isActive ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {tab.label}
             </span>

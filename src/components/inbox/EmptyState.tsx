@@ -37,14 +37,14 @@ export function EmptyState({ tab }: EmptyStateProps) {
     <div className="flex flex-col items-center justify-center h-full px-6 text-center">
       <div className={cn(
         'w-16 h-16 rounded-full flex items-center justify-center mb-4',
-        'bg-white/10 backdrop-blur-xl border border-white/20'
+        'bg-muted/50 backdrop-blur-xl border border-border/50'
       )}>
-        <Icon className="w-8 h-8 text-white/40" />
+        <Icon className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h3 className="text-lg font-semibold text-white/90 mb-2">
+      <h3 className="text-lg font-semibold text-foreground mb-2">
         {state.title}
       </h3>
-      <p className="text-sm text-white/60 max-w-sm">
+      <p className="text-sm text-muted-foreground max-w-sm">
         {state.description}
       </p>
     </div>
