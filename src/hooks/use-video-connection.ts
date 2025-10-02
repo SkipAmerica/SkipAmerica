@@ -43,11 +43,18 @@ export function useVideoConnection({
     setConnectionState('connecting');
 
     try {
+      console.log('[useVideoConnection] Initiating connection with config:', {
+        role: config.role,
+        creatorId: config.creatorId,
+        identity: config.identity
+      });
+
       const roomKey = await sfuConnectionManager.connect(config);
       roomKeyRef.current = roomKey;
 
       // Subscribe to state changes
       const unsubState = sfuConnectionManager.onStateChange(roomKey, (state) => {
+        console.log('[useVideoConnection] State changed to:', state);
         setConnectionState(state);
       });
       unsubscribersRef.current.push(unsubState);
@@ -55,6 +62,7 @@ export function useVideoConnection({
       // Subscribe to video tracks if handler provided
       if (onRemoteTrack) {
         const unsubVideo = sfuConnectionManager.onVideoTrack(roomKey, (track, identity) => {
+          console.log('[useVideoConnection] Received video track from:', identity);
           onRemoteTrack(track, identity);
         });
         unsubscribersRef.current.push(unsubVideo);
@@ -63,19 +71,21 @@ export function useVideoConnection({
       // Subscribe to disconnect events if handler provided
       if (onDisconnected) {
         const unsubDisconnect = sfuConnectionManager.onDisconnect(roomKey, () => {
+          console.log('[useVideoConnection] Disconnected');
           onDisconnected();
         });
         unsubscribersRef.current.push(unsubDisconnect);
       }
 
-      console.log('[useVideoConnection] Connected successfully:', roomKey);
+      console.log('[useVideoConnection] ✅ Connected successfully:', roomKey);
     } catch (error) {
-      console.error('[useVideoConnection] Connection failed:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[useVideoConnection] ❌ Connection failed:', errorMsg, error);
       setConnectionState('failed');
     } finally {
       isConnectingRef.current = false;
     }
-  }, [config.role, config.creatorId, config.identity]);
+  }, [config, onRemoteTrack, onDisconnected]);
 
   const disconnect = useCallback(async () => {
     // Unsubscribe from all events
@@ -93,14 +103,16 @@ export function useVideoConnection({
 
   // Auto-connect on mount if enabled
   useEffect(() => {
-    if (autoConnect && !roomKeyRef.current) {
+    if (autoConnect && !roomKeyRef.current && !isConnectingRef.current) {
+      console.log('[useVideoConnection] Auto-connecting...');
       connect();
     }
 
     return () => {
+      console.log('[useVideoConnection] Cleaning up connection');
       disconnect();
     };
-  }, [autoConnect]);
+  }, [autoConnect, connect, disconnect]);
 
   return {
     connectionState,

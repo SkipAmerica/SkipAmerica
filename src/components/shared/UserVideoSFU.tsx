@@ -100,7 +100,7 @@ export function UserVideoSFU({
   }, [userId, role, videoRoomCreatorId, chatCreatorId]);
 
   // Use centralized video connection manager
-  const { connectionState, isConnected } = useVideoConnection({
+  const { connectionState, isConnected, connect: reconnect } = useVideoConnection({
     config: {
       role,
       creatorId: roomCreatorId || userId,
@@ -150,6 +150,11 @@ export function UserVideoSFU({
     },
     autoConnect: !!roomCreatorId, // Only connect once room is resolved
   });
+
+  const handleReconnect = useCallback(() => {
+    console.log('[UserVideoSFU] Manual reconnect triggered');
+    reconnect();
+  }, [reconnect]);
   
   // Cleanup: detach track on unmount
   useEffect(() => {
@@ -192,9 +197,20 @@ export function UserVideoSFU({
           <span className="text-xs">Connecting...</span>
         </div>
       ) : connectionState === 'failed' ? (
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <AlertCircle className="w-4 h-4" />
-          <span className="text-xs">Connection failed</span>
+        <div className="flex flex-col items-center gap-3 text-muted-foreground p-4">
+          <AlertCircle className="w-6 h-6 text-destructive" />
+          <div className="text-center space-y-1">
+            <p className="text-xs font-medium">Connection failed</p>
+            <p className="text-[10px] text-muted-foreground/60">Check your internet connection</p>
+          </div>
+          <Button
+            onClick={handleReconnect}
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+          >
+            Retry Connection
+          </Button>
         </div>
       ) : (
         <Avatar className="w-8 h-8">
