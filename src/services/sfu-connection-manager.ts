@@ -308,33 +308,64 @@ class SFUConnectionManager {
     try {
       this.updateState(roomKey, 'connecting');
       
-      // Fetch token
-      const { token, url, room: liveKitRoom } = await fetchLiveKitToken({
+      console.log(`[SFUConnectionManager] 🔄 Fetching token for ${roomKey}...`, {
         role: config.role,
         creatorId: config.creatorId,
-        identity: config.identity,
+        identity: config.identity
       });
-
-      console.log(`[SFUConnectionManager] 🎫 Token fetched for ${roomKey}`);
-      console.log(`[SFUConnectionManager] 🏠 LiveKit Room Name: "${liveKitRoom}", Role: ${config.role}, Identity: ${config.identity}`);
-
-      await room.connect(url, token);
-      console.log(`[SFUConnectionManager] ✅ Connected to LiveKit room: "${liveKitRoom}"`);
       
+      // Fetch token with detailed error handling
+      let tokenData;
+      try {
+        tokenData = await fetchLiveKitToken({
+          role: config.role,
+          creatorId: config.creatorId,
+          identity: config.identity,
+        });
+      } catch (tokenError) {
+        console.error(`[SFUConnectionManager] ❌ Token fetch failed:`, tokenError);
+        throw new Error(`Failed to fetch LiveKit token: ${tokenError instanceof Error ? tokenError.message : 'Unknown error'}`);
+      }
+
+      const { token, url, room: liveKitRoom } = tokenData;
+      
+      if (!token || !url) {
+        throw new Error('Invalid token response - missing token or URL');
+      }
+
+      console.log(`[SFUConnectionManager] 🎫 Token fetched successfully`);
+      console.log(`[SFUConnectionManager] 🏠 LiveKit Room: "${liveKitRoom}", Role: ${config.role}, Identity: ${config.identity}`);
+      console.log(`[SFUConnectionManager] 🌐 Connecting to: ${url}`);
+
+      // Connect with timeout
+      const connectPromise = room.connect(url, token);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Connection timeout after 15 seconds')), 15000)
+      );
+
+      await Promise.race([connectPromise, timeoutPromise]);
+      
+      console.log(`[SFUConnectionManager] ✅ Connected to LiveKit room: "${liveKitRoom}"`);
       this.updateState(roomKey, 'connected');
 
       // Publish if role is publisher
       if (config.role === 'publisher') {
         console.log(`[SFUConnectionManager] 📤 Publishing camera/mic to room: "${liveKitRoom}"`);
-        await this.publishCameraMic(roomKey);
-        console.log(`[SFUConnectionManager] ✅ Published tracks to room: "${liveKitRoom}"`);
+        try {
+          await this.publishCameraMic(roomKey);
+          console.log(`[SFUConnectionManager] ✅ Published tracks to room: "${liveKitRoom}"`);
+        } catch (publishError) {
+          console.error(`[SFUConnectionManager] ❌ Failed to publish tracks:`, publishError);
+          throw new Error(`Failed to publish media: ${publishError instanceof Error ? publishError.message : 'Unknown error'}`);
+        }
       } else {
         console.log(`[SFUConnectionManager] 👁️ Viewer connected to room: "${liveKitRoom}", waiting for tracks...`);
       }
     } catch (error) {
-      console.error(`[SFUConnectionManager] ❌ Connection failed for ${roomKey}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown connection error';
+      console.error(`[SFUConnectionManager] ❌ Connection failed for ${roomKey}:`, errorMessage, error);
       this.updateState(roomKey, 'failed');
-      throw error;
+      throw new Error(`LiveKit connection failed: ${errorMessage}`);
     }
   }
 

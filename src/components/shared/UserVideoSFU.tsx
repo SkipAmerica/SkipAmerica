@@ -7,6 +7,7 @@ import { useVideoConnection } from '@/hooks/use-video-connection';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import OverlayChat from '@/components/live/OverlayChat';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 export interface UserVideoSFUProps {
   userId: string; // Target user whose video/room we're joining
@@ -54,6 +55,7 @@ export function UserVideoSFU({
   const [isMuted, setIsMuted] = useState(muted);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [roomCreatorId, setRoomCreatorId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const toggleMute = useCallback(() => {
     if (videoRef.current) {
@@ -161,10 +163,18 @@ export function UserVideoSFU({
     };
   }, []);
 
-  // Notify parent of connection state changes
+  // Notify parent of connection state changes and show error toast
   useEffect(() => {
     onConnectionChange?.(connectionState);
-  }, [connectionState, onConnectionChange]);
+    
+    if (connectionState === 'failed') {
+      toast({
+        title: "Connection Failed",
+        description: "Unable to connect to video call. Check console for details.",
+        variant: "destructive",
+      });
+    }
+  }, [connectionState, onConnectionChange, toast]);
 
   // Sync muted prop with state
   useEffect(() => {
