@@ -2,8 +2,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth'
-import { SignInWithApple, SignInWithAppleResponse } from '@capacitor-community/apple-sign-in'
 import { Capacitor } from '@capacitor/core'
 import { isIOS } from '@/shared/lib/platform'
 
@@ -164,6 +162,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && isIOS()) {
+        // Dynamic import to avoid loading on web
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
+        
         // Initialize Google Auth
         await GoogleAuth.initialize({
           clientId: '855084043919-raeo01iosieret7dtlcdd7bmg9i69ena.apps.googleusercontent.com',
@@ -204,7 +205,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && isIOS()) {
-        const result: SignInWithAppleResponse = await SignInWithApple.authorize({
+        // Dynamic import to avoid loading on web
+        const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
+        
+        const result = await SignInWithApple.authorize({
           clientId: 'com.lovable.skipcreator',
           redirectURI: 'https://ytqkunjxhtjsbpdrwsjf.supabase.co/auth/v1/callback',
           scopes: 'email name',
