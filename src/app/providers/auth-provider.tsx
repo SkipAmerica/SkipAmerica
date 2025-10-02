@@ -203,14 +203,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check if we're in an iframe
       const inIframe = window.self !== window.top
       
-      // Use web OAuth flow with popup for iframe contexts
+      // Use web OAuth flow
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: inIframe 
-            ? `${window.location.origin}/oauth-callback` 
-            : `${window.location.origin}/`,
-          skipBrowserRedirect: true,
+          redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: inIframe,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
