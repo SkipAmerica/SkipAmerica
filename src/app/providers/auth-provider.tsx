@@ -2,6 +2,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabaseClient'
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth'
+import { SignInWithApple, SignInWithAppleResponse } from '@capacitor-community/apple-sign-in'
+import { Capacitor } from '@capacitor/core'
+import { isIOS } from '@/shared/lib/platform'
 
 interface AuthContextType {
   user: User | null
@@ -157,27 +161,77 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      // Use native OAuth on iOS
+      if (Capacitor.isNativePlatform() && isIOS()) {
+        // Initialize Google Auth
+        await GoogleAuth.initialize({
+          clientId: '855084043919-raeo01iosieret7dtlcdd7bmg9i69ena.apps.googleusercontent.com',
+          scopes: ['profile', 'email'],
+        })
+
+        // Sign in with native Google
+        const googleUser = await GoogleAuth.signIn()
+        
+        // Exchange Google token for Supabase session
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: googleUser.authentication.idToken,
+        })
+        
+        return { error }
+      }
+      
+      // Use web OAuth flow
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    })
-    return { error }
+      })
+      return { error }
+    } catch (error: any) {
+      console.error('Google sign-in error:', error)
+      return { error }
+    }
   }
 
   const signInWithApple = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    })
-    return { error }
+    try {
+      // Use native OAuth on iOS
+      if (Capacitor.isNativePlatform() && isIOS()) {
+        const result: SignInWithAppleResponse = await SignInWithApple.authorize({
+          clientId: 'com.lovable.skipcreator',
+          redirectURI: 'https://ytqkunjxhtjsbpdrwsjf.supabase.co/auth/v1/callback',
+          scopes: 'email name',
+          state: 'state',
+        })
+        
+        // Exchange Apple token for Supabase session
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'apple',
+          token: result.response.identityToken,
+        })
+        
+        return { error }
+      }
+      
+      // Use web OAuth flow
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      })
+      return { error }
+    } catch (error: any) {
+      console.error('Apple sign-in error:', error)
+      return { error }
+    }
   }
 
   const value: AuthContextType = {
