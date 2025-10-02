@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import { supabase } from '@/integrations/supabase/client';
 import { WelcomeScreen } from '@/components/onboarding/WelcomeScreen';
 import { PhotoUploadStep } from '@/components/onboarding/PhotoUploadStep';
 import { DisplayNameTaglineStep } from '@/components/onboarding/DisplayNameTaglineStep';
@@ -18,6 +19,11 @@ export default function CreatorOnboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [creatorData, setCreatorData] = useState<{
+    avatar_url?: string;
+    full_name?: string;
+    headline?: string;
+  } | null>(null);
   
   const {
     state,
@@ -28,6 +34,25 @@ export default function CreatorOnboarding() {
     setIndustries,
     skipOnboarding,
   } = useOnboardingProgress(user?.id || '');
+
+  // Fetch existing creator data on mount
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const fetchCreatorData = async () => {
+      const { data, error } = await supabase
+        .from('creators')
+        .select('avatar_url, full_name, headline')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setCreatorData(data);
+      }
+    };
+
+    fetchCreatorData();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -99,6 +124,7 @@ export default function CreatorOnboarding() {
         {currentStep === 'photo' && (
           <PhotoUploadStep
             creatorId={user!.id}
+            existingPhotoUrl={creatorData?.avatar_url}
             onComplete={async (url) => {
               await markPhotoComplete(url);
               setCurrentStep('profile');
@@ -109,6 +135,8 @@ export default function CreatorOnboarding() {
 
         {currentStep === 'profile' && (
           <DisplayNameTaglineStep
+            existingDisplayName={creatorData?.full_name}
+            existingTagline={creatorData?.headline}
             onComplete={async (name, tagline) => {
               await setDisplayName(name);
               await setTagline(tagline);

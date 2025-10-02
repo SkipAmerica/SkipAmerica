@@ -3,15 +3,14 @@ import { Button } from '@/components/ui/button';
 import { 
   Music, Palette, Code, Camera, Utensils, Dumbbell, 
   Stethoscope, GraduationCap, Briefcase, Heart, 
-  Gamepad2, Megaphone, X, Check
+  Gamepad2, Megaphone, X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Carousel,
   CarouselContent,
   CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
+  type CarouselApi,
 } from '@/components/ui/carousel';
 
 const INDUSTRIES = [
@@ -37,17 +36,28 @@ interface IndustryCarouselStepProps {
 export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselStepProps) {
   const [selected, setSelected] = useState<string[]>([]);
   const [shaking, setShaking] = useState(false);
+  const [animatingCard, setAnimatingCard] = useState<string | null>(null);
+  const [api, setApi] = useState<CarouselApi>();
 
   const handleSelect = (industryId: string) => {
     if (selected.includes(industryId)) {
-      setSelected(selected.filter(id => id !== industryId));
-    } else if (selected.length < 3) {
-      setSelected([...selected, industryId]);
-    } else {
+      // Already selected, do nothing (must remove from top bar)
+      return;
+    }
+    
+    if (selected.length >= 3) {
       // Shake animation when trying to select 4th
       setShaking(true);
       setTimeout(() => setShaking(false), 500);
+      return;
     }
+
+    // Animate card flying upward
+    setAnimatingCard(industryId);
+    setTimeout(() => {
+      setSelected([...selected, industryId]);
+      setAnimatingCard(null);
+    }, 400);
   };
 
   const handleRemove = (industryId: string) => {
@@ -62,51 +72,68 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
   const selectedIndustries = INDUSTRIES.filter(i => selected.includes(i.id));
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in relative">
+    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-to-b from-background via-background to-background/50">
       {/* Fixed Selection Bar at Top */}
       <div className={cn(
         "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-background/60 border-b border-border/30 transition-all duration-500",
         selected.length > 0 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       )}>
         <div className={cn(
-          "max-w-4xl mx-auto p-4 transition-all duration-300",
+          "max-w-4xl mx-auto p-6 transition-all duration-300",
           shaking && "animate-[shake_0.5s_ease-in-out]"
         )}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-2 flex-wrap flex-1">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-muted-foreground">My Industries</h3>
               <span className={cn(
-                "text-sm font-medium transition-all duration-300",
-                selected.length === 0 && "text-muted-foreground",
+                "text-sm font-bold transition-colors duration-300",
                 selected.length === 1 && "text-blue-500",
                 selected.length === 2 && "text-blue-600",
                 selected.length === 3 && "text-primary"
               )}>
-                {selected.length === 0 ? "Choose your industries" : `${selected.length} of 3 selected`}
+                {selected.length} of 3
               </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap min-h-[44px]">
               {selectedIndustries.map((industry, index) => {
                 const Icon = industry.icon;
                 return (
                   <div
                     key={industry.id}
                     className={cn(
-                      "group relative flex items-center gap-2 px-3 py-1.5 rounded-full",
+                      "group relative flex items-center gap-2 px-4 py-2 rounded-2xl",
                       "backdrop-blur-xl bg-gradient-to-r border border-white/20",
-                      "shadow-lg transition-all duration-300 animate-[slideInFromBottom_0.4s_ease-out]",
+                      "shadow-[0_0_20px_rgba(0,0,0,0.1)] hover:shadow-[0_0_30px_rgba(0,0,0,0.2)]",
+                      "transition-all duration-300 animate-[chipScaleIn_0.4s_ease-out]",
                       industry.gradient
                     )}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <Icon className="w-3.5 h-3.5 text-white drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]" />
-                    <span className="text-xs font-medium text-white">{industry.label}</span>
+                    {/* Glow effect */}
+                    <div className={cn(
+                      "absolute inset-0 rounded-2xl bg-gradient-to-r opacity-50 blur-lg",
+                      industry.gradient
+                    )} />
+                    
+                    <Icon className="relative w-4 h-4 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+                    <span className="relative text-sm font-semibold text-white drop-shadow-md">
+                      {industry.label}
+                    </span>
                     <button
                       onClick={() => handleRemove(industry.id)}
-                      className="ml-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-all"
+                      className="relative ml-1 w-5 h-5 rounded-full bg-white/20 hover:bg-white/40 
+                               flex items-center justify-center transition-all hover:scale-110 active:scale-95"
                     >
-                      <X className="w-2.5 h-2.5 text-white" />
+                      <X className="w-3 h-3 text-white" />
                     </button>
                   </div>
                 );
               })}
+              {selected.length === 0 && (
+                <p className="text-sm text-muted-foreground italic">
+                  Tap a card below to add it here
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -115,102 +142,127 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
       {/* Spacer for fixed bar */}
       <div className={cn(
         "transition-all duration-500",
-        selected.length > 0 ? "h-20" : "h-0"
+        selected.length > 0 ? "h-32" : "h-0"
       )} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-8">
-        <div className="w-full max-w-5xl mx-auto space-y-8">
+      <div className="flex-1 flex flex-col justify-center px-6 py-12">
+        <div className="w-full max-w-6xl mx-auto space-y-12">
           {/* Header */}
           <div className="text-center space-y-4">
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
+            <h2 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-primary via-primary/80 to-primary bg-clip-text text-transparent">
               Choose Your Industries
             </h2>
-            <p className="text-muted-foreground text-lg">
-              Select up to 3 categories that best describe what you do
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Select up to 3 categories that best describe what you do. Swipe through the wheel to explore all options.
             </p>
           </div>
 
-          {/* Premium Carousel */}
-          <div className="relative py-8">
+          {/* Horizontal Wheel Carousel */}
+          <div className="relative">
             <Carousel
               opts={{
                 align: "center",
                 loop: true,
                 skipSnaps: false,
+                dragFree: true,
               }}
+              setApi={setApi}
               className="w-full"
             >
-              <CarouselContent className="-ml-4">
+              <CarouselContent className="-ml-2 md:-ml-4">
                 {INDUSTRIES.map((industry) => {
                   const Icon = industry.icon;
                   const isSelected = selected.includes(industry.id);
+                  const isAnimating = animatingCard === industry.id;
                   
                   return (
-                    <CarouselItem key={industry.id} className="pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
+                    <CarouselItem 
+                      key={industry.id} 
+                      className="pl-2 md:pl-4 basis-4/5 sm:basis-3/5 md:basis-2/5 lg:basis-1/3"
+                    >
                       <button
                         onClick={() => handleSelect(industry.id)}
+                        disabled={isSelected || isAnimating}
                         className={cn(
-                          "relative w-full h-64 rounded-3xl overflow-hidden",
-                          "backdrop-blur-xl border transition-all duration-500",
-                          "group hover:scale-105 active:scale-95",
-                          "shadow-2xl hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)]",
+                          "relative w-full h-80 rounded-3xl overflow-hidden",
+                          "backdrop-blur-2xl border-2 transition-all duration-500",
+                          "shadow-2xl hover:shadow-[0_25px_70px_-15px_rgba(0,0,0,0.4)]",
+                          "disabled:cursor-default",
+                          isSelected && "opacity-50 scale-95",
+                          isAnimating && "animate-[flyUp_0.4s_ease-in-out] pointer-events-none",
+                          !isSelected && !isAnimating && "hover:scale-105 active:scale-100 cursor-pointer",
                           isSelected 
-                            ? "border-primary/50 shadow-[0_0_40px_rgba(var(--primary),0.3)] bg-background/40" 
-                            : "border-border/30 hover:border-primary/30 bg-background/20"
+                            ? "border-border/20 bg-background/10" 
+                            : "border-border/40 hover:border-primary/40 bg-background/30"
                         )}
                       >
                         {/* Glass reflection overlay */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
                         
+                        {/* Gradient glow background */}
+                        <div className={cn(
+                          "absolute inset-0 bg-gradient-to-br opacity-20 transition-opacity duration-500",
+                          industry.gradient,
+                          !isSelected && !isAnimating && "group-hover:opacity-30"
+                        )} />
+
                         {/* Content */}
-                        <div className="relative h-full flex flex-col items-center justify-center gap-6 p-6">
-                          {/* Icon with glow */}
+                        <div className="relative h-full flex flex-col items-center justify-center gap-8 p-8">
+                          {/* Icon with animated glow */}
                           <div className={cn(
-                            "relative p-6 rounded-2xl bg-gradient-to-br transition-all duration-500",
-                            "shadow-2xl group-hover:scale-110",
+                            "relative p-8 rounded-3xl bg-gradient-to-br transition-all duration-500",
+                            "shadow-2xl",
                             industry.gradient,
-                            isSelected && "shadow-[0_0_30px_rgba(var(--primary),0.5)]"
+                            !isSelected && !isAnimating && "hover:scale-110 hover:rotate-6"
                           )}>
                             {/* Glow effect behind icon */}
                             <div className={cn(
-                              "absolute inset-0 rounded-2xl bg-gradient-to-br blur-xl opacity-50",
+                              "absolute inset-0 rounded-3xl bg-gradient-to-br blur-2xl opacity-60",
                               industry.gradient
                             )} />
-                            <Icon className="relative w-12 h-12 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />
+                            
+                            <Icon className="relative w-16 h-16 text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.8)]" />
                           </div>
                           
                           {/* Label */}
-                          <div className="text-center space-y-2">
-                            <h3 className="font-semibold text-lg">{industry.label}</h3>
-                            <p className="text-xs text-muted-foreground">
-                              {isSelected ? "Selected" : "Tap to select"}
+                          <div className="text-center space-y-3">
+                            <h3 className="font-bold text-2xl tracking-tight">
+                              {industry.label}
+                            </h3>
+                            <p className={cn(
+                              "text-sm font-medium transition-colors duration-300",
+                              isSelected ? "text-muted-foreground" : "text-primary"
+                            )}>
+                              {isSelected ? "✓ Selected" : "Tap to select"}
                             </p>
                           </div>
                         </div>
-                        
-                        {/* Selection indicator */}
-                        {isSelected && (
-                          <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-primary shadow-lg shadow-primary/50 flex items-center justify-center animate-[scaleIn_0.3s_ease-out]">
-                            <Check className="w-5 h-5 text-primary-foreground" />
-                          </div>
-                        )}
-                        
-                        {/* Bottom glow */}
+
+                        {/* Bottom gradient fade */}
                         <div className={cn(
-                          "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-black/20 to-transparent",
-                          "opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                          "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t from-background/40 to-transparent",
+                          "opacity-0 transition-opacity duration-500",
+                          !isSelected && !isAnimating && "group-hover:opacity-100"
                         )} />
                       </button>
                     </CarouselItem>
                   );
                 })}
               </CarouselContent>
-              
-              {/* Navigation arrows */}
-              <CarouselPrevious className="left-4 backdrop-blur-xl bg-background/60 border-border/30 hover:bg-background/80" />
-              <CarouselNext className="right-4 backdrop-blur-xl bg-background/60 border-border/30 hover:bg-background/80" />
             </Carousel>
+
+            {/* Center indicator line */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-full 
+                          bg-gradient-to-b from-transparent via-primary/20 to-transparent pointer-events-none" />
+          </div>
+
+          {/* Helper Text */}
+          <div className="text-center space-y-2">
+            <p className="text-sm text-muted-foreground">
+              <span className="inline-block mr-2">👈👉</span>
+              Swipe or drag to explore all industries
+            </p>
           </div>
 
           {/* Actions */}
@@ -220,18 +272,25 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
               disabled={selected.length === 0}
               size="lg"
               className={cn(
-                "w-full transition-all duration-300 relative overflow-hidden",
+                "w-full transition-all duration-300 relative overflow-hidden group",
                 selected.length === 0 && "opacity-50 cursor-not-allowed",
-                selected.length > 0 && selected.length < 3 && "shadow-[0_0_20px_rgba(var(--primary),0.3)] animate-pulse",
-                selected.length === 3 && "shadow-[0_0_30px_rgba(var(--primary),0.5)] scale-105"
+                selected.length > 0 && selected.length < 3 && "shadow-[0_0_20px_rgba(var(--primary),0.3)]",
+                selected.length === 3 && "shadow-[0_0_40px_rgba(var(--primary),0.6)] scale-105"
               )}
             >
-              {selected.length === 0 ? (
-                "Select at least 1 industry"
-              ) : (
-                <>
-                  Continue <span className="ml-2 font-bold">({selected.length} selected)</span>
-                </>
+              <span className="relative z-10">
+                {selected.length === 0 ? (
+                  "Select at least 1 industry"
+                ) : (
+                  <>
+                    Continue
+                    {selected.length === 3 && " ✨"}
+                  </>
+                )}
+              </span>
+              {selected.length === 3 && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0 
+                              animate-[shimmer_2s_ease-in-out_infinite]" />
               )}
             </Button>
             
@@ -248,14 +307,14 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
           {/* Progress hint */}
           <div className="text-center">
             <p className={cn(
-              "text-sm transition-all duration-300",
+              "text-sm font-medium transition-all duration-300",
               selected.length === 0 && "text-muted-foreground",
               selected.length > 0 && selected.length < 3 && "text-blue-500",
-              selected.length === 3 && "text-primary font-medium"
+              selected.length === 3 && "text-primary"
             )}>
-              {selected.length === 0 && "Choose your first industry to continue"}
-              {selected.length > 0 && selected.length < 3 && `${3 - selected.length} more to complete profile`}
-              {selected.length === 3 && "✓ Profile complete!"}
+              {selected.length === 0 && "Choose your first industry to get started"}
+              {selected.length > 0 && selected.length < 3 && `Add ${3 - selected.length} more to complete your profile`}
+              {selected.length === 3 && "✓ Profile complete! Ready to continue"}
             </p>
           </div>
         </div>
@@ -264,14 +323,17 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
       <style>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
-          10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
-          20%, 40%, 60%, 80% { transform: translateX(8px); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+          20%, 40%, 60%, 80% { transform: translateX(10px); }
         }
         
-        @keyframes slideInFromBottom {
+        @keyframes chipScaleIn {
           0% {
-            transform: translateY(20px) scale(0.8);
+            transform: translateY(300px) scale(1.5);
             opacity: 0;
+          }
+          60% {
+            transform: translateY(-10px) scale(1);
           }
           100% {
             transform: translateY(0) scale(1);
@@ -279,18 +341,20 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
           }
         }
         
-        @keyframes scaleIn {
+        @keyframes flyUp {
           0% {
-            transform: scale(0);
-            opacity: 0;
-          }
-          50% {
-            transform: scale(1.2);
-          }
-          100% {
-            transform: scale(1);
+            transform: translateY(0) scale(1);
             opacity: 1;
           }
+          100% {
+            transform: translateY(-400px) scale(0.3);
+            opacity: 0;
+          }
+        }
+
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
         }
       `}</style>
     </div>

@@ -9,12 +9,20 @@ import { toast } from 'sonner';
 interface DisplayNameTaglineStepProps {
   onComplete: (displayName: string, tagline: string) => void;
   onSkip: () => void;
+  existingDisplayName?: string;
+  existingTagline?: string;
 }
 
-export function DisplayNameTaglineStep({ onComplete, onSkip }: DisplayNameTaglineStepProps) {
-  const [displayName, setDisplayName] = useState('');
-  const [tagline, setTagline] = useState('');
+export function DisplayNameTaglineStep({ 
+  onComplete, 
+  onSkip, 
+  existingDisplayName, 
+  existingTagline 
+}: DisplayNameTaglineStepProps) {
+  const [displayName, setDisplayName] = useState(existingDisplayName || '');
+  const [tagline, setTagline] = useState(existingTagline || '');
   const [saving, setSaving] = useState(false);
+  const hasExistingData = !!(existingDisplayName || existingTagline);
 
   const handleContinue = async () => {
     if (!displayName.trim()) {
@@ -51,9 +59,11 @@ export function DisplayNameTaglineStep({ onComplete, onSkip }: DisplayNameTaglin
 
           <div className="space-y-6">
             <div className="text-center">
-              <h2 className="text-3xl font-bold">Tell Us About You</h2>
+              <h2 className="text-3xl font-bold">
+                {hasExistingData ? 'Review Your Info' : 'Tell Us About You'}
+              </h2>
               <p className="text-muted-foreground mt-2">
-                Help fans find and recognize you
+                {hasExistingData ? 'Edit your details or continue' : 'Help fans find and recognize you'}
               </p>
             </div>
 
@@ -108,7 +118,7 @@ export function DisplayNameTaglineStep({ onComplete, onSkip }: DisplayNameTaglin
                     Saving...
                   </>
                 ) : (
-                  'Continue'
+                  hasExistingData ? 'Save & Continue' : 'Continue'
                 )}
               </Button>
               <Button

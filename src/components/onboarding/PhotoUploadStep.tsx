@@ -9,11 +9,13 @@ interface PhotoUploadStepProps {
   creatorId: string;
   onComplete: (url: string) => void;
   onSkip: () => void;
+  existingPhotoUrl?: string;
 }
 
-export function PhotoUploadStep({ creatorId, onComplete, onSkip }: PhotoUploadStepProps) {
-  const [preview, setPreview] = useState<string | null>(null);
+export function PhotoUploadStep({ creatorId, onComplete, onSkip, existingPhotoUrl }: PhotoUploadStepProps) {
+  const [preview, setPreview] = useState<string | null>(existingPhotoUrl || null);
   const [uploading, setUploading] = useState(false);
+  const hasExistingPhoto = !!existingPhotoUrl;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,9 +96,11 @@ export function PhotoUploadStep({ creatorId, onComplete, onSkip }: PhotoUploadSt
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-accent/10 rounded-2xl blur-xl -z-10" />
 
           <div className="text-center space-y-6">
-            <h2 className="text-3xl font-bold">Add Your Photo</h2>
+            <h2 className="text-3xl font-bold">
+              {hasExistingPhoto ? 'Your Photo' : 'Add Your Photo'}
+            </h2>
             <p className="text-muted-foreground">
-              Choose a clear, professional photo so fans can recognize you
+              {hasExistingPhoto ? 'Keep it or upload a new one' : 'Choose a clear, professional photo so fans can recognize you'}
             </p>
 
             {/* Avatar Preview */}
@@ -139,10 +143,20 @@ export function PhotoUploadStep({ creatorId, onComplete, onSkip }: PhotoUploadSt
                 ) : (
                   <>
                     <Upload className="w-4 h-4 mr-2" />
-                    Choose Photo
+                    {hasExistingPhoto ? 'Change Photo' : 'Choose Photo'}
                   </>
                 )}
               </Button>
+              {hasExistingPhoto && preview && !uploading && (
+                <Button
+                  onClick={() => onComplete(preview)}
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                >
+                  Continue with this photo
+                </Button>
+              )}
               <Button
                 onClick={onSkip}
                 variant="ghost"
