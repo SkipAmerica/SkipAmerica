@@ -7,13 +7,15 @@ import { Button } from '@/components/ui/button'
 import { supabase } from '@/integrations/supabase/client'
 import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { IOSNavBar } from '@/components/mobile/IOSNavBar'
-import { Home } from 'lucide-react'
+import { Home, ExternalLink } from 'lucide-react'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 const Auth = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [showInterestsSelection, setShowInterestsSelection] = useState(false)
   const [checkingInterests, setCheckingInterests] = useState(false)
+  const inIframe = window.self !== window.top
 
   useEffect(() => {
     const checkUserInterests = async () => {
@@ -78,7 +80,26 @@ const Auth = () => {
     return null // Will redirect via useEffect
   }
 
-  return <SplashAuthForm onSuccess={() => navigate('/')} />
+  return (
+    <>
+      {inIframe && (
+        <Alert className="m-4 border-primary/20 bg-primary/5">
+          <ExternalLink className="h-4 w-4" />
+          <AlertDescription>
+            For the best login experience, <a 
+              href={window.location.href} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="underline font-medium"
+            >
+              open this page in a new tab
+            </a>.
+          </AlertDescription>
+        </Alert>
+      )}
+      <SplashAuthForm onSuccess={() => navigate('/')} />
+    </>
+  )
 }
 
 export default Auth

@@ -184,18 +184,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Use web OAuth flow with iframe handling
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
           },
         },
       })
-      return { error }
+      
+      if (error) return { error }
+      
+      // Check if we're in an iframe
+      const inIframe = window.self !== window.top
+      
+      if (data?.url) {
+        if (inIframe) {
+          // Open in new tab to avoid iframe restrictions
+          window.open(data.url, '_blank', 'noopener,noreferrer')
+        } else {
+          // Redirect in current window
+          window.location.href = data.url
+        }
+      }
+      
+      return { error: null }
     } catch (error: any) {
       console.error('Google sign-in error:', error)
       return { error }
@@ -227,14 +244,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow
-      const { error } = await supabase.auth.signInWithOAuth({
+      // Use web OAuth flow with iframe handling
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
           redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true,
         },
       })
-      return { error }
+      
+      if (error) return { error }
+      
+      // Check if we're in an iframe
+      const inIframe = window.self !== window.top
+      
+      if (data?.url) {
+        if (inIframe) {
+          // Open in new tab to avoid iframe restrictions
+          window.open(data.url, '_blank', 'noopener,noreferrer')
+        } else {
+          // Redirect in current window
+          window.location.href = data.url
+        }
+      }
+      
+      return { error: null }
     } catch (error: any) {
       console.error('Apple sign-in error:', error)
       return { error }
