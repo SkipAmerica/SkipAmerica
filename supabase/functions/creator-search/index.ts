@@ -44,9 +44,11 @@ Deno.serve(async (req) => {
         *,
         platform_stats(platform, follower_count, engagement_rate_30d, handle, verified_on_platform),
         offer_rates(offer_type, min_rate, max_rate, currency),
-        press_mentions(outlet, headline, published_date)
+        press_mentions(outlet, headline, published_date),
+        creator_onboarding!inner(search_unlocked)
       `)
       .eq('is_suppressed', false)
+      .eq('creator_onboarding.search_unlocked', true)
 
     // Apply text search if query provided
     if (filters.query) {

@@ -35,6 +35,7 @@ import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader"
 import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import { FreezePane } from "@/components/navigation/FreezePane";
 import { MatchSearchBar } from "@/components/match/MatchSearchBar";
+import { ProfileCompletionBanner } from "@/components/creator/ProfileCompletionBanner";
 
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
@@ -219,6 +220,13 @@ const Index = () => {
                  touchAction: 'pan-y',
                  WebkitOverflowScrolling: 'touch'
                }}>
+              {/* Profile Completion Banner for creators */}
+              {profile?.account_type === 'creator' && discoveryMode === 'discover' && (
+                <div className="px-4 pt-4">
+                  <ProfileCompletionBanner />
+                </div>
+              )}
+              
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <ThreadsFeed key={threadsFeedKey} />

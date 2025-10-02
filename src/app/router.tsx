@@ -18,6 +18,7 @@ const InboxPage = lazy(() => import('@/pages/Inbox'))
 const ThreadViewPage = lazy(() => import('@/pages/ThreadView'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const DevCanvasPage = lazy(() => import('@/pages/DevCanvas'))
+const CreatorOnboardingPage = lazy(() => import('@/pages/CreatorOnboarding'))
 
 // Route wrapper with error boundary and suspense
 function RouteWrapper({ children }: { children: React.ReactNode }) {
@@ -111,6 +112,14 @@ export function AppRouter() {
         <Route path="/dev-canvas" element={
           <RouteWrapper>
             <DevCanvasPage />
+          </RouteWrapper>
+        } />
+        
+        <Route path="/onboarding/creator" element={
+          <RouteWrapper>
+            <AuthGuard>
+              <CreatorOnboardingPage />
+            </AuthGuard>
           </RouteWrapper>
         } />
         

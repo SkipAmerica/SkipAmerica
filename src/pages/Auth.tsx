@@ -27,7 +27,7 @@ const Auth = () => {
         // Check if user has already set interests
         const { data: profile } = await supabase
           .from('profiles')
-          .select('interests')
+          .select('interests, account_type')
           .eq('id', user.id)
           .single()
 
@@ -35,7 +35,22 @@ const Auth = () => {
         if (!profile?.interests || profile.interests.length === 0) {
           setShowInterestsSelection(true)
         } else {
-          // User has interests, redirect to home
+          // Check if creator needs onboarding
+          if (profile.account_type === 'creator') {
+            const { data: onboarding } = await supabase
+              .from('creator_onboarding')
+              .select('percent_complete, onboarding_skipped')
+              .eq('creator_id', user.id)
+              .single()
+
+            // Redirect to onboarding if incomplete and not skipped
+            if (onboarding && onboarding.percent_complete < 100 && !onboarding.onboarding_skipped) {
+              navigate('/onboarding/creator')
+              return
+            }
+          }
+
+          // User has interests and (if creator) onboarding is done or skipped, redirect to home
           navigate('/')
         }
       } catch (error) {

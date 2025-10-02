@@ -792,6 +792,59 @@ export type Database = {
           },
         ]
       }
+      creator_onboarding: {
+        Row: {
+          created_at: string
+          creator_id: string
+          has_display_name: boolean
+          has_photo: boolean
+          has_tagline: boolean
+          industries_count: number
+          last_nudged_at: string | null
+          onboarding_completed_at: string | null
+          onboarding_skipped: boolean
+          percent_complete: number
+          search_unlocked: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          has_display_name?: boolean
+          has_photo?: boolean
+          has_tagline?: boolean
+          industries_count?: number
+          last_nudged_at?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_skipped?: boolean
+          percent_complete?: number
+          search_unlocked?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          has_display_name?: boolean
+          has_photo?: boolean
+          has_tagline?: boolean
+          industries_count?: number
+          last_nudged_at?: string | null
+          onboarding_completed_at?: string | null
+          onboarding_skipped?: boolean
+          percent_complete?: number
+          search_unlocked?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_onboarding_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: true
+            referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_playlists: {
         Row: {
           created_at: string
@@ -2332,6 +2385,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_onboarding_progress: {
+        Args: { p_creator_id: string }
+        Returns: number
+      }
       check_creator_presence: {
         Args: Record<PropertyKey, never>
         Returns: undefined
