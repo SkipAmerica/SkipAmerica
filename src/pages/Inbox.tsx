@@ -125,7 +125,7 @@ export default function Inbox() {
             variant="ghost"
             size="sm"
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 -ml-2 text-black hover:text-black/80 hover:bg-transparent"
+            className="flex items-center gap-1 -ml-2 bg-cyan-500 hover:bg-cyan-600 text-white"
           >
             <ChevronLeft className="h-7 w-7" />
             <span className="text-xl font-bold">Inbox</span>
