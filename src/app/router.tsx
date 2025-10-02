@@ -14,6 +14,8 @@ const FeedPage = lazy(() => import('@/pages/Feed'))
 const LobbyPage = lazy(() => import('@/pages/Lobby'))
 const CallPage = lazy(() => import('@/pages/Call'))
 const JoinQueuePage = lazy(() => import('@/pages/JoinQueue'))
+const InboxPage = lazy(() => import('@/pages/Inbox'))
+const ThreadViewPage = lazy(() => import('@/pages/ThreadView'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const DevCanvasPage = lazy(() => import('@/pages/DevCanvas'))
 
@@ -80,6 +82,22 @@ export function AppRouter() {
           <RouteWrapper>
             <AuthGuard>
               <div>Call placeholder - TODO: implement proper routing</div>
+            </AuthGuard>
+          </RouteWrapper>
+        } />
+        
+        <Route path="/inbox" element={
+          <RouteWrapper>
+            <AuthGuard>
+              <InboxPage />
+            </AuthGuard>
+          </RouteWrapper>
+        } />
+        
+        <Route path="/inbox/thread/:threadId" element={
+          <RouteWrapper>
+            <AuthGuard>
+              <ThreadViewPage />
             </AuthGuard>
           </RouteWrapper>
         } />

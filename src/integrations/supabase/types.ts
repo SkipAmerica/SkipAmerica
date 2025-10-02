@@ -1321,33 +1321,59 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_url: string | null
           content: string
           created_at: string
+          deleted_at: string | null
           id: string
           message_type: string
+          mtype: Database["public"]["Enums"]["message_type"]
           read_at: string | null
+          read_by_creator: boolean
+          read_by_user: boolean
           receiver_id: string
           sender_id: string
+          thread_id: string | null
         }
         Insert: {
+          attachment_url?: string | null
           content: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           message_type?: string
+          mtype?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
+          read_by_creator?: boolean
+          read_by_user?: boolean
           receiver_id: string
           sender_id: string
+          thread_id?: string | null
         }
         Update: {
+          attachment_url?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
           id?: string
           message_type?: string
+          mtype?: Database["public"]["Enums"]["message_type"]
           read_at?: string | null
+          read_by_creator?: boolean
+          read_by_user?: boolean
           receiver_id?: string
           sender_id?: string
+          thread_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       offer_rates: {
         Row: {
@@ -1392,6 +1418,66 @@ export type Database = {
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "creators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          creator_id: string
+          currency: string
+          duration_minutes: number
+          expires_at: string | null
+          id: string
+          note: string | null
+          status: Database["public"]["Enums"]["offer_status"]
+          thread_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          creator_id: string
+          currency?: string
+          duration_minutes: number
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          thread_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          creator_id?: string
+          currency?: string
+          duration_minutes?: number
+          expires_at?: string | null
+          id?: string
+          note?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          thread_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1691,6 +1777,67 @@ export type Database = {
           },
         ]
       }
+      priority_payments: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          creator_id: string
+          currency: string
+          hold_expires_at: string | null
+          id: string
+          status: Database["public"]["Enums"]["payment_status"]
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          creator_id: string
+          currency?: string
+          hold_expires_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          creator_id?: string
+          currency?: string
+          hold_expires_at?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["payment_status"]
+          thread_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "priority_payments_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "priority_payments_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "priority_payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_privacy_settings: {
         Row: {
           created_at: string | null
@@ -1726,6 +1873,36 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      profile_tags: {
+        Row: {
+          profile_id: string
+          tag_id: number
+        }
+        Insert: {
+          profile_id: string
+          tag_id: number
+        }
+        Update: {
+          profile_id?: string
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1935,6 +2112,94 @@ export type Database = {
         }
         Relationships: []
       }
+      tags: {
+        Row: {
+          id: number
+          label: string
+          slug: string
+        }
+        Insert: {
+          id?: number
+          label: string
+          slug: string
+        }
+        Update: {
+          id?: number
+          label?: string
+          slug?: string
+        }
+        Relationships: []
+      }
+      threads: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          is_archived_creator: boolean
+          is_archived_user: boolean
+          last_message_at: string
+          last_message_preview: string | null
+          offer_id: string | null
+          priority_payment_id: string | null
+          type: Database["public"]["Enums"]["thread_type"]
+          unread_count_creator: number
+          unread_count_user: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          is_archived_creator?: boolean
+          is_archived_user?: boolean
+          last_message_at?: string
+          last_message_preview?: string | null
+          offer_id?: string | null
+          priority_payment_id?: string | null
+          type: Database["public"]["Enums"]["thread_type"]
+          unread_count_creator?: number
+          unread_count_user?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          is_archived_creator?: boolean
+          is_archived_user?: boolean
+          last_message_at?: string
+          last_message_preview?: string | null
+          offer_id?: string | null
+          priority_payment_id?: string | null
+          type?: Database["public"]["Enums"]["thread_type"]
+          unread_count_creator?: number
+          unread_count_user?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_threads_offers"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "threads_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "threads_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trend_metrics: {
         Row: {
           calculated_at: string
@@ -2075,10 +2340,36 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      creator_inbox_counts: {
+        Args: { p_creator_id: string }
+        Returns: {
+          offers_new: number
+          priority_unread: number
+          requests_unread: number
+          standard_unread: number
+        }[]
+      }
+      mark_thread_read: {
+        Args: { p_thread_id: string; p_user_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       account_type: "fan" | "creator" | "agency" | "industry_resource"
       celebrity_tier: "A" | "B" | "C" | "Rising" | "Local Hero"
+      message_type:
+        | "text"
+        | "attachment"
+        | "system"
+        | "offer_update"
+        | "payment_receipt"
+      offer_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "countered"
+        | "expired"
+        | "canceled"
       offer_type:
         | "live_1on1"
         | "live_group"
@@ -2088,6 +2379,13 @@ export type Database = {
         | "appearance"
         | "panel"
         | "brand_collab"
+      payment_status:
+        | "pending"
+        | "authorized"
+        | "accepted"
+        | "refunded"
+        | "released"
+        | "failed"
       platform_name:
         | "youtube"
         | "instagram"
@@ -2104,6 +2402,7 @@ export type Database = {
         | "youtube"
         | "tiktok"
         | "linkedin"
+      thread_type: "standard" | "priority" | "offer" | "request" | "system"
       verification_status: "pending" | "verified" | "failed"
     }
     CompositeTypes: {
@@ -2234,6 +2533,21 @@ export const Constants = {
     Enums: {
       account_type: ["fan", "creator", "agency", "industry_resource"],
       celebrity_tier: ["A", "B", "C", "Rising", "Local Hero"],
+      message_type: [
+        "text",
+        "attachment",
+        "system",
+        "offer_update",
+        "payment_receipt",
+      ],
+      offer_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "countered",
+        "expired",
+        "canceled",
+      ],
       offer_type: [
         "live_1on1",
         "live_group",
@@ -2243,6 +2557,14 @@ export const Constants = {
         "appearance",
         "panel",
         "brand_collab",
+      ],
+      payment_status: [
+        "pending",
+        "authorized",
+        "accepted",
+        "refunded",
+        "released",
+        "failed",
       ],
       platform_name: [
         "youtube",
@@ -2262,6 +2584,7 @@ export const Constants = {
         "tiktok",
         "linkedin",
       ],
+      thread_type: ["standard", "priority", "offer", "request", "system"],
       verification_status: ["pending", "verified", "failed"],
     },
   },

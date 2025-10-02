@@ -1,16 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { MessageCircle, Heart, Menu, Phone, Users } from 'lucide-react';
+import { Mail, Heart, Menu, Phone, Users } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { RUNTIME } from '@/config/runtime';
 import { useLive } from '@/hooks/live';
 import { QueueDrawer } from '@/components/live/QueueDrawer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
@@ -27,12 +29,56 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
 }: IOSInstagramHeaderProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
+  const navigate = useNavigate();
   const { isKeyboardVisible } = useKeyboardAware();
   const { queueCount } = useLive();
   const [showQueueDrawer, setShowQueueDrawer] = useState(false);
   const [, forceUpdate] = useState({});
+  const [inboxCounts, setInboxCounts] = useState({
+    standard_unread: 0,
+    priority_unread: 0,
+    offers_new: 0,
+    requests_unread: 0,
+  });
 
   const headerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch inbox counts for creators
+  useEffect(() => {
+    if (!profile?.id || profile.account_type !== 'creator') return;
+
+    const fetchCounts = async () => {
+      const { data } = await supabase
+        .rpc('creator_inbox_counts', { p_creator_id: profile.id });
+      
+      if (data && data[0]) {
+        setInboxCounts(data[0]);
+      }
+    };
+
+    fetchCounts();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('header-inbox-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'threads',
+          filter: `creator_id=eq.${profile.id}`,
+        },
+        () => {
+          fetchCounts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id, profile?.account_type]);
 
   // Listen for queue count updates to trigger re-render
   useEffect(() => {
@@ -123,9 +169,29 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
               3
             </div>
           </Button>
-          <Button variant="ghost" size="sm" className="ios-touchable h-11 px-2">
-            <MessageCircle size={24} />
-          </Button>
+          {/* Mail Icon with Badges - Only for creators */}
+          {profile?.account_type === 'creator' && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="ios-touchable h-11 px-2 relative"
+              onClick={() => navigate('/inbox')}
+            >
+              <Mail size={24} />
+              
+              {/* Red badge for standard unread count */}
+              {inboxCounts.standard_unread > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-[10px] leading-5 text-center text-white font-medium">
+                  {inboxCounts.standard_unread}
+                </span>
+              )}
+              
+              {/* Green dot for priority/offers */}
+              {(inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0) && (
+                <span className="absolute top-4 -right-0.5 w-2 h-2 rounded-full bg-emerald-400"></span>
+              )}
+            </Button>
+          )}
           <Button 
             variant="ghost" 
             size="sm" 
