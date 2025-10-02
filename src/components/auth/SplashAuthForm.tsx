@@ -86,6 +86,13 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       toast.error(error.message || 'Failed to sign up')
     } else {
       toast.success('Account created! Please check your email to verify.')
+      
+      // Creators go directly to onboarding, users go to interests
+      if (accountType === 'creator') {
+        window.location.href = '/onboarding/creator'
+        return
+      }
+      
       setStep('interests')
     }
   }

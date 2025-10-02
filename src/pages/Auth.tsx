@@ -57,40 +57,44 @@ const Auth = () => {
           .eq('id', user.id)
           .single()
 
-        // If user has no interests set, show interests selection
+        // Creators: Check onboarding status first, skip interests entirely
+        if (profile?.account_type === 'creator') {
+          // Wait for creator record and onboarding to be initialized
+          let attempts = 0
+          let onboarding = null
+          
+          while (attempts < 5 && !onboarding) {
+            const { data } = await supabase
+              .from('creator_onboarding')
+              .select('percent_complete, onboarding_skipped')
+              .eq('creator_id', user.id)
+              .maybeSingle()
+            
+            if (data) {
+              onboarding = data
+              break
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 500))
+            attempts++
+          }
+
+          // Redirect to onboarding if incomplete and not skipped
+          if (onboarding && onboarding.percent_complete < 100 && !onboarding.onboarding_skipped) {
+            navigate('/onboarding/creator')
+            return
+          }
+
+          // Creator has completed onboarding, redirect to home
+          navigate('/')
+          return
+        }
+
+        // Users/Fans: Check interests
         if (!profile?.interests || profile.interests.length === 0) {
           setShowInterestsSelection(true)
         } else {
-          // Check if creator needs onboarding
-          if (profile.account_type === 'creator') {
-            // Wait for creator record and onboarding to be initialized
-            let attempts = 0
-            let onboarding = null
-            
-            while (attempts < 5 && !onboarding) {
-              const { data } = await supabase
-                .from('creator_onboarding')
-                .select('percent_complete, onboarding_skipped')
-                .eq('creator_id', user.id)
-                .maybeSingle()
-              
-              if (data) {
-                onboarding = data
-                break
-              }
-              
-              await new Promise(resolve => setTimeout(resolve, 500))
-              attempts++
-            }
-
-            // Redirect to onboarding if incomplete and not skipped
-            if (onboarding && onboarding.percent_complete < 100 && !onboarding.onboarding_skipped) {
-              navigate('/onboarding/creator')
-              return
-            }
-          }
-
-          // User has interests and (if creator) onboarding is done or skipped, redirect to home
+          // User has interests, redirect to home
           navigate('/')
         }
       } catch (error) {
