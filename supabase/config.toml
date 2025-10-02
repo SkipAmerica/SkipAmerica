@@ -27,3 +27,6 @@ verify_jwt = false
 
 [functions.queue-cleanup]
 verify_jwt = false
+
+[functions.seed-inbox]
+verify_jwt = true

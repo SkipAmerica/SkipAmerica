@@ -138,94 +138,34 @@ export default function Inbox() {
         <div className="fixed top-14 left-0 right-0 z-40 p-4 border-b border-border bg-background flex justify-end safe-top">
           <button
             onClick={async () => {
-              if (isSeeding) return;
+              if (isSeeding || !profile?.id) return;
               
               setIsSeeding(true);
               try {
-                console.log('Starting inbox data seeding...');
-                const { supabase } = await import('@/integrations/supabase/client');
-                const { data: { user } } = await supabase.auth.getUser();
+                const { data, error } = await supabase.functions.invoke('seed-inbox', {
+                  body: { creatorId: profile.id },
+                });
+
+                if (error) throw error;
+
+                toast.success(`Inbox seeded: ${data.data.threads_created} threads created`);
                 
-                if (!user) {
-                  throw new Error('No user found');
+                // Refresh inbox counts
+                const { data: counts } = await supabase.rpc('creator_inbox_counts', {
+                  p_creator_id: profile.id,
+                });
+                if (counts) {
+                  setCounts(counts[0] || {
+                    standard_unread: 0,
+                    priority_unread: 0,
+                    offers_new: 0,
+                    requests_unread: 0,
+                  });
                 }
-
-                // Create sample fan profiles  
-                console.log('Creating fan profiles...');
-                const fan1 = await supabase.from('profiles').insert({
-                  id: crypto.randomUUID(),
-                  full_name: 'Sarah Johnson',
-                  account_type: 'fan' as const
-                } as any).select().single();
-                
-                const fan2 = await supabase.from('profiles').insert({
-                  id: crypto.randomUUID(),
-                  full_name: 'Mike Davis',
-                  account_type: 'fan' as const
-                } as any).select().single();
-
-                if (!fan1.data || !fan2.data) {
-                  throw new Error('Failed to create fan profiles');
-                }
-
-                console.log('Creating offers...');
-                await supabase.from('offers').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan1.data.id,
-                    amount_cents: 20000,
-                    currency: 'USD',
-                    duration_minutes: 30,
-                    status: 'pending',
-                    note: 'Would love to discuss your latest project!'
-                  }
-                ]);
-
-                console.log('Creating priority threads...');
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan2.data.id,
-                    type: 'priority',
-                    last_message_at: new Date().toISOString(),
-                    last_message_preview: 'Thanks for taking the time to chat!',
-                    unread_count_creator: 1
-                  }
-                ]);
-
-                console.log('Creating standard threads...');
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan1.data.id,
-                    type: 'standard',
-                    last_message_at: new Date(Date.now() - 3600000).toISOString(),
-                    last_message_preview: 'Looking forward to our next session',
-                    unread_count_creator: 0
-                  }
-                ]);
-
-                console.log('Creating request threads...');
-                await supabase.from('threads').insert([
-                  {
-                    creator_id: user.id,
-                    user_id: fan2.data.id,
-                    type: 'request',
-                    last_message_at: new Date(Date.now() - 7200000).toISOString(),
-                    last_message_preview: 'Hi! Would love to connect with you',
-                    unread_count_creator: 1
-                  }
-                ]);
-
-                console.log('✅ Inbox data seeded successfully!');
-                toast.success('Inbox data seeded successfully!');
-                
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1000);
               } catch (error) {
-                console.error('❌ Failed to seed inbox data:', error);
-                toast.error('Failed to seed inbox data. Check console for details.');
+                console.error('Error seeding inbox:', error);
+                toast.error('Failed to seed inbox data');
+              } finally {
                 setIsSeeding(false);
               }
             }}
