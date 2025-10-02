@@ -9,12 +9,14 @@ import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { IOSNavBar } from '@/components/mobile/IOSNavBar'
 import { Home, ExternalLink } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 
 const Auth = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [showInterestsSelection, setShowInterestsSelection] = useState(false)
   const [checkingInterests, setCheckingInterests] = useState(false)
+  const [isWaitingForOAuth, setIsWaitingForOAuth] = useState(false)
   const inIframe = window.self !== window.top
 
   // Listen for OAuth success from popup
@@ -24,8 +26,12 @@ const Auth = () => {
       
       if (event.data.type === 'oauth-success') {
         console.log('OAuth success received from popup')
-        // The auth state will update automatically via onAuthStateChange
-        // which will trigger the checkUserInterests effect
+        setIsWaitingForOAuth(true)
+        
+        // Safety timeout - clear waiting state after 10 seconds if user state doesn't update
+        setTimeout(() => {
+          setIsWaitingForOAuth(false)
+        }, 10000)
       }
     }
     
@@ -38,6 +44,7 @@ const Auth = () => {
       if (!user) return
 
       setCheckingInterests(true)
+      setIsWaitingForOAuth(false) // Clear waiting state once we have user
       
       try {
         // Wait a bit for OAuth account type updates to complete
@@ -123,8 +130,20 @@ const Auth = () => {
     )
   }
 
-  // Don't show auth form if user is logged in
-  if (user && !showInterestsSelection) {
+  // Show loading while waiting for OAuth or checking profile
+  if (isWaitingForOAuth || (user && !showInterestsSelection && checkingInterests)) {
+    return (
+      <IOSAppShell>
+        <div className="ios-content flex-1 flex flex-col items-center justify-center p-4">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-muted-foreground">Setting up your profile...</p>
+        </div>
+      </IOSAppShell>
+    )
+  }
+
+  // Don't show auth form if user is logged in and we're not checking/showing interests
+  if (user && !showInterestsSelection && !checkingInterests) {
     return null // Will redirect via useEffect
   }
 
