@@ -12,6 +12,7 @@ import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLive } from '@/hooks/live';
 import DiscoverabilityModal from '@/components/DiscoverabilityModal';
+import { LiveControlBar } from '@/components/live/LiveControlBar';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -191,14 +192,17 @@ export default function Inbox() {
         </div>
       </div>
 
+      {/* Live Control Bar */}
+      <LiveControlBar />
+
       {/* Bottom Navigation */}
       <IOSTabBar
         activeTab="following"
         onTabChange={(tab) => {
-          if (tab === 'home') navigate('/');
-          else if (tab === 'browse') navigate('/?tab=browse');
-          else if (tab === 'following') navigate('/?tab=following');
-          else if (tab === 'profile') navigate('/profile');
+          if (tab === 'discover') navigate('/');
+          else if (tab === 'search') navigate('/?tab=search');
+          else if (tab === 'live') navigate('/?tab=live');
+          else if (tab === 'following') navigate('/');
         }}
         showFollowing={true}
         isCreator={profile?.account_type === 'creator'}
