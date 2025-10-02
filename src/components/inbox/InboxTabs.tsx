@@ -2,6 +2,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useInboxStore, InboxTab } from '@/stores/inbox-store';
 import { DollarSign, Star, MessageSquare, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const tabs: Array<{ id: InboxTab; label: string; icon: typeof DollarSign }> = [
   { id: 'standard', label: 'Standard', icon: MessageSquare },
@@ -14,6 +15,7 @@ export function InboxTabs() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { activeTab, setActiveTab, saveScrollPosition } = useInboxStore();
+  const isMobile = useIsMobile();
 
   const handleTabClick = (tabId: InboxTab) => {
     // Save current scroll position
@@ -38,7 +40,7 @@ export function InboxTabs() {
       <div className="relative flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
         {/* Sliding active indicator */}
         <div
-          className="absolute top-1 bottom-1 bg-cyan-500 rounded-lg shadow-sm transition-all duration-300 ease-out"
+          className="absolute top-1 bottom-1 bg-cyan-500 rounded-lg shadow-lg transition-all duration-300 ease-out"
           style={{
             left: `${activeIndex * 25}%`,
             width: 'calc(25% - 0.5rem)',
@@ -56,21 +58,25 @@ export function InboxTabs() {
               key={tab.id}
               onClick={() => handleTabClick(tab.id)}
               className={cn(
-                'relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 z-10',
+                'relative flex-1 flex items-center justify-center rounded-lg transition-all duration-200 z-10',
+                isMobile ? 'gap-0 px-2 py-2.5' : 'gap-2 px-4 py-2.5',
                 isActive
                   ? 'text-white'
                   : 'text-gray-600 hover:text-gray-900'
               )}
             >
               <Icon className={cn(
-                'w-4 h-4 transition-colors',
+                'transition-colors',
+                isMobile ? 'w-5 h-5' : 'w-4 h-4',
                 isActive ? 'text-white' : 'text-gray-500'
               )} />
-              <span className={cn(
-                'text-sm font-medium transition-colors'
-              )}>
-                {tab.label}
-              </span>
+              {!isMobile && (
+                <span className={cn(
+                  'text-sm font-medium transition-colors'
+                )}>
+                  {tab.label}
+                </span>
+              )}
             </button>
           );
         })}
