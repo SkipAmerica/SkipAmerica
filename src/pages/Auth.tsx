@@ -24,6 +24,9 @@ const Auth = () => {
       setCheckingInterests(true)
       
       try {
+        // Wait a bit for OAuth account type updates to complete
+        await new Promise(resolve => setTimeout(resolve, 500))
+        
         // Check if user has already set interests
         const { data: profile } = await supabase
           .from('profiles')
@@ -37,11 +40,25 @@ const Auth = () => {
         } else {
           // Check if creator needs onboarding
           if (profile.account_type === 'creator') {
-            const { data: onboarding } = await supabase
-              .from('creator_onboarding')
-              .select('percent_complete, onboarding_skipped')
-              .eq('creator_id', user.id)
-              .single()
+            // Wait for creator record and onboarding to be initialized
+            let attempts = 0
+            let onboarding = null
+            
+            while (attempts < 5 && !onboarding) {
+              const { data } = await supabase
+                .from('creator_onboarding')
+                .select('percent_complete, onboarding_skipped')
+                .eq('creator_id', user.id)
+                .maybeSingle()
+              
+              if (data) {
+                onboarding = data
+                break
+              }
+              
+              await new Promise(resolve => setTimeout(resolve, 500))
+              attempts++
+            }
 
             // Redirect to onboarding if incomplete and not skipped
             if (onboarding && onboarding.percent_complete < 100 && !onboarding.onboarding_skipped) {

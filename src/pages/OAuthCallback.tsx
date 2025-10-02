@@ -27,6 +27,55 @@ const OAuthCallback = () => {
         }
 
         if (session) {
+          // Check for pending account type from OAuth flow
+          const pendingAccountType = localStorage.getItem('pending_account_type') as 'creator' | 'fan' | null
+          
+          if (pendingAccountType) {
+            console.log('Found pending account type:', pendingAccountType)
+            
+            // Update profile with correct account type
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .update({ account_type: pendingAccountType })
+              .eq('id', session.user.id)
+            
+            if (profileError) {
+              console.error('Error updating profile account type:', profileError)
+            } else {
+              console.log('Profile account type updated to:', pendingAccountType)
+            }
+            
+            // If creator, initialize creator record
+            if (pendingAccountType === 'creator') {
+              // Check if creator record exists
+              const { data: existingCreator } = await supabase
+                .from('creators')
+                .select('id')
+                .eq('id', session.user.id)
+                .maybeSingle()
+              
+              if (!existingCreator) {
+                console.log('Creating creator record...')
+                const { error: creatorError } = await supabase
+                  .from('creators')
+                  .insert({
+                    id: session.user.id,
+                    full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || 'Creator',
+                    avatar_url: session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture || null,
+                  })
+                
+                if (creatorError) {
+                  console.error('Error creating creator record:', creatorError)
+                } else {
+                  console.log('Creator record created successfully')
+                }
+              }
+            }
+            
+            // Clean up
+            localStorage.removeItem('pending_account_type')
+          }
+          
           // If we're in a popup, notify parent and close
           if (window.opener) {
             window.opener.postMessage({ type: 'oauth-success', session }, '*')
@@ -34,7 +83,7 @@ const OAuthCallback = () => {
             return
           }
           
-          // Otherwise navigate normally
+          // Navigate based on account type
           navigate('/')
         } else {
           navigate('/auth')
