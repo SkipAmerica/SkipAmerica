@@ -17,6 +17,22 @@ const Auth = () => {
   const [checkingInterests, setCheckingInterests] = useState(false)
   const inIframe = window.self !== window.top
 
+  // Listen for OAuth success from popup
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      
+      if (event.data.type === 'oauth-success') {
+        console.log('OAuth success received from popup')
+        // The auth state will update automatically via onAuthStateChange
+        // which will trigger the checkUserInterests effect
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
   useEffect(() => {
     const checkUserInterests = async () => {
       if (!user) return

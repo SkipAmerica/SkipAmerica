@@ -76,9 +76,21 @@ const OAuthCallback = () => {
             localStorage.removeItem('pending_account_type')
           }
           
-          // Navigate to auth page, which will handle routing
+          // If in popup, notify parent and close
+          if (window.opener) {
+            window.opener.postMessage({ type: 'oauth-success' }, window.location.origin)
+            window.close()
+            return
+          }
+          
+          // Otherwise navigate to auth page, which will handle routing
           navigate('/auth')
         } else {
+          // If in popup, close it
+          if (window.opener) {
+            window.close()
+            return
+          }
           navigate('/auth')
         }
       } catch (error) {

@@ -159,7 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<{ error: any }> => {
     try {
       // Dynamic import to avoid loading on web
       const { Capacitor } = await import('@capacitor/core')
@@ -186,26 +186,72 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow with full redirect
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/oauth-callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
+      // Use web OAuth flow with popup
+      return new Promise<{ error: any }>((resolve) => {
+        // Open popup window
+        const width = 600
+        const height = 700
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+        
+        const popup = window.open(
+          '',
+          'google-oauth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no`
+        )
+        
+        if (!popup) {
+          resolve({ error: { message: 'Popup blocked. Please allow popups for this site.' } })
+          return
+        }
+        
+        // Listen for message from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return
+          
+          if (event.data.type === 'oauth-success') {
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: null })
+          } else if (event.data.type === 'oauth-error') {
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: { message: event.data.error } })
+          }
+        }
+        
+        window.addEventListener('message', handleMessage)
+        
+        // Start OAuth flow in popup
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/oauth-callback`,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+            },
           },
-        },
+        }).then(({ data }) => {
+          if (data?.url && popup) {
+            popup.location.href = data.url
+          }
+        })
+        
+        // Handle popup closed without completing
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: { message: 'Sign-in cancelled' } })
+          }
+        }, 500)
       })
-      
-      return { error }
     } catch (error: any) {
       console.error('Google sign-in error:', error)
       return { error }
     }
   }
 
-  const signInWithApple = async () => {
+  const signInWithApple = async (): Promise<{ error: any }> => {
     try {
       // Dynamic import to avoid loading on web
       const { Capacitor } = await import('@capacitor/core')
@@ -230,15 +276,61 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { error }
       }
       
-      // Use web OAuth flow with full redirect
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'apple',
-        options: {
-          redirectTo: `${window.location.origin}/oauth-callback`,
-        },
+      // Use web OAuth flow with popup
+      return new Promise<{ error: any }>((resolve) => {
+        // Open popup window
+        const width = 600
+        const height = 700
+        const left = window.screenX + (window.outerWidth - width) / 2
+        const top = window.screenY + (window.outerHeight - height) / 2
+        
+        const popup = window.open(
+          '',
+          'apple-oauth',
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no`
+        )
+        
+        if (!popup) {
+          resolve({ error: { message: 'Popup blocked. Please allow popups for this site.' } })
+          return
+        }
+        
+        // Listen for message from popup
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== window.location.origin) return
+          
+          if (event.data.type === 'oauth-success') {
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: null })
+          } else if (event.data.type === 'oauth-error') {
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: { message: event.data.error } })
+          }
+        }
+        
+        window.addEventListener('message', handleMessage)
+        
+        // Start OAuth flow in popup
+        supabase.auth.signInWithOAuth({
+          provider: 'apple',
+          options: {
+            redirectTo: `${window.location.origin}/oauth-callback`,
+          },
+        }).then(({ data }) => {
+          if (data?.url && popup) {
+            popup.location.href = data.url
+          }
+        })
+        
+        // Handle popup closed without completing
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed)
+            window.removeEventListener('message', handleMessage)
+            resolve({ error: { message: 'Sign-in cancelled' } })
+          }
+        }, 500)
       })
-      
-      return { error }
     } catch (error: any) {
       console.error('Apple sign-in error:', error)
       return { error }
