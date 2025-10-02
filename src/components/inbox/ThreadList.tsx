@@ -25,7 +25,12 @@ interface Thread {
     currency: string;
     duration_minutes: number;
     status: string;
-  };
+  } | null;
+  priority_payment?: {
+    amount_cents: number;
+    currency: string;
+    status: string;
+  }[] | null;
 }
 
 interface ThreadListProps {
@@ -66,7 +71,8 @@ export function ThreadList({ tab }: ThreadListProps) {
           last_message_preview,
           unread_count_creator,
           user:profiles!threads_user_id_fkey(id, full_name, avatar_url),
-          offer:offers(amount_cents, currency, duration_minutes, status)
+          offer:offers(amount_cents, currency, duration_minutes, status),
+          priority_payment:priority_payments(amount_cents, currency, status)
         `)
         .eq('creator_id', profile.id)
         .eq('is_archived_creator', false)

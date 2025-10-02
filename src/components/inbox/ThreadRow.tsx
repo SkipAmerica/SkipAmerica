@@ -20,7 +20,12 @@ interface ThreadRowProps {
       currency: string;
       duration_minutes: number;
       status: string;
-    };
+    } | null;
+    priority_payment?: {
+      amount_cents: number;
+      currency: string;
+      status: string;
+    }[] | null;
   };
   onClick: () => void;
 }
@@ -40,6 +45,17 @@ export function ThreadRow({ thread, onClick }: ThreadRowProps) {
         </div>
       );
     }
+    
+    if (thread.type === 'priority' && thread.priority_payment && thread.priority_payment[0]) {
+      const payment = thread.priority_payment[0];
+      return (
+        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-green-600 text-white font-semibold text-sm mb-2">
+          <Star className="w-4 h-4 fill-white" />
+          Priority • ${(payment.amount_cents / 100).toFixed(0)}
+        </div>
+      );
+    }
+    
     return null;
   };
 
