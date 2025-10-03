@@ -196,19 +196,19 @@ export function PostCard({ post, isLast }: PostCardProps) {
 
             {/* Media */}
             {post.media_url && (
-              <div className="rounded-lg overflow-hidden">
+              <div className="rounded-lg overflow-hidden mr-3">
                 {post.content_type.startsWith('image') ? (
                   <img
                     src={post.media_url}
                     alt={post.title || 'Post image'}
-                    className="w-full h-auto max-h-64 sm:max-h-72 md:max-h-96 object-cover rounded-lg mr-3"
+                    className="w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover"
                   />
                 ) : post.content_type.startsWith('video') ? (
                   <video
                     src={post.media_url}
                     poster={post.thumbnail_url}
                     controls
-                    className="w-full h-auto max-h-64 sm:max-h-72 md:max-h-96 object-cover rounded-lg mr-3"
+                    className="w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover"
                   />
                 ) : null}
               </div>
