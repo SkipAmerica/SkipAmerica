@@ -9,6 +9,7 @@ import { IOSNavBar } from '@/components/mobile/IOSNavBar'
 import { Home, ExternalLink } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
+import { toast } from 'sonner'
 
 const Auth = () => {
   const { user } = useAuth()
@@ -65,6 +66,15 @@ const Auth = () => {
       setIsInitiatingOAuth(false)
       
       try {
+        // Check if email is verified
+        if (!user.email_confirmed_at) {
+          console.log('Email not verified yet, showing message')
+          toast.info('Please check your email to verify your account')
+          setIsWaitingForOAuth(false)
+          setIsInitiatingOAuth(false)
+          return
+        }
+
         // Wait a bit for OAuth account type updates to complete
         await new Promise(resolve => setTimeout(resolve, 500))
         
