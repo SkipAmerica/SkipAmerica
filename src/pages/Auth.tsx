@@ -21,15 +21,31 @@ const Auth = () => {
 
   // Listen for OAuth success from popup
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
+    const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
       
       if (event.data.type === 'oauth-success') {
         console.log('OAuth success received from popup')
         setIsWaitingForOAuth(true)
         
+        // Explicitly refresh session in parent window
+        console.log('Refreshing parent window session...')
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('Error refreshing session:', error)
+          setIsWaitingForOAuth(false)
+          return
+        }
+        
+        if (session) {
+          console.log('Session found:', session.user.email)
+          // The auth provider will pick this up via onAuthStateChange
+        }
+        
         // Safety timeout - clear waiting state after 15 seconds if user state doesn't update
         setTimeout(() => {
+          console.log('OAuth timeout - clearing waiting state')
           setIsWaitingForOAuth(false)
         }, 15000)
       }
