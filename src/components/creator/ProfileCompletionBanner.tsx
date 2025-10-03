@@ -25,7 +25,7 @@ export function ProfileCompletionBanner() {
   return (
     <div className={cn(
       "relative backdrop-blur-md bg-gradient-to-r from-amber-500/10 to-orange-500/10",
-      "border border-amber-500/20 rounded-2xl p-4 mb-6 animate-fade-in"
+      "border border-amber-500/20 rounded-2xl p-4 animate-fade-in"
     )}>
       <div className="flex items-start gap-4">
         <div className="shrink-0 mt-1">
