@@ -158,7 +158,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
   return (
     <div 
       ref={containerRef}
-      className="fixed inset-0 bg-gradient-splash flex flex-col items-center justify-start p-6 overflow-y-auto pt-12"
+      className="fixed inset-0 z-20 bg-transparent flex flex-col items-center justify-start p-6 overflow-y-auto pt-12"
       style={{
         WebkitOverflowScrolling: 'touch',
         paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px'
