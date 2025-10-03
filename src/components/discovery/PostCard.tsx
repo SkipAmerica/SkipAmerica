@@ -144,7 +144,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
       )}
       <div className="flex relative z-10">
         {/* Profile Column */}
-        <div className="bg-turquoise-light/15 backdrop-blur-md p-3 flex-shrink-0">
+        <div className="bg-turquoise-light/15 backdrop-blur-md p-2 md:p-3 flex-shrink-0">
           <LiveAvatar
             src={post.creator.avatar_url}
             alt={post.creator.full_name}
@@ -154,7 +154,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
         </div>
 
         {/* Content Column */}
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-3 md:p-4">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
@@ -203,14 +203,14 @@ export function PostCard({ post, isLast }: PostCardProps) {
                   <img
                     src={post.media_url}
                     alt={post.title || 'Post image'}
-                    className="w-full h-auto max-h-96 object-cover"
+                    className="w-full h-auto max-h-64 sm:max-h-72 md:max-h-96 object-cover"
                   />
                 ) : post.content_type.startsWith('video') ? (
                   <video
                     src={post.media_url}
                     poster={post.thumbnail_url}
                     controls
-                    className="w-full h-auto max-h-96"
+                    className="w-full h-auto max-h-64 sm:max-h-72 md:max-h-96"
                   />
                 ) : null}
               </div>
@@ -219,9 +219,9 @@ export function PostCard({ post, isLast }: PostCardProps) {
 
           {/* Actions */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3 md:gap-6">
               {/* Live and Booking Actions */}
-              <div className="flex items-center gap-3 mr-2">
+              <div className="flex items-center gap-2 md:gap-3 mr-1 md:mr-2">
                 {post.creator.isLive && (
                   <LiveActionButton
                     icon={Video}
@@ -241,7 +241,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
                 size="sm"
                 onClick={handleLike}
                 className={cn(
-                  "gap-2 px-0 hover:bg-transparent",
+                  "gap-1 md:gap-2 px-0 hover:bg-transparent",
                   isLiked && "text-red-500"
                 )}
               >
@@ -249,12 +249,12 @@ export function PostCard({ post, isLast }: PostCardProps) {
                 <span className="text-xs font-medium">{formatCount(likeCount)}</span>
               </Button>
 
-              <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
+              <Button variant="ghost" size="sm" className="gap-1 md:gap-2 px-0 hover:bg-transparent">
                 <MessageCircle className="h-4 w-4" />
                 <span className="text-xs font-medium">{formatCount(post.comment_count)}</span>
               </Button>
 
-              <Button variant="ghost" size="sm" className="gap-2 px-0 hover:bg-transparent">
+              <Button variant="ghost" size="sm" className="gap-1 md:gap-2 px-0 hover:bg-transparent">
                 <Repeat2 className="h-4 w-4" />
               </Button>
 
