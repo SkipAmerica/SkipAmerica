@@ -156,28 +156,26 @@ export function PostCard({ post, isLast }: PostCardProps) {
         {/* Content Column */}
         <div className="flex-1 p-3 md:p-4">
           {/* Header */}
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <h3 className="font-semibold text-sm truncate">
-                  {post.creator.full_name}
-                </h3>
-                {post.creator.title && (
-                  <>
-                    <span className="text-gray-500 text-sm font-normal">|</span>
-                    <span className="text-sm font-normal text-foreground truncate">
-                      {post.creator.title}
-                    </span>
-                  </>
-                )}
-              </div>
-              {post.creator.industry && (
-                <p className="text-sm font-normal text-gray-500 truncate">
-                  {post.creator.industry}
-                </p>
+          <div className="mb-3">
+            <div className="flex items-center gap-1">
+              <h3 className="font-semibold text-sm truncate">
+                {post.creator.full_name}
+              </h3>
+              {post.creator.title && (
+                <>
+                  <span className="text-gray-500 text-sm font-normal">|</span>
+                  <span className="text-sm font-normal text-foreground truncate">
+                    {post.creator.title}
+                  </span>
+                </>
               )}
             </div>
-            <span className="text-muted-foreground text-xs font-normal flex-shrink-0 ml-2">
+            {post.creator.industry && (
+              <p className="text-sm font-normal text-gray-500 truncate">
+                {post.creator.industry}
+              </p>
+            )}
+            <span className="text-muted-foreground text-xs font-normal">
               {formatTime(post.published_at || post.created_at)}
             </span>
           </div>
@@ -198,7 +196,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
 
             {/* Media */}
             {post.media_url && (
-              <div className="rounded-lg overflow-hidden">
+              <div className="rounded-lg overflow-hidden pr-3">
                 {post.content_type.startsWith('image') ? (
                   <img
                     src={post.media_url}
@@ -261,10 +259,6 @@ export function PostCard({ post, isLast }: PostCardProps) {
               <Button variant="ghost" size="sm" className="px-0 hover:bg-transparent">
                 <Share className="h-4 w-4" />
               </Button>
-            </div>
-
-            <div className="text-xs text-muted-foreground font-normal">
-              {formatCount(post.view_count)} views
             </div>
           </div>
         </div>
