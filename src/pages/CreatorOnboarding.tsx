@@ -9,7 +9,7 @@ import { IndustryCarouselStep } from '@/components/onboarding/IndustryCarouselSt
 import { CompletionMeter } from '@/components/onboarding/CompletionMeter';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 type OnboardingStep = 'welcome' | 'profileSetup' | 'industries' | 'completion';
@@ -18,6 +18,7 @@ export default function CreatorOnboarding() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [completedSteps, setCompletedSteps] = useState<Set<OnboardingStep>>(new Set());
   const [creatorData, setCreatorData] = useState<{
     avatar_url?: string;
     full_name?: string;
@@ -75,9 +76,33 @@ export default function CreatorOnboarding() {
     }
   };
 
-  const progressSteps: OnboardingStep[] = ['welcome', 'profileSetup', 'industries', 'completion'];
-  const currentStepIndex = progressSteps.indexOf(currentStep);
-  const progressValue = ((currentStepIndex + 1) / progressSteps.length) * 100;
+  const getProgressValue = (step: OnboardingStep): number => {
+    switch (step) {
+      case 'welcome': return 0;
+      case 'profileSetup': return 15;
+      case 'industries': return 50;
+      case 'completion': return 100;
+      default: return 0;
+    }
+  };
+  const progressValue = getProgressValue(currentStep);
+
+  const handleBack = () => {
+    if (currentStep === 'industries') setCurrentStep('profileSetup');
+    if (currentStep === 'completion') setCurrentStep('industries');
+  };
+
+  const handleForward = () => {
+    if (currentStep === 'profileSetup' && completedSteps.has('profileSetup')) {
+      setCurrentStep('industries');
+    }
+    if (currentStep === 'industries' && completedSteps.has('industries')) {
+      setCurrentStep('completion');
+    }
+  };
+
+  const canGoBack = currentStep !== 'profileSetup' && currentStep !== 'welcome';
+  const canGoForward = completedSteps.has(currentStep as Exclude<OnboardingStep, 'welcome' | 'completion'>);
 
   if (loading || !state) {
     return (
@@ -97,14 +122,24 @@ export default function CreatorOnboarding() {
         <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/20">
           <div className="container mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleBack}
+                disabled={!canGoBack}
+                className="shrink-0 text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
               <Progress value={progressValue} className="flex-1" />
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={handleSkip}
-                className="shrink-0 text-white hover:bg-white/10"
+                onClick={handleForward}
+                disabled={!canGoForward}
+                className="shrink-0 text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <X className="w-4 h-4" />
+                <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
           </div>
@@ -132,9 +167,13 @@ export default function CreatorOnboarding() {
               }
               await setDisplayName(name);
               await setTagline(tagline);
+              setCompletedSteps(prev => new Set(prev).add('profileSetup'));
               setCurrentStep('industries');
             }}
-            onSkip={() => setCurrentStep('industries')}
+            onSkip={() => {
+              setCompletedSteps(prev => new Set(prev).add('profileSetup'));
+              setCurrentStep('industries');
+            }}
           />
         )}
 
@@ -142,9 +181,13 @@ export default function CreatorOnboarding() {
           <IndustryCarouselStep
             onComplete={async (industries) => {
               await setIndustries(industries);
+              setCompletedSteps(prev => new Set(prev).add('industries'));
               setCurrentStep('completion');
             }}
-            onSkip={() => setCurrentStep('completion')}
+            onSkip={() => {
+              setCompletedSteps(prev => new Set(prev).add('industries'));
+              setCurrentStep('completion');
+            }}
           />
         )}
 
