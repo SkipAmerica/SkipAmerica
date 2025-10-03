@@ -35,6 +35,7 @@ import { BrowseSubTabs } from "@/components/discovery/BrowseSubTabs";
 import { FreezePane } from "@/components/navigation/FreezePane";
 import { MatchSearchBar } from "@/components/match/MatchSearchBar";
 import { ProfileCompletionBanner } from "@/components/creator/ProfileCompletionBanner";
+import { NotificationZone } from "@/components/discovery/NotificationZone";
 
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
@@ -222,11 +223,11 @@ const Index = () => {
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <>
-                  {profile?.account_type === 'creator' && (
-                    <div className="absolute top-[calc(48px+96px+1rem)] left-0 right-0 z-10 px-4">
+                  <NotificationZone stickyOffset={144}>
+                    {profile?.account_type === 'creator' && (
                       <ProfileCompletionBanner />
-                    </div>
-                  )}
+                    )}
+                  </NotificationZone>
                   <ThreadsFeed key={threadsFeedKey} />
                 </>
               )}
