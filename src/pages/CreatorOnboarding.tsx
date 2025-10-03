@@ -23,6 +23,7 @@ export default function CreatorOnboarding() {
     avatar_url?: string;
     full_name?: string;
     headline?: string;
+    username?: string;
   } | null>(null);
   
   const {
@@ -42,7 +43,7 @@ export default function CreatorOnboarding() {
     const fetchCreatorData = async () => {
       const { data, error } = await supabase
         .from('creators')
-        .select('avatar_url, full_name, headline')
+        .select('avatar_url, full_name, headline, username')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -161,12 +162,47 @@ export default function CreatorOnboarding() {
             existingPhotoUrl={creatorData?.avatar_url}
             existingDisplayName={creatorData?.full_name}
             existingTagline={creatorData?.headline}
-            onComplete={async (photoUrl, name, tagline) => {
+            existingUsername={creatorData?.username}
+            onComplete={async (photoUrl, name, tagline, username) => {
               if (photoUrl) {
                 await markPhotoComplete(photoUrl);
               }
               await setDisplayName(name);
               await setTagline(tagline);
+              
+              // Save username to both profiles and creators
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .update({ username: username.toLowerCase() })
+                .eq('id', user!.id);
+              
+              if (profileError) {
+                console.error('Error updating profile username:', profileError);
+                toast.error('Failed to save username');
+                return;
+              }
+
+              const { error: creatorError } = await supabase
+                .from('creators')
+                .update({ username: username.toLowerCase() })
+                .eq('id', user!.id);
+              
+              if (creatorError) {
+                console.error('Error updating creator username:', creatorError);
+                toast.error('Failed to save username');
+                return;
+              }
+
+              // Update onboarding tracking
+              const { error: onboardingError } = await supabase
+                .from('creator_onboarding')
+                .update({ has_username: true })
+                .eq('creator_id', user!.id);
+                
+              if (onboardingError) {
+                console.error('Error updating onboarding:', onboardingError);
+              }
+
               setCompletedSteps(prev => new Set(prev).add('profileSetup'));
               setCurrentStep('industries');
             }}

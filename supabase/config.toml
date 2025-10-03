@@ -30,3 +30,6 @@ verify_jwt = false
 
 [functions.seed-inbox]
 verify_jwt = true
+
+[functions.check-username-availability]
+verify_jwt = false

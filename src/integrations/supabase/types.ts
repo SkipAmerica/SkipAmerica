@@ -799,6 +799,7 @@ export type Database = {
           has_display_name: boolean
           has_photo: boolean
           has_tagline: boolean
+          has_username: boolean | null
           industries_count: number
           last_nudged_at: string | null
           onboarding_completed_at: string | null
@@ -813,6 +814,7 @@ export type Database = {
           has_display_name?: boolean
           has_photo?: boolean
           has_tagline?: boolean
+          has_username?: boolean | null
           industries_count?: number
           last_nudged_at?: string | null
           onboarding_completed_at?: string | null
@@ -827,6 +829,7 @@ export type Database = {
           has_display_name?: boolean
           has_photo?: boolean
           has_tagline?: boolean
+          has_username?: boolean | null
           industries_count?: number
           last_nudged_at?: string | null
           onboarding_completed_at?: string | null
@@ -1094,6 +1097,7 @@ export type Database = {
           risk_flags: string[] | null
           total_followers: number | null
           updated_at: string | null
+          username: string | null
           verification_status:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -1131,6 +1135,7 @@ export type Database = {
           risk_flags?: string[] | null
           total_followers?: number | null
           updated_at?: string | null
+          username?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -1168,6 +1173,7 @@ export type Database = {
           risk_flags?: string[] | null
           total_followers?: number | null
           updated_at?: string | null
+          username?: string | null
           verification_status?:
             | Database["public"]["Enums"]["verification_status"]
             | null
@@ -1971,6 +1977,7 @@ export type Database = {
           interests: string[] | null
           is_verified: boolean | null
           updated_at: string
+          username: string | null
         }
         Insert: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -1985,6 +1992,7 @@ export type Database = {
           interests?: string[] | null
           is_verified?: boolean | null
           updated_at?: string
+          username?: string | null
         }
         Update: {
           account_type?: Database["public"]["Enums"]["account_type"] | null
@@ -1999,6 +2007,7 @@ export type Database = {
           interests?: string[] | null
           is_verified?: boolean | null
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -2060,6 +2069,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      reserved_usernames: {
+        Row: {
+          created_at: string | null
+          display_name: string | null
+          id: string
+          metadata: Json | null
+          reason: string
+          username: string
+          verification_required: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          metadata?: Json | null
+          reason: string
+          username: string
+          verification_required?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string | null
+          id?: string
+          metadata?: Json | null
+          reason?: string
+          username?: string
+          verification_required?: boolean | null
+        }
+        Relationships: []
       }
       social_accounts: {
         Row: {

@@ -7,13 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { UsernameInput } from './UsernameInput';
 
 interface ProfileSetupStepProps {
   creatorId: string;
   existingPhotoUrl?: string;
   existingDisplayName?: string;
   existingTagline?: string;
-  onComplete: (photoUrl: string | null, displayName: string, tagline: string) => void;
+  existingUsername?: string;
+  onComplete: (photoUrl: string | null, displayName: string, tagline: string, username: string) => void;
   onSkip: () => void;
 }
 
@@ -22,10 +24,13 @@ export function ProfileSetupStep({
   existingPhotoUrl,
   existingDisplayName,
   existingTagline,
+  existingUsername,
   onComplete,
   onSkip,
 }: ProfileSetupStepProps) {
   const [displayName, setDisplayName] = useState(existingDisplayName || '');
+  const [username, setUsername] = useState(existingUsername || '');
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'reserved' | 'invalid'>('idle');
   const [tagline, setTagline] = useState(existingTagline || '');
   const [photoUrl, setPhotoUrl] = useState<string | null>(existingPhotoUrl || null);
   const [preview, setPreview] = useState<string | null>(existingPhotoUrl || null);
@@ -33,7 +38,7 @@ export function ProfileSetupStep({
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hasExistingData = !!(existingPhotoUrl || existingDisplayName || existingTagline);
+  const hasExistingData = !!(existingPhotoUrl || existingDisplayName || existingTagline || existingUsername);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -103,6 +108,16 @@ export function ProfileSetupStep({
       return;
     }
 
+    if (!username.trim()) {
+      toast.error('Please choose a username');
+      return;
+    }
+
+    if (usernameStatus !== 'available') {
+      toast.error('Please choose an available username');
+      return;
+    }
+
     if (!tagline.trim()) {
       toast.error('Please enter a bio');
       return;
@@ -132,7 +147,7 @@ export function ProfileSetupStep({
         if (creatorError) throw creatorError;
       }
 
-      await onComplete(photoUrl, displayName, tagline);
+      await onComplete(photoUrl, displayName, tagline, username);
     } catch (error) {
       console.error('Error saving:', error);
       toast.error('Failed to save. Please try again.');
@@ -201,7 +216,7 @@ export function ProfileSetupStep({
 
             {/* Display Name Field */}
             <div className="space-y-2">
-              <Label htmlFor="displayName" className="text-white/90">Display Name</Label>
+              <Label htmlFor="displayName" className="text-white/90">Display Name *</Label>
               <Input
                 id="displayName"
                 value={displayName}
@@ -213,10 +228,17 @@ export function ProfileSetupStep({
               />
             </div>
 
+            {/* Username Field */}
+            <UsernameInput
+              value={username}
+              onChange={setUsername}
+              onStatusChange={setUsernameStatus}
+            />
+
             {/* Tagline/Bio Field */}
             <div className="space-y-2">
               <Label htmlFor="tagline" className="text-white/90">
-                Your Bio
+                Your Bio *
                 <span className="text-white/60 text-xs ml-2">({tagline.length}/100)</span>
               </Label>
               <Textarea
@@ -238,7 +260,7 @@ export function ProfileSetupStep({
             <div className="space-y-3 pt-4">
               <Button
                 onClick={handleContinue}
-                disabled={saving || uploading || !displayName.trim() || !tagline.trim()}
+                disabled={saving || uploading || !displayName.trim() || !username.trim() || usernameStatus !== 'available' || !tagline.trim()}
                 size="lg"
                 className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm"
               >
@@ -265,7 +287,12 @@ export function ProfileSetupStep({
         </div>
 
         <p className="text-center text-sm text-white/70">
-          {displayName && tagline ? (photoUrl ? '60%' : '50%') : '30%'} of profile completion
+          {displayName && username && usernameStatus === 'available' && tagline 
+            ? (photoUrl ? '70%' : '60%') 
+            : displayName || username || tagline 
+              ? '40%' 
+              : '20%'
+          } of profile completion
         </p>
       </div>
     </div>
