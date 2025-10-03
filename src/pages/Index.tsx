@@ -219,13 +219,6 @@ const Index = () => {
                  touchAction: 'pan-y',
                  WebkitOverflowScrolling: 'touch'
                }}>
-              {/* Profile Completion Banner for creators */}
-              {profile?.account_type === 'creator' && discoveryMode === 'discover' && (
-                <div className="px-4 pt-4">
-                  <ProfileCompletionBanner />
-                </div>
-              )}
-              
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <ThreadsFeed key={threadsFeedKey} />
@@ -381,6 +374,15 @@ const Index = () => {
         {activeTab === "discover" && discoveryMode === 'discover' && (
           <div className="sticky top-[calc(var(--debug-safe-top)+48px+48px)] z-40">
             <AdPanel />
+          </div>
+        )}
+
+        {/* Profile Completion Banner - Shows below sticky elements */}
+        {activeTab === "discover" && 
+         discoveryMode === 'discover' && 
+         profile?.account_type === 'creator' && (
+          <div className="px-4 pt-4 bg-white relative z-30">
+            <ProfileCompletionBanner />
           </div>
         )}
 
