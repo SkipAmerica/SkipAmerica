@@ -36,7 +36,7 @@ export function ProfileCompletionBanner() {
           <div>
             <h3 className="font-semibold text-sm">Complete your profile to unlock discovery</h3>
             <p className="text-xs text-muted-foreground mt-1">
-              You won't appear in search results until your profile is complete
+              You won't appear in search results until your profile is complete. Takes just 1-2 minutes!
             </p>
           </div>
 
