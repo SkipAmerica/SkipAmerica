@@ -35,10 +35,36 @@ export function useNotificationRegistry() {
 
   // Determine if profile completion banner should be visible
   const isProfileCompletionVisible = useMemo(() => {
-    if (onboardingLoading || !profile || !onboardingState) return false;
-    if (profile.account_type !== 'creator') return false;
-    if (onboardingState.searchUnlocked) return false;
-    if (profileDismissal.dismissed && !isProfileDismissalExpired) return false;
+    if (import.meta.env.DEV) {
+      console.log('[useNotificationRegistry] Evaluating profile completion visibility:', {
+        onboardingLoading,
+        hasProfile: !!profile,
+        hasOnboardingState: !!onboardingState,
+        accountType: profile?.account_type,
+        searchUnlocked: onboardingState?.searchUnlocked,
+        dismissed: profileDismissal.dismissed,
+        dismissalExpired: isProfileDismissalExpired,
+      });
+    }
+
+    if (onboardingLoading || !profile || !onboardingState) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Missing required data');
+      return false;
+    }
+    if (profile.account_type !== 'creator') {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Not a creator account');
+      return false;
+    }
+    if (onboardingState.searchUnlocked) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Search already unlocked');
+      return false;
+    }
+    if (profileDismissal.dismissed && !isProfileDismissalExpired) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Banner dismissed and not expired');
+      return false;
+    }
+    
+    if (import.meta.env.DEV) console.log('[useNotificationRegistry] ✅ Banner should be visible');
     return true;
   }, [profile, onboardingState, onboardingLoading, profileDismissal, isProfileDismissalExpired]);
 
