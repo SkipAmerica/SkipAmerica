@@ -17,11 +17,12 @@ import {
 interface SplashAuthFormProps {
   onSuccess?: () => void
   onOAuthStart?: () => void
+  onOAuthEnd?: () => void
 }
 
 type AuthStep = 'main' | 'creator-setup' | 'user-setup' | 'signin' | 'creator-email' | 'user-email' | 'signin-email'
 
-export const SplashAuthForm = ({ onSuccess, onOAuthStart }: SplashAuthFormProps) => {
+export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAuthFormProps) => {
   const { signInWithGoogle, signInWithApple, signIn, signUp, loading, user } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<AuthStep>('main')
@@ -47,6 +48,10 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart }: SplashAuthFormProps)
       // Notify parent that OAuth is starting
       onOAuthStart?.()
       
+      // Yield a frame so the overlay can paint before opening popup
+      await new Promise(resolve => requestAnimationFrame(resolve))
+      await new Promise(resolve => setTimeout(resolve, 50))
+      
       const { error } = provider === 'google' 
         ? await signInWithGoogle()
         : await signInWithApple()
@@ -54,10 +59,12 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart }: SplashAuthFormProps)
       if (error) {
         console.error(`${provider} OAuth error:`, error)
         toast.error(error.message || `Failed to sign in with ${provider}`)
+        onOAuthEnd?.()
       }
     } catch (err) {
       console.error(`${provider} OAuth exception:`, err)
       toast.error(`An error occurred during ${provider} sign-in`)
+      onOAuthEnd?.()
     }
   }
 

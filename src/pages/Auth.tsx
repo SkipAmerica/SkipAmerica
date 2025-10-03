@@ -17,7 +17,7 @@ const Auth = () => {
   const [isInitiatingOAuth, setIsInitiatingOAuth] = useState(false)
   const inIframe = window.self !== window.top
 
-  // Listen for OAuth success from popup
+  // Listen for OAuth success/error from popup
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
@@ -46,6 +46,10 @@ const Auth = () => {
           console.log('OAuth timeout - clearing waiting state')
           setIsWaitingForOAuth(false)
         }, 15000)
+      } else if (event.data.type === 'oauth-error') {
+        console.error('OAuth error received from popup')
+        setIsInitiatingOAuth(false)
+        setIsWaitingForOAuth(false)
       }
     }
     
@@ -57,7 +61,8 @@ const Auth = () => {
     const checkUserProfile = async () => {
       if (!user) return
 
-      setIsWaitingForOAuth(false) // Clear waiting state once we have user
+      setIsWaitingForOAuth(false)
+      setIsInitiatingOAuth(false)
       
       try {
         // Wait a bit for OAuth account type updates to complete
@@ -115,35 +120,44 @@ const Auth = () => {
     }
   }, [user, navigate])
 
-  // Show loading overlay when OAuth is initiating
-  if (isInitiatingOAuth && !user) {
-    return (
-      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center z-50">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-white/90">Opening sign-in...</p>
-        </div>
-      </div>
-    )
-  }
+  // Safety timer for OAuth
+  useEffect(() => {
+    if (!isInitiatingOAuth) return
 
-  // Show loading while waiting for OAuth or checking profile
-  if (isWaitingForOAuth || user) {
-    return (
-      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-white/90">Setting up your profile...</p>
-        </div>
-      </div>
-    )
-  }
+    const timer = setTimeout(() => {
+      console.log('OAuth safety timeout - clearing initiating state')
+      setIsInitiatingOAuth(false)
+    }, 20000)
+
+    return () => clearTimeout(timer)
+  }, [isInitiatingOAuth])
+
+  const showLoadingOverlay = isInitiatingOAuth || isWaitingForOAuth || !!user
 
   return (
-    <SplashAuthForm 
-      onSuccess={() => navigate('/')}
-      onOAuthStart={() => setIsInitiatingOAuth(true)}
-    />
+    <div className="fixed inset-0 bg-gradient-splash">
+      {/* Always render the splash form for persistent background */}
+      <SplashAuthForm 
+        onSuccess={() => navigate('/')}
+        onOAuthStart={() => setIsInitiatingOAuth(true)}
+        onOAuthEnd={() => {
+          setIsInitiatingOAuth(false)
+          setIsWaitingForOAuth(false)
+        }}
+      />
+      
+      {/* Loading overlay on top when OAuth is in progress */}
+      {showLoadingOverlay && (
+        <div className="fixed inset-0 bg-[hsl(var(--skip-black))] bg-gradient-splash bg-blend-overlay flex items-center justify-center z-50">
+          <div className="text-center">
+            <LoadingSpinner size="lg" />
+            <p className="mt-4 text-white/90">
+              {isInitiatingOAuth ? 'Opening sign-in...' : 'Setting up your profile...'}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
