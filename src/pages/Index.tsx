@@ -221,7 +221,14 @@ const Index = () => {
                }}>
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
-                <ThreadsFeed key={threadsFeedKey} />
+                <>
+                  {profile?.account_type === 'creator' && (
+                    <div className="px-4 pt-4">
+                      <ProfileCompletionBanner />
+                    </div>
+                  )}
+                  <ThreadsFeed key={threadsFeedKey} />
+                </>
               )}
 
              {discoveryMode === 'browse' && (
@@ -377,14 +384,6 @@ const Index = () => {
           </div>
         )}
 
-        {/* Profile Completion Banner - Shows below sticky elements */}
-        {activeTab === "discover" && 
-         discoveryMode === 'discover' && 
-         profile?.account_type === 'creator' && (
-          <div className="px-4 pt-4 bg-white relative z-20">
-            <ProfileCompletionBanner />
-          </div>
-        )}
 
         {/* Main Content - Scrolls with header & freeze pane */}
         <div className={cn(
