@@ -147,10 +147,10 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
       )} />
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col justify-center px-6 py-12">
-        <div className="w-full max-w-6xl mx-auto space-y-12">
+      <div className="flex-1 flex flex-col justify-center py-12">
+        <div className="w-full space-y-12">
           {/* Header */}
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-4 px-6">
             <h2 className="text-4xl sm:text-5xl font-bold text-white">
               Choose Your Industries
             </h2>
@@ -259,7 +259,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
           </div>
 
           {/* Helper Text */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-2 px-6">
             <p className="text-sm text-white/70">
               <span className="inline-block mr-2">👈👉</span>
               Swipe or drag to explore all industries
@@ -267,7 +267,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
           </div>
 
           {/* Actions */}
-          <div className="space-y-3 max-w-md mx-auto">
+          <div className="space-y-3 max-w-md mx-auto px-6">
             <Button
               onClick={handleContinue}
               disabled={selected.length === 0}
@@ -305,8 +305,8 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
             </Button>
           </div>
 
-          {/* Progress hint */}
-          <div className="text-center">
+        {/* Progress hint */}
+        <div className="text-center px-6">
             <p className={cn(
               "text-sm font-medium transition-all duration-300",
               selected.length === 0 && "text-white/70",
