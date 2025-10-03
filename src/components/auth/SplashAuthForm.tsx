@@ -175,7 +175,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
 
       {/* Help Dialog */}
       <Dialog open={showHelp} onOpenChange={setShowHelp}>
-        <DialogContent className="bg-white/10 backdrop-blur-lg border-white/30 max-w-md animate-scale-in rounded-2xl">
+        <DialogContent className="bg-white/10 backdrop-blur-lg border-white/30 max-w-md animate-scale-in rounded-2xl mx-[5vw]">
           <DialogHeader className="space-y-3">
             <DialogTitle className="text-2xl text-white/90 font-semibold">Choose Your Role</DialogTitle>
             <DialogDescription className="sr-only">
