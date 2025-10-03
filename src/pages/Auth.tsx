@@ -10,6 +10,7 @@ import { Home, ExternalLink } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { toast } from 'sonner'
+import backgroundVideo from '@/assets/Background_Loop.mp4'
 
 const Auth = () => {
   const { user } = useAuth()
@@ -170,8 +171,20 @@ const Auth = () => {
 
   return (
     <div className="fixed inset-0 bg-[hsl(var(--skip-black))] bg-gradient-splash">
+      {/* Background video on top of gradient */}
+      <video 
+        autoPlay 
+        loop 
+        muted 
+        playsInline
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
+      >
+        <source src={backgroundVideo} type="video/mp4" />
+      </video>
+      
       {/* Always render the splash form for persistent background */}
-      <SplashAuthForm 
+      <SplashAuthForm
         onSuccess={() => navigate('/')}
         onOAuthStart={() => setIsInitiatingOAuth(true)}
         onOAuthEnd={() => {
