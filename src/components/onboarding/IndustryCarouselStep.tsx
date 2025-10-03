@@ -72,7 +72,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
   const selectedIndustries = INDUSTRIES.filter(i => selected.includes(i.id));
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-splash">
+    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-splash overflow-y-auto">
       {/* Fixed Selection Bar at Top */}
       <div className={cn(
         "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/10 border-b border-white/20 transition-all duration-500",

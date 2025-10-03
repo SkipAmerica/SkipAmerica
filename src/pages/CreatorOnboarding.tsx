@@ -9,7 +9,7 @@ import { IndustryCarouselStep } from '@/components/onboarding/IndustryCarouselSt
 import { CompletionMeter } from '@/components/onboarding/CompletionMeter';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 type OnboardingStep = 'welcome' | 'profileSetup' | 'industries' | 'completion';
@@ -116,7 +116,7 @@ export default function CreatorOnboarding() {
   }
 
   return (
-    <div className="relative min-h-screen bg-gradient-splash">
+    <div className="relative min-h-screen overflow-y-auto bg-gradient-splash">
       {/* Progress Bar - Only show after welcome */}
       {currentStep !== 'welcome' && (
         <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/20">
@@ -129,7 +129,7 @@ export default function CreatorOnboarding() {
                 disabled={!canGoBack}
                 className="shrink-0 text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
               </Button>
               <Progress value={progressValue} className="flex-1" />
               <Button
@@ -139,7 +139,7 @@ export default function CreatorOnboarding() {
                 disabled={!canGoForward}
                 className="shrink-0 text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5" />
               </Button>
             </div>
           </div>

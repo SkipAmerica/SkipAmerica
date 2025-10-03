@@ -19,7 +19,7 @@ export function CompletionMeter({ state, onFinish }: CompletionMeterProps) {
   const isComplete = state.percentComplete === 100;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in overflow-y-auto">
       <div className="w-full max-w-md space-y-8">
         <div className="relative backdrop-blur-sm bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/30">
           <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl blur-xl -z-10" />
