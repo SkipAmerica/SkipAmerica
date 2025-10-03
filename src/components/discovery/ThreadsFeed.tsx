@@ -184,7 +184,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   }
 
   return (
-    <div className={`w-full pb-0 ${hasNotificationZone ? 'pt-[144px]' : 'pt-0'}`}>
+    <div className={`w-full pb-0 ${hasNotificationZone ? 'pt-0' : 'pt-[144px]'}`}>
       {posts.map((post, index) => (
         <PostCard 
           key={post.id} 
