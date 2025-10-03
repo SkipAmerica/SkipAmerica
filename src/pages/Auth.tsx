@@ -178,7 +178,7 @@ const Auth = () => {
         muted 
         playsInline
         preload="auto"
-        className="absolute inset-0 w-full h-full object-contain md:object-cover opacity-[0.15] pointer-events-none z-10"
+        className="absolute inset-0 w-full h-full object-cover opacity-[0.15] pointer-events-none z-10"
       >
         <source src={backgroundVideo} type="video/mp4" />
       </video>
