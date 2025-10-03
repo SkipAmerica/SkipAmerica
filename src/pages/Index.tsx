@@ -223,7 +223,7 @@ const Index = () => {
               {discoveryMode === 'discover' && (
                 <>
                   {profile?.account_type === 'creator' && (
-                    <div className="px-4 pt-[calc(96px+1rem)]">
+                    <div className="px-4 pt-[calc(48px+96px+1rem)]">
                       <ProfileCompletionBanner />
                     </div>
                   )}
