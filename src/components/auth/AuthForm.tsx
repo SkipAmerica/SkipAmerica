@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useAuth } from '@/app/providers/auth-provider'
 import { Loader2, Mail, Lock, User, Users, Crown, Shield } from 'lucide-react'
-import { InterestsSelection } from './InterestsSelection'
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator'
 
 interface AuthFormProps {
@@ -21,7 +20,6 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [showResetPassword, setShowResetPassword] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
   const [showResendConfirmation, setShowResendConfirmation] = useState(false)
-  const [showInterestsSelection, setShowInterestsSelection] = useState(false)
 
   const [signInData, setSignInData] = useState({
     email: '',
@@ -81,22 +79,12 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         // Small delay to ensure state updates
         setTimeout(() => window.location.href = '/industry-setup', 100)
       } else {
-        // For regular users and creators, show interests selection if logged in
-        if (user) {
-          setShowInterestsSelection(true)
-        } else {
-          // If not immediately logged in (email confirmation required), go to success
-          onSuccess?.()
-        }
+        // For regular users and creators, complete signup
+        onSuccess?.()
       }
     }
     
     setIsLoading(false)
-  }
-
-  const handleInterestsComplete = () => {
-    setShowInterestsSelection(false)
-    onSuccess?.()
   }
 
   const handleResendConfirmation = async () => {
@@ -113,15 +101,6 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
     await resetPassword(resetEmail)
     setIsLoading(false)
     setShowResetPassword(false)
-  }
-
-  // Show interests selection if user just signed up and is logged in
-  if (showInterestsSelection && user) {
-    return (
-      <div className="w-full max-w-4xl mx-auto">
-        <InterestsSelection onComplete={handleInterestsComplete} />
-      </div>
-    )
   }
 
   if (showResetPassword) {

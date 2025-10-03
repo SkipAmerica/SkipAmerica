@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/app/providers/auth-provider'
 import { Loader2, Binoculars, TowerControl, LogIn, Mail, HelpCircle } from 'lucide-react'
-import { InterestsSelection } from './InterestsSelection'
 import { toast } from 'sonner'
 import { isMobile } from '@/shared/lib/platform'
 import {
@@ -19,7 +18,7 @@ interface SplashAuthFormProps {
   onSuccess?: () => void
 }
 
-type AuthStep = 'main' | 'creator-setup' | 'user-setup' | 'signin' | 'interests' | 'creator-email' | 'user-email' | 'signin-email'
+type AuthStep = 'main' | 'creator-setup' | 'user-setup' | 'signin' | 'creator-email' | 'user-email' | 'signin-email'
 
 export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
   const { signInWithGoogle, signInWithApple, signIn, signUp, loading, user } = useAuth()
@@ -68,11 +67,6 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
     }
   }
 
-  const handleInterestsComplete = () => {
-    setStep('main')
-    onSuccess?.()
-  }
-
   const handleEmailSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
@@ -97,13 +91,14 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
     } else {
       toast.success('Account created! Please check your email to verify.')
       
-      // Creators go directly to onboarding, users go to interests
+      // Creators go directly to onboarding
       if (accountType === 'creator') {
         window.location.href = '/onboarding/creator'
         return
       }
       
-      setStep('interests')
+      // Users go to home
+      onSuccess?.()
     }
   }
 
@@ -134,17 +129,6 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
     setPassword('')
     setFullName('')
     setFormError('')
-  }
-
-  // Show interests selection if user just signed up and is logged in
-  if (step === 'interests' && user) {
-    return (
-      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
-          <InterestsSelection onComplete={handleInterestsComplete} />
-        </div>
-      </div>
-    )
   }
 
   return (

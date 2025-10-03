@@ -1,5 +1,4 @@
 import { SplashAuthForm } from '@/components/auth/SplashAuthForm'
-import { InterestsSelection } from '@/components/auth/InterestsSelection'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -14,8 +13,6 @@ import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 const Auth = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [showInterestsSelection, setShowInterestsSelection] = useState(false)
-  const [checkingInterests, setCheckingInterests] = useState(false)
   const [isWaitingForOAuth, setIsWaitingForOAuth] = useState(false)
   const inIframe = window.self !== window.top
 
@@ -56,24 +53,23 @@ const Auth = () => {
   }, [])
 
   useEffect(() => {
-    const checkUserInterests = async () => {
+    const checkUserProfile = async () => {
       if (!user) return
 
-      setCheckingInterests(true)
       setIsWaitingForOAuth(false) // Clear waiting state once we have user
       
       try {
         // Wait a bit for OAuth account type updates to complete
         await new Promise(resolve => setTimeout(resolve, 500))
         
-        // Check account type first
+        // Check account type
         const { data: profile } = await supabase
           .from('profiles')
-          .select('interests, account_type')
+          .select('account_type')
           .eq('id', user.id)
           .single()
 
-        // Creators: Handle onboarding flow, NEVER show interests
+        // Creators: Handle onboarding flow
         if (profile?.account_type === 'creator') {
           // Wait for creator record and onboarding to be initialized
           let attempts = 0
@@ -102,74 +98,29 @@ const Auth = () => {
             // Creator has completed onboarding, redirect to home
             navigate('/')
           }
-          
-          setCheckingInterests(false)
-          return // Exit early - never set showInterestsSelection for creators
+          return
         }
 
-        // Users/Fans ONLY: Check interests
-        if (!profile?.interests || profile.interests.length === 0) {
-          setShowInterestsSelection(true)
-        } else {
-          // User has interests, redirect to home
-          navigate('/')
-        }
-      } catch (error) {
-        console.error('Error checking user interests:', error)
+        // All other users: redirect to home
         navigate('/')
-      } finally {
-        setCheckingInterests(false)
+      } catch (error) {
+        console.error('Error checking user profile:', error)
+        navigate('/')
       }
     }
 
     if (user) {
-      checkUserInterests()
+      checkUserProfile()
     }
   }, [user, navigate])
 
-  const handleInterestsComplete = () => {
-    setShowInterestsSelection(false)
-    navigate('/')
-  }
-
-  // Show interests selection for logged-in users without interests
-  if (user && showInterestsSelection && !checkingInterests) {
-    return (
-      <IOSAppShell>
-        <IOSNavBar 
-          title="Complete Your Profile"
-          leftButton={{
-            text: "Skip",
-            onClick: handleInterestsComplete
-          }}
-        />
-        
-        <div className="ios-content flex-1 flex items-center justify-center p-4">
-          <InterestsSelection onComplete={handleInterestsComplete} />
-        </div>
-      </IOSAppShell>
-    )
-  }
-
   // Show loading while waiting for OAuth or checking profile
-  if (isWaitingForOAuth || (user && !showInterestsSelection && checkingInterests)) {
+  if (isWaitingForOAuth || user) {
     return (
       <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-white/90">Setting up your profile...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Don't show auth form if user is logged in and we're not checking/showing interests
-  if (user && !showInterestsSelection && !checkingInterests) {
-    return (
-      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
-        <div className="text-center">
-          <LoadingSpinner size="lg" />
-          <p className="mt-4 text-white/90">Redirecting...</p>
         </div>
       </div>
     )

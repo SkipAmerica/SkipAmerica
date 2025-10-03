@@ -25,7 +25,6 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { ThreadsFeed } from "@/components/discovery/ThreadsFeed";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
-import { UserInterestFilters } from "@/components/UserInterestFilters";
 import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
 import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
 import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
@@ -363,12 +362,6 @@ const Index = () => {
                 searchValue={filters.query}
                 onSearchChange={updateQuery}
                 searchPlaceholder="Filter creators..."
-                showInterestFilters={true}
-                selectedFilters={filters.selectedCategory === 'all' ? ['all'] : [filters.selectedCategory]}
-                onFiltersChange={(newFilters) => {
-                  const newCategory = newFilters.includes('all') ? 'all' : newFilters[0] || 'all'
-                  updateSelectedCategory(newCategory)
-                }}
                 className="border-t-0"
               />
             )}

@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import { DiscoveryModeToggle } from '@/components/discovery/DiscoveryModeToggle';
 import { BrowseSubTabs } from '@/components/discovery/BrowseSubTabs';
 import { IOSSearchBar } from '@/components/mobile/IOSSearchBar';
-import { UserInterestFilters } from '@/components/UserInterestFilters';
 import { isWebBrowser } from '@/shared/lib/platform';
 import { useDiscovery } from '@/app/providers/discovery-provider';
 
@@ -19,11 +18,6 @@ interface FreezePaneProps {
   onSearchChange: (value: string) => void;
   searchPlaceholder?: string;
   
-  // Interest Filters
-  showInterestFilters: boolean;
-  selectedFilters: string[];
-  onFiltersChange: (filters: string[]) => void;
-  
   // Layout
   className?: string;
 }
@@ -33,9 +27,6 @@ export const FreezePane = React.memo(function FreezePane({
   searchValue,
   onSearchChange,
   searchPlaceholder = "Search creators...",
-  showInterestFilters,
-  selectedFilters,
-  onFiltersChange,
   className
 }: FreezePaneProps) {
   const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange } = useDiscovery();
@@ -73,16 +64,6 @@ export const FreezePane = React.memo(function FreezePane({
             onChange={onSearchChange}
             placeholder={searchPlaceholder}
             fullWidth
-          />
-        </div>
-      )}
-      
-      {/* Interest Filters - Only show in browse mode */}
-      {showInterestFilters && discoveryMode === 'browse' && (
-        <div className="px-4 pb-1">
-          <UserInterestFilters 
-            selectedFilters={selectedFilters}
-            onFiltersChange={onFiltersChange}
           />
         </div>
       )}
