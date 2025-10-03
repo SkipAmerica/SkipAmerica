@@ -14,6 +14,7 @@ const Auth = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isWaitingForOAuth, setIsWaitingForOAuth] = useState(false)
+  const [isInitiatingOAuth, setIsInitiatingOAuth] = useState(false)
   const inIframe = window.self !== window.top
 
   // Listen for OAuth success from popup
@@ -114,6 +115,18 @@ const Auth = () => {
     }
   }, [user, navigate])
 
+  // Show loading overlay when OAuth is initiating
+  if (isInitiatingOAuth && !user) {
+    return (
+      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center z-50">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-white/90">Opening sign-in...</p>
+        </div>
+      </div>
+    )
+  }
+
   // Show loading while waiting for OAuth or checking profile
   if (isWaitingForOAuth || user) {
     return (
@@ -126,7 +139,12 @@ const Auth = () => {
     )
   }
 
-  return <SplashAuthForm onSuccess={() => navigate('/')} />
+  return (
+    <SplashAuthForm 
+      onSuccess={() => navigate('/')}
+      onOAuthStart={() => setIsInitiatingOAuth(true)}
+    />
+  )
 }
 
 export default Auth
