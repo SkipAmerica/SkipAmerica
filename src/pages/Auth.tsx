@@ -134,8 +134,32 @@ const Auth = () => {
 
   const showLoadingOverlay = isInitiatingOAuth || isWaitingForOAuth || !!user
 
+  // Force dark background on html/body during OAuth to prevent white flash
+  useEffect(() => {
+    if (!showLoadingOverlay) return
+
+    const html = document.documentElement
+    const body = document.body
+    const root = document.getElementById('root')
+
+    const prevHtml = html.style.backgroundColor
+    const prevBody = body.style.backgroundColor
+    const prevRoot = root?.style.backgroundColor ?? ''
+
+    const darkBg = 'hsl(var(--skip-black))'
+    html.style.backgroundColor = darkBg
+    body.style.backgroundColor = darkBg
+    if (root) root.style.backgroundColor = darkBg
+
+    return () => {
+      html.style.backgroundColor = prevHtml
+      body.style.backgroundColor = prevBody
+      if (root) root.style.backgroundColor = prevRoot
+    }
+  }, [showLoadingOverlay])
+
   return (
-    <div className="fixed inset-0 bg-gradient-splash">
+    <div className="fixed inset-0 bg-[hsl(var(--skip-black))] bg-gradient-splash">
       {/* Always render the splash form for persistent background */}
       <SplashAuthForm 
         onSuccess={() => navigate('/')}
@@ -148,7 +172,7 @@ const Auth = () => {
       
       {/* Loading overlay on top when OAuth is in progress */}
       {showLoadingOverlay && (
-        <div className="fixed inset-0 bg-[hsl(var(--skip-black))] bg-gradient-splash bg-blend-overlay flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-[hsl(var(--skip-black))] flex items-center justify-center z-50">
           <div className="text-center">
             <LoadingSpinner size="lg" />
             <p className="mt-4 text-white/90">
