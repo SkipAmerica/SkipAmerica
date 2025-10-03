@@ -180,7 +180,7 @@ export function ThreadsFeed() {
   }
 
   return (
-    <div className="w-full pb-0">
+    <div className="w-full pt-5 pb-0">
       {posts.map((post, index) => (
         <PostCard 
           key={post.id} 
