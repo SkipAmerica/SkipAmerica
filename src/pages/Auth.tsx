@@ -178,20 +178,22 @@ const Auth = () => {
         muted 
         playsInline
         preload="auto"
-        className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none"
+        className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none z-10"
       >
         <source src={backgroundVideo} type="video/mp4" />
       </video>
       
       {/* Always render the splash form for persistent background */}
-      <SplashAuthForm
-        onSuccess={() => navigate('/')}
-        onOAuthStart={() => setIsInitiatingOAuth(true)}
-        onOAuthEnd={() => {
-          setIsInitiatingOAuth(false)
-          setIsWaitingForOAuth(false)
-        }}
-      />
+      <div className="relative z-20">
+        <SplashAuthForm
+          onSuccess={() => navigate('/')}
+          onOAuthStart={() => setIsInitiatingOAuth(true)}
+          onOAuthEnd={() => {
+            setIsInitiatingOAuth(false)
+            setIsWaitingForOAuth(false)
+          }}
+        />
+      </div>
       
       {/* Loading overlay on top when OAuth is in progress */}
       {showLoadingOverlay && (
