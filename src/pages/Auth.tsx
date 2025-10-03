@@ -28,10 +28,10 @@ const Auth = () => {
         console.log('OAuth success received from popup')
         setIsWaitingForOAuth(true)
         
-        // Safety timeout - clear waiting state after 10 seconds if user state doesn't update
+        // Safety timeout - clear waiting state after 15 seconds if user state doesn't update
         setTimeout(() => {
           setIsWaitingForOAuth(false)
-        }, 10000)
+        }, 15000)
       }
     }
     
@@ -138,18 +138,25 @@ const Auth = () => {
   // Show loading while waiting for OAuth or checking profile
   if (isWaitingForOAuth || (user && !showInterestsSelection && checkingInterests)) {
     return (
-      <IOSAppShell>
-        <div className="ios-content flex-1 flex flex-col items-center justify-center p-4">
+      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
+        <div className="text-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-muted-foreground">Setting up your profile...</p>
+          <p className="mt-4 text-white/90">Setting up your profile...</p>
         </div>
-      </IOSAppShell>
+      </div>
     )
   }
 
   // Don't show auth form if user is logged in and we're not checking/showing interests
   if (user && !showInterestsSelection && !checkingInterests) {
-    return null // Will redirect via useEffect
+    return (
+      <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-white/90">Redirecting...</p>
+        </div>
+      </div>
+    )
   }
 
   return <SplashAuthForm onSuccess={() => navigate('/')} />

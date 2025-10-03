@@ -15,12 +15,12 @@ const OAuthCallback = () => {
         if (error) {
           console.error('OAuth callback error:', error)
           
-          // If we're in a popup, notify parent and close
-          if (window.opener) {
-            window.opener.postMessage({ type: 'oauth-error', error: error.message }, '*')
-            window.close()
-            return
-          }
+      // If we're in a popup, notify parent and close
+      if (window.opener) {
+        window.opener.postMessage({ type: 'oauth-error', error: error.message }, window.location.origin)
+        window.close()
+        return
+      }
           
           navigate('/auth')
           return
@@ -76,12 +76,12 @@ const OAuthCallback = () => {
             localStorage.removeItem('pending_account_type')
           }
           
-          // If in popup, notify parent and close
-          if (window.opener) {
-            window.opener.postMessage({ type: 'oauth-success' }, window.location.origin)
-            window.close()
-            return
-          }
+    // If in popup, notify parent and close
+    if (window.opener) {
+      window.opener.postMessage({ type: 'oauth-success' }, window.location.origin)
+      window.close()
+      return
+    }
           
           // Otherwise navigate to auth page, which will handle routing
           navigate('/auth')
@@ -96,11 +96,11 @@ const OAuthCallback = () => {
       } catch (error) {
         console.error('Unexpected error in OAuth callback:', error)
         
-        if (window.opener) {
-          window.opener.postMessage({ type: 'oauth-error', error: 'Unexpected error' }, '*')
-          window.close()
-          return
-        }
+      if (window.opener) {
+        window.opener.postMessage({ type: 'oauth-error', error: 'Unexpected error' }, window.location.origin)
+        window.close()
+        return
+      }
         
         navigate('/auth')
       }
@@ -110,10 +110,10 @@ const OAuthCallback = () => {
   }, [navigate])
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
+    <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center">
       <div className="text-center">
-        <LoadingSpinner />
-        <p className="mt-4 text-sm text-muted-foreground">Completing sign in...</p>
+        <LoadingSpinner size="lg" />
+        <p className="mt-4 text-white/90">Completing sign in...</p>
       </div>
     </div>
   )

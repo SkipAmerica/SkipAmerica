@@ -6,6 +6,7 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { Loader2, Binoculars, TowerControl, LogIn, Mail, HelpCircle } from 'lucide-react'
 import { InterestsSelection } from './InterestsSelection'
 import { toast } from 'sonner'
+import { isMobile } from '@/shared/lib/platform'
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [step, setStep] = useState<AuthStep>('main')
   const [accountType, setAccountType] = useState<'creator' | 'fan'>('fan')
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   
   // Email/password form state
   const [email, setEmail] = useState('')
@@ -43,10 +45,17 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
         console.log('Stored account type:', accountType)
       }
       
-      // Don't set loading state for OAuth - it will redirect away from the page
+      // Show loading overlay for mobile to prevent white screen
+      if (provider === 'google' && isMobile()) {
+        setIsGoogleLoading(true)
+      }
+      
       const { error } = provider === 'google' 
         ? await signInWithGoogle()
         : await signInWithApple()
+      
+      // Clear loading state
+      setIsGoogleLoading(false)
       
       if (error) {
         console.error(`${provider} OAuth error:`, error)
@@ -55,6 +64,7 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
     } catch (err) {
       console.error(`${provider} OAuth exception:`, err)
       toast.error(`An error occurred during ${provider} sign-in`)
+      setIsGoogleLoading(false)
     }
   }
 
@@ -253,9 +263,9 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             <Button
               onClick={() => handleSocialAuth('google')}
               className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
-              disabled={isLoading || loading}
+              disabled={isLoading || loading || isGoogleLoading}
             >
-              {isLoading ? (
+              {isGoogleLoading ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
                 <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
@@ -314,9 +324,9 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             <Button
               onClick={() => handleSocialAuth('google')}
               className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
-              disabled={isLoading || loading}
+              disabled={isLoading || loading || isGoogleLoading}
             >
-              {isLoading ? (
+              {isGoogleLoading ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
                 <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
@@ -375,9 +385,9 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
             <Button
               onClick={() => handleSocialAuth('google')}
               className="w-full h-14 text-base font-semibold bg-white hover:bg-white/90 text-gray-900 transition-all"
-              disabled={isLoading || loading}
+              disabled={isLoading || loading || isGoogleLoading}
             >
-              {isLoading ? (
+              {isGoogleLoading ? (
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
               ) : (
                 <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24">
@@ -644,6 +654,17 @@ export const SplashAuthForm = ({ onSuccess }: SplashAuthFormProps) => {
       <div className="mt-12 text-center text-sm text-white/70 max-w-md">
         By continuing, you agree to our Terms of Service and Privacy Policy
       </div>
+
+      {/* Google Loading Overlay for Mobile */}
+      {isGoogleLoading && (
+        <div className="fixed inset-0 bg-gradient-splash flex items-center justify-center z-50">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-white mb-4" />
+            <p className="text-white/90 text-lg">Opening Google...</p>
+            <p className="text-white/70 text-sm mt-2">Please wait while we redirect you</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
-import { isIOS } from '@/shared/lib/platform'
+import { isIOS, isMobile } from '@/shared/lib/platform'
 
 interface AuthContextType {
   user: User | null
@@ -188,20 +188,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Use web OAuth flow with popup
       return new Promise<{ error: any }>((resolve) => {
-        // Open popup window
-        const width = 600
-        const height = 700
+        console.log('Starting web OAuth popup flow')
+        
+        // Mobile-optimized popup dimensions
+        const isMobileDevice = isMobile()
+        const width = isMobileDevice ? Math.min(window.screen.width * 0.9, 500) : 600
+        const height = isMobileDevice ? Math.min(window.screen.height * 0.9, 700) : 700
         const left = window.screenX + (window.outerWidth - width) / 2
         const top = window.screenY + (window.outerHeight - height) / 2
         
         const popup = window.open(
           '',
           'google-oauth',
-          `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no`
+          `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
         )
         
         if (!popup) {
-          resolve({ error: { message: 'Popup blocked. Please allow popups for this site.' } })
+          console.error('Popup blocked by browser')
+          resolve({ error: { message: 'Popup blocked. Please allow popups for this site and try again.' } })
           return
         }
         
