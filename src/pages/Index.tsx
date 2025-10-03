@@ -381,7 +381,7 @@ const Index = () => {
         {activeTab === "discover" && 
          discoveryMode === 'discover' && 
          profile?.account_type === 'creator' && (
-          <div className="px-4 pt-4 bg-white relative z-30">
+          <div className="px-4 pt-4 bg-white">
             <ProfileCompletionBanner />
           </div>
         )}
