@@ -157,7 +157,11 @@ const mockThreadsPosts: ThreadPost[] = [
   }
 ]
 
-export function ThreadsFeed() {
+interface ThreadsFeedProps {
+  hasNotificationZone?: boolean
+}
+
+export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   const [posts, setPosts] = useState<ThreadPost[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -180,7 +184,7 @@ export function ThreadsFeed() {
   }
 
   return (
-    <div className="w-full pt-[144px] pb-0">
+    <div className={`w-full pb-0 ${hasNotificationZone ? 'pt-[144px]' : 'pt-0'}`}>
       {posts.map((post, index) => (
         <PostCard 
           key={post.id} 

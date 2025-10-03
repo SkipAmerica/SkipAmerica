@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
 import { useDiscovery } from "@/app/providers/discovery-provider";
 import { useLive } from '@/hooks/live';
+import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
@@ -91,6 +92,7 @@ const Index = () => {
   const live = useLive();
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
+  const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   
   // Safely access live store values after hooks
   const isLive = live?.isLive || false;
@@ -228,7 +230,10 @@ const Index = () => {
                       <ProfileCompletionBanner />
                     )}
                   </NotificationZone>
-                  <ThreadsFeed key={threadsFeedKey} />
+                  <ThreadsFeed 
+                    key={threadsFeedKey}
+                    hasNotificationZone={profile?.account_type === 'creator' && !onboardingState?.searchUnlocked}
+                  />
                 </>
               )}
 
