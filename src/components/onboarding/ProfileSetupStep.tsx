@@ -123,8 +123,8 @@ export function ProfileSetupStep({
       return;
     }
 
-    if (tagline.length > 100) {
-      toast.error('Bio must be 100 characters or less');
+    if (tagline.length > 250) {
+      toast.error('Bio must be 250 characters or less');
       return;
     }
 
@@ -239,7 +239,7 @@ export function ProfileSetupStep({
             <div className="space-y-2">
               <Label htmlFor="tagline" className="text-white/90">
                 Your Bio *
-                <span className="text-white/60 text-xs ml-2">({tagline.length}/100)</span>
+                <span className="text-white/60 text-xs ml-2">({tagline.length}/250)</span>
               </Label>
               <Textarea
                 id="tagline"
@@ -248,7 +248,7 @@ export function ProfileSetupStep({
                 placeholder="Describe what you do..."
                 className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 transition-colors resize-none"
                 rows={3}
-                maxLength={100}
+                maxLength={250}
                 disabled={saving || uploading}
               />
               <p className="text-xs text-white/60">
@@ -273,15 +273,17 @@ export function ProfileSetupStep({
                   'Continue'
                 )}
               </Button>
-              <Button
-                onClick={onSkip}
-                variant="ghost"
-                size="lg"
-                className="w-full text-white hover:bg-white/10"
-                disabled={saving || uploading}
-              >
-                Skip for now
-              </Button>
+              {!hasExistingData && (
+                <Button
+                  onClick={onSkip}
+                  variant="ghost"
+                  size="lg"
+                  className="w-full text-white hover:bg-white/10"
+                  disabled={saving || uploading}
+                >
+                  Skip for now
+                </Button>
+              )}
             </div>
           </div>
         </div>

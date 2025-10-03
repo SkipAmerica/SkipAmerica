@@ -25,6 +25,7 @@ export default function CreatorOnboarding() {
     headline?: string;
     username?: string;
   } | null>(null);
+  const [hasShownSkipWarning, setHasShownSkipWarning] = useState(false);
   
   const {
     state,
@@ -67,7 +68,20 @@ export default function CreatorOnboarding() {
     }
   }, [user, state, navigate]);
 
+  const showSkipWarningOnce = () => {
+    if (!hasShownSkipWarning) {
+      toast.warning(
+        "You won't appear in search results until you complete your profile",
+        {
+          duration: 6000,
+        }
+      );
+      setHasShownSkipWarning(true);
+    }
+  };
+
   const handleSkip = async () => {
+    showSkipWarningOnce();
     try {
       await skipOnboarding();
       toast.info('You can complete your profile anytime from settings');
@@ -207,6 +221,7 @@ export default function CreatorOnboarding() {
               setCurrentStep('industries');
             }}
             onSkip={() => {
+              showSkipWarningOnce();
               setCompletedSteps(prev => new Set(prev).add('profileSetup'));
               setCurrentStep('industries');
             }}
@@ -221,6 +236,7 @@ export default function CreatorOnboarding() {
               setCurrentStep('completion');
             }}
             onSkip={() => {
+              showSkipWarningOnce();
               setCompletedSteps(prev => new Set(prev).add('industries'));
               setCurrentStep('completion');
             }}
