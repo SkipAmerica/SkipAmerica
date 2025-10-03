@@ -41,7 +41,8 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
 
   const handleSelect = (industryId: string) => {
     if (selected.includes(industryId)) {
-      // Already selected, do nothing (must remove from top bar)
+      // Toggle off - deselect the industry
+      handleRemove(industryId);
       return;
     }
     
@@ -79,7 +80,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
         selected.length > 0 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       )}>
         <div className={cn(
-          "max-w-4xl mx-auto p-6 transition-all duration-300",
+          "w-full px-6 py-6 transition-all duration-300",
           shaking && "animate-[shake_0.5s_ease-in-out]"
         )}>
           <div className="space-y-3">
@@ -183,7 +184,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                     >
                       <button
                         onClick={() => handleSelect(industry.id)}
-                        disabled={isSelected || isAnimating}
+                        disabled={isAnimating}
                         className={cn(
                           "relative w-full h-80 rounded-3xl overflow-hidden",
                           "backdrop-blur-2xl border-2 transition-all duration-500",
@@ -234,7 +235,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
                               "text-sm font-medium transition-colors duration-300",
                               isSelected ? "text-white/60" : "text-white/90"
                             )}>
-                              {isSelected ? "✓ Selected" : "Tap to select"}
+                              {isSelected ? "Tap to deselect" : "Tap to select"}
                             </p>
                           </div>
                         </div>
