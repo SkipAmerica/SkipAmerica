@@ -18,7 +18,7 @@ export function NotificationZone({
       className="w-full"
       style={{ paddingTop: `${stickyOffset}px` }}
     >
-      <div className="px-4 pt-1.5 pb-1.5 space-y-4">
+      <div className="px-4 py-4 space-y-4">
         {children}
       </div>
     </div>
