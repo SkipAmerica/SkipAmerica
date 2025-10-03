@@ -38,7 +38,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
   
   // Keyboard awareness for iOS
   const { isKeyboardVisible, keyboardHeight } = useKeyboardAware()
-  const passwordInputRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const handleSocialAuth = async (provider: 'google' | 'apple') => {
     try {
@@ -101,12 +101,29 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
     }
   }
   
-  const handlePasswordFocus = () => {
-    if (passwordInputRef.current && isKeyboardVisible) {
-      setTimeout(() => {
-        passwordInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }, 300)
-    }
+  const ensureVisible = (el: HTMLElement) => {
+    setTimeout(() => {
+      // First scroll the element into view
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      
+      // Then check if we need additional adjustment for the keyboard
+      if (window.visualViewport && containerRef.current) {
+        const rect = el.getBoundingClientRect()
+        const viewportBottom = window.visualViewport.height
+        const elementBottom = rect.bottom
+        
+        // Calculate overlap with keyboard
+        const overlap = elementBottom - viewportBottom
+        
+        if (overlap > 0) {
+          // Scroll the container to reveal the input above the keyboard
+          containerRef.current.scrollBy({
+            top: overlap + 16,
+            behavior: 'smooth'
+          })
+        }
+      }
+    }, 250)
   }
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -140,8 +157,10 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
 
   return (
     <div 
+      ref={containerRef}
       className="fixed inset-0 bg-gradient-splash flex flex-col items-center justify-start p-6 overflow-y-auto pt-12"
       style={{
+        WebkitOverflowScrolling: 'touch',
         paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px'
       }}
     >
@@ -434,6 +453,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your full name"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -447,6 +467,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your email"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -456,12 +477,11 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
-                ref={passwordInputRef}
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onFocus={handlePasswordFocus}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Create a password (min 6 characters)"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -513,6 +533,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your full name"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -526,6 +547,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your email"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -535,12 +557,11 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
-                ref={passwordInputRef}
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onFocus={handlePasswordFocus}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Create a password (min 6 characters)"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -592,6 +613,7 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your email"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
@@ -601,12 +623,11 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
-                ref={passwordInputRef}
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                onFocus={handlePasswordFocus}
+                onFocus={(e) => ensureVisible(e.currentTarget)}
                 placeholder="Enter your password"
                 className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
                 required
