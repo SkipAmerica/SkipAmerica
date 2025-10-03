@@ -395,7 +395,7 @@ const Index = () => {
         <div className={cn(
           "relative z-10 bg-white",
           activeTab === "discover" && discoveryMode === 'discover' 
-            ? "-mt-[calc(48px+96px)]" 
+            ? "-mt-24 md:-mt-36" 
             : "-mt-[48px]"
         )}>
           {renderTabContent}
