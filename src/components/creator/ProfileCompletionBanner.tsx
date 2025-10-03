@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
@@ -7,18 +6,16 @@ import { Progress } from '@/components/ui/progress';
 import { AlertCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function ProfileCompletionBanner() {
+interface ProfileCompletionBannerProps {
+  onDismiss?: () => void;
+}
+
+export function ProfileCompletionBanner({ onDismiss }: ProfileCompletionBannerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { state, loading } = useOnboardingProgress(user?.id || '');
-  const [dismissed, setDismissed] = useState(false);
 
-  // Reset dismissed state on page load
-  useEffect(() => {
-    setDismissed(false);
-  }, []);
-
-  if (loading || !state || state.searchUnlocked || dismissed) {
+  if (loading || !state || state.searchUnlocked) {
     return null;
   }
 
@@ -60,7 +57,7 @@ export function ProfileCompletionBanner() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setDismissed(true)}
+          onClick={onDismiss}
           className="shrink-0 h-8 w-8"
         >
           <X className="w-4 h-4" />

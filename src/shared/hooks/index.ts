@@ -19,3 +19,6 @@ export { useExternalChatInput } from '../../hooks/useExternalChatInput'
 // Re-export presence hooks
 export { useCreatorPresence } from './use-creator-presence'
 export { usePresenceManager } from './use-presence-manager'
+
+// Re-export notification hooks
+export { useNotificationRegistry } from '../../hooks/useNotificationRegistry'

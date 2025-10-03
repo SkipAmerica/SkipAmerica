@@ -37,6 +37,7 @@ import { FreezePane } from "@/components/navigation/FreezePane";
 import { MatchSearchBar } from "@/components/match/MatchSearchBar";
 import { ProfileCompletionBanner } from "@/components/creator/ProfileCompletionBanner";
 import { NotificationZone } from "@/components/discovery/NotificationZone";
+import { useNotificationRegistry } from "@/hooks/useNotificationRegistry";
 
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
@@ -93,6 +94,7 @@ const Index = () => {
   const { isKeyboardVisible } = useKeyboardAware(activeTab);
   const navigate = useNavigate();
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
+  const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
   
   // Safely access live store values after hooks
   const isLive = live?.isLive || false;
@@ -225,14 +227,16 @@ const Index = () => {
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <>
-                  <NotificationZone stickyOffset={144}>
-                    {profile?.account_type === 'creator' && (
-                      <ProfileCompletionBanner />
-                    )}
+                  <NotificationZone stickyOffset={144} hasVisibleNotifications={hasAnyVisible}>
+                    {visibleNotifications.map((notification) => (
+                      <div key={notification.id}>
+                        {notification.component}
+                      </div>
+                    ))}
                   </NotificationZone>
                   <ThreadsFeed 
                     key={threadsFeedKey}
-                    hasNotificationZone={profile?.account_type === 'creator' && !onboardingState?.searchUnlocked}
+                    hasNotificationZone={hasAnyVisible}
                   />
                 </>
               )}
