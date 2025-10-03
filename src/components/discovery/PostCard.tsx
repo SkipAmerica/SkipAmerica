@@ -154,7 +154,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
         </div>
 
         {/* Content Column */}
-        <div className="flex-1 p-3 md:p-4">
+        <div className="min-w-0 flex-1 p-3 md:p-4">
           {/* Header */}
           <div className="mb-3">
             <div className="flex items-center gap-1">
@@ -196,7 +196,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
 
             {/* Media */}
             {post.media_url && (
-              <div className="rounded-lg overflow-hidden max-w-full">
+              <div className="rounded-lg overflow-hidden w-full max-w-full">
                 {post.content_type.startsWith('image') ? (
                   <img
                     src={post.media_url}
