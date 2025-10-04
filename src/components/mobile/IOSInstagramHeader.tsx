@@ -6,7 +6,7 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Mail, Menu, Calendar, Users } from 'lucide-react';
+import { Mail, Menu, CalendarDays, Users } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { RUNTIME } from '@/config/runtime';
@@ -159,7 +159,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
             )}
           </Button>
           <Button variant="ghost" className="ios-touchable h-[47px] w-[30px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
-            <Calendar size={22} />
+            <CalendarDays size={22} />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3

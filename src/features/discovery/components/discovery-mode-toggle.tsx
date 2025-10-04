@@ -1,6 +1,6 @@
 // Refactored discovery mode toggle component
 import { Button } from '@/components/ui/button'
-import { Heart, Grid3X3, Search } from 'lucide-react'
+import { Handshake, Grid3X3, Search } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import type { DiscoveryMode } from '../types'
 
@@ -18,7 +18,7 @@ export function DiscoveryModeToggle({ mode, onModeChange, className }: Discovery
   const modes = [
     { key: 'discover' as const, label: 'Discover', icon: Search },
     { key: 'browse' as const, label: 'Browse', icon: Grid3X3 },
-    { key: 'match' as const, label: 'Match', icon: Heart },
+    { key: 'match' as const, label: 'Match', icon: Handshake },
   ]
 
   return (
