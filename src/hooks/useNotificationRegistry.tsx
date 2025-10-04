@@ -1,4 +1,4 @@
-import { ReactNode, useMemo } from 'react';
+import { ReactNode, useMemo, useState, useEffect } from 'react';
 import { ProfileCompletionBanner } from '@/components/creator/ProfileCompletionBanner';
 import { useProfile } from './useProfile';
 import { useOnboardingProgress } from './useOnboardingProgress';
@@ -33,6 +33,30 @@ export function useNotificationRegistry() {
     return elapsed > NOTIFICATION_CONFIG.DISMISSAL_DURATION;
   }, [profileDismissal]);
 
+  // Dev-only URL override for testing
+  const forceShow = useMemo(() => {
+    if (import.meta.env.DEV && typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search).get('showProfileBanner') === '1';
+    }
+    return false;
+  }, []);
+
+  // Fail-safe timeout: show banner if loading takes too long for a creator
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  useEffect(() => {
+    if (onboardingLoading && profile?.account_type === 'creator') {
+      const timer = setTimeout(() => {
+        setLoadingTimeout(true);
+        if (import.meta.env.DEV) {
+          console.log('[useNotificationRegistry] ⚠️ Loading timeout reached, showing banner as fail-safe');
+        }
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [onboardingLoading, profile?.account_type]);
+
   // Determine if profile completion banner should be visible
   const isProfileCompletionVisible = useMemo(() => {
     if (import.meta.env.DEV) {
@@ -41,32 +65,66 @@ export function useNotificationRegistry() {
         hasProfile: !!profile,
         hasOnboardingState: !!onboardingState,
         accountType: profile?.account_type,
+        percentComplete: onboardingState?.percentComplete,
+        onboardingSkipped: onboardingState?.onboardingSkipped,
         searchUnlocked: onboardingState?.searchUnlocked,
         dismissed: profileDismissal.dismissed,
         dismissalExpired: isProfileDismissalExpired,
+        forceShow,
+        loadingTimeout,
       });
     }
 
-    if (onboardingLoading || !profile || !onboardingState) {
-      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Missing required data');
+    // Dev override
+    if (forceShow) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] 🔧 Force show enabled via URL');
+      return true;
+    }
+
+    // Must have profile
+    if (!profile) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] No profile');
       return false;
     }
+
+    // Only for creators
     if (profile.account_type !== 'creator') {
       if (import.meta.env.DEV) console.log('[useNotificationRegistry] Not a creator account');
       return false;
     }
-    if (onboardingState.searchUnlocked) {
-      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Search already unlocked');
-      return false;
-    }
+
+    // Check dismissal (even if loading)
     if (profileDismissal.dismissed && !isProfileDismissalExpired) {
       if (import.meta.env.DEV) console.log('[useNotificationRegistry] Banner dismissed and not expired');
       return false;
     }
-    
-    if (import.meta.env.DEV) console.log('[useNotificationRegistry] ✅ Banner should be visible');
-    return true;
-  }, [profile, onboardingState, onboardingLoading, profileDismissal, isProfileDismissalExpired]);
+
+    // Fail-safe: show if loading for too long
+    if (loadingTimeout) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] ⚠️ Showing due to loading timeout');
+      return true;
+    }
+
+    // Wait for onboarding state to load
+    if (onboardingLoading || !onboardingState) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] Still loading onboarding state');
+      return false;
+    }
+
+    // Show if profile is incomplete (less than 100%)
+    const isIncomplete = onboardingState.percentComplete < 100;
+    if (import.meta.env.DEV) {
+      console.log(`[useNotificationRegistry] Profile completion: ${onboardingState.percentComplete}%, incomplete: ${isIncomplete}`);
+    }
+
+    if (isIncomplete) {
+      if (import.meta.env.DEV) console.log('[useNotificationRegistry] ✅ Banner should be visible (incomplete profile)');
+      return true;
+    }
+
+    if (import.meta.env.DEV) console.log('[useNotificationRegistry] Profile is complete, hiding banner');
+    return false;
+  }, [profile, onboardingState, onboardingLoading, profileDismissal, isProfileDismissalExpired, forceShow, loadingTimeout]);
 
   // Handle profile completion dismissal
   const dismissProfileCompletion = () => {

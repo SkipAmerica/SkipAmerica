@@ -15,7 +15,7 @@ export function ProfileCompletionBanner({ onDismiss }: ProfileCompletionBannerPr
   const { user } = useAuth();
   const { state, loading } = useOnboardingProgress(user?.id || '');
 
-  if (loading || !state || state.searchUnlocked) {
+  if (loading || !state || state.percentComplete >= 100) {
     return null;
   }
 
