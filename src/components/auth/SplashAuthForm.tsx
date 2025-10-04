@@ -158,10 +158,12 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
   return (
     <div 
       ref={containerRef}
-      className="absolute inset-0 z-20 bg-transparent flex flex-col items-center justify-start p-6 overflow-y-auto pt-12"
+      className="absolute inset-0 z-20 bg-transparent flex flex-col items-center justify-start p-6 overflow-y-auto pt-12 min-h-screen"
       style={{
         WebkitOverflowScrolling: 'touch',
-        paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px'
+        paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px',
+        height: '100vh',
+        minHeight: '100vh'
       }}
     >
       {/* Help Button */}
