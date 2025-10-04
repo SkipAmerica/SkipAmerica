@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { UsernameInput } from './UsernameInput';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
@@ -185,15 +184,26 @@ export function ProfileSetupStep({
 
   return (
     <div 
-      className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in"
-      style={{ paddingBottom: isKeyboardVisible ? `${keyboardHeight}px` : undefined }}
+      className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in overflow-y-auto"
+      style={{ 
+        paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px',
+        WebkitOverflowScrolling: 'touch'
+      }}
     >
       <div className="w-full max-w-md space-y-8">
         <div className="relative backdrop-blur-sm bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/30">
           <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl blur-xl -z-10" />
 
-          <ScrollArea className="max-h-[calc(100vh-12rem)]">
-            <div className="space-y-6 pr-4">
+          <div 
+            className="overflow-y-auto pr-4"
+            style={{
+              maxHeight: isKeyboardVisible 
+                ? `calc(100vh - 12rem - ${keyboardHeight}px)` 
+                : 'calc(100vh - 12rem)',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
+            <div className="space-y-6">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white">
                 {hasExistingData ? 'Review Your Profile' : 'Setup Your Profile'}
@@ -323,7 +333,7 @@ export function ProfileSetupStep({
               )}
             </div>
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         <p className="text-center text-sm text-white/70">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/providers/auth-provider';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { supabase } from '@/integrations/supabase/client';
 import { WelcomeScreen } from '@/components/onboarding/WelcomeScreen';
 import { ProfileSetupStep } from '@/components/onboarding/ProfileSetupStep';
@@ -27,6 +28,7 @@ export default function CreatorOnboarding() {
     username?: string;
   } | null>(null);
   const [hasShownSkipWarning, setHasShownSkipWarning] = useState(false);
+  const { keyboardHeight, isKeyboardVisible } = useKeyboardAware();
   
   const {
     state,
@@ -132,7 +134,13 @@ export default function CreatorOnboarding() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-y-auto bg-gradient-splash">
+    <div 
+      className="relative min-h-screen overflow-y-auto bg-gradient-splash"
+      style={{
+        paddingBottom: isKeyboardVisible ? `${keyboardHeight}px` : undefined,
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
       {/* Progress Bar - Only show after welcome */}
       {currentStep !== 'welcome' && (
         <div className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-white/10 border-b border-white/20">

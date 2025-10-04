@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { 
   Music, Palette, Code, Camera, Utensils, Dumbbell, 
   Stethoscope, GraduationCap, Briefcase, Heart, 
@@ -38,6 +39,7 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
   const [shaking, setShaking] = useState(false);
   const [animatingCard, setAnimatingCard] = useState<string | null>(null);
   const [api, setApi] = useState<CarouselApi>();
+  const { keyboardHeight, isKeyboardVisible } = useKeyboardAware();
 
   const handleSelect = (industryId: string) => {
     if (selected.includes(industryId)) {
@@ -73,12 +75,23 @@ export function IndustryCarouselStep({ onComplete, onSkip }: IndustryCarouselSte
   const selectedIndustries = INDUSTRIES.filter(i => selected.includes(i.id));
 
   return (
-    <div className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-splash overflow-y-auto">
+    <div 
+      className="flex flex-col min-h-screen animate-fade-in relative bg-gradient-splash overflow-y-auto"
+      style={{
+        paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px',
+        WebkitOverflowScrolling: 'touch'
+      }}
+    >
       {/* Fixed Selection Bar at Top */}
-      <div className={cn(
-        "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/10 border-b border-white/20 transition-all duration-500",
-        selected.length > 0 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
-      )}>
+      <div 
+        className={cn(
+          "fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-white/10 border-b border-white/20 transition-all duration-500",
+          selected.length > 0 ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
+        )}
+        style={{
+          top: isKeyboardVisible ? `${keyboardHeight}px` : '0'
+        }}
+      >
         <div className={cn(
           "w-full px-6 py-6 transition-all duration-300",
           shaking && "animate-[shake_0.5s_ease-in-out]"
