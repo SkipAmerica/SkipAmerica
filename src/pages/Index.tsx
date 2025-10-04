@@ -360,7 +360,6 @@ const Index = () => {
         {activeTab !== "advanced" && (
           <IOSInstagramHeader 
             onMenuClick={() => setShowMenu(true)}
-            onCreatorSelect={(id) => setActiveTab("creator-profile")}
           />
         )}
 
