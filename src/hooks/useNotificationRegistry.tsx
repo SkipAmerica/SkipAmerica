@@ -126,6 +126,10 @@ export function useNotificationRegistry() {
     return false;
   }, [profile, onboardingState, onboardingLoading, profileDismissal, isProfileDismissalExpired, forceShow, loadingTimeout]);
 
+  if (import.meta.env.DEV) {
+    console.log('[useNotificationRegistry] Final visibility decision:', isProfileCompletionVisible);
+  }
+
   // Handle profile completion dismissal
   const dismissProfileCompletion = () => {
     setProfileDismissal({ dismissed: true, timestamp: Date.now() });
@@ -136,10 +140,15 @@ export function useNotificationRegistry() {
     const items: NotificationRegistryItem[] = [];
 
     // Profile Completion Banner
-    if (isProfileCompletionVisible) {
+    if (isProfileCompletionVisible && onboardingState) {
       items.push({
         id: 'profile-completion',
-        component: <ProfileCompletionBanner onDismiss={dismissProfileCompletion} />,
+        component: (
+          <ProfileCompletionBanner 
+            percentComplete={onboardingState.percentComplete || 0}
+            onDismiss={dismissProfileCompletion} 
+          />
+        ),
         isVisible: true,
       });
     }
@@ -153,8 +162,12 @@ export function useNotificationRegistry() {
     //   });
     // }
 
+    if (import.meta.env.DEV) {
+      console.log('[useNotificationRegistry] Built notifications array, count:', items.length);
+    }
+
     return items;
-  }, [isProfileCompletionVisible]);
+  }, [isProfileCompletionVisible, onboardingState]);
 
   return {
     visibleNotifications: notifications,

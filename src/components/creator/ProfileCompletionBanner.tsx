@@ -1,22 +1,19 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/app/providers/auth-provider';
-import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { AlertCircle, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProfileCompletionBannerProps {
+  percentComplete: number;
   onDismiss?: () => void;
 }
 
-export function ProfileCompletionBanner({ onDismiss }: ProfileCompletionBannerProps) {
+export function ProfileCompletionBanner({ percentComplete, onDismiss }: ProfileCompletionBannerProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { state, loading } = useOnboardingProgress(user?.id || '');
 
-  if (loading || !state || state.percentComplete >= 100) {
-    return null;
+  if (import.meta.env.DEV) {
+    console.log('[ProfileCompletionBanner] Rendering with percentComplete:', percentComplete);
   }
 
   return (
@@ -39,10 +36,10 @@ export function ProfileCompletionBanner({ onDismiss }: ProfileCompletionBannerPr
 
           <div className="space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{state.percentComplete}% complete</span>
-              <span className="font-medium">{100 - state.percentComplete}% remaining</span>
+              <span className="text-muted-foreground">{percentComplete}% complete</span>
+              <span className="font-medium">{100 - percentComplete}% remaining</span>
             </div>
-            <Progress value={state.percentComplete} className="h-2" />
+            <Progress value={percentComplete} className="h-2" />
           </div>
 
           <Button
@@ -54,14 +51,16 @@ export function ProfileCompletionBanner({ onDismiss }: ProfileCompletionBannerPr
           </Button>
         </div>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onDismiss}
-          className="shrink-0 h-8 w-8"
-        >
-          <X className="w-4 h-4" />
-        </Button>
+        {onDismiss && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onDismiss}
+            className="shrink-0 h-8 w-8"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        )}
       </div>
     </div>
   );

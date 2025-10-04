@@ -227,6 +227,10 @@ const Index = () => {
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <>
+                  {import.meta.env.DEV && console.log('[Index] Rendering NotificationZone:', { 
+                    hasAnyVisible, 
+                    notificationCount: visibleNotifications.length 
+                  })}
                   <NotificationZone stickyOffset={144} hasVisibleNotifications={hasAnyVisible}>
                     {visibleNotifications.map((notification) => (
                       <div key={notification.id}>

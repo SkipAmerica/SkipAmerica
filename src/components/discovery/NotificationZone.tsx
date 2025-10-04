@@ -11,7 +11,21 @@ export function NotificationZone({
   hasVisibleNotifications,
   stickyOffset = 144 
 }: NotificationZoneProps) {
-  if (!hasVisibleNotifications || !children) {
+  if (import.meta.env.DEV) {
+    console.log('[NotificationZone] Rendering:', {
+      hasVisibleNotifications,
+      hasChildren: !!children,
+      childrenCount: Array.isArray(children) ? children.length : (children ? 1 : 0)
+    });
+  }
+
+  if (!hasVisibleNotifications) {
+    if (import.meta.env.DEV) console.log('[NotificationZone] Returning null: no visible notifications');
+    return null;
+  }
+
+  if (!children) {
+    if (import.meta.env.DEV) console.log('[NotificationZone] Returning null: no children');
     return null;
   }
 
