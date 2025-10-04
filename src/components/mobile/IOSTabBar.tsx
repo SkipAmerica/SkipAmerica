@@ -178,7 +178,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                     )}>
                       <Avatar className={cn(
                         "h-6 w-6 ring-2 ring-offset-1 ring-offset-background",
-                        isActive ? "ring-primary" : "ring-border"
+                        isActive ? "ring-cyan-500" : "ring-border"
                       )}>
                         <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
                         <AvatarFallback 
@@ -256,7 +256,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                   )}>
                     <Avatar className={cn(
                       "h-6 w-6 ring-2 ring-offset-1 ring-offset-background",
-                      isActive ? "ring-primary" : "ring-border"
+                      isActive ? "ring-cyan-500" : "ring-border"
                     )}>
                       <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
                       <AvatarFallback 
