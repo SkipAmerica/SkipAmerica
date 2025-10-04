@@ -6,7 +6,7 @@ import { useAuth } from '@/app/providers/auth-provider';
 import { useProfile } from '@/hooks/useProfile';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Mail, Heart, Menu, Phone, Users } from 'lucide-react';
+import { Mail, Menu, Calendar, Users } from 'lucide-react';
 import { OnlineCreatorStories } from './OnlineCreatorStories';
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 import { RUNTIME } from '@/config/runtime';
@@ -158,11 +158,8 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
               </div>
             )}
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[47px] w-[30px] p-0 [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
-            <Heart size={22} />
-          </Button>
           <Button variant="ghost" className="ios-touchable h-[47px] w-[30px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
-            <Phone size={22} />
+            <Calendar size={22} />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
@@ -179,14 +176,14 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-6 h-6 px-1.5 rounded-full bg-red-500 text-xs leading-6 text-center text-white font-medium">
+                <span className="absolute top-1 -right-0.5 h-5 w-5 rounded-full bg-red-500 text-xs text-center text-white font-medium flex items-center justify-center">
                   {inboxCounts.standard_unread}
                 </span>
               )}
               
-              {/* Green badge for priority/offers - same size, positioned below */}
+              {/* Green badge for priority/offers - same size, positioned below with $ */}
               {(inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0) && (
-                <span className="absolute top-3 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light"></span>
+                <span className="absolute top-4 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light flex items-center justify-center text-white text-[9px] font-bold">$</span>
               )}
             </Button>
           )}
