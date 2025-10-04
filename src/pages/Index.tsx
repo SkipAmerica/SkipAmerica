@@ -360,6 +360,8 @@ const Index = () => {
         {activeTab !== "advanced" && (
           <IOSInstagramHeader 
             onMenuClick={() => setShowMenu(true)}
+            onCreatorSelect={(id) => setActiveTab("creator-profile")}
+            hideBottomRow={activeTab === "following" && profile?.account_type === 'creator'}
           />
         )}
 
