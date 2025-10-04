@@ -52,11 +52,11 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.855084043919-raeo01iosieret7dtlcdd7bmg9i69ena</string>
+				<string>com.googleusercontent.apps.855084043919-hdr8naup9khbi2jor4qov171pvdjda7h</string>
 			</array>
 		</dict>
 	</array>
 	<key>GIDClientID</key>
-	<string>855084043919-raeo01iosieret7dtlcdd7bmg9i69ena.apps.googleusercontent.com</string>
+	<string>855084043919-hdr8naup9khbi2jor4qov171pvdjda7h.apps.googleusercontent.com</string>
 </dict>
 </plist>

@@ -170,7 +170,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // Initialize Google Auth
         await GoogleAuth.initialize({
-          clientId: '855084043919-raeo01iosieret7dtlcdd7bmg9i69ena.apps.googleusercontent.com',
+          clientId: '855084043919-hdr8naup9khbi2jor4qov171pvdjda7h.apps.googleusercontent.com',
           scopes: ['profile', 'email'],
         })
 
