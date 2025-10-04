@@ -223,13 +223,13 @@ export function CreatorProfileManagement() {
           <div className="mt-4 flex gap-2">
             <Button 
               variant="outline" 
-              className="flex-1"
+              className="flex-1 border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-950"
               onClick={() => setPricingModalOpen(true)}
             >
               <Settings size={16} className="mr-2" />
               Manage Pricing
             </Button>
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="flex-1 border-cyan-500 text-cyan-600 hover:bg-cyan-50 dark:border-cyan-400 dark:text-cyan-400 dark:hover:bg-cyan-950">
               <Share2 size={16} className="mr-2" />
               Share profile
             </Button>
