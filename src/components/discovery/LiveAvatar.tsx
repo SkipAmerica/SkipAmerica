@@ -33,7 +33,7 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
             onFollowToggle()
           }}
           className={cn(
-            "absolute -bottom-[6px] -right-0.5 w-5 h-5 rounded-full flex items-center justify-center border-2 border-white transition-colors",
+            "absolute -bottom-[6px] right-[2px] w-5 h-5 rounded-full flex items-center justify-center border-2 border-white transition-colors",
             isFollowing ? "bg-red-500 hover:bg-red-600" : "bg-cyan-500 hover:bg-cyan-600"
           )}
           aria-label={isFollowing ? "Unfollow" : "Follow"}
