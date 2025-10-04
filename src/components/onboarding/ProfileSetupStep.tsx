@@ -6,16 +6,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 import { UsernameInput } from './UsernameInput';
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware';
 
 interface ProfileSetupStepProps {
   creatorId: string;
   existingPhotoUrl?: string;
   existingDisplayName?: string;
+  existingTitle?: string;
   existingTagline?: string;
   existingUsername?: string;
-  onComplete: (photoUrl: string | null, displayName: string, tagline: string, username: string) => void;
+  onComplete: (photoUrl: string | null, displayName: string, title: string, tagline: string, username: string) => void;
   onSkip: () => void;
 }
 
@@ -23,12 +26,14 @@ export function ProfileSetupStep({
   creatorId,
   existingPhotoUrl,
   existingDisplayName,
+  existingTitle,
   existingTagline,
   existingUsername,
   onComplete,
   onSkip,
 }: ProfileSetupStepProps) {
   const [displayName, setDisplayName] = useState(existingDisplayName || '');
+  const [title, setTitle] = useState(existingTitle || '');
   const [username, setUsername] = useState(existingUsername || '');
   const [usernameStatus, setUsernameStatus] = useState<'idle' | 'checking' | 'available' | 'taken' | 'reserved' | 'invalid'>('idle');
   const [tagline, setTagline] = useState(existingTagline || '');
@@ -37,8 +42,9 @@ export function ProfileSetupStep({
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { keyboardHeight, isKeyboardVisible } = useKeyboardAware();
 
-  const hasExistingData = !!(existingPhotoUrl || existingDisplayName || existingTagline || existingUsername);
+  const hasExistingData = !!(existingPhotoUrl || existingDisplayName || existingTitle || existingTagline || existingUsername);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -108,6 +114,16 @@ export function ProfileSetupStep({
       return;
     }
 
+    if (!title.trim()) {
+      toast.error('Please enter your professional title');
+      return;
+    }
+
+    if (title.length > 100) {
+      toast.error('Title must be 100 characters or less');
+      return;
+    }
+
     if (!username.trim()) {
       toast.error('Please choose a username');
       return;
@@ -147,7 +163,7 @@ export function ProfileSetupStep({
         if (creatorError) throw creatorError;
       }
 
-      await onComplete(photoUrl, displayName, tagline, username);
+      await onComplete(photoUrl, displayName, title, tagline, username);
     } catch (error) {
       console.error('Error saving:', error);
       toast.error('Failed to save. Please try again.');
@@ -168,12 +184,16 @@ export function ProfileSetupStep({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in overflow-y-auto">
+    <div 
+      className="flex flex-col items-center justify-center min-h-screen p-6 animate-fade-in"
+      style={{ paddingBottom: isKeyboardVisible ? `${keyboardHeight}px` : undefined }}
+    >
       <div className="w-full max-w-md space-y-8">
         <div className="relative backdrop-blur-sm bg-white/10 rounded-2xl p-8 shadow-2xl border border-white/30">
           <div className="absolute inset-0 bg-gradient-to-r from-white/5 to-white/10 rounded-2xl blur-xl -z-10" />
 
-          <div className="space-y-6">
+          <ScrollArea className="max-h-[calc(100vh-12rem)]">
+            <div className="space-y-6 pr-4">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-white">
                 {hasExistingData ? 'Review Your Profile' : 'Setup Your Profile'}
@@ -228,6 +248,23 @@ export function ProfileSetupStep({
               />
             </div>
 
+            {/* Title Field */}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-white/90">
+                Professional Title *
+                <span className="text-white/60 text-xs ml-2">({title.length}/100)</span>
+              </Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., Fitness Coach, Music Producer"
+                className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 focus:border-white/40 transition-colors"
+                maxLength={100}
+                disabled={saving || uploading}
+              />
+            </div>
+
             {/* Username Field */}
             <UsernameInput
               value={username}
@@ -260,7 +297,7 @@ export function ProfileSetupStep({
             <div className="space-y-3 pt-4">
               <Button
                 onClick={handleContinue}
-                disabled={saving || uploading || !displayName.trim() || !username.trim() || usernameStatus !== 'available' || !tagline.trim()}
+                disabled={saving || uploading || !displayName.trim() || !title.trim() || !username.trim() || usernameStatus !== 'available' || !tagline.trim()}
                 size="lg"
                 className="w-full bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm"
               >
@@ -285,14 +322,15 @@ export function ProfileSetupStep({
                 </Button>
               )}
             </div>
-          </div>
+            </div>
+          </ScrollArea>
         </div>
 
         <p className="text-center text-sm text-white/70">
-          {displayName && username && usernameStatus === 'available' && tagline 
-            ? (photoUrl ? '70%' : '60%') 
-            : displayName || username || tagline 
-              ? '40%' 
+          {displayName && title && username && usernameStatus === 'available' && tagline 
+            ? (photoUrl ? '80%' : '65%') 
+            : displayName || title || username || tagline 
+              ? '45%' 
               : '20%'
           } of profile completion
         </p>

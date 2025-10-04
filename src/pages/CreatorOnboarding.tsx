@@ -23,6 +23,7 @@ export default function CreatorOnboarding() {
     avatar_url?: string;
     full_name?: string;
     headline?: string;
+    bio?: string;
     username?: string;
   } | null>(null);
   const [hasShownSkipWarning, setHasShownSkipWarning] = useState(false);
@@ -44,7 +45,7 @@ export default function CreatorOnboarding() {
     const fetchCreatorData = async () => {
       const { data, error } = await supabase
         .from('creators')
-        .select('avatar_url, full_name, headline, username')
+        .select('avatar_url, full_name, headline, bio, username')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -175,14 +176,31 @@ export default function CreatorOnboarding() {
             creatorId={user!.id}
             existingPhotoUrl={creatorData?.avatar_url}
             existingDisplayName={creatorData?.full_name}
-            existingTagline={creatorData?.headline}
+            existingTitle={creatorData?.headline}
+            existingTagline={creatorData?.bio}
             existingUsername={creatorData?.username}
-            onComplete={async (photoUrl, name, tagline, username) => {
+            onComplete={async (photoUrl, name, title, tagline, username) => {
               if (photoUrl) {
                 await markPhotoComplete(photoUrl);
               }
               await setDisplayName(name);
-              await setTagline(tagline);
+              
+              // Save title (headline) and bio
+              const { error: creatorUpdateError } = await supabase
+                .from('creators')
+                .update({ 
+                  headline: title,
+                  bio: tagline 
+                })
+                .eq('id', user!.id);
+              
+              if (creatorUpdateError) {
+                console.error('Error updating creator:', creatorUpdateError);
+                toast.error('Failed to save profile details');
+                return;
+              }
+              
+              await setTagline(title);
               
               // Save username to both profiles and creators
               const { error: profileError } = await supabase
