@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 
-import { Grid3X3, Heart, Search } from 'lucide-react';
+import { Grid3X3, Handshake, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type DiscoveryMode = 'discover' | 'browse' | 'match';
@@ -63,7 +63,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
           mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
-        <Heart className="h-4 w-4" />
+        <Handshake className="h-4 w-4" />
         <span>Match</span>
       </Button>
     </div>
