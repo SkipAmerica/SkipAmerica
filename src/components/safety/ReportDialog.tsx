@@ -84,7 +84,7 @@ export function ReportDialog({ reportedUserId, reportedUserName, trigger }: Repo
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-white/10 backdrop-blur-lg border-white/30 dark:bg-black/40 dark:border-white/20 rounded-2xl animate-scale-in">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />

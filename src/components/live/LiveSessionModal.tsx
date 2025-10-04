@@ -10,7 +10,7 @@ interface LiveSessionModalProps {
 export function LiveSessionModal({ isOpen, onClose }: LiveSessionModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-4 rounded-2xl border-0 bg-card/95 backdrop-blur-xl">
+      <DialogContent className="sm:max-w-md mx-4 rounded-2xl bg-white/10 backdrop-blur-lg border-white/30 dark:bg-black/40 dark:border-white/20 animate-scale-in">
         <div className="flex flex-col items-center text-center py-6">
           <div className="w-16 h-16 rounded-full bg-[hsl(var(--live-color))] flex items-center justify-center mb-4">
             <CheckCircle className="w-8 h-8 text-white" />

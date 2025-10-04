@@ -48,10 +48,12 @@ export function IOSModal({
       )}
       <DialogContent 
         className={cn(
-          "ios-modal-backdrop",
-          "rounded-xl border-0",
+          "bg-white/10 backdrop-blur-lg border-white/30",
+          "dark:bg-black/40 dark:border-white/20",
+          "rounded-2xl",
           "p-0 gap-0",
           "overflow-hidden",
+          "animate-scale-in",
           sizeClasses[size]
         )}
       >

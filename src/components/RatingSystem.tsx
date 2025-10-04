@@ -74,8 +74,8 @@ const RatingSystem = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-lg">
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-lg bg-white/10 backdrop-blur-lg border-white/30 dark:bg-black/40 dark:border-white/20 rounded-2xl animate-scale-in">
         <CardHeader>
           <CardTitle className="flex items-center space-x-3">
             <Avatar>

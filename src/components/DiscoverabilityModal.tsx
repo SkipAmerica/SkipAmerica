@@ -20,8 +20,8 @@ export default function DiscoverabilityModal({ open, onClose }: Props) {
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center"
     >
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl border border-border">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-sm rounded-2xl bg-white/10 backdrop-blur-lg border-white/30 dark:bg-black/40 dark:border-white/20 p-5 shadow-xl animate-scale-in">
         <div className="text-lg font-semibold mb-1 text-foreground">Discoverability On</div>
         <div className="text-sm text-muted-foreground mb-4">
           You are now available for incoming call requests.
