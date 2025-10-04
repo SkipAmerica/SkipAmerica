@@ -112,7 +112,7 @@ export function CreatorProfileManagement() {
     <div className="min-h-screen bg-background pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
       <div className="max-w-2xl mx-auto">
         {/* Profile Header */}
-        <div className="px-4 pt-4 pb-6">
+        <div className="px-4 pb-6">
           {/* Avatar and Stats Row */}
           <div className="flex items-start gap-6 mb-4">
             {/* Avatar with Edit Button */}
@@ -219,12 +219,6 @@ export function CreatorProfileManagement() {
             )}
           </div>
 
-          {/* Professional Dashboard Card */}
-          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-            <div className="font-semibold text-sm">Professional dashboard</div>
-            <div className="text-xs text-muted-foreground">Manage your call pricing and availability</div>
-          </div>
-
           {/* Action Buttons */}
           <div className="mt-4 flex gap-2">
             <Button 
@@ -233,7 +227,7 @@ export function CreatorProfileManagement() {
               onClick={() => setPricingModalOpen(true)}
             >
               <Settings size={16} className="mr-2" />
-              Edit profile
+              Manage Pricing
             </Button>
             <Button variant="outline" className="flex-1">
               <Share2 size={16} className="mr-2" />
