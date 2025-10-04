@@ -144,7 +144,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-[2.6px]">
           <Button 
             variant="ghost"
             className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[25px] [&_svg]:!h-[25px]"
