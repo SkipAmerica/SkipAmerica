@@ -40,6 +40,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
   const [showHistory, setShowHistory] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.like_count)
+  const [isFollowing, setIsFollowing] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const startX = useRef<number>(0)
   const currentX = useRef<number>(0)
@@ -90,6 +91,14 @@ export function PostCard({ post, isLast }: PostCardProps) {
     }
     // TODO: Implement appointment booking logic
   }, [post.creator.id])
+
+  const handleFollowToggle = useCallback(() => {
+    setIsFollowing(prev => !prev)
+    if (RUNTIME.DEBUG_LOGS) {
+      console.log('Follow toggled for creator:', post.creator.id, !isFollowing);
+    }
+    // TODO: Implement follow/unfollow logic
+  }, [post.creator.id, isFollowing])
 
   const formatCount = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
@@ -150,6 +159,8 @@ export function PostCard({ post, isLast }: PostCardProps) {
             alt={post.creator.full_name}
             fallback={post.creator.full_name?.charAt(0).toUpperCase() || '?'}
             isLive={post.creator.isLive}
+            isFollowing={isFollowing}
+            onFollowToggle={handleFollowToggle}
           />
         </div>
 
