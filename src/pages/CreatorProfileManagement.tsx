@@ -5,31 +5,31 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Camera, Image as ImageIcon, DollarSign, Save, Loader2 } from 'lucide-react';
+import { Plus, Settings, Share2, Grid3x3, Video, Repeat, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProfilePictureUploadModal } from '@/components/creator/ProfilePictureUploadModal';
-import { BackgroundImageUploadModal } from '@/components/creator/BackgroundImageUploadModal';
 import { PricingManagementModal } from '@/components/creator/PricingManagementModal';
+import { getProfileDisplayInfo } from '@/lib/profileUtils';
 
 export function CreatorProfileManagement() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [profilePictureModalOpen, setProfilePictureModalOpen] = useState(false);
-  const [backgroundImageModalOpen, setBackgroundImageModalOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [profile, setProfile] = useState({
     full_name: '',
     username: '',
     headline: '',
     bio: '',
-    long_bio: '',
-    categories: [] as string[],
-    location_city: '',
-    location_country: '',
-    avatar_url: '',
-    background_image_url: ''
+    avatar_url: ''
+  });
+
+  const [stats] = useState({
+    posts: 0,
+    followers: 0,
+    following: 0
   });
 
   useEffect(() => {
@@ -50,17 +50,12 @@ export function CreatorProfileManagement() {
       if (error) throw error;
 
       if (data) {
-        setFormData({
+        setProfile({
           full_name: data.full_name || '',
           username: data.username || '',
           headline: data.headline || '',
           bio: data.bio || '',
-          long_bio: data.long_bio || '',
-          categories: data.categories || [],
-          location_city: data.location_city || '',
-          location_country: data.location_country || '',
-          avatar_url: data.avatar_url || '',
-          background_image_url: data.background_image_url || ''
+          avatar_url: data.avatar_url || ''
         });
       }
     } catch (error) {
@@ -71,239 +66,230 @@ export function CreatorProfileManagement() {
     }
   };
 
-  const handleSave = async () => {
+  const handleFieldUpdate = async (field: string, value: string) => {
     if (!user?.id) return;
 
     try {
-      setSaving(true);
-
-      const { error } = await supabase
+      const updateData = { [field]: value, updated_at: new Date().toISOString() };
+      
+      const { error: creatorError } = await supabase
         .from('creators')
-        .update({
-          full_name: formData.full_name,
-          username: formData.username,
-          headline: formData.headline,
-          bio: formData.bio,
-          long_bio: formData.long_bio,
-          categories: formData.categories,
-          location_city: formData.location_city,
-          location_country: formData.location_country
-        })
+        .update(updateData)
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (creatorError) throw creatorError;
 
-      // Also update profiles table for shared fields
-      await supabase
-        .from('profiles')
-        .update({
-          full_name: formData.full_name
-        })
-        .eq('id', user.id);
+      if (field === 'full_name') {
+        await supabase
+          .from('profiles')
+          .update({ full_name: value })
+          .eq('id', user.id);
+      }
 
-      toast.success('Profile updated successfully');
+      setProfile({ ...profile, [field]: value });
+      setEditingField(null);
+      toast.success('Updated successfully');
     } catch (error) {
-      console.error('Error saving profile:', error);
-      toast.error('Failed to save profile');
-    } finally {
-      setSaving(false);
+      console.error('Error updating field:', error);
+      toast.error('Failed to update');
     }
   };
 
+  const displayInfo = getProfileDisplayInfo({ 
+    full_name: profile.full_name, 
+    avatar_url: profile.avatar_url 
+  });
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-splash flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-splash pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
-      {/* Header */}
-      <div className="p-6 text-center">
-        <h1 className="text-3xl font-bold text-white mb-2">Profile Management</h1>
-        <p className="text-white/70">Manage your creator profile</p>
-      </div>
-
-      {/* Avatar Section */}
-      <div className="flex justify-center mb-8">
-        <button
-          onClick={() => setProfilePictureModalOpen(true)}
-          className="relative group"
-        >
-          <Avatar className="h-32 w-32 border-4 border-white/30">
-            <AvatarImage src={formData.avatar_url} />
-            <AvatarFallback className="bg-white/10 text-white text-3xl">
-              {formData.full_name?.[0] || 'C'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Camera className="h-8 w-8 text-white" />
-          </div>
-        </button>
-      </div>
-
-      <div className="px-4 space-y-6">
-        {/* Background Image Card */}
-        <div className="backdrop-blur-sm bg-white/10 rounded-2xl shadow-2xl border border-white/30 p-6">
-          <button
-            onClick={() => setBackgroundImageModalOpen(true)}
-            className="w-full"
-          >
-            <div className="relative aspect-video rounded-xl overflow-hidden bg-white/5 border-2 border-dashed border-white/30 hover:border-white/50 transition-colors group">
-              {formData.background_image_url ? (
-                <>
-                  <img
-                    src={formData.background_image_url}
-                    alt="Background"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <ImageIcon className="h-12 w-12 text-white" />
-                  </div>
-                </>
-              ) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <ImageIcon className="h-12 w-12 mb-2 opacity-50" />
-                  <p className="text-sm opacity-70">Add Background Image</p>
+    <div className="min-h-screen bg-background pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
+      <div className="max-w-2xl mx-auto">
+        {/* Profile Header */}
+        <div className="px-4 pt-4 pb-6">
+          {/* Avatar and Stats Row */}
+          <div className="flex items-start gap-6 mb-4">
+            {/* Avatar with Edit Button */}
+            <div className="relative">
+              <div 
+                onClick={() => setProfilePictureModalOpen(true)}
+                className="relative cursor-pointer group"
+              >
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile.avatar_url} />
+                  <AvatarFallback 
+                    style={{ 
+                      backgroundColor: displayInfo.backgroundColor,
+                      color: displayInfo.textColor 
+                    }}
+                  >
+                    {displayInfo.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center border-2 border-background">
+                  <Plus size={14} className="text-primary-foreground" />
                 </div>
-              )}
+              </div>
             </div>
-          </button>
-        </div>
 
-        {/* Profile Information Card */}
-        <div className="backdrop-blur-sm bg-white/10 rounded-2xl shadow-2xl border border-white/30 p-6 space-y-4">
-          <h2 className="text-xl font-semibold text-white mb-4">Profile Information</h2>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Display Name</label>
-            <Input
-              value={formData.full_name}
-              onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-              placeholder="Your name"
-            />
+            {/* Stats */}
+            <div className="flex-1 flex justify-around pt-2">
+              <div className="text-center">
+                <div className="text-xl font-semibold">{stats.posts}</div>
+                <div className="text-sm text-muted-foreground">posts</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-semibold">{stats.followers}</div>
+                <div className="text-sm text-muted-foreground">followers</div>
+              </div>
+              <div className="text-center">
+                <div className="text-xl font-semibold">{stats.following}</div>
+                <div className="text-sm text-muted-foreground">following</div>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Username</label>
-            <Input
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-              placeholder="@username"
-            />
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Tagline</label>
-            <Input
-              value={formData.headline}
-              onChange={(e) => setFormData({ ...formData, headline: e.target.value })}
-              className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-              placeholder="Your professional tagline"
-            />
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Short Bio</label>
-            <Textarea
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 min-h-[80px]"
-              placeholder="A brief description about yourself"
-              maxLength={160}
-            />
-            <p className="text-white/50 text-xs mt-1">{formData.bio.length}/160</p>
-          </div>
-
-          <div>
-            <label className="block text-white/70 text-sm mb-2">Long Bio</label>
-            <Textarea
-              value={formData.long_bio}
-              onChange={(e) => setFormData({ ...formData, long_bio: e.target.value })}
-              className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50 min-h-[120px]"
-              placeholder="Tell your story in detail"
-              maxLength={500}
-            />
-            <p className="text-white/50 text-xs mt-1">{formData.long_bio.length}/500</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-white/70 text-sm mb-2">City</label>
+          {/* Name and Bio */}
+          <div className="space-y-1">
+            {editingField === 'full_name' ? (
               <Input
-                value={formData.location_city}
-                onChange={(e) => setFormData({ ...formData, location_city: e.target.value })}
-                className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-                placeholder="City"
+                value={profile.full_name}
+                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                onBlur={() => handleFieldUpdate('full_name', profile.full_name)}
+                onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('full_name', profile.full_name)}
+                autoFocus
+                className="font-semibold"
               />
-            </div>
-            <div>
-              <label className="block text-white/70 text-sm mb-2">Country</label>
-              <Input
-                value={formData.location_country}
-                onChange={(e) => setFormData({ ...formData, location_country: e.target.value })}
-                className="backdrop-blur-sm bg-white/5 border-white/20 text-white placeholder:text-white/50"
-                placeholder="Country"
-              />
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving...
-              </>
             ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
-              </>
+              <div 
+                onClick={() => setEditingField('full_name')}
+                className="font-semibold cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
+              >
+                {profile.full_name || 'Add name'}
+              </div>
             )}
-          </Button>
+
+            {editingField === 'headline' ? (
+              <Input
+                value={profile.headline}
+                onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
+                onBlur={() => handleFieldUpdate('headline', profile.headline)}
+                onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('headline', profile.headline)}
+                autoFocus
+                className="text-sm"
+                placeholder="Add tagline"
+              />
+            ) : (
+              <div 
+                onClick={() => setEditingField('headline')}
+                className="text-sm text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
+              >
+                {profile.headline || 'Add tagline'}
+              </div>
+            )}
+
+            {profile.username && (
+              <div className="flex items-center gap-1 text-sm">
+                <span className="text-muted-foreground">@{profile.username}</span>
+              </div>
+            )}
+
+            {editingField === 'bio' ? (
+              <Textarea
+                value={profile.bio}
+                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                onBlur={() => handleFieldUpdate('bio', profile.bio)}
+                autoFocus
+                className="text-sm min-h-[60px]"
+                placeholder="Add bio"
+              />
+            ) : (
+              <div 
+                onClick={() => setEditingField('bio')}
+                className="text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
+              >
+                {profile.bio || 'Add bio'}
+              </div>
+            )}
+          </div>
+
+          {/* Professional Dashboard Card */}
+          <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+            <div className="font-semibold text-sm">Professional dashboard</div>
+            <div className="text-xs text-muted-foreground">Manage your call pricing and availability</div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="mt-4 flex gap-2">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setPricingModalOpen(true)}
+            >
+              <Settings size={16} className="mr-2" />
+              Edit profile
+            </Button>
+            <Button variant="outline" className="flex-1">
+              <Share2 size={16} className="mr-2" />
+              Share profile
+            </Button>
+          </div>
+
+          {/* Story Highlights Placeholder */}
+          <div className="mt-6 flex gap-4 overflow-x-auto pb-2">
+            <div className="flex flex-col items-center gap-1 flex-shrink-0">
+              <div className="w-16 h-16 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                <Plus size={24} className="text-muted-foreground/50" />
+              </div>
+              <span className="text-xs text-muted-foreground">New</span>
+            </div>
+          </div>
         </div>
 
-        {/* Manage Pricing Card */}
-        <div className="backdrop-blur-sm bg-white/10 rounded-2xl shadow-2xl border border-white/30 p-6">
-          <Button
-            onClick={() => setPricingModalOpen(true)}
-            className="w-full bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-white border border-white/30"
-          >
-            <DollarSign className="h-4 w-4 mr-2" />
-            Manage Pricing
-          </Button>
+        {/* Tab Bar */}
+        <div className="border-t border-border">
+          <div className="flex">
+            <button className="flex-1 py-3 flex items-center justify-center border-b-2 border-foreground">
+              <Grid3x3 size={20} />
+            </button>
+            <button className="flex-1 py-3 flex items-center justify-center text-muted-foreground">
+              <Video size={20} />
+            </button>
+            <button className="flex-1 py-3 flex items-center justify-center text-muted-foreground">
+              <Repeat size={20} />
+            </button>
+            <button className="flex-1 py-3 flex items-center justify-center text-muted-foreground">
+              <ImageIcon size={20} />
+            </button>
+          </div>
+        </div>
+
+        {/* Content Grid Placeholder */}
+        <div className="grid grid-cols-3 gap-px bg-border">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="aspect-square bg-muted flex items-center justify-center">
+              <ImageIcon size={32} className="text-muted-foreground/30" />
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Modals */}
       <ProfilePictureUploadModal
         isOpen={profilePictureModalOpen}
-        onClose={() => setProfilePictureModalOpen(false)}
-        creatorId={user!.id}
-        currentAvatarUrl={formData.avatar_url}
-        onUpdate={(newUrl) => {
-          setFormData({ ...formData, avatar_url: newUrl });
+        onClose={() => {
           setProfilePictureModalOpen(false);
+          loadCreatorData();
         }}
-      />
-
-      <BackgroundImageUploadModal
-        isOpen={backgroundImageModalOpen}
-        onClose={() => setBackgroundImageModalOpen(false)}
         creatorId={user!.id}
-        currentImageUrl={formData.background_image_url}
-        onUpdate={(newUrl) => {
-          setFormData({ ...formData, background_image_url: newUrl });
-          setBackgroundImageModalOpen(false);
-        }}
+        currentAvatarUrl={profile.avatar_url}
+        onUpdate={(url) => setProfile({ ...profile, avatar_url: url })}
       />
 
       <PricingManagementModal
