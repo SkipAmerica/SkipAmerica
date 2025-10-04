@@ -175,6 +175,12 @@ export function CreatorProfileManagement() {
               </div>
             )}
 
+            {profile.username && (
+              <div className="flex items-center gap-1 text-sm">
+                <span className="text-muted-foreground">@{profile.username}</span>
+              </div>
+            )}
+
             {editingField === 'headline' ? (
               <Input
                 value={profile.headline}
@@ -191,12 +197,6 @@ export function CreatorProfileManagement() {
                 className="text-sm text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
               >
                 {profile.headline || 'Add tagline'}
-              </div>
-            )}
-
-            {profile.username && (
-              <div className="flex items-center gap-1 text-sm">
-                <span className="text-muted-foreground">@{profile.username}</span>
               </div>
             )}
 
