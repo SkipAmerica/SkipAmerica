@@ -419,7 +419,8 @@ const Index = () => {
       <LiveControlBar />
 
       {/* iOS Tab Bar */}
-        <IOSTabBar 
+      <IOSTabBar
+        profile={profile}
           activeTab={activeTab} 
           onTabChange={(tab) => {
             if (tab === "discover") {

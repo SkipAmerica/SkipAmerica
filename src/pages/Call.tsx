@@ -170,6 +170,7 @@ export default function Call({ creator, caller, isCreatorView = false }: CallPro
         isTransitioning={false}
         onToggleDiscoverable={() => {}} // No-op on call page
         onEndCall={handleEndCall}
+        profile={profile}
       />
     </div>
   );

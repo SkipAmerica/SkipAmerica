@@ -1,6 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Home, Search, TrendingUp, Users, User, Sparkles } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { getProfileDisplayInfo } from '@/lib/profileUtils';
 
 interface IOSTabBarProps {
   activeTab: string;
@@ -12,6 +14,10 @@ interface IOSTabBarProps {
   isTransitioning?: boolean;
   onToggleDiscoverable?: () => void;
   onEndCall?: () => void;
+  profile?: {
+    avatar_url?: string;
+    full_name?: string;
+  } | null;
 }
 
 interface TabItem {
@@ -21,7 +27,8 @@ interface TabItem {
   badge?: number;
 }
 
-export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isDiscoverable, isTransitioning, onToggleDiscoverable, onEndCall }: IOSTabBarProps) {
+export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange, showFollowing, isCreator, isLive, isDiscoverable, isTransitioning, onToggleDiscoverable, onEndCall, profile }: IOSTabBarProps) {
+  const profileInfo = getProfileDisplayInfo(profile as any);
   const busyRef = React.useRef(false);
   const handleCenterAction = React.useCallback((e: React.MouseEvent<HTMLButtonElement> | React.PointerEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -150,6 +157,45 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               
+              // Use Avatar for Following tab
+              if (tab.id === 'following') {
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => onTabChange(tab.id)}
+                    className={cn(
+                      "ios-touchable",
+                      "flex flex-col items-center justify-center",
+                      "min-w-0 relative",
+                      "px-1 py-1.5",
+                      "transition-all duration-200"
+                    )}
+                  >
+                    <div className={cn(
+                      "relative flex flex-col items-center",
+                      "transform transition-transform duration-200",
+                      isActive && "scale-110"
+                    )}>
+                      <Avatar className={cn(
+                        "h-6 w-6 ring-2 ring-offset-1 ring-offset-background",
+                        isActive ? "ring-primary" : "ring-border"
+                      )}>
+                        <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
+                        <AvatarFallback 
+                          className="text-xs"
+                          style={{
+                            backgroundColor: profileInfo.backgroundColor,
+                            color: profileInfo.textColor
+                          }}
+                        >
+                          {profileInfo.initials}
+                        </AvatarFallback>
+                      </Avatar>
+                    </div>
+                  </button>
+                );
+              }
+              
               return (
                 <button
                   key={tab.id}
@@ -188,6 +234,45 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            
+            // Use Avatar for Following tab
+            if (tab.id === 'following') {
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => onTabChange(tab.id)}
+                  className={cn(
+                    "ios-touchable",
+                    "flex flex-col items-center justify-center",
+                    "min-w-0 flex-1 relative",
+                    "px-1 py-1.5",
+                    "transition-all duration-200"
+                  )}
+                >
+                  <div className={cn(
+                    "relative flex flex-col items-center",
+                    "transform transition-transform duration-200",
+                    isActive && "scale-110"
+                  )}>
+                    <Avatar className={cn(
+                      "h-6 w-6 ring-2 ring-offset-1 ring-offset-background",
+                      isActive ? "ring-primary" : "ring-border"
+                    )}>
+                      <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
+                      <AvatarFallback 
+                        className="text-xs"
+                        style={{
+                          backgroundColor: profileInfo.backgroundColor,
+                          color: profileInfo.textColor
+                        }}
+                      >
+                        {profileInfo.initials}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                </button>
+              );
+            }
             
             return (
               <button

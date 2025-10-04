@@ -210,6 +210,7 @@ export default function Inbox() {
         isDiscoverable={isDiscoverable}
         onToggleDiscoverable={toggleDiscoverable}
         isTransitioning={isTransitioning}
+        profile={profile}
       />
       
       <DiscoverabilityModal 

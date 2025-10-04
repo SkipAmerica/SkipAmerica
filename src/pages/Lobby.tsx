@@ -195,9 +195,10 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
         isCreator={profile?.account_type === 'creator'}
         isLive={isLive}
         isDiscoverable={isDiscoverable}
-          isTransitioning={isTransitioning}
-          onToggleDiscoverable={toggleDiscoverable}
+        isTransitioning={isTransitioning}
+        onToggleDiscoverable={toggleDiscoverable}
         onEndCall={() => {}}
+        profile={profile}
       />
     </div>
   );
