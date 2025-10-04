@@ -45,6 +45,7 @@ import heroImage from "@/assets/hero-image.jpg";
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
 import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
 import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSearch";
+import { CreatorProfileManagement } from "./CreatorProfileManagement";
 
 
 // iOS Components
@@ -317,7 +318,9 @@ const Index = () => {
         );
 
       case "following":
-        return (
+        return profile?.account_type === 'creator' ? (
+          <CreatorProfileManagement />
+        ) : (
           <div className="pb-20 px-4 pt-4 space-y-6 bg-background">
             <FanLoyaltyProgram />
             <ActivityFeed />

@@ -1068,6 +1068,7 @@ export type Database = {
           available_for_booking: boolean | null
           avatar_url: string | null
           avg_engagement_rate: number | null
+          background_image_url: string | null
           base_rate_currency: string | null
           base_rate_max: number | null
           base_rate_min: number | null
@@ -1106,6 +1107,7 @@ export type Database = {
           available_for_booking?: boolean | null
           avatar_url?: string | null
           avg_engagement_rate?: number | null
+          background_image_url?: string | null
           base_rate_currency?: string | null
           base_rate_max?: number | null
           base_rate_min?: number | null
@@ -1144,6 +1146,7 @@ export type Database = {
           available_for_booking?: boolean | null
           avatar_url?: string | null
           avg_engagement_rate?: number | null
+          background_image_url?: string | null
           base_rate_currency?: string | null
           base_rate_max?: number | null
           base_rate_min?: number | null
