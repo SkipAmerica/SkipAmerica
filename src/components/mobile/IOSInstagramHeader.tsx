@@ -144,25 +144,25 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
-        <div className="flex items-center space-x-[2.6px]">
+        <div className="flex items-center space-x-[1.5px]">
           <Button 
             variant="ghost"
-            className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[25px] [&_svg]:!h-[25px]"
+            className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
           >
-            <Users size={25} />
+            <Users size={22} />
             {queueCount > 0 && (
               <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {queueCount}
               </div>
             )}
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[47px] w-[47px] p-0 [&_svg]:!w-[25px] [&_svg]:!h-[25px]">
-            <Heart size={25} />
+          <Button variant="ghost" className="ios-touchable h-[47px] w-[47px] p-0 [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
+            <Heart size={22} />
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[25px] [&_svg]:!h-[25px]">
-            <Phone size={25} />
+          <Button variant="ghost" className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
+            <Phone size={22} />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
@@ -172,10 +172,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           {profile?.account_type === 'creator' && (
             <Button 
               variant="ghost"
-              className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[25px] [&_svg]:!h-[25px]"
+              className="ios-touchable h-[47px] w-[47px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]"
               onClick={() => navigate('/inbox')}
             >
-              <Mail size={25} />
+              <Mail size={22} />
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
