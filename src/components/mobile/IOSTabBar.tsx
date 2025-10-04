@@ -176,10 +176,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                       "transform transition-transform duration-200",
                       isActive && "scale-110"
                     )}>
-                      <Avatar className={cn(
-                        "h-6 w-6 ring-1",
-                        isActive ? "ring-cyan-500" : "ring-border"
-                      )}>
+                      <Avatar className="h-6 w-6">
                         <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
                         <AvatarFallback 
                           className="text-xs"
@@ -254,10 +251,7 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
                     "transform transition-transform duration-200",
                     isActive && "scale-110"
                   )}>
-                    <Avatar className={cn(
-                      "h-6 w-6 ring-1",
-                      isActive ? "ring-cyan-500" : "ring-border"
-                    )}>
+                    <Avatar className="h-6 w-6">
                       <AvatarImage src={profileInfo.avatarUrl} alt={profileInfo.fullName} />
                       <AvatarFallback 
                         className="text-xs"
