@@ -136,32 +136,32 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "z-20 w-full overflow-x-hidden overflow-y-visible",
         "flex flex-col",
         "px-4 pb-0",
-        "sticky top-0 ios-safe-top",
+        "sticky top-0",
         !transparent && "bg-white border-b border-border",
         className
       )}
     >
       {/* Top Row - Skip Logo */}
-      <div className="flex items-center justify-between h-[47px] mb-2">
+      <div className="flex items-center justify-between h-[56px] mb-2">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-turquoise-dark">Skip</h1>
         </div>
-        <div className="flex items-center space-x-[1.5px]">
+        <div className="flex items-center space-x-[2px]">
           <Button 
             variant="ghost"
-            className="ios-touchable h-[47px] w-[30px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]"
+            className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]"
             onClick={handleQueueClick}
             disabled={queueCount === 0}
           >
-            <Users size={22} />
+            <Users size={26} />
             {queueCount > 0 && (
               <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                 {queueCount}
               </div>
             )}
           </Button>
-          <Button variant="ghost" className="ios-touchable h-[47px] w-[30px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]">
-            <CalendarDays size={22} />
+          <Button variant="ghost" className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]">
+            <CalendarDays size={26} />
             {/* Badge for pending callers - you can add logic here */}
             <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
               3
@@ -171,10 +171,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           {profile?.account_type === 'creator' && (
             <Button 
               variant="ghost"
-              className="ios-touchable h-[47px] w-[30px] p-0 relative [&_svg]:!w-[22px] [&_svg]:!h-[22px]"
+              className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]"
               onClick={() => navigate('/inbox')}
             >
-              <Mail size={22} />
+              <Mail size={26} />
               
               {/* Red badge for standard unread count */}
               {inboxCounts.standard_unread > 0 && (
@@ -191,10 +191,10 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           )}
           <Button 
             variant="ghost"
-            className="ios-touchable h-[47px] w-[30px] p-0 [&_svg]:!w-[25px] [&_svg]:!h-[25px]"
+            className="ios-touchable h-[56px] w-[36px] p-0 [&_svg]:!w-[30px] [&_svg]:!h-[30px]"
             onClick={onMenuClick}
           >
-            <Menu size={25} />
+            <Menu size={30} />
           </Button>
         </div>
       </div>
