@@ -261,7 +261,7 @@ export function ProfilePictureUploadModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white dark:bg-white rounded-3xl max-w-md p-0 gap-0">
+      <DialogContent className="bg-white dark:bg-white rounded-3xl max-w-md py-0 px-[5%] gap-0">
         <div className="flex flex-col items-center justify-center p-6 space-y-6 min-h-[400px]">
           {/* Preview with Swipe */}
           <div className="relative flex flex-col items-center">
