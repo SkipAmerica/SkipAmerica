@@ -59,22 +59,46 @@ export function ProfilePictureUploadModal({
 
   const handleTakePhoto = async () => {
     try {
+      const platform = Capacitor.getPlatform();
+      const isWeb = platform === 'web';
+      
+      console.log('[ProfilePicture] Taking photo on platform:', platform);
+      
       const image = await CapCamera.getPhoto({
         quality: 90,
-        allowEditing: Capacitor.getPlatform() !== 'web',
-        resultType: CameraResultType.Uri,
+        allowEditing: !isWeb,
+        resultType: isWeb ? CameraResultType.DataUrl : CameraResultType.Uri,
         source: CameraSource.Camera
       });
 
-      if (image.webPath) {
-        // Convert to File object
+      let blob: Blob;
+      let previewUrl: string;
+
+      if (isWeb && image.dataUrl) {
+        // Web: Convert base64 DataUrl to blob directly (no fetch needed)
+        console.log('[ProfilePicture] Web mode: Converting DataUrl to blob');
+        const base64Response = await fetch(image.dataUrl);
+        blob = await base64Response.blob();
+        previewUrl = image.dataUrl;
+      } else if (image.webPath) {
+        // Native: Fetch the Uri blob
+        console.log('[ProfilePicture] Native mode: Fetching Uri blob');
         const response = await fetch(image.webPath);
-        const blob = await response.blob();
-        const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        
-        setSelectedFile(file);
-        setPreview(image.webPath);
+        blob = await response.blob();
+        previewUrl = image.webPath;
+      } else {
+        throw new Error('No image data received from camera');
       }
+
+      console.log('[ProfilePicture] Blob size:', blob.size, 'type:', blob.type);
+
+      // Use actual blob type or default to image/jpeg
+      const mimeType = blob.type || 'image/jpeg';
+      const extension = mimeType.split('/')[1] || 'jpg';
+      const file = new File([blob], `camera-${Date.now()}.${extension}`, { type: mimeType });
+      
+      setSelectedFile(file);
+      setPreview(previewUrl);
     } catch (error) {
       // Check if user cancelled the camera (not an actual error)
       const errorMessage = error instanceof Error ? error.message : String(error);
