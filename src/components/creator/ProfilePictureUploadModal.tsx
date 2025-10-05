@@ -3,7 +3,7 @@ import { Camera, Upload, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-re
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { IOSModal } from '@/components/mobile/IOSModal';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { useLocalStorage } from '@/shared/hooks/use-local-storage';
 
@@ -260,13 +260,9 @@ export function ProfilePictureUploadModal({
   };
 
   return (
-    <IOSModal
-      open={isOpen}
-      onOpenChange={onClose}
-      size="md"
-    >
-      <div className="flex flex-col bg-white dark:bg-white">
-        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6 min-h-[400px]">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-white dark:bg-white rounded-3xl max-w-md p-0 gap-0">
+        <div className="flex flex-col items-center justify-center p-6 space-y-6 min-h-[400px]">
           {/* Preview with Swipe */}
           <div className="relative flex flex-col items-center">
             {/* Status Label */}
@@ -389,7 +385,7 @@ export function ProfilePictureUploadModal({
             </Button>
           )}
         </div>
-      </div>
-    </IOSModal>
+      </DialogContent>
+    </Dialog>
   );
 }
