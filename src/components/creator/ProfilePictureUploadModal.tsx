@@ -75,6 +75,17 @@ export function ProfilePictureUploadModal({
         setPreview(image.webPath);
       }
     } catch (error) {
+      // Check if user cancelled the camera (not an actual error)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const isCancelled = errorMessage.toLowerCase().includes('cancel') || 
+                         errorMessage.toLowerCase().includes('user cancelled');
+      
+      if (isCancelled) {
+        // User cancelled, silently return to modal without error
+        return;
+      }
+      
+      // Actual error occurred
       console.error('Error taking photo:', error);
       toast.error('Failed to take photo');
     }
