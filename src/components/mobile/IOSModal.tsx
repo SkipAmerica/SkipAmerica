@@ -47,6 +47,7 @@ export function IOSModal({
         </DialogTrigger>
       )}
       <DialogContent 
+        hideDefaultClose
         className={cn(
           "bg-white/10 backdrop-blur-lg border-white/30",
           "dark:bg-black/40 dark:border-white/20",
