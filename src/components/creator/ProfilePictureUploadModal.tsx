@@ -24,6 +24,7 @@ export function ProfilePictureUploadModal({
 }: ProfilePictureUploadModalProps) {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previousAvatarUrl, setPreviousAvatarUrl] = useLocalStorage<string | null>(`previous_avatar_${creatorId}`, null);
   const [viewingPrevious, setViewingPrevious] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -65,6 +66,12 @@ export function ProfilePictureUploadModal({
       });
 
       if (image.webPath) {
+        // Convert to File object
+        const response = await fetch(image.webPath);
+        const blob = await response.blob();
+        const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        setSelectedFile(file);
         setPreview(image.webPath);
       }
     } catch (error) {
@@ -88,7 +95,8 @@ export function ProfilePictureUploadModal({
       return;
     }
 
-    // Show preview
+    // Store file and show preview
+    setSelectedFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreview(reader.result as string);
@@ -97,24 +105,15 @@ export function ProfilePictureUploadModal({
   };
 
   const uploadAvatar = async () => {
-    if (!preview) return;
+    if (!selectedFile) {
+      toast.error('No file selected');
+      return;
+    }
 
     try {
       setUploading(true);
 
-      let file: File | Blob;
-      
-      // Handle camera photo (web path) vs file input
-      if (preview.startsWith('blob:') || preview.startsWith('capacitor://')) {
-        const response = await fetch(preview);
-        const blob = await response.blob();
-        file = new File([blob], `photo-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      } else if (fileInputRef.current?.files?.[0]) {
-        file = fileInputRef.current.files[0];
-      } else {
-        toast.error('No file selected');
-        return;
-      }
+      const file = selectedFile;
 
       const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
       const fileName = `profile-${Date.now()}.${fileExt}`;
@@ -243,6 +242,7 @@ export function ProfilePictureUploadModal({
 
   const removePreview = () => {
     setPreview(null);
+    setSelectedFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }

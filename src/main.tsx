@@ -4,6 +4,10 @@ import App from "./app/App.tsx";
 import "./index.css";
 import { config } from "./shared/config/index.ts";
 import { normalizeError, safeStringify } from "./shared/errors/err-utils";
+import { defineCustomElements } from '@ionic/pwa-elements/loader';
+
+// Initialize PWA Elements for Capacitor Camera web support
+defineCustomElements(window);
 
 // Enable debugging in dev or when explicitly set (iOS debug builds)
 const __DEV_IOS__ = import.meta.env.DEV || (window as any).__SKIP_DEBUG__ === true;
