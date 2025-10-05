@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { IOSModal } from '@/components/mobile/IOSModal';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { useLocalStorage } from '@/shared/hooks/use-local-storage';
+import { WebCameraCapture } from './WebCameraCapture';
 
 interface ProfilePictureUploadModalProps {
   isOpen: boolean;
@@ -30,6 +32,8 @@ export function ProfilePictureUploadModal({
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [showWebCamera, setShowWebCamera] = useState(false);
+  const isWeb = Capacitor.getPlatform() === 'web';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Minimum swipe distance (in px)
@@ -58,19 +62,24 @@ export function ProfilePictureUploadModal({
   }, [isOpen, creatorId, setPreviousAvatarUrl]);
 
   const handleTakePhoto = async () => {
+    // Use custom web camera on web platform
+    if (isWeb) {
+      setShowWebCamera(true);
+      return;
+    }
+
+    // Use native camera on iOS/Android
     try {
-      setIsCameraActive(true); // Prevent modal close during camera interaction
+      setIsCameraActive(true);
       
       const image = await CapCamera.getPhoto({
         quality: 90,
         allowEditing: true,
         resultType: CameraResultType.Uri,
-        source: CameraSource.Camera,
-        webUseInput: true
+        source: CameraSource.Camera
       });
 
       if (image.webPath) {
-        // Convert to File object
         const response = await fetch(image.webPath);
         const blob = await response.blob();
         const file = new File([blob], `camera-${Date.now()}.jpg`, { type: 'image/jpeg' });
@@ -79,22 +88,25 @@ export function ProfilePictureUploadModal({
         setPreview(image.webPath);
       }
     } catch (error) {
-      // Check if user cancelled the camera (not an actual error)
       const errorMessage = error instanceof Error ? error.message : String(error);
       const isCancelled = errorMessage.toLowerCase().includes('cancel') || 
                          errorMessage.toLowerCase().includes('user cancelled');
       
       if (isCancelled) {
-        // User cancelled, silently return to modal without error
         return;
       }
       
-      // Actual error occurred
       console.error('Error taking photo:', error);
       toast.error('Failed to take photo');
     } finally {
-      setIsCameraActive(false); // Re-enable modal close
+      setIsCameraActive(false);
     }
+  };
+
+  const handleWebCameraCapture = (file: File) => {
+    setSelectedFile(file);
+    setPreview(URL.createObjectURL(file));
+    setShowWebCamera(false);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -274,7 +286,15 @@ export function ProfilePictureUploadModal({
   };
 
   return (
-    <IOSModal
+    <>
+      {showWebCamera && (
+        <WebCameraCapture
+          onCapture={handleWebCameraCapture}
+          onClose={() => setShowWebCamera(false)}
+        />
+      )}
+      
+      <IOSModal
       open={isOpen}
       onOpenChange={handleModalClose}
       size="md"
@@ -405,5 +425,6 @@ export function ProfilePictureUploadModal({
         </div>
       </div>
     </IOSModal>
+    </>
   );
 }
