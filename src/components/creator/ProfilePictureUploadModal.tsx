@@ -65,7 +65,8 @@ export function ProfilePictureUploadModal({
         quality: 90,
         allowEditing: true,
         resultType: CameraResultType.Uri,
-        source: CameraSource.Camera
+        source: CameraSource.Camera,
+        webUseInput: true
       });
 
       if (image.webPath) {
