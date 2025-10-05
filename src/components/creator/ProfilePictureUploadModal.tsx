@@ -29,6 +29,7 @@ export function ProfilePictureUploadModal({
   const [viewingPrevious, setViewingPrevious] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Minimum swipe distance (in px)
@@ -58,6 +59,8 @@ export function ProfilePictureUploadModal({
 
   const handleTakePhoto = async () => {
     try {
+      setIsCameraActive(true); // Prevent modal close during camera interaction
+      
       const image = await CapCamera.getPhoto({
         quality: 90,
         allowEditing: true,
@@ -88,6 +91,8 @@ export function ProfilePictureUploadModal({
       // Actual error occurred
       console.error('Error taking photo:', error);
       toast.error('Failed to take photo');
+    } finally {
+      setIsCameraActive(false); // Re-enable modal close
     }
   };
 
@@ -259,10 +264,18 @@ export function ProfilePictureUploadModal({
     }
   };
 
+  const handleModalClose = (shouldClose: boolean) => {
+    // Don't close modal if camera is active
+    if (isCameraActive) return;
+    
+    // Otherwise, allow normal close behavior
+    if (!shouldClose) onClose();
+  };
+
   return (
     <IOSModal
       open={isOpen}
-      onOpenChange={onClose}
+      onOpenChange={handleModalClose}
       size="md"
     >
       <div className="flex flex-col">
