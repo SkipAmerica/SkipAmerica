@@ -58,38 +58,40 @@ export function IOSModal({
         )}
       >
         {/* Header */}
-        <DialogHeader className={cn(
-          "p-6 pb-4",
-          "relative text-center",
-          "border-b border-border/50"
-        )}>
-          {showCloseButton && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onOpenChange?.(false)}
-              className="absolute right-4 top-4 h-8 w-8 rounded-full"
-            >
-              <X size={16} />
-            </Button>
-          )}
-          
-          {title && (
-            <DialogTitle className="text-xl font-semibold pr-12">
-              {title}
-            </DialogTitle>
-          )}
-          
-          {description && (
-            <DialogDescription className="text-muted-foreground mt-2">
-              {description}
-            </DialogDescription>
-          )}
-        </DialogHeader>
+        {(title || description) && (
+          <DialogHeader className={cn(
+            "p-6 pb-4",
+            "relative text-center",
+            "border-b border-border/50"
+          )}>
+            {showCloseButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => onOpenChange?.(false)}
+                className="absolute right-4 top-4 h-8 w-8 rounded-full"
+              >
+                <X size={16} />
+              </Button>
+            )}
+            
+            {title && (
+              <DialogTitle className="text-xl font-semibold pr-12">
+                {title}
+              </DialogTitle>
+            )}
+            
+            {description && (
+              <DialogDescription className="text-muted-foreground mt-2">
+                {description}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+        )}
 
         {/* Content */}
         <div className={cn(
-          "p-6",
+          "px-[5%] py-6",
           size === 'full' && "overflow-y-auto"
         )}>
           {children}

@@ -112,7 +112,6 @@ export function ProfilePictureUploadModal({
     <IOSModal
       open={isOpen}
       onOpenChange={onClose}
-      title="Profile Picture"
       size="md"
     >
       <div className="flex flex-col">
