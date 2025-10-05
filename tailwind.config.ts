@@ -182,6 +182,8 @@ export default {
         "scale-out": "scale-out 0.2s ease-out",
         "slide-in-right": "slide-in-right 0.3s ease-out",
         "slide-out-right": "slide-out-right 0.3s ease-out",
+        "slide-elastic-left": "slide-elastic-left 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-elastic-right": "slide-elastic-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
         "slide-up": "slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
         "slide-down": "slide-down 0.3s ease-out",
       },

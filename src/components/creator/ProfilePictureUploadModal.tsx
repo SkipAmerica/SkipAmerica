@@ -26,12 +26,15 @@ export function ProfilePictureUploadModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previousAvatarUrl, setPreviousAvatarUrl] = useLocalStorage<string | null>(`previous_avatar_${creatorId}`, null);
   const [viewingPrevious, setViewingPrevious] = useState(false);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [direction, setDirection] = useState<'left' | 'right' | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Minimum swipe distance (in px)
-  const minSwipeDistance = 50;
+  const minSwipeDistance = 75;
 
   // Fetch previous avatar from database
   useEffect(() => {
@@ -196,26 +199,49 @@ export function ProfilePictureUploadModal({
   };
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
+    if (isTransitioning) return;
     setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
   };
 
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
+  const onTouchMove = (e: React.TouchEvent) => {
+    if (isTransitioning) return;
+    const currentTouch = e.targetTouches[0].clientX;
+    setTouchEnd(currentTouch);
+    const offset = currentTouch - touchStart;
+    setDragOffset(offset);
+  };
 
-    if (isRightSwipe && !viewingPrevious && previousAvatarUrl) {
-      setViewingPrevious(true);
-    }
-    if (isLeftSwipe && viewingPrevious) {
-      setViewingPrevious(false);
+  const onTouchEnd = () => {
+    if (isTransitioning) return;
+    
+    const swipeDistance = touchEnd - touchStart;
+
+    if (Math.abs(swipeDistance) > minSwipeDistance) {
+      setIsTransitioning(true);
+      
+      if (swipeDistance > 0) {
+        // Swiped right - go to previous
+        setDirection('right');
+        setTimeout(() => {
+          setViewingPrevious(true);
+          setIsTransitioning(false);
+          setDirection(null);
+          setDragOffset(0);
+        }, 400);
+      } else {
+        // Swiped left - go to current
+        setDirection('left');
+        setTimeout(() => {
+          setViewingPrevious(false);
+          setIsTransitioning(false);
+          setDirection(null);
+          setDragOffset(0);
+        }, 400);
+      }
+    } else {
+      // Snap back with elastic bounce
+      setDragOffset(0);
     }
   };
 
@@ -240,51 +266,76 @@ export function ProfilePictureUploadModal({
           <div className="relative flex flex-col items-center">
             {/* Status Label */}
             {!preview && previousAvatarUrl && (
-              <div className="mb-3 text-sm font-medium text-gray-600">
+              <div 
+                className="mb-3 text-sm font-medium text-gray-600 transition-opacity duration-200"
+                style={{ opacity: isTransitioning ? 0 : 1 }}
+              >
                 {viewingPrevious ? 'Previous Photo' : 'Current Photo'}
               </div>
             )}
 
             <div 
-              className="relative"
+              className="relative w-48 h-48 rounded-full overflow-hidden"
               onTouchStart={onTouchStart}
               onTouchMove={onTouchMove}
               onTouchEnd={onTouchEnd}
             >
               {(preview || currentAvatarUrl || previousAvatarUrl) ? (
-                <div className="relative">
-                  <img
-                    src={preview || (viewingPrevious ? previousAvatarUrl : currentAvatarUrl) || ''}
-                    alt="Profile"
-                    className="w-48 h-48 rounded-full object-cover border-4 border-gray-200 transition-opacity duration-300"
-                  />
+                <div className="relative w-full h-full">
+                  <div 
+                    className={`w-full h-full ${
+                      isTransitioning 
+                        ? direction === 'left' 
+                          ? 'animate-slide-elastic-left' 
+                          : 'animate-slide-elastic-right'
+                        : 'transition-transform duration-300 ease-out'
+                    }`}
+                    style={{ 
+                      transform: !isTransitioning ? `translateX(${dragOffset}px)` : undefined 
+                    }}
+                  >
+                    <img
+                      src={preview || (viewingPrevious ? previousAvatarUrl : currentAvatarUrl) || ''}
+                      alt="Profile"
+                      className="w-full h-full object-cover border-4 border-gray-200"
+                    />
+                  </div>
                   {preview && (
                     <button
                       onClick={removePreview}
-                      className="absolute -top-2 -right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                      className="absolute -top-2 -right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors z-10"
                     >
                       <X className="w-5 h-5" />
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="w-48 h-48 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
+                <div className="w-full h-full rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
                   <Camera className="w-16 h-16 text-gray-400" />
                 </div>
               )}
 
-              {/* Swipe Indicators */}
+              {/* Swipe Indicators with Parallax */}
               {!preview && previousAvatarUrl && currentAvatarUrl && (
                 <div className="absolute inset-0 flex items-center justify-between pointer-events-none px-2">
-                  <ChevronRight className={`w-8 h-8 text-gray-400 ${viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
-                  <ChevronLeft className={`w-8 h-8 text-gray-400 ${!viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
+                  <ChevronRight 
+                    className={`w-8 h-8 text-gray-400 transition-all duration-200 ${viewingPrevious ? 'opacity-100' : 'opacity-30'}`}
+                    style={{ transform: `translateX(${dragOffset * 0.2}px)` }}
+                  />
+                  <ChevronLeft 
+                    className={`w-8 h-8 text-gray-400 transition-all duration-200 ${!viewingPrevious ? 'opacity-100' : 'opacity-30'}`}
+                    style={{ transform: `translateX(${dragOffset * 0.2}px)` }}
+                  />
                 </div>
               )}
             </div>
 
             {/* Swipe hint */}
             {!preview && previousAvatarUrl && (
-              <div className="mt-2 text-xs text-gray-500 text-center">
+              <div 
+                className="mt-2 text-xs text-gray-500 text-center transition-opacity duration-200"
+                style={{ opacity: isTransitioning ? 0 : 1 }}
+              >
                 Swipe to see {viewingPrevious ? 'current' : 'previous'} photo
               </div>
             )}
