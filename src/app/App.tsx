@@ -23,10 +23,10 @@ function App() {
           await Keyboard.setResizeMode({ mode: KeyboardResize.None })
           await Keyboard.setScroll({ isDisabled: true })
           
-          // Configure iOS status bar
+          // Configure iOS status bar - white background with black text
           await StatusBar.setOverlaysWebView({ overlay: false })
-          await StatusBar.setBackgroundColor({ color: "#F4FDFB" })
-          await StatusBar.setStyle({ style: Style.Dark }) // Dark so icons are visible on light background
+          await StatusBar.setBackgroundColor({ color: "#FFFFFF" })
+          await StatusBar.setStyle({ style: Style.Light }) // Light style = dark/black text on light background
         }
       } catch (error) {
         console.warn('[Capacitor] Native features not available:', error)

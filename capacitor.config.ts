@@ -16,8 +16,8 @@ const config: CapacitorConfig = {
       permissions: ['publicStorage']
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#F4FDFB'
+      style: 'LIGHT',
+      backgroundColor: '#FFFFFF'
     },
     Keyboard: {
       resize: 'none'

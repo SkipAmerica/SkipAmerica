@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { toast } from 'sonner'
 import backgroundVideo from '@/assets/Background_Loop.mp4'
+import { Capacitor } from '@capacitor/core'
 
 const Auth = () => {
   const { user } = useAuth()
@@ -57,6 +58,36 @@ const Auth = () => {
     
     window.addEventListener('message', handleMessage)
     return () => window.removeEventListener('message', handleMessage)
+  }, [])
+
+  // Make status bar transparent on Auth page (iOS only)
+  useEffect(() => {
+    const setTransparentStatusBar = async () => {
+      if (Capacitor.getPlatform() !== 'ios') return
+      
+      try {
+        const { StatusBar, Style } = await import('@capacitor/status-bar')
+        
+        // Make status bar transparent on Auth page
+        await StatusBar.setOverlaysWebView({ overlay: true })
+        await StatusBar.setStyle({ style: Style.Light }) // Black text on transparent
+        
+        return async () => {
+          // Restore opaque white status bar when leaving Auth
+          await StatusBar.setOverlaysWebView({ overlay: false })
+          await StatusBar.setBackgroundColor({ color: "#FFFFFF" })
+          await StatusBar.setStyle({ style: Style.Light })
+        }
+      } catch (error) {
+        console.warn('[StatusBar] Failed to set transparent status bar:', error)
+      }
+    }
+    
+    const cleanup = setTransparentStatusBar()
+    
+    return () => {
+      cleanup.then(fn => fn?.())
+    }
   }, [])
 
   useEffect(() => {
