@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Camera as CapCamera, CameraResultType, CameraSource, CameraDirection } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { useLocalStorage } from '@/shared/hooks/use-local-storage';
 
@@ -68,34 +68,63 @@ export function ProfilePictureUploadModal({
         quality: 90,
         allowEditing: !isWeb,
         resultType: isWeb ? CameraResultType.DataUrl : CameraResultType.Uri,
-        source: CameraSource.Camera
+        source: CameraSource.Camera,
+        direction: CameraDirection.Front // Force front-facing (selfie) camera
       });
 
       let blob: Blob;
       let previewUrl: string;
 
       if (isWeb && image.dataUrl) {
-        // Web: Convert base64 DataUrl to blob directly (no fetch needed)
+        // Web: Convert base64 DataUrl to blob manually (more reliable than fetch)
         console.log('[ProfilePicture] Web mode: Converting DataUrl to blob');
-        const base64Response = await fetch(image.dataUrl);
-        blob = await base64Response.blob();
+        
+        // Extract base64 data from data URL
+        const base64Data = image.dataUrl.split(',')[1];
+        const mimeMatch = image.dataUrl.match(/data:([^;]+);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        
+        // Convert base64 to binary
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        blob = new Blob([bytes], { type: mimeType });
         previewUrl = image.dataUrl;
+        
+        console.log('[ProfilePicture] Created blob from base64 - Size:', blob.size, 'Type:', blob.type);
       } else if (image.webPath) {
         // Native: Fetch the Uri blob
         console.log('[ProfilePicture] Native mode: Fetching Uri blob');
         const response = await fetch(image.webPath);
         blob = await response.blob();
         previewUrl = image.webPath;
+        console.log('[ProfilePicture] Fetched native blob - Size:', blob.size, 'Type:', blob.type);
       } else {
         throw new Error('No image data received from camera');
       }
 
-      console.log('[ProfilePicture] Blob size:', blob.size, 'type:', blob.type);
+      // Validate blob
+      if (blob.size === 0) {
+        console.error('[ProfilePicture] Blob is empty!');
+        throw new Error('Image capture produced empty file');
+      }
+
+      if (blob.size > 10 * 1024 * 1024) { // 10MB limit
+        console.error('[ProfilePicture] Blob too large:', blob.size);
+        throw new Error('Image is too large (max 10MB)');
+      }
+
+      console.log('[ProfilePicture] ✅ Valid blob created - Size:', blob.size, 'bytes, Type:', blob.type);
 
       // Use actual blob type or default to image/jpeg
       const mimeType = blob.type || 'image/jpeg';
       const extension = mimeType.split('/')[1] || 'jpg';
       const file = new File([blob], `camera-${Date.now()}.${extension}`, { type: mimeType });
+      
+      console.log('[ProfilePicture] ✅ File object created:', file.name, 'Size:', file.size);
       
       setSelectedFile(file);
       setPreview(previewUrl);
@@ -142,21 +171,43 @@ export function ProfilePictureUploadModal({
 
   const uploadAvatar = async () => {
     if (!selectedFile) {
+      console.error('[ProfilePicture] Upload failed: No file selected');
       toast.error('No file selected');
       return;
     }
+
+    // Pre-upload validation
+    if (selectedFile.size === 0) {
+      console.error('[ProfilePicture] Upload failed: File is empty');
+      toast.error('Cannot upload empty file');
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      console.error('[ProfilePicture] Upload failed: File too large', selectedFile.size);
+      toast.error('File is too large (max 10MB)');
+      return;
+    }
+
+    console.log('[ProfilePicture] Starting upload:', {
+      fileName: selectedFile.name,
+      fileSize: selectedFile.size,
+      fileType: selectedFile.type
+    });
 
     try {
       setUploading(true);
 
       const file = selectedFile;
-
       const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg';
       const fileName = `profile-${Date.now()}.${fileExt}`;
       const filePath = `${creatorId}/avatars/${fileName}`;
 
+      console.log('[ProfilePicture] Upload path:', filePath);
+
       // Save current avatar to history before updating
       if (currentAvatarUrl) {
+        console.log('[ProfilePicture] Saving current avatar to history');
         await supabase.from('profile_picture_history').insert({
           user_id: creatorId,
           avatar_url: currentAvatarUrl,
@@ -165,6 +216,7 @@ export function ProfilePictureUploadModal({
       }
 
       // Upload to storage
+      console.log('[ProfilePicture] Uploading to Supabase storage...');
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, {
@@ -173,43 +225,61 @@ export function ProfilePictureUploadModal({
           cacheControl: '3600'
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('[ProfilePicture] Storage upload failed:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('[ProfilePicture] ✅ Upload successful');
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
 
+      console.log('[ProfilePicture] Public URL:', publicUrl);
+
       // Update profile and creator records
+      console.log('[ProfilePicture] Updating profile record...');
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ avatar_url: publicUrl })
         .eq('id', creatorId);
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('[ProfilePicture] Profile update failed:', profileError);
+        throw profileError;
+      }
 
+      console.log('[ProfilePicture] Updating creator record...');
       const { error: creatorError } = await supabase
         .from('creators')
         .update({ avatar_url: publicUrl })
         .eq('id', creatorId);
 
-      if (creatorError) throw creatorError;
+      if (creatorError) {
+        console.error('[ProfilePicture] Creator update failed:', creatorError);
+        throw creatorError;
+      }
 
       // Add new avatar to history as current
+      console.log('[ProfilePicture] Adding to history as current');
       await supabase.from('profile_picture_history').insert({
         user_id: creatorId,
         avatar_url: publicUrl,
         is_current: true
       });
 
+      console.log('[ProfilePicture] ✅ Upload complete and database updated');
       toast.success('Profile picture updated successfully');
       onUpdate(publicUrl);
       setPreview(null);
       setViewingPrevious(false);
       onClose();
     } catch (error) {
-      console.error('Error uploading avatar:', error);
-      toast.error('Failed to upload profile picture');
+      console.error('[ProfilePicture] Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to upload: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
