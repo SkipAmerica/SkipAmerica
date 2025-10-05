@@ -115,8 +115,8 @@ export function ProfilePictureUploadModal({
       title="Profile Picture"
       size="md"
     >
-      <div className="backdrop-blur-sm bg-gradient-splash min-h-[500px] flex flex-col">
-        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6">
+      <div className="flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6 min-h-[400px]">
           {/* Preview */}
           <div className="relative">
             {(preview || currentAvatarUrl) ? (
