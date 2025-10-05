@@ -175,9 +175,25 @@ export function CreatorProfileManagement() {
               </div>
             )}
 
-            {profile.username && (
-              <div className="flex items-center gap-1 text-sm">
-                <span className="text-muted-foreground">@{profile.username}</span>
+            {editingField === 'username' ? (
+              <div className="flex items-center gap-1">
+                <span className="text-sm text-muted-foreground">@</span>
+                <Input
+                  value={profile.username}
+                  onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                  onBlur={() => handleFieldUpdate('username', profile.username)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('username', profile.username)}
+                  autoFocus
+                  className="text-sm h-8"
+                  placeholder="username"
+                />
+              </div>
+            ) : (
+              <div 
+                onClick={() => setEditingField('username')}
+                className="flex items-center gap-1 text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
+              >
+                <span className="text-muted-foreground">@{profile.username || 'Add username'}</span>
               </div>
             )}
 
