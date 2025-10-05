@@ -9,10 +9,10 @@
     --background: 0 0% 100%;
     --foreground: 0 0% 5%;
 
-    --card: 0 0% 98%;
+    --card: 0 0% 100%;
     --card-foreground: 0 0% 5%;
 
-    --popover: 0 0% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 0 0% 5%;
 
     /* Creator Brand Orange */
@@ -24,10 +24,10 @@
     --secondary: 0 0% 85%;
     --secondary-foreground: 0 0% 20%;
 
-    --muted: 0 0% 96%;
+    --muted: 0 0% 98%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 0% 96%;
+    --accent: 0 0% 100%;
     --accent-foreground: 0 0% 5%;
 
     --destructive: 0 84% 60%;
@@ -67,7 +67,7 @@
 
     --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    --sidebar-background: 0 0% 100%;
 
     --sidebar-foreground: 240 5.3% 26.1%;
 
@@ -75,7 +75,7 @@
 
     --sidebar-primary-foreground: 0 0% 98%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent: 0 0% 100%;
 
     --sidebar-accent-foreground: 240 5.9% 10%;
 

@@ -83,7 +83,7 @@ export function MatchSearchBar({
       <div className="px-4 py-2">
         <div className="relative">
           {/* Keywords and Input Container */}
-          <div className="min-h-[44px] bg-muted/50 px-3 py-2 flex items-center gap-2">
+          <div className="min-h-[44px] bg-white border border-border px-3 py-2 flex items-center gap-2">
             <Search 
               size={16} 
               className="text-muted-foreground flex-shrink-0" 

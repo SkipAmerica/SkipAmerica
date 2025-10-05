@@ -171,7 +171,7 @@ export default function Inbox() {
               }
             }}
             disabled={isSeeding}
-            className="px-4 py-2 bg-muted hover:bg-muted/80 border border-border rounded-lg text-sm text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-white hover:bg-gray-50 border border-border rounded-lg text-sm text-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSeeding ? 'Seeding...' : 'Seed Inbox Data'}
           </button>

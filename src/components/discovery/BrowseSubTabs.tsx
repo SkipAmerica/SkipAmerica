@@ -13,7 +13,7 @@ interface BrowseSubTabsProps {
 export const BrowseSubTabs = ({ mode, onModeChange, className }: BrowseSubTabsProps) => {
   return (
     <div className={cn(
-      "flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-lg border border-border h-10 mb-4",
+      "flex items-center bg-white overflow-hidden gap-0 w-full px-0 rounded-lg border-2 border-border h-10 mb-4",
       className
     )}>
       <Button
@@ -22,7 +22,7 @@ export const BrowseSubTabs = ({ mode, onModeChange, className }: BrowseSubTabsPr
         onClick={() => onModeChange('live')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-r-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8",
-          mode === 'live' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-muted/50 hover:text-foreground"
+          mode === 'live' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-gray-50 hover:text-foreground"
         )}
       >
         <Users className="h-4 w-4" />
@@ -35,7 +35,7 @@ export const BrowseSubTabs = ({ mode, onModeChange, className }: BrowseSubTabsPr
         onClick={() => onModeChange('schedule')}
         className={cn(
           "flex-1 flex items-center justify-center space-x-2 transition-all rounded-l-none rounded-r-lg px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-8",
-          mode === 'schedule' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-muted/50 hover:text-foreground"
+          mode === 'schedule' ? "bg-cyan-500 text-white hover:bg-cyan-600" : "hover:bg-gray-50 hover:text-foreground"
         )}
       >
         <Calendar className="h-4 w-4" />
