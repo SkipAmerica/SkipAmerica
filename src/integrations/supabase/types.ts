@@ -1900,6 +1900,33 @@ export type Database = {
           },
         ]
       }
+      profile_picture_history: {
+        Row: {
+          avatar_url: string
+          created_at: string | null
+          id: string
+          is_current: boolean | null
+          set_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url: string
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          set_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string
+          created_at?: string | null
+          id?: string
+          is_current?: boolean | null
+          set_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profile_privacy_settings: {
         Row: {
           created_at: string | null
