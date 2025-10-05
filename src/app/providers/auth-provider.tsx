@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { isIOS, isMobile } from '@/shared/lib/platform'
-import { jwtDecode } from 'jwt-decode'
 
 interface AuthContextType {
   user: User | null
@@ -178,14 +177,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Sign in with native Google
         const googleUser = await GoogleAuth.signIn()
         
-        // Extract nonce from the ID token
-        const decodedToken = jwtDecode<{ nonce?: string }>(googleUser.authentication.idToken)
-        
-        // Exchange Google token for Supabase session with matching nonce
+        // Exchange Google token for Supabase session
+        // Note: iOS doesn't support custom nonces, so "Skip nonce checks" must be enabled in Supabase
         const { error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: googleUser.authentication.idToken,
-          nonce: decodedToken.nonce,
         })
         
         return { error }
