@@ -103,27 +103,27 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
   
   const ensureVisible = (el: HTMLElement) => {
     setTimeout(() => {
-      // First scroll the element into view
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      if (!containerRef.current) return
       
-      // Then check if we need additional adjustment for the keyboard
-      if (window.visualViewport && containerRef.current) {
-        const rect = el.getBoundingClientRect()
-        const viewportBottom = window.visualViewport.height
-        const elementBottom = rect.bottom
-        
-        // Calculate overlap with keyboard
-        const overlap = elementBottom - viewportBottom
-        
-        if (overlap > 0) {
-          // Scroll the container to reveal the input above the keyboard
-          containerRef.current.scrollBy({
-            top: overlap + 16,
-            behavior: 'smooth'
-          })
-        }
-      }
-    }, 250)
+      // Get the input's position relative to the container
+      const inputRect = el.getBoundingClientRect()
+      const containerRect = containerRef.current.getBoundingClientRect()
+      
+      // Calculate how much we need to scroll
+      const inputTop = inputRect.top - containerRect.top
+      const inputBottom = inputRect.bottom - containerRect.top
+      const viewportHeight = window.visualViewport?.height || window.innerHeight
+      
+      // Desired position: center of visible viewport
+      const targetPosition = viewportHeight / 2
+      const scrollAmount = inputTop - targetPosition + containerRef.current.scrollTop
+      
+      // Smooth scroll to position
+      containerRef.current.scrollTo({
+        top: Math.max(0, scrollAmount),
+        behavior: 'smooth'
+      })
+    }, 300)
   }
 
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -158,9 +158,10 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
   return (
     <div 
       ref={containerRef}
-      className="absolute inset-0 z-20 bg-transparent flex flex-col items-center justify-start p-6 overflow-y-auto pt-12 min-h-screen"
+      className="absolute inset-0 z-20 bg-transparent flex flex-col items-center justify-start p-6 overflow-y-auto min-h-screen"
       style={{
         WebkitOverflowScrolling: 'touch',
+        paddingTop: 'max(env(safe-area-inset-top, 0px) + 48px, 48px)',
         paddingBottom: isKeyboardVisible ? `${keyboardHeight + 20}px` : '24px',
         height: '100vh',
         minHeight: '100vh'
@@ -169,7 +170,10 @@ export const SplashAuthForm = ({ onSuccess, onOAuthStart, onOAuthEnd }: SplashAu
       {/* Help Button */}
       <button
         onClick={() => setShowHelp(true)}
-        className="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-all"
+        className="absolute right-6 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center text-white transition-all"
+        style={{
+          top: 'max(env(safe-area-inset-top, 0px) + 24px, 24px)'
+        }}
         aria-label="Help"
       >
         <HelpCircle className="h-5 w-5" />
