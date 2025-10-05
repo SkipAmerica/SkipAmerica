@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Capacitor } from '@capacitor/core';
 import { useLocalStorage } from '@/shared/hooks/use-local-storage';
 
 interface ProfilePictureUploadModalProps {
@@ -60,7 +61,7 @@ export function ProfilePictureUploadModal({
     try {
       const image = await CapCamera.getPhoto({
         quality: 90,
-        allowEditing: true,
+        allowEditing: Capacitor.getPlatform() !== 'web',
         resultType: CameraResultType.Uri,
         source: CameraSource.Camera
       });
