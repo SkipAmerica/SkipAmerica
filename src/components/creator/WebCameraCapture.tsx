@@ -48,8 +48,19 @@ export function WebCameraCapture({ onCapture, onClose }: WebCameraCaptureProps) 
       }
     } catch (err) {
       console.error('Camera access error:', err);
-      setError('Unable to access camera. Please check your permissions.');
-      toast.error('Camera access denied');
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      if (errorMessage.includes('Permission denied') || errorMessage.includes('NotAllowedError')) {
+        setError('Camera access was denied. Please allow camera access in your browser settings and try again.');
+      } else if (errorMessage.includes('NotFoundError')) {
+        setError('No camera found on your device.');
+      } else if (errorMessage.includes('NotReadableError')) {
+        setError('Camera is already in use by another application.');
+      } else {
+        setError('Unable to access camera. Please check your permissions and try again.');
+      }
+      
+      toast.error('Camera access error');
     }
   };
 
@@ -96,7 +107,7 @@ export function WebCameraCapture({ onCapture, onClose }: WebCameraCaptureProps) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black">
+    <div className="fixed inset-0 z-[100] bg-black">
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
         <Button
@@ -120,9 +131,18 @@ export function WebCameraCapture({ onCapture, onClose }: WebCameraCaptureProps) 
       {/* Camera Preview */}
       <div className="relative w-full h-full flex items-center justify-center">
         {error ? (
-          <div className="text-center text-white p-6">
-            <p className="mb-4">{error}</p>
-            <Button onClick={startCamera} variant="outline">
+          <div className="text-center text-white p-8 max-w-md mx-auto">
+            <Camera className="h-16 w-16 mx-auto mb-4 opacity-50" />
+            <p className="mb-6 text-lg">{error}</p>
+            <div className="space-y-3 mb-6 text-sm text-white/70 text-left">
+              <p>To enable camera access:</p>
+              <ol className="list-decimal list-inside space-y-2 ml-2">
+                <li>Click the camera icon in your browser's address bar</li>
+                <li>Select "Allow" for camera permissions</li>
+                <li>Click "Try Again" below</li>
+              </ol>
+            </div>
+            <Button onClick={startCamera} variant="outline" className="w-full">
               Try Again
             </Button>
           </div>
