@@ -54,7 +54,6 @@ export function IOSModal({
           "p-0 gap-0",
           "overflow-hidden",
           "animate-scale-in",
-          "mx-[5%]",
           sizeClasses[size]
         )}
       >
