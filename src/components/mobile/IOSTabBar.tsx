@@ -67,8 +67,8 @@ export const IOSTabBar = React.memo(function IOSTabBar({ activeTab, onTabChange,
       className={cn(
         "ios-tab-bar",
         "fixed bottom-0 left-0 right-0 z-50",
-        "bg-card/95 backdrop-blur-md",
-        "border-t border-border/50",
+        "bg-white/95 backdrop-blur-md",
+        "border-t border-border",
         "pb-safe-bottom"
       )}
       style={{

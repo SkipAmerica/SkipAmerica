@@ -24,7 +24,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
     <div
       style={style}
       className={cn(
-        "flex items-center bg-muted overflow-hidden gap-0 w-full px-0 rounded-none border-b border-border h-12",
+        "flex items-center bg-white overflow-hidden gap-0 w-full px-0 rounded-none border-t border-b border-border h-12",
         className
       )}
     >

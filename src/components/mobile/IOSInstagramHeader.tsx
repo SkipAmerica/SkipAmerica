@@ -137,7 +137,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
         "flex flex-col",
         "px-4 pb-0",
         "sticky top-0 ios-safe-top",
-        !transparent && "bg-turquoise-extra-light",
+        !transparent && "bg-white border-b border-border",
         className
       )}
     >
