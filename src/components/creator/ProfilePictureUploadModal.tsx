@@ -84,12 +84,12 @@ export function ProfilePictureUploadModal({
   };
 
   const uploadAvatar = async () => {
-    if (!preview || !fileInputRef.current?.files?.[0]) {
+    if (!preview || !selectedFile) {
       toast.error('No file selected');
       return;
     }
 
-    const file = fileInputRef.current.files[0];
+    const file = selectedFile;
 
     try {
       setUploading(true);
@@ -231,8 +231,9 @@ export function ProfilePictureUploadModal({
     <IOSModal
       open={isOpen}
       onOpenChange={onClose}
-      title="Profile Picture"
       size="md"
+      showCloseButton={false}
+      className="!bg-white !border-none"
     >
       <div className="flex flex-col items-center justify-center space-y-6 min-h-[400px]">
           {/* Preview with Swipe */}
@@ -304,20 +305,20 @@ export function ProfilePictureUploadModal({
               <div className="w-full space-y-3">
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white rounded-2xl p-6 text-center cursor-pointer transition-colors"
                 >
-                  <Camera className="w-10 h-10 mx-auto mb-2 text-primary" />
+                  <Camera className="w-10 h-10 mx-auto mb-2" />
                   <p className="font-medium mb-1">Take Photo</p>
-                  <p className="text-muted-foreground text-sm">Use your camera</p>
+                  <p className="text-white/80 text-sm">Use your camera</p>
                 </button>
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-colors"
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 text-white rounded-2xl p-6 text-center cursor-pointer transition-colors"
                 >
-                  <Upload className="w-10 h-10 mx-auto mb-2 text-primary" />
+                  <Upload className="w-10 h-10 mx-auto mb-2" />
                   <p className="font-medium mb-1">Choose from Library</p>
-                  <p className="text-muted-foreground text-sm">Max 10MB • JPG, PNG, WEBP</p>
+                  <p className="text-white/80 text-sm">Max 10MB • JPG, PNG, WEBP</p>
                 </button>
               </div>
             </>

@@ -20,6 +20,7 @@ interface IOSModalProps {
   onOpenChange?: (open: boolean) => void;
   size?: 'sm' | 'md' | 'lg' | 'full';
   showCloseButton?: boolean;
+  className?: string;
 }
 
 export function IOSModal({ 
@@ -30,7 +31,8 @@ export function IOSModal({
   open, 
   onOpenChange,
   size = 'md',
-  showCloseButton = true
+  showCloseButton = true,
+  className
 }: IOSModalProps) {
   const sizeClasses = {
     sm: 'max-w-[min(24rem,90vw)]',
@@ -54,7 +56,8 @@ export function IOSModal({
           "p-0 gap-0",
           "overflow-hidden",
           "animate-scale-in",
-          sizeClasses[size]
+          sizeClasses[size],
+          className
         )}
       >
         {/* Header */}
