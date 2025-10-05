@@ -265,13 +265,13 @@ export function ProfilePictureUploadModal({
       onOpenChange={onClose}
       size="md"
     >
-      <div className="flex flex-col">
+      <div className="flex flex-col bg-white dark:bg-white">
         <div className="flex-1 flex flex-col items-center justify-center p-6 space-y-6 min-h-[400px]">
           {/* Preview with Swipe */}
           <div className="relative flex flex-col items-center">
             {/* Status Label */}
             {!preview && previousAvatarUrl && (
-              <div className="mb-3 text-sm font-medium text-white/70">
+              <div className="mb-3 text-sm font-medium text-gray-600">
                 {viewingPrevious ? 'Previous Photo' : 'Current Photo'}
               </div>
             )}
@@ -287,7 +287,7 @@ export function ProfilePictureUploadModal({
                   <img
                     src={preview || (viewingPrevious ? previousAvatarUrl : currentAvatarUrl) || ''}
                     alt="Profile"
-                    className="w-48 h-48 rounded-full object-cover border-4 border-white/30 transition-opacity duration-300"
+                    className="w-48 h-48 rounded-full object-cover border-4 border-gray-200 transition-opacity duration-300"
                   />
                   {preview && (
                     <button
@@ -299,23 +299,23 @@ export function ProfilePictureUploadModal({
                   )}
                 </div>
               ) : (
-                <div className="w-48 h-48 rounded-full bg-white/10 border-4 border-white/30 flex items-center justify-center">
-                  <Camera className="w-16 h-16 text-white/50" />
+                <div className="w-48 h-48 rounded-full bg-gray-100 border-4 border-gray-200 flex items-center justify-center">
+                  <Camera className="w-16 h-16 text-gray-400" />
                 </div>
               )}
 
               {/* Swipe Indicators */}
               {!preview && previousAvatarUrl && currentAvatarUrl && (
                 <div className="absolute inset-0 flex items-center justify-between pointer-events-none px-2">
-                  <ChevronRight className={`w-8 h-8 text-white/40 ${viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
-                  <ChevronLeft className={`w-8 h-8 text-white/40 ${!viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
+                  <ChevronRight className={`w-8 h-8 text-gray-400 ${viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
+                  <ChevronLeft className={`w-8 h-8 text-gray-400 ${!viewingPrevious ? 'opacity-100' : 'opacity-30'}`} />
                 </div>
               )}
             </div>
 
             {/* Swipe hint */}
             {!preview && previousAvatarUrl && (
-              <div className="mt-2 text-xs text-white/50 text-center">
+              <div className="mt-2 text-xs text-gray-500 text-center">
                 Swipe to see {viewingPrevious ? 'current' : 'previous'} photo
               </div>
             )}
@@ -335,20 +335,20 @@ export function ProfilePictureUploadModal({
               <div className="w-full space-y-3">
                 <button
                   onClick={handleTakePhoto}
-                  className="w-full backdrop-blur-sm bg-white/10 border-2 border-dashed border-white/30 rounded-2xl p-6 text-center cursor-pointer hover:border-white/50 transition-colors"
+                  className="w-full bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-colors"
                 >
-                  <Camera className="w-10 h-10 mx-auto mb-2 text-white/70" />
-                  <p className="text-white font-medium mb-1">Take Photo</p>
-                  <p className="text-white/70 text-sm">Use your camera</p>
+                  <Camera className="w-10 h-10 mx-auto mb-2 text-cyan-500" />
+                  <p className="text-gray-900 font-medium mb-1">Take Photo</p>
+                  <p className="text-gray-600 text-sm">Use your camera</p>
                 </button>
 
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full backdrop-blur-sm bg-white/10 border-2 border-dashed border-white/30 rounded-2xl p-6 text-center cursor-pointer hover:border-white/50 transition-colors"
+                  className="w-full bg-white border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-colors"
                 >
-                  <Upload className="w-10 h-10 mx-auto mb-2 text-white/70" />
-                  <p className="text-white font-medium mb-1">Choose from Library</p>
-                  <p className="text-white/70 text-sm">Max 5MB • JPG, PNG, WEBP</p>
+                  <Upload className="w-10 h-10 mx-auto mb-2 text-cyan-500" />
+                  <p className="text-gray-900 font-medium mb-1">Choose from Library</p>
+                  <p className="text-gray-600 text-sm">Max 5MB • JPG, PNG, WEBP</p>
                 </button>
               </div>
             </>
@@ -359,7 +359,7 @@ export function ProfilePictureUploadModal({
             <Button
               onClick={uploadAvatar}
               disabled={uploading}
-              className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
             >
               {uploading ? (
                 <>
@@ -376,7 +376,7 @@ export function ProfilePictureUploadModal({
             <Button
               onClick={setAsCurrent}
               disabled={uploading}
-              className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+              className="w-full bg-cyan-500 hover:bg-cyan-600 text-white"
             >
               {uploading ? (
                 <>

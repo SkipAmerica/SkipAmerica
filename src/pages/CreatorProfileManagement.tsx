@@ -5,11 +5,15 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Settings, Share2, Grid3x3, Video, Repeat, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Plus, Settings, Share2, Grid3x3, Video, Repeat, Image as ImageIcon, Loader2, Check, X, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 import { ProfilePictureUploadModal } from '@/components/creator/ProfilePictureUploadModal';
 import { PricingManagementModal } from '@/components/creator/PricingManagementModal';
 import { getProfileDisplayInfo } from '@/lib/profileUtils';
+import { useDebounce } from '@/shared/hooks/use-debounce';
+import { cn } from '@/lib/utils';
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'reserved' | 'invalid';
 
 export function CreatorProfileManagement() {
   const { user } = useAuth();
@@ -17,6 +21,9 @@ export function CreatorProfileManagement() {
   const [profilePictureModalOpen, setProfilePictureModalOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+  const [usernameMessage, setUsernameMessage] = useState<string>('');
+  const [usernameSuggestion, setUsernameSuggestion] = useState<string>('');
 
   const [profile, setProfile] = useState({
     full_name: '',
@@ -25,6 +32,8 @@ export function CreatorProfileManagement() {
     bio: '',
     avatar_url: ''
   });
+
+  const debouncedUsername = useDebounce(profile.username, 500);
 
   const [stats] = useState({
     posts: 0,
@@ -37,6 +46,14 @@ export function CreatorProfileManagement() {
       loadCreatorData();
     }
   }, [user?.id]);
+
+  // Check username availability when debounced value changes
+  useEffect(() => {
+    if (!debouncedUsername || editingField !== 'username') {
+      return;
+    }
+    checkUsernameAvailability(debouncedUsername);
+  }, [debouncedUsername, editingField]);
 
   const loadCreatorData = async () => {
     try {
@@ -66,8 +83,57 @@ export function CreatorProfileManagement() {
     }
   };
 
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username) {
+      setUsernameStatus('idle');
+      setUsernameMessage('');
+      setUsernameSuggestion('');
+      return;
+    }
+
+    setUsernameStatus('checking');
+    setUsernameMessage('');
+    setUsernameSuggestion('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('check-username-availability', {
+        body: { username }
+      });
+
+      if (error) {
+        console.error('Error checking username:', error);
+        setUsernameStatus('invalid');
+        setUsernameMessage('Error checking availability');
+        return;
+      }
+
+      if (data.available) {
+        setUsernameStatus('available');
+        setUsernameMessage(data.message || 'Available');
+      } else {
+        const newStatus = data.reason === 'reserved' ? 'reserved' : 
+                         data.reason === 'invalid_format' ? 'invalid' : 'taken';
+        setUsernameStatus(newStatus);
+        setUsernameMessage(data.message || 'Not available');
+        if (data.suggestion) {
+          setUsernameSuggestion(data.suggestion);
+        }
+      }
+    } catch (err) {
+      console.error('Exception checking username:', err);
+      setUsernameStatus('invalid');
+      setUsernameMessage('Error checking availability');
+    }
+  };
+
   const handleFieldUpdate = async (field: string, value: string) => {
     if (!user?.id) return;
+
+    // Prevent saving invalid username
+    if (field === 'username' && usernameStatus !== 'available' && usernameStatus !== 'idle') {
+      toast.error('Please choose a valid username');
+      return;
+    }
 
     try {
       const updateData = { [field]: value, updated_at: new Date().toISOString() };
@@ -88,6 +154,9 @@ export function CreatorProfileManagement() {
 
       setProfile({ ...profile, [field]: value });
       setEditingField(null);
+      setUsernameStatus('idle');
+      setUsernameMessage('');
+      setUsernameSuggestion('');
       toast.success('Updated successfully');
     } catch (error) {
       console.error('Error updating field:', error);
@@ -176,17 +245,77 @@ export function CreatorProfileManagement() {
             )}
 
             {editingField === 'username' ? (
-              <div className="flex items-center gap-1">
-                <span className="text-sm text-muted-foreground">@</span>
-                <Input
-                  value={profile.username}
-                  onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                  onBlur={() => handleFieldUpdate('username', profile.username)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('username', profile.username)}
-                  autoFocus
-                  className="text-sm h-8"
-                  placeholder="username"
-                />
+              <div className="space-y-2">
+                <div className="flex items-center gap-1 relative">
+                  <span className="text-sm text-muted-foreground">@</span>
+                  <Input
+                    value={profile.username}
+                    onChange={(e) => {
+                      const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                      setProfile({ ...profile, username: newValue });
+                      if (newValue !== profile.username) {
+                        setUsernameStatus('idle');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (usernameStatus === 'available' || usernameStatus === 'idle') {
+                        handleFieldUpdate('username', profile.username);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (usernameStatus === 'available' || usernameStatus === 'idle')) {
+                        handleFieldUpdate('username', profile.username);
+                      }
+                    }}
+                    autoFocus
+                    className="text-sm h-8 pr-10"
+                    placeholder="username"
+                    maxLength={30}
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {usernameStatus === 'available' && <Check className="h-4 w-4 text-green-500" />}
+                    {(usernameStatus === 'taken' || usernameStatus === 'invalid') && <X className="h-4 w-4 text-red-500" />}
+                    {usernameStatus === 'reserved' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                  </div>
+                </div>
+                
+                {usernameStatus !== 'idle' && usernameMessage && (
+                  <div className={cn(
+                    "text-xs font-medium",
+                    usernameStatus === 'available' && "text-green-500",
+                    (usernameStatus === 'taken' || usernameStatus === 'invalid') && "text-red-500",
+                    usernameStatus === 'reserved' && "text-yellow-500"
+                  )}>
+                    {usernameMessage}
+                  </div>
+                )}
+
+                {usernameSuggestion && usernameStatus === 'taken' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfile({ ...profile, username: usernameSuggestion });
+                      setUsernameStatus('idle');
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground underline"
+                  >
+                    Try "{usernameSuggestion}" instead?
+                  </button>
+                )}
+
+                <div className="flex items-start gap-1 text-xs text-muted-foreground">
+                  <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <span>
+                    3-30 characters. Letters, numbers, and underscores only.
+                    <span className={cn(
+                      "ml-1 font-medium",
+                      profile.username.length >= 3 && profile.username.length <= 30 ? "" : "text-red-500"
+                    )}>
+                      {profile.username.length}/30
+                    </span>
+                  </span>
+                </div>
               </div>
             ) : (
               <div 
