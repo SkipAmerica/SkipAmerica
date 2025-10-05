@@ -33,10 +33,10 @@ export function IOSModal({
   showCloseButton = true
 }: IOSModalProps) {
   const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    full: 'max-w-[95vw] max-h-[90vh]'
+    sm: 'max-w-[min(24rem,90vw)]',
+    md: 'max-w-[min(28rem,90vw)]',
+    lg: 'max-w-[min(42rem,90vw)]',
+    full: 'max-w-[90vw] max-h-[90vh]'
   };
 
   return (
