@@ -2,7 +2,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
-import { isIOS, isMobile } from '@/shared/lib/platform'
+import { isMobile } from '@/shared/lib/platform'
+import { Capacitor } from '@capacitor/core'
 
 interface AuthContextType {
   user: User | null
@@ -87,14 +88,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signOut = async () => {
     try {
+      console.log('[SignOut] Starting sign out process')
+      console.log('[SignOut] Platform:', Capacitor.getPlatform())
+      console.log('[SignOut] Is native:', Capacitor.isNativePlatform())
+      
       // Clear native Google session on iOS
-      const { Capacitor } = await import('@capacitor/core')
       if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+        console.log('[SignOut] Clearing iOS Google session')
         try {
           const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
           await GoogleAuth.signOut()
+          console.log('[SignOut] Google sign out complete')
         } catch (error) {
-          console.log('Google sign out skipped:', error)
+          console.log('[SignOut] Google sign out skipped:', error)
         }
       }
       
@@ -102,10 +108,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.removeItem('pending_account_type')
       
       // Sign out from Supabase
+      console.log('[SignOut] Signing out from Supabase')
       const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('[SignOut] Supabase sign out error:', error)
+      } else {
+        console.log('[SignOut] Sign out successful')
+      }
       
       return { error }
     } catch (error) {
+      console.error('[SignOut] Caught error:', error)
       return { error }
     }
   }
@@ -178,9 +192,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithGoogle = async (): Promise<{ error: any }> => {
     try {
-      // Dynamic import to avoid loading on web
-      const { Capacitor } = await import('@capacitor/core')
-      
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
@@ -275,9 +286,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signInWithApple = async (): Promise<{ error: any }> => {
     try {
-      // Dynamic import to avoid loading on web
-      const { Capacitor } = await import('@capacitor/core')
-      
       // Use native OAuth on iOS
       if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
         const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
