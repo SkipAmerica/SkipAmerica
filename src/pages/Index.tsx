@@ -317,6 +317,9 @@ const Index = () => {
           <AdvancedCreatorSearch onBack={() => setActiveTab("search")} />
         );
 
+      case "creator-profile-management":
+        return <CreatorProfileManagement />;
+
       case "following":
         return profile?.account_type === 'creator' ? (
           <CreatorProfileManagement />
@@ -453,7 +456,7 @@ const Index = () => {
           <>
             <IOSActionSheetItem
               onClick={() => {
-                navigate("/profile");
+                setActiveTab("creator-profile-management");
                 setShowMenu(false);
               }}
               icon={Users}
@@ -462,7 +465,8 @@ const Index = () => {
             </IOSActionSheetItem>
             <IOSActionSheetItem
               onClick={() => {
-                navigate("/feed");
+                setActiveTab("discover");
+                resetToInitialState();
                 setShowMenu(false);
               }}
               icon={Bell}

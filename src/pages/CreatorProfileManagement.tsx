@@ -181,7 +181,7 @@ export function CreatorProfileManagement() {
     <div className="min-h-screen bg-background pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
       <div className="max-w-2xl mx-auto">
         {/* Profile Header */}
-        <div className="px-4 pb-6 pt-[calc(47px+0.5rem)]">
+        <div className="px-4 pb-6 pt-[calc(var(--safe-area-top,0px)+56px+0.5rem)]">
           {/* Avatar and Stats Row */}
           <div className="flex items-start gap-6 mb-4">
             {/* Avatar with Edit Button */}
