@@ -454,6 +454,9 @@ const Index = () => {
       >
         {user && (
           <>
+            <div className="px-4 py-3 mb-2 bg-[hsl(var(--turquoise))] text-white rounded-lg mx-2">
+              <span className="font-semibold text-base">Coins: 200</span>
+            </div>
             <IOSActionSheetItem
               onClick={() => {
                 setActiveTab("creator-profile-management");
