@@ -50,6 +50,9 @@ export const UserMenu = ({ onCreatorDashboard }: UserMenuProps) => {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem className="bg-[hsl(var(--turquoise))] text-white hover:bg-[hsl(var(--turquoise))]/90 focus:bg-[hsl(var(--turquoise))]/90">
+          <span className="font-semibold">Coins: 200</span>
+        </DropdownMenuItem>
         <DropdownMenuItem>
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
