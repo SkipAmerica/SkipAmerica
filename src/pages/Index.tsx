@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu, LogOut } from "lucide-react";
+import { Video, Users, Shield, DollarSign, Clock, Star, Zap, TrendingUp, Bell, Search, Menu, LogOut, Coins } from "lucide-react";
 import { useAuth } from "@/app/providers/auth-provider";
 import { useProfile } from "@/hooks/useProfile";
 import { useSearch } from "@/app/providers/search-provider";
@@ -454,8 +454,14 @@ const Index = () => {
       >
         {user && (
           <>
-            <div className="px-4 py-3 mb-2 bg-[hsl(var(--turquoise))] text-white rounded-lg mx-2">
-              <span className="font-semibold text-base">Coins: 200</span>
+            <div className="px-4 py-3 mb-2 bg-[hsl(var(--turquoise))] text-white rounded-lg mx-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Coins className="h-5 w-5" />
+                <span className="font-semibold text-base">Coins: 200</span>
+              </div>
+              <button className="text-sm underline hover:opacity-80 transition-opacity">
+                Transfer to Bank
+              </button>
             </div>
             <IOSActionSheetItem
               onClick={() => {
