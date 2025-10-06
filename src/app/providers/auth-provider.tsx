@@ -86,11 +86,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-
-    // Error handled silently - no popup prompts
-
-    return { error }
+    try {
+      // Clear native Google session on iOS
+      const { Capacitor } = await import('@capacitor/core')
+      if (Capacitor.isNativePlatform() && isIOS()) {
+        try {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
+          await GoogleAuth.signOut()
+        } catch (error) {
+          console.log('Google sign out skipped:', error)
+        }
+      }
+      
+      // Clear any pending OAuth state
+      localStorage.removeItem('pending_account_type')
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut()
+      
+      return { error }
+    } catch (error) {
+      return { error }
+    }
   }
 
   const resetPassword = async (email: string) => {

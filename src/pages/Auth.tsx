@@ -94,6 +94,11 @@ const Auth = () => {
     const checkUserProfile = async () => {
       if (!user) return
 
+      // Don't redirect if we just came from sign-out - allow auth state to settle
+      if (window.location.pathname === '/auth' && !document.referrer.includes('/auth')) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+      }
+
       setIsWaitingForOAuth(false)
       setIsInitiatingOAuth(false)
       

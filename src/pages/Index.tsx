@@ -489,9 +489,13 @@ const Index = () => {
             
             <IOSActionSheetItem
               onClick={async () => {
-                await signOut();
                 setShowMenu(false);
-                navigate("/auth");
+                // Reset local state first
+                setActiveTab("discover");
+                resetToInitialState();
+                // Then sign out and navigate
+                await signOut();
+                navigate("/auth", { replace: true });
               }}
               icon={LogOut}
               destructive
