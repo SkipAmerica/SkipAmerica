@@ -221,7 +221,7 @@ export const SplashAuthForm = ({
           setStep('creator-setup');
         }} className="w-full h-16 text-lg font-semibold bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm transition-all" disabled={isLoading || loading}>
               <TowerControl className="mr-3 h-6 w-6" />
-              Create & Discover
+              Join as a Creator
             </Button>
 
             <Button onClick={() => {
@@ -229,7 +229,7 @@ export const SplashAuthForm = ({
           setStep('user-setup');
         }} className="w-full h-16 text-lg font-semibold bg-white/10 hover:bg-white/20 text-white border-2 border-white/30 backdrop-blur-sm transition-all" disabled={isLoading || loading}>
               <Binoculars className="mr-3 h-6 w-6" />
-              Discover Only
+              Explore Creators
             </Button>
           </div>
 
