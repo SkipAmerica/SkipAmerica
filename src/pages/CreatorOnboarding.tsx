@@ -59,6 +59,41 @@ export default function CreatorOnboarding() {
     fetchCreatorData();
   }, [user?.id]);
 
+  // Make status bar transparent on Onboarding (iOS only)
+  useEffect(() => {
+    let cleanupFn: (() => Promise<void>) | null = null
+    
+    const setTransparentStatusBar = async () => {
+      const { Capacitor } = await import('@capacitor/core')
+      if (Capacitor.getPlatform() !== 'ios') return
+      
+      try {
+        const { StatusBar, Style } = await import('@capacitor/status-bar')
+        
+        // Make status bar transparent on Onboarding
+        await StatusBar.setOverlaysWebView({ overlay: true })
+        await StatusBar.setStyle({ style: Style.Light })
+        
+        // Store cleanup function
+        cleanupFn = async () => {
+          await StatusBar.setOverlaysWebView({ overlay: false })
+          await StatusBar.setBackgroundColor({ color: "#FFFFFF" })
+          await StatusBar.setStyle({ style: Style.Light })
+        }
+      } catch (error) {
+        console.warn('[StatusBar] Failed to set transparent status bar:', error)
+      }
+    }
+    
+    setTransparentStatusBar()
+    
+    return () => {
+      if (cleanupFn) {
+        cleanupFn().catch(err => console.warn('[StatusBar] Cleanup error:', err))
+      }
+    }
+  }, [])
+
   useEffect(() => {
     if (!user) {
       navigate('/auth');

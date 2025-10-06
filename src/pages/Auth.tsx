@@ -62,6 +62,8 @@ const Auth = () => {
 
   // Make status bar transparent on Auth page (iOS only)
   useEffect(() => {
+    let cleanupFn: (() => Promise<void>) | null = null
+    
     const setTransparentStatusBar = async () => {
       if (Capacitor.getPlatform() !== 'ios') return
       
@@ -70,10 +72,10 @@ const Auth = () => {
         
         // Make status bar transparent on Auth page
         await StatusBar.setOverlaysWebView({ overlay: true })
-        await StatusBar.setStyle({ style: Style.Light }) // Black text on transparent
+        await StatusBar.setStyle({ style: Style.Light })
         
-        return async () => {
-          // Restore opaque white status bar when leaving Auth
+        // Store cleanup function
+        cleanupFn = async () => {
           await StatusBar.setOverlaysWebView({ overlay: false })
           await StatusBar.setBackgroundColor({ color: "#FFFFFF" })
           await StatusBar.setStyle({ style: Style.Light })
@@ -83,10 +85,12 @@ const Auth = () => {
       }
     }
     
-    const cleanup = setTransparentStatusBar()
+    setTransparentStatusBar()
     
     return () => {
-      cleanup.then(fn => fn?.())
+      if (cleanupFn) {
+        cleanupFn().catch(err => console.warn('[StatusBar] Cleanup error:', err))
+      }
     }
   }, [])
 

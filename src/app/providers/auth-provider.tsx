@@ -89,7 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Clear native Google session on iOS
       const { Capacitor } = await import('@capacitor/core')
-      if (Capacitor.isNativePlatform() && isIOS()) {
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
         try {
           const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
           await GoogleAuth.signOut()
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { Capacitor } = await import('@capacitor/core')
       
       // Use native OAuth on iOS
-      if (Capacitor.isNativePlatform() && isIOS()) {
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
         const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
         
         // Initialize Google Auth
@@ -279,7 +279,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { Capacitor } = await import('@capacitor/core')
       
       // Use native OAuth on iOS
-      if (Capacitor.isNativePlatform() && isIOS()) {
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
         const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
         
         const result = await SignInWithApple.authorize({
