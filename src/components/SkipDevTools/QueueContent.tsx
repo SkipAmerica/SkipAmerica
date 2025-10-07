@@ -316,37 +316,93 @@ export function QueueContent() {
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
                 <SwipeableQueueCard
                   nextUpPanel={
-                    <div className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex flex-col">
-                          <p className="text-sm text-primary font-medium">
-                            Next Up
-                          </p>
-                          <p className="text-sm font-medium text-foreground mt-1">
-                            {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                          </p>
+                    <div className="flex flex-col h-full">
+                      {/* Row 1: Video */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex flex-col">
+                            <p className="text-sm text-primary font-medium">
+                              Next Up
+                            </p>
+                            <p className="text-sm font-medium text-foreground mt-1">
+                              {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                            </p>
+                          </div>
+                          <div className="flex flex-col items-end text-right">
+                            <p className="text-xs text-muted-foreground">
+                              Swipe to Go Live
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              In Your Lobby
+                              <span className="text-primary">→</span>
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex flex-col items-end text-right">
-                          <p className="text-xs text-muted-foreground">
-                            Swipe to Go Live
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            In Your Lobby
-                            <span className="text-primary">→</span>
-                          </p>
-                        </div>
+                        <NextUserPreview
+                          userId={state.entries[0].fan_id}
+                          creatorId={user.id}
+                          userName={state.entries[0].profiles?.full_name}
+                          discussionTopic={state.entries[0].discussion_topic}
+                          waitTime={state.entries[0].estimated_wait_minutes}
+                          onStartCall={() => {
+                            console.log("Starting call with:", state.entries[0].fan_id);
+                          }}
+                          onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
+                        />
                       </div>
-                      <NextUserPreview
-                        userId={state.entries[0].fan_id}
-                        creatorId={user.id}
-                        userName={state.entries[0].profiles?.full_name}
-                        discussionTopic={state.entries[0].discussion_topic}
-                        waitTime={state.entries[0].estimated_wait_minutes}
-                        onStartCall={() => {
-                          console.log("Starting call with:", state.entries[0].fan_id);
-                        }}
-                        onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
-                      />
+
+                      {/* Row 2: Collapsible Chat */}
+                      <CollapsibleChat className="border-t">
+                        <CreatorQueueChat
+                          creatorId={user.id}
+                          fanId={state.entries[0].fan_id}
+                        />
+                      </CollapsibleChat>
+
+                      {/* Row 3: Remaining Queue */}
+                      {state.entries.length > 1 && (
+                        <div className="flex-1 overflow-y-auto pt-3 px-4 pb-4">
+                          <div className="space-y-3">
+                            {state.entries.slice(1).map((entry, index) => (
+                              <div
+                                key={entry.id}
+                                className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
+                                      {index + 2}
+                                    </div>
+                                    <Avatar className="w-10 h-10">
+                                      <AvatarImage src={entry.profiles?.avatar_url || undefined} />
+                                      <AvatarFallback className="bg-primary/10">
+                                        {entry.profiles?.full_name 
+                                          ? getInitials(entry.profiles.full_name)
+                                          : 'U'
+                                        }
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">
+                                      {entry.profiles?.full_name || 'Anonymous User'}
+                                    </p>
+                                    {entry.discussion_topic && (
+                                      <p className="text-sm text-primary mb-1">
+                                        {entry.discussion_topic}
+                                      </p>
+                                    )}
+                                    <div className="flex items-center text-sm text-muted-foreground">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   }
                   broadcastPanel={
@@ -374,59 +430,6 @@ export function QueueContent() {
                     </div>
                   }
                 />
-                
-                {/* Collapsible Tabbed Chat */}
-                <CollapsibleChat className="border-t">
-                  <CreatorQueueChat
-                    creatorId={user.id}
-                    fanId={state.entries[0].fan_id}
-                  />
-                </CollapsibleChat>
-              </div>
-            )}
-
-            {/* Scrollable Remaining Entries (smooth transition) */}
-            {state.entries.length > 1 && (
-              <div className="flex-1 overflow-y-auto pt-3 transition-all duration-300 ease-in-out">
-                <div className="space-y-3">
-                  {state.entries.slice(1).map((entry, index) => (
-                    <div
-                      key={entry.id}
-                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium text-primary">
-                            {index + 2}
-                          </div>
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage src={entry.profiles?.avatar_url || undefined} />
-                            <AvatarFallback className="bg-primary/10">
-                              {entry.profiles?.full_name 
-                                ? getInitials(entry.profiles.full_name)
-                                : 'U'
-                              }
-                            </AvatarFallback>
-                          </Avatar>
-                        </div>
-                        <div>
-                          <p className="font-medium">
-                            {entry.profiles?.full_name || 'Anonymous User'}
-                          </p>
-                          {entry.discussion_topic && (
-                            <p className="text-sm text-primary mb-1">
-                              {entry.discussion_topic}
-                            </p>
-                          )}
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="w-3 h-3 mr-1" />
-                            <span>Wait: {formatWaitTime(entry.estimated_wait_minutes)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
           </div>

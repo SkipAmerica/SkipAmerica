@@ -144,13 +144,13 @@ export function SwipeableQueueCard({
         )}
         style={{ transform: getTransform() }}
       >
-        {/* Panel 1: Next Up */}
-        <div className="w-1/2 flex-shrink-0">
+        {/* Panel 1: Next Up (3 rows: video, chat, queue) */}
+        <div className="w-1/2 flex-shrink-0 min-h-[600px] overflow-y-auto">
           {nextUpPanel}
         </div>
 
-        {/* Panel 2: Broadcast */}
-        <div className="w-1/2 flex-shrink-0">
+        {/* Panel 2: Broadcast (1 row: video only) */}
+        <div className="w-1/2 flex-shrink-0 h-auto">
           {broadcastPanel}
         </div>
       </div>
