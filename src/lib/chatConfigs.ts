@@ -247,7 +247,7 @@ export const createPrivateConfig = (
 };
 
 // Queue Chat Configurations (non-overlay versions)
-export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
+export const createQueueLobbyConfig = (creatorId: string, isInQueue: boolean): ChatConfig => ({
   tableName: 'lobby_chat_messages',
   channelPrefix: 'lobby-chat',
   filterField: 'creator_id',
@@ -263,8 +263,8 @@ export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
     showScrollbar: true
   },
   messaging: {
-    enabled: true,
-    placeholder: 'Type a message...',
+    enabled: isInQueue,
+    placeholder: isInQueue ? 'Type a message...' : 'Join the queue to chat...',
     requireAuth: true,
     showSendButton: true
   },
@@ -276,6 +276,7 @@ export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
     allowPositionToggle: false
   },
   sendMessage: async ({ filterValue, userId, username, text }) => {
+    if (!userId) throw new Error('User ID required to send lobby message');
     await sendLobbyMessage({
       creatorId: filterValue,
       userId,

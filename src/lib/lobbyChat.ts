@@ -7,11 +7,11 @@ export async function sendLobbyMessage({
   text,
 }: {
   creatorId: string;
-  userId?: string;
+  userId: string;
   username?: string;
   text: string;
 }) {
-  if (!creatorId || !text?.trim()) {
+  if (!creatorId || !userId || !text?.trim()) {
     console.warn("[lobbyChat] Invalid input:", { creatorId, text, userId });
     return;
   }
@@ -26,7 +26,7 @@ export async function sendLobbyMessage({
   try {
     const { data, error } = await supabase.from("lobby_chat_messages").insert({
       creator_id: creatorId,
-      user_id: userId ?? null,
+      user_id: userId,
       message: text,
     });
 

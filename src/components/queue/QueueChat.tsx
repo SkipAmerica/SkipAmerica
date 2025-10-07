@@ -19,7 +19,7 @@ export function QueueChat({
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
 
-  const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId), [creatorId]);
+  const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId, isInQueue), [creatorId, isInQueue]);
   const privateConfig = useMemo(() => createQueuePrivateConfig(creatorId, fanId), [creatorId, fanId]);
 
   // Subscribe to private messages for unread count

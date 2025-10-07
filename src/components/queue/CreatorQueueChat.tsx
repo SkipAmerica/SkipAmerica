@@ -15,7 +15,7 @@ export function CreatorQueueChat({ creatorId, fanId }: Props) {
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('private');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
 
-  const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId), [creatorId]);
+  const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId, true), [creatorId]);
   const privateConfig = useMemo(() => createQueuePrivateConfig(creatorId, fanId), [creatorId, fanId]);
 
   // Subscribe to private messages from the FAN
