@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Room, Track } from 'livekit-client';
+import { Room, Track, RoomEvent } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
 
 interface LiveKitVideoPlayerProps {
@@ -59,16 +59,36 @@ export function LiveKitVideoPlayer({
     // Try to attach existing tracks
     attachVideoTrack();
 
-    // Listen for new tracks
+    // Listen for track and participant changes
     const handleTrackSubscribed = () => {
       attachVideoTrack();
     };
+    const handleTrackUnsubscribed = () => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (mounted) {
+        setHasVideo(false);
+      }
+    };
+    const handleParticipantDisconnected = () => {
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      if (mounted) {
+        setHasVideo(false);
+      }
+    };
 
-    room.on('trackSubscribed', handleTrackSubscribed);
+    room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+    room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+    room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
     return () => {
       mounted = false;
-      room.off('trackSubscribed', handleTrackSubscribed);
+      room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+      room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
+      room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
       
       // Detach all tracks from video element
       if (videoRef.current) {
@@ -88,7 +108,7 @@ export function LiveKitVideoPlayer({
         autoPlay
         playsInline
         muted={muted}
-        style={{ display: showFallback ? 'none' : 'block' }}
+        style={{ opacity: showFallback ? 0 : 1 }}
       />
       
       {showFallback && fallbackContent && (
