@@ -344,7 +344,7 @@ export default function JoinQueue() {
 
     // Only cleanup on actual page unload, not tab switching
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      console.log('[JoinQueue] Page unloading - cleaning up queue');
+      console.log('[JoinQueue] beforeunload - cleaning up queue');
       isUnloadingRef.current = true;
       
       // Use sendBeacon for reliable cleanup on page unload
@@ -363,23 +363,42 @@ export default function JoinQueue() {
     // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Cleanup on component unmount
+    // Cleanup on effect teardown (NOT component unmount)
     return () => {
-      console.log('[JoinQueue] Component unmounting - cleaning up');
+      console.log('[JoinQueue] Effect cleanup - clearing timers and listeners only');
       clearInterval(heartbeatInterval);
       window.removeEventListener('beforeunload', handleBeforeUnload);
       
-      // Clean up consent stream
+      // Clean up consent stream tracks
       if (consentStream) {
+        console.log('[JoinQueue] Stopping consent stream tracks');
         consentStream.getTracks().forEach(track => track.stop());
       }
-      
-      // Only cleanup if not already unloading
-      if (!isUnloadingRef.current) {
-        cleanupQueue('component-unmount');
+      // NOTE: Do NOT call cleanupQueue here - it fires when consentStream changes
+    };
+  }, [user, creatorId, isInQueue]); // Removed consentStream from deps
+
+  // Separate unmount-only cleanup using refs
+  useEffect(() => {
+    const userIdRef = { current: user?.id };
+    const creatorIdRef = { current: creatorId };
+    const isInQueueRef = { current: isInQueue };
+
+    // Update refs on every render
+    userIdRef.current = user?.id;
+    creatorIdRef.current = creatorId;
+    isInQueueRef.current = isInQueue;
+
+    // This cleanup only runs on true component unmount
+    return () => {
+      console.log('[JoinQueue] Component unmount - final cleanup check');
+      // Only cleanup if not already unloading and still in queue
+      if (!isUnloadingRef.current && isInQueueRef.current && userIdRef.current && creatorIdRef.current) {
+        console.log('[JoinQueue] Component unmount - removing from queue');
+        cleanupQueue('component-unmount-final');
       }
     };
-  }, [user, creatorId, isInQueue, consentStream]);
+  }, []); // Empty deps = runs cleanup only on unmount
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;
