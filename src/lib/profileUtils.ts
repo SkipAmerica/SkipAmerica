@@ -92,7 +92,7 @@ function generateConsistentColors(name: string): { background: string; text: str
  * Get avatar size classes based on compact mode
  */
 export function getAvatarSizeClasses(compact?: boolean): string {
-  return compact ? "h-6 w-6" : "h-8 w-8";
+  return compact ? "h-3 w-3" : "h-4 w-4";
 }
 
 /**
