@@ -16,9 +16,18 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
 
   // Fetch initial messages - Based on PQ implementation
   useEffect(() => {
+    console.log(`[useUniversalChat] Effect running for ${channelPrefix}-${filterValue}`, {
+      tableName,
+      filterField,
+      filterValue,
+      channelPrefix,
+      messageFlow
+    });
+    
     if (!filterValue) return;
 
     const fetchMessages = async () => {
+      console.log(`[useUniversalChat] Fetching initial messages from ${tableName}`);
       try {
         // Fetch messages and then get profile data separately
         const { data: messagesData, error: messagesError } = await supabase
@@ -64,6 +73,9 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           });
 
           setMessages(enrichedMessages);
+          console.log(`[useUniversalChat] Loaded ${enrichedMessages.length} initial messages`);
+        } else {
+          console.log(`[useUniversalChat] No initial messages found for ${channelPrefix}-${filterValue}`);
         }
       } catch (error) {
         console.error(`[useUniversalChat] Error fetching messages:`, error);
@@ -73,8 +85,10 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
     fetchMessages();
 
     // Subscribe to new messages - Based on PQ implementation
+    const channelName = `${channelPrefix}-${filterValue}`;
+    console.log(`[useUniversalChat] Creating channel: ${channelName}`);
     const channel = supabase
-      .channel(`${channelPrefix}-${filterValue}`)
+      .channel(channelName)
       .on(
         'postgres_changes',
         {
@@ -84,6 +98,8 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           filter: `${filterField}=eq.${filterValue}`
         },
         async (payload) => {
+          console.log(`[useUniversalChat] Real-time INSERT received on ${channelName}:`, payload.new);
+          
           // Handle both user_id and sender_id for different table structures
           const senderId = (payload.new as any).user_id ?? (payload.new as any).sender_id;
           
@@ -118,15 +134,21 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
             // Notify about new message for scroll handling
             onNewMessage?.();
             
+            console.log(`[useUniversalChat] Added new message to state. Total messages: ${newMessages.length}`);
+            
             return newMessages;
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log(`[useUniversalChat] Channel ${channelName} subscription status:`, status);
+      });
 
     return () => {
+      console.log(`[useUniversalChat] Cleaning up channel: ${channelName}`);
       try { 
-        supabase.removeChannel(channel); 
+        supabase.removeChannel(channel);
+        console.log(`[useUniversalChat] Channel ${channelName} removed successfully`);
       } catch (error) {
         console.error('[useUniversalChat] Error removing channel:', error);
       }
