@@ -124,9 +124,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
 
   // Use distinct identity for viewer to avoid collision with publisher
   const viewerIdentity = fanUserId ? `viewer_${fanUserId}` : `viewer_${crypto.randomUUID()}`;
-  const publisherIdentity = fanUserId || crypto.randomUUID();
 
-  console.log('[BroadcastViewer] Identities:', { viewerIdentity, publisherIdentity, fanUserId, resolvedCreatorId });
+  console.log('[BroadcastViewer] Identities:', { viewerIdentity, publisherIdentity: fanUserId, fanUserId, resolvedCreatorId });
 
   return (
     <div className="relative w-full h-full">
@@ -172,12 +171,12 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
           config={{
             role: 'publisher',
             creatorId: resolvedCreatorId,
-            identity: publisherIdentity,
+            identity: fanUserId,
           }}
           publishAudio={true}
           publishVideo={true}
           onPublished={() => {
-            console.log('[BroadcastViewer] ✅ Fan video published successfully with identity:', publisherIdentity);
+            console.log('[BroadcastViewer] ✅ Fan video published successfully with identity:', fanUserId);
           }}
           onError={(error) => {
             console.error('[BroadcastViewer] ❌ Fan publish failed:', error);

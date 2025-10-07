@@ -613,7 +613,7 @@ export default function JoinQueue() {
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
-                shouldPublishFanVideo={(hasConsentedToBroadcast || forceBroadcast) && actualPosition === 1}
+                shouldPublishFanVideo={isInQueue && (hasConsentedToBroadcast || forceBroadcast)}
               />
             </div>
           </div>
