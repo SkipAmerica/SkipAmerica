@@ -186,7 +186,7 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
       )}
       
       <ScrollArea className={`flex-1 min-h-0 ${scrollAreaClasses}`}>
-        <div className={`pb-2 ${compact ? "space-y-0.5" : "space-y-2"}`}>
+        <div className={`pb-2 ${compact ? "space-y-0" : "space-y-0.5"}`}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <p className={textSizes.message}>{emptyStateText}</p>
