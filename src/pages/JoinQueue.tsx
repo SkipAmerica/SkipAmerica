@@ -248,7 +248,8 @@ export default function JoinQueue() {
         console.log('[JoinQueue] User position in queue:', position);
         
         // Show consent modal when user becomes "Next Up" (position 1)
-        if (position === 1 && !hasConsentedToBroadcast) {
+        if (position === 1 && !hasConsentedToBroadcast && !forceBroadcast) {
+          console.log('[JoinQueue] 🎯 User is next up, showing consent modal');
           setShowConsentModal(true);
         }
       } else {
@@ -500,8 +501,18 @@ export default function JoinQueue() {
     }
   };
 
-  const handleConsentAgree = () => {
+  const handleConsentAgree = async () => {
     console.log('[JoinQueue] Fan consented to broadcast');
+    
+    // Pre-warm media permissions to preserve user activation
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('[JoinQueue] ✅ Media permissions granted, stopping pre-warm stream');
+      stream.getTracks().forEach(track => track.stop());
+    } catch (err) {
+      console.warn('[JoinQueue] ⚠️ Pre-warm media permission failed:', err);
+    }
+    
     setHasConsentedToBroadcast(true);
     setShowConsentModal(false);
     toast({

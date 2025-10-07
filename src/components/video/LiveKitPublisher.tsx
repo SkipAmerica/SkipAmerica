@@ -29,10 +29,10 @@ export function LiveKitPublisher({
 
     let mounted = true;
 
-    const publish = async () => {
+    const publish = async (attempt = 1) => {
       try {
         setIsPublishing(true);
-        console.log('[LiveKitPublisher] Creating local tracks...');
+        console.log(`[LiveKitPublisher] Creating local tracks... (attempt ${attempt})`);
 
         const tracks = await createLocalTracks({
           audio: publishAudio,
@@ -54,11 +54,20 @@ export function LiveKitPublisher({
         console.log('[LiveKitPublisher] ✅ Tracks published successfully');
         onPublished?.();
       } catch (err) {
-        console.error('[LiveKitPublisher] Failed to publish tracks:', err);
-        const error = err instanceof Error ? err : new Error('Failed to publish');
-        onError?.(error);
+        console.error(`[LiveKitPublisher] Failed to publish tracks (attempt ${attempt}):`, err);
+        
+        // Retry up to 2 times for NotAllowedError or timing issues
+        if (attempt < 3 && mounted) {
+          console.log(`[LiveKitPublisher] Retrying in 300ms...`);
+          setTimeout(() => {
+            if (mounted) publish(attempt + 1);
+          }, 300);
+        } else {
+          const error = err instanceof Error ? err : new Error('Failed to publish');
+          onError?.(error);
+        }
       } finally {
-        if (mounted) {
+        if (mounted && attempt >= 3) {
           setIsPublishing(false);
         }
       }
