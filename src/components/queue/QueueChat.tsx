@@ -62,9 +62,9 @@ export function QueueChat({
   };
 
   return (
-    <Card className="p-4">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="w-full">
+    <Card className="p-0 h-[60vh] min-h-[360px] flex flex-col overflow-hidden">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 min-h-0 flex flex-col">
+        <TabsList className="w-full shrink-0 sticky top-0 z-10 bg-background">
           <TabsTrigger value="lobby" className="flex-1">
             Lobby Chat
           </TabsTrigger>
@@ -80,17 +80,13 @@ export function QueueChat({
           )}
         </TabsList>
 
-        <TabsContent value="lobby" className="mt-4">
-          <div className="h-[400px]">
-            <UniversalChat config={lobbyConfig} />
-          </div>
+        <TabsContent value="lobby" className="mt-0 flex flex-col flex-1 min-h-0 p-0">
+          <UniversalChat config={lobbyConfig} />
         </TabsContent>
 
         {isInQueue && (
-          <TabsContent value="private" className="mt-4">
-            <div className="h-[400px]">
-              <UniversalChat config={privateConfig} />
-            </div>
+          <TabsContent value="private" className="mt-0 flex flex-col flex-1 min-h-0 p-0">
+            <UniversalChat config={privateConfig} />
           </TabsContent>
         )}
       </Tabs>
