@@ -80,15 +80,14 @@ export function QueueChat({
           )}
         </TabsList>
 
-        <TabsContent value="lobby" className="mt-0 flex flex-col flex-1 min-h-0 p-0">
+        <TabsContent value="lobby" className="mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden">
           <UniversalChat config={lobbyConfig} />
         </TabsContent>
 
-        {isInQueue && (
-          <TabsContent value="private" className="mt-0 flex flex-col flex-1 min-h-0 p-0">
-            <UniversalChat config={privateConfig} />
-          </TabsContent>
-        )}
+        {/* Always render private chat but hide when not in queue or inactive */}
+        <TabsContent value="private" className={`mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden ${!isInQueue ? 'hidden' : ''}`}>
+          <UniversalChat config={privateConfig} />
+        </TabsContent>
       </Tabs>
     </Card>
   );
