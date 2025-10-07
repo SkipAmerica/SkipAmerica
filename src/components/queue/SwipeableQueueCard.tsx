@@ -127,10 +127,10 @@ export function SwipeableQueueCard({
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowLeft" && currentPanel === 0) {
-      setCurrentPanel(1);
-    } else if (e.key === "ArrowRight" && currentPanel === 1) {
+    if (e.key === "ArrowLeft" && currentPanel === 1) {
       setCurrentPanel(0);
+    } else if (e.key === "ArrowRight" && currentPanel === 0) {
+      setCurrentPanel(1);
     }
   };
 
@@ -152,12 +152,12 @@ export function SwipeableQueueCard({
 
   const getTransform = () => {
     if (isDragging && dragOffset !== 0) {
-      const baseOffset = -currentPanel * 100;
+      const baseOffset = -currentPanel * 50;
       const containerWidth = containerRef.current?.offsetWidth || 0;
-      const deltaPercent = containerWidth > 0 ? (dragOffset / containerWidth) * 100 : 0;
+      const deltaPercent = containerWidth > 0 ? (dragOffset / containerWidth) * 50 : 0;
       return `translateX(${baseOffset + deltaPercent}%)`;
     }
-    return `translateX(-${currentPanel * 100}%)`;
+    return `translateX(-${currentPanel * 50}%)`;
   };
 
   return (
@@ -174,9 +174,9 @@ export function SwipeableQueueCard({
       <div
         className={cn(
           "flex w-[200%]",
-          !isDragging && "transition-transform duration-400 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
+          !isDragging && "transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
         )}
-        style={{ transform: getTransform() }}
+        style={{ transform: getTransform(), willChange: 'transform' }}
       >
         {/* Panel 1: Next Up (3 rows: video, chat, queue) */}
         <div className="w-1/2 flex-shrink-0 min-h-[600px] overflow-y-auto">
