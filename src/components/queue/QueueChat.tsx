@@ -18,6 +18,9 @@ export function QueueChat({
 }: Props) {
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [startX, setStartX] = useState(0);
 
   const lobbyConfig = useMemo(() => createQueueLobbyConfig(creatorId, isInQueue), [creatorId, isInQueue]);
   const privateConfig = useMemo(() => createQueuePrivateConfig(creatorId, fanId), [creatorId, fanId]);
@@ -61,15 +64,62 @@ export function QueueChat({
     }
   };
 
+  // Swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isInteractive = 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.isContentEditable ||
+      target.closest('input, textarea, button, a, [contenteditable="true"]') ||
+      target.closest('[data-no-drag]');
+    
+    if (isInteractive || !isInQueue) return;
+    
+    setStartX(e.touches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !isInQueue) return;
+    const currentX = e.touches[0].clientX;
+    const offset = currentX - startX;
+    setDragOffset(offset);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging || !isInQueue) return;
+    
+    const threshold = 50;
+    if (Math.abs(dragOffset) > threshold) {
+      if (dragOffset > 0 && activeTab === 'private') {
+        setActiveTab('lobby');
+      } else if (dragOffset < 0 && activeTab === 'lobby') {
+        setActiveTab('private');
+        setUnreadPrivateCount(0);
+      }
+    }
+    
+    setIsDragging(false);
+    setDragOffset(0);
+  };
+
   return (
     <Card className="p-0 h-[224px] flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 min-h-0 flex flex-col">
-        <TabsList className="w-full shrink-0 sticky top-0 z-10 bg-background">
-          <TabsTrigger value="lobby" className="flex-1">
+        <TabsList 
+          className="w-full shrink-0 sticky top-0 z-10 bg-background"
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          <TabsTrigger value="lobby" className="flex-1 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
             Lobby Chat
           </TabsTrigger>
           {isInQueue && (
-            <TabsTrigger value="private" className="flex-1 relative">
+            <TabsTrigger value="private" className="flex-1 relative data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
               Private Messages
               {unreadPrivateCount > 0 && activeTab === 'lobby' && (
                 <span className="ml-1.5 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-red-500 rounded-full">

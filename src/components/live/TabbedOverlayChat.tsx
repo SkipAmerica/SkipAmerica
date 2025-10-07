@@ -21,6 +21,9 @@ export default function TabbedOverlayChat({
 }: Props) {
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [startX, setStartX] = useState(0);
 
   console.log('[TabbedOverlayChat] Rendering with:', { creatorId, fanId, isInQueue, activeTab });
 
@@ -66,6 +69,48 @@ export default function TabbedOverlayChat({
     }
   };
 
+  // Swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const target = e.target as HTMLElement;
+    const isInteractive = 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.isContentEditable ||
+      target.closest('input, textarea, button, a, [contenteditable="true"]') ||
+      target.closest('[data-no-drag]');
+    
+    if (isInteractive || !isInQueue) return;
+    
+    setStartX(e.touches[0].clientX);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !isInQueue) return;
+    const currentX = e.touches[0].clientX;
+    const offset = currentX - startX;
+    setDragOffset(offset);
+  };
+
+  const handleTouchEnd = () => {
+    if (!isDragging || !isInQueue) return;
+    
+    const threshold = 50;
+    if (Math.abs(dragOffset) > threshold) {
+      if (dragOffset > 0 && activeTab === 'private') {
+        setActiveTab('lobby');
+      } else if (dragOffset < 0 && activeTab === 'lobby') {
+        setActiveTab('private');
+        setUnreadPrivateCount(0);
+      }
+    }
+    
+    setIsDragging(false);
+    setDragOffset(0);
+  };
+
   return (
     <div
       className={
@@ -78,17 +123,23 @@ export default function TabbedOverlayChat({
       }}
     >
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full relative flex flex-col">
-        <TabsList className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto" style={{ zIndex: 50 }}>
+        <TabsList 
+          className="w-full bg-black/60 backdrop-blur-sm border-0 rounded-none pointer-events-auto" 
+          style={{ zIndex: 50 }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           <TabsTrigger 
             value="lobby" 
-            className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white pointer-events-auto"
+            className="flex-1 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-white/70 pointer-events-auto"
           >
             Lobby
           </TabsTrigger>
           {isInQueue && (
             <TabsTrigger 
               value="private" 
-              className="flex-1 data-[state=active]:bg-white/20 data-[state=active]:border-b-2 data-[state=active]:border-primary text-white relative pointer-events-auto"
+              className="flex-1 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-white/70 relative pointer-events-auto"
             >
               Private Messages
               {unreadPrivateCount > 0 && activeTab === 'lobby' && (
