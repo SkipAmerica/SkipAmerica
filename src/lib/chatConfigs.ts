@@ -253,7 +253,7 @@ export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
   filterField: 'creator_id',
   filterValue: creatorId,
   appearance: {
-    height: 'h-full',
+    height: 'flex-1',
     showProfiles: true,
     showProfileToggle: false,
     showUsernames: true,
@@ -300,7 +300,7 @@ export const createQueuePrivateConfig = (
       await sendPrivateMessage(creatorId, fanId, text, userId);
     },
     appearance: {
-      height: 'h-full',
+      height: 'flex-1',
       showScrollbar: true,
       messageFlow: 'newest-bottom',
       showProfiles: true,

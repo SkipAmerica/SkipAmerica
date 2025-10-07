@@ -62,7 +62,7 @@ export function QueueChat({
   };
 
   return (
-    <Card className="p-0 h-[500px] max-h-[60vh] flex flex-col overflow-hidden">
+    <Card className="p-0 h-[280px] flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1 min-h-0 flex flex-col">
         <TabsList className="w-full shrink-0 sticky top-0 z-10 bg-background">
           <TabsTrigger value="lobby" className="flex-1">

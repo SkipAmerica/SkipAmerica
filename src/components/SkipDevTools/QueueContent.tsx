@@ -334,7 +334,7 @@ export function QueueContent() {
                   />
                   
                   {/* Tabbed Chat Below Video */}
-                  <div className="mt-4 h-[500px] max-h-[60vh] border rounded-lg overflow-hidden flex flex-col">
+                  <div className="mt-4 h-[280px] border rounded-lg overflow-hidden flex flex-col">
                     <CreatorQueueChat
                       creatorId={user.id}
                       fanId={state.entries[0].fan_id}
