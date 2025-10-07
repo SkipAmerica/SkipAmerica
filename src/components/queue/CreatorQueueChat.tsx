@@ -75,12 +75,12 @@ export function CreatorQueueChat({ creatorId, fanId }: Props) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lobby" className="mt-4 flex flex-col h-full">
+        <TabsContent value="lobby" className="mt-4 flex flex-col flex-1 min-h-0">
           <UniversalChat config={lobbyConfig} />
         </TabsContent>
 
         {/* Always render private messages for creator */}
-        <TabsContent value="private" className="mt-4 flex flex-col h-full">
+        <TabsContent value="private" className="mt-4 flex flex-col flex-1 min-h-0">
           <UniversalChat config={privateConfig} />
         </TabsContent>
       </Tabs>
