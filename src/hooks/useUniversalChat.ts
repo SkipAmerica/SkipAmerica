@@ -119,10 +119,10 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
       .subscribe();
 
     return () => {
-      if ((window as any).__allow_ch_teardown) {
-        try { supabase.removeChannel(channel); } catch {}
-      } else {
-        console.warn('[UniversalChat-GUARD] prevented runtime removeChannel', new Error().stack);
+      try { 
+        supabase.removeChannel(channel); 
+      } catch (error) {
+        console.error('[useUniversalChat] Error removing channel:', error);
       }
     };
   }, [config.tableName, config.filterField, config.filterValue, config.channelPrefix, config.appearance?.messageFlow, onNewMessage]);
