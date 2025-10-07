@@ -38,7 +38,8 @@ export function SwipeableQueueCard({
     const maxOffset = 0;
     const constrainedOffset = Math.max(minOffset, Math.min(maxOffset, newOffset));
     
-    setDragOffset(constrainedOffset);
+    // Store the DELTA from current position, not absolute position
+    setDragOffset(constrainedOffset - currentOffset);
   };
 
   const handleEnd = (clientX: number) => {
@@ -151,7 +152,10 @@ export function SwipeableQueueCard({
 
   const getTransform = () => {
     if (isDragging && dragOffset !== 0) {
-      return `translateX(${dragOffset}px)`;
+      const baseOffset = -currentPanel * 100;
+      const containerWidth = containerRef.current?.offsetWidth || 0;
+      const deltaPercent = containerWidth > 0 ? (dragOffset / containerWidth) * 100 : 0;
+      return `translateX(${baseOffset + deltaPercent}%)`;
     }
     return `translateX(-${currentPanel * 100}%)`;
   };
