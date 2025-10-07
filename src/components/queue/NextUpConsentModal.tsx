@@ -19,7 +19,7 @@ export function NextUpConsentModal({
   creatorTerms,
 }: NextUpConsentModalProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onDecline()}>
+    <Dialog open={isOpen}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-2">
