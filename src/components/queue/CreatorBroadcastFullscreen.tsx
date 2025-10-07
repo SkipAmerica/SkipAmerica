@@ -44,7 +44,7 @@ export function CreatorBroadcastFullscreen({
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black">
+    <div className="relative h-full w-full bg-black overflow-hidden">
       {/* Publisher (headless - only when live) */}
       {isLive && (
         <LiveKitPublisher
@@ -74,7 +74,7 @@ export function CreatorBroadcastFullscreen({
           identity: `viewer_${creatorId}_self`,
         }}
         targetParticipantId={creatorId}
-        className="fixed inset-0 w-full h-full object-cover"
+        className="absolute inset-0 w-full h-full object-cover"
         muted={true}
         fallbackContent={
           <div className="flex items-center justify-center h-full bg-black/80">
