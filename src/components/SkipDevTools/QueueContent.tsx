@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
 import { NextUserPreview } from '@/components/queue/NextUserPreview'
-import { QueueChat } from '@/components/queue/QueueChat'
+import { CreatorQueueChat } from '@/components/queue/CreatorQueueChat'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -335,10 +335,9 @@ export function QueueContent() {
                   
                   {/* Tabbed Chat Below Video */}
                   <div className="mt-4 h-64 border rounded-lg overflow-hidden">
-                    <QueueChat
+                    <CreatorQueueChat
                       creatorId={user.id}
                       fanId={state.entries[0].fan_id}
-                      isInQueue={true}
                     />
                   </div>
                 </div>
