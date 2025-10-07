@@ -203,10 +203,8 @@ export default function JoinQueue() {
   }, [creatorId, toast, navigate]);
 
   // Check if creator is live and get queue status
-  useEffect(() => {
+  const checkLiveStatus = useCallback(async () => {
     if (!creatorId || !user) return;
-
-    const checkLiveStatus = async () => {
       // Check if creator is currently live
       const { data: session } = await supabase
         .from('live_sessions')
@@ -256,7 +254,11 @@ export default function JoinQueue() {
       } else {
         setActualPosition(null);
       }
-    };
+  }, [creatorId, user, hasConsentedToBroadcast, forceBroadcast]);
+
+  // Subscribe to live status and queue changes
+  useEffect(() => {
+    if (!creatorId || !user) return;
 
     checkLiveStatus();
 
@@ -304,7 +306,7 @@ export default function JoinQueue() {
         console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
       }
     };
-  }, [creatorId, user]);
+  }, [creatorId, user, checkLiveStatus]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
@@ -453,6 +455,7 @@ export default function JoinQueue() {
       } else {
         console.log('[JoinQueue] Successfully joined queue');
         setIsInQueue(true);
+        checkLiveStatus();
         toast({
           title: "Joined queue!",
           description: "You're now first in line with priority access.",
