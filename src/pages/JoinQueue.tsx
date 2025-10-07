@@ -360,37 +360,14 @@ export default function JoinQueue() {
       }
     };
 
-    // More conservative visibility change handling
-    let visibilityTimer: NodeJS.Timeout;
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        // Wait 5 seconds before cleanup to avoid accidental cleanups from tab switching
-        visibilityTimer = setTimeout(() => {
-          if (document.visibilityState === 'hidden') {
-            console.log('[JoinQueue] Page hidden for 5s - cleaning up queue');
-            cleanupQueue('visibility-hidden');
-          }
-        }, 5000);
-      } else {
-        // Page became visible again, cancel any pending cleanup
-        if (visibilityTimer) {
-          console.log('[JoinQueue] Page visible again - canceling cleanup timer');
-          clearTimeout(visibilityTimer);
-        }
-      }
-    };
-
     // Add event listeners
     window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Cleanup on component unmount
     return () => {
       console.log('[JoinQueue] Component unmounting - cleaning up');
       clearInterval(heartbeatInterval);
-      if (visibilityTimer) clearTimeout(visibilityTimer);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       
       // Clean up consent stream
       if (consentStream) {
