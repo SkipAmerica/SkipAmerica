@@ -38,7 +38,7 @@ export function NextUserPreview({
 
   useEffect(() => {
     console.log(`[NextUserPreview] 🎯 Creator viewing fan's video - Fan ID: ${userId}, Creator ID: ${creatorId}`);
-    console.log(`[NextUserPreview] 📺 Target Room: lobby_${userId}`);
+    console.log(`[NextUserPreview] 📺 Target Room: lobby_${creatorId}`);
   }, [userId, creatorId]);
 
   return (
@@ -59,8 +59,8 @@ export function NextUserPreview({
         <LiveKitVideoPlayer
           config={{
             role: 'viewer',
-            creatorId: userId,
-            identity: creatorId,
+            creatorId: creatorId,
+            identity: `viewer_${creatorId}`,
           }}
           className="w-full aspect-video object-cover bg-black"
           muted={true}
