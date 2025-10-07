@@ -12,11 +12,11 @@ import { PricingManagementModal } from '@/components/creator/PricingManagementMo
 import { getProfileDisplayInfo } from '@/lib/profileUtils';
 import { useDebounce } from '@/shared/hooks/use-debounce';
 import { cn } from '@/lib/utils';
-
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'reserved' | 'invalid';
-
 export function CreatorProfileManagement() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const [loading, setLoading] = useState(true);
   const [profilePictureModalOpen, setProfilePictureModalOpen] = useState(false);
   const [pricingModalOpen, setPricingModalOpen] = useState(false);
@@ -24,7 +24,6 @@ export function CreatorProfileManagement() {
   const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [usernameMessage, setUsernameMessage] = useState<string>('');
   const [usernameSuggestion, setUsernameSuggestion] = useState<string>('');
-
   const [profile, setProfile] = useState({
     full_name: '',
     username: '',
@@ -32,15 +31,12 @@ export function CreatorProfileManagement() {
     bio: '',
     avatar_url: ''
   });
-
   const debouncedUsername = useDebounce(profile.username, 500);
-
   const [stats] = useState({
     posts: 0,
     followers: 0,
     following: 0
   });
-
   useEffect(() => {
     if (user?.id) {
       loadCreatorData();
@@ -54,18 +50,14 @@ export function CreatorProfileManagement() {
     }
     checkUsernameAvailability(debouncedUsername);
   }, [debouncedUsername, editingField]);
-
   const loadCreatorData = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('creators')
-        .select('*')
-        .eq('id', user!.id)
-        .single();
-
+      const {
+        data,
+        error
+      } = await supabase.from('creators').select('*').eq('id', user!.id).single();
       if (error) throw error;
-
       if (data) {
         setProfile({
           full_name: data.full_name || '',
@@ -82,7 +74,6 @@ export function CreatorProfileManagement() {
       setLoading(false);
     }
   };
-
   const checkUsernameAvailability = async (username: string) => {
     if (!username) {
       setUsernameStatus('idle');
@@ -90,29 +81,29 @@ export function CreatorProfileManagement() {
       setUsernameSuggestion('');
       return;
     }
-
     setUsernameStatus('checking');
     setUsernameMessage('');
     setUsernameSuggestion('');
-
     try {
-      const { data, error } = await supabase.functions.invoke('check-username-availability', {
-        body: { username }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('check-username-availability', {
+        body: {
+          username
+        }
       });
-
       if (error) {
         console.error('Error checking username:', error);
         setUsernameStatus('invalid');
         setUsernameMessage('Error checking availability');
         return;
       }
-
       if (data.available) {
         setUsernameStatus('available');
         setUsernameMessage(data.message || 'Available');
       } else {
-        const newStatus = data.reason === 'reserved' ? 'reserved' : 
-                         data.reason === 'invalid_format' ? 'invalid' : 'taken';
+        const newStatus = data.reason === 'reserved' ? 'reserved' : data.reason === 'invalid_format' ? 'invalid' : 'taken';
         setUsernameStatus(newStatus);
         setUsernameMessage(data.message || 'Not available');
         if (data.suggestion) {
@@ -125,7 +116,6 @@ export function CreatorProfileManagement() {
       setUsernameMessage('Error checking availability');
     }
   };
-
   const handleFieldUpdate = async (field: string, value: string) => {
     if (!user?.id) return;
 
@@ -134,25 +124,24 @@ export function CreatorProfileManagement() {
       toast.error('Please choose a valid username');
       return;
     }
-
     try {
-      const updateData = { [field]: value, updated_at: new Date().toISOString() };
-      
-      const { error: creatorError } = await supabase
-        .from('creators')
-        .update(updateData)
-        .eq('id', user.id);
-
+      const updateData = {
+        [field]: value,
+        updated_at: new Date().toISOString()
+      };
+      const {
+        error: creatorError
+      } = await supabase.from('creators').update(updateData).eq('id', user.id);
       if (creatorError) throw creatorError;
-
       if (field === 'full_name') {
-        await supabase
-          .from('profiles')
-          .update({ full_name: value })
-          .eq('id', user.id);
+        await supabase.from('profiles').update({
+          full_name: value
+        }).eq('id', user.id);
       }
-
-      setProfile({ ...profile, [field]: value });
+      setProfile({
+        ...profile,
+        [field]: value
+      });
       setEditingField(null);
       setUsernameStatus('idle');
       setUsernameMessage('');
@@ -163,22 +152,16 @@ export function CreatorProfileManagement() {
       toast.error('Failed to update');
     }
   };
-
-  const displayInfo = getProfileDisplayInfo({ 
-    full_name: profile.full_name, 
-    avatar_url: profile.avatar_url 
+  const displayInfo = getProfileDisplayInfo({
+    full_name: profile.full_name,
+    avatar_url: profile.avatar_url
   });
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
+    return <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
+  return <div className="min-h-screen bg-background pb-[calc(var(--ios-tab-bar-height)+env(safe-area-inset-bottom)+(var(--lsb-visible)*var(--lsb-height))+24px)]">
       <div className="max-w-2xl mx-auto">
         {/* Profile Header */}
         <div className="px-4 pb-6 pt-[calc(var(--safe-area-top,0px)+56px+0.5rem)]">
@@ -186,18 +169,13 @@ export function CreatorProfileManagement() {
           <div className="flex items-start gap-6 mb-4">
             {/* Avatar with Edit Button */}
             <div className="relative">
-              <div 
-                onClick={() => setProfilePictureModalOpen(true)}
-                className="relative cursor-pointer group"
-              >
+              <div onClick={() => setProfilePictureModalOpen(true)} className="relative cursor-pointer group">
                 <Avatar className="h-20 w-20">
                   <AvatarImage src={profile.avatar_url} />
-                  <AvatarFallback 
-                    style={{ 
-                      backgroundColor: displayInfo.backgroundColor,
-                      color: displayInfo.textColor 
-                    }}
-                  >
+                  <AvatarFallback style={{
+                  backgroundColor: displayInfo.backgroundColor,
+                  color: displayInfo.textColor
+                }}>
                     {displayInfo.initials}
                   </AvatarFallback>
                 </Avatar>
@@ -211,7 +189,7 @@ export function CreatorProfileManagement() {
             <div className="flex-1 flex justify-around pt-2">
               <div className="text-center">
                 <div className="text-xl font-semibold">{stats.posts}</div>
-                <div className="text-sm text-muted-foreground">posts</div>
+                <div className="text-sm text-muted-foreground">Sessions</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-semibold">{stats.followers}</div>
@@ -226,52 +204,34 @@ export function CreatorProfileManagement() {
 
           {/* Name and Bio */}
           <div className="space-y-1">
-            {editingField === 'full_name' ? (
-              <Input
-                value={profile.full_name}
-                onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                onBlur={() => handleFieldUpdate('full_name', profile.full_name)}
-                onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('full_name', profile.full_name)}
-                autoFocus
-                className="font-semibold"
-              />
-            ) : (
-              <div 
-                onClick={() => setEditingField('full_name')}
-                className="font-semibold cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
-              >
+            {editingField === 'full_name' ? <Input value={profile.full_name} onChange={e => setProfile({
+            ...profile,
+            full_name: e.target.value
+          })} onBlur={() => handleFieldUpdate('full_name', profile.full_name)} onKeyDown={e => e.key === 'Enter' && handleFieldUpdate('full_name', profile.full_name)} autoFocus className="font-semibold" /> : <div onClick={() => setEditingField('full_name')} className="font-semibold cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1">
                 {profile.full_name || 'Add name'}
-              </div>
-            )}
+              </div>}
 
-            {editingField === 'username' ? (
-              <div className="space-y-2">
+            {editingField === 'username' ? <div className="space-y-2">
                 <div className="flex items-center gap-1 relative">
                   <span className="text-sm text-muted-foreground">@</span>
-                  <Input
-                    value={profile.username}
-                    onChange={(e) => {
-                      const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                      setProfile({ ...profile, username: newValue });
-                      if (newValue !== profile.username) {
-                        setUsernameStatus('idle');
-                      }
-                    }}
-                    onBlur={() => {
-                      if (usernameStatus === 'available' || usernameStatus === 'idle') {
-                        handleFieldUpdate('username', profile.username);
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && (usernameStatus === 'available' || usernameStatus === 'idle')) {
-                        handleFieldUpdate('username', profile.username);
-                      }
-                    }}
-                    autoFocus
-                    className="text-sm h-8 pr-10"
-                    placeholder="username"
-                    maxLength={30}
-                  />
+                  <Input value={profile.username} onChange={e => {
+                const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                setProfile({
+                  ...profile,
+                  username: newValue
+                });
+                if (newValue !== profile.username) {
+                  setUsernameStatus('idle');
+                }
+              }} onBlur={() => {
+                if (usernameStatus === 'available' || usernameStatus === 'idle') {
+                  handleFieldUpdate('username', profile.username);
+                }
+              }} onKeyDown={e => {
+                if (e.key === 'Enter' && (usernameStatus === 'available' || usernameStatus === 'idle')) {
+                  handleFieldUpdate('username', profile.username);
+                }
+              }} autoFocus className="text-sm h-8 pr-10" placeholder="username" maxLength={30} />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     {usernameStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
                     {usernameStatus === 'available' && <Check className="h-4 w-4 text-green-500" />}
@@ -280,96 +240,51 @@ export function CreatorProfileManagement() {
                   </div>
                 </div>
                 
-                {usernameStatus !== 'idle' && usernameMessage && (
-                  <div className={cn(
-                    "text-xs font-medium",
-                    usernameStatus === 'available' && "text-green-500",
-                    (usernameStatus === 'taken' || usernameStatus === 'invalid') && "text-red-500",
-                    usernameStatus === 'reserved' && "text-yellow-500"
-                  )}>
+                {usernameStatus !== 'idle' && usernameMessage && <div className={cn("text-xs font-medium", usernameStatus === 'available' && "text-green-500", (usernameStatus === 'taken' || usernameStatus === 'invalid') && "text-red-500", usernameStatus === 'reserved' && "text-yellow-500")}>
                     {usernameMessage}
-                  </div>
-                )}
+                  </div>}
 
-                {usernameSuggestion && usernameStatus === 'taken' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setProfile({ ...profile, username: usernameSuggestion });
-                      setUsernameStatus('idle');
-                    }}
-                    className="text-xs text-muted-foreground hover:text-foreground underline"
-                  >
+                {usernameSuggestion && usernameStatus === 'taken' && <button type="button" onClick={() => {
+              setProfile({
+                ...profile,
+                username: usernameSuggestion
+              });
+              setUsernameStatus('idle');
+            }} className="text-xs text-muted-foreground hover:text-foreground underline">
                     Try "{usernameSuggestion}" instead?
-                  </button>
-                )}
+                  </button>}
 
                 <div className="flex items-start gap-1 text-xs text-muted-foreground">
                   <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
                   <span>
                     3-30 characters. Letters, numbers, and underscores only.
-                    <span className={cn(
-                      "ml-1 font-medium",
-                      profile.username.length >= 3 && profile.username.length <= 30 ? "" : "text-red-500"
-                    )}>
+                    <span className={cn("ml-1 font-medium", profile.username.length >= 3 && profile.username.length <= 30 ? "" : "text-red-500")}>
                       {profile.username.length}/30
                     </span>
                   </span>
                 </div>
-              </div>
-            ) : (
-              <div 
-                onClick={() => setEditingField('username')}
-                className="flex items-center gap-1 text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
-              >
+              </div> : <div onClick={() => setEditingField('username')} className="flex items-center gap-1 text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1">
                 <span className="text-muted-foreground">@{profile.username || 'Add username'}</span>
-              </div>
-            )}
+              </div>}
 
-            {editingField === 'headline' ? (
-              <Input
-                value={profile.headline}
-                onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
-                onBlur={() => handleFieldUpdate('headline', profile.headline)}
-                onKeyDown={(e) => e.key === 'Enter' && handleFieldUpdate('headline', profile.headline)}
-                autoFocus
-                className="text-sm"
-                placeholder="Add tagline"
-              />
-            ) : (
-              <div 
-                onClick={() => setEditingField('headline')}
-                className="text-sm text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
-              >
+            {editingField === 'headline' ? <Input value={profile.headline} onChange={e => setProfile({
+            ...profile,
+            headline: e.target.value
+          })} onBlur={() => handleFieldUpdate('headline', profile.headline)} onKeyDown={e => e.key === 'Enter' && handleFieldUpdate('headline', profile.headline)} autoFocus className="text-sm" placeholder="Add tagline" /> : <div onClick={() => setEditingField('headline')} className="text-sm text-muted-foreground cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1">
                 {profile.headline || 'Add tagline'}
-              </div>
-            )}
+              </div>}
 
-            {editingField === 'bio' ? (
-              <Textarea
-                value={profile.bio}
-                onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-                onBlur={() => handleFieldUpdate('bio', profile.bio)}
-                autoFocus
-                className="text-sm min-h-[60px]"
-                placeholder="Add bio"
-              />
-            ) : (
-              <div 
-                onClick={() => setEditingField('bio')}
-                className="text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1"
-              >
+            {editingField === 'bio' ? <Textarea value={profile.bio} onChange={e => setProfile({
+            ...profile,
+            bio: e.target.value
+          })} onBlur={() => handleFieldUpdate('bio', profile.bio)} autoFocus className="text-sm min-h-[60px]" placeholder="Add bio" /> : <div onClick={() => setEditingField('bio')} className="text-sm cursor-pointer hover:bg-accent/50 rounded px-1 -mx-1">
                 {profile.bio || 'Add bio'}
-              </div>
-            )}
+              </div>}
           </div>
 
           {/* Action Buttons */}
           <div className="mt-4 flex gap-2">
-            <Button 
-              className="flex-1 bg-cyan-500 text-white hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700"
-              onClick={() => setPricingModalOpen(true)}
-            >
+            <Button className="flex-1 bg-cyan-500 text-white hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700" onClick={() => setPricingModalOpen(true)}>
               <Settings size={16} className="mr-2" />
               Manage Pricing
             </Button>
@@ -410,31 +325,21 @@ export function CreatorProfileManagement() {
 
         {/* Content Grid Placeholder */}
         <div className="grid grid-cols-3 gap-px bg-border">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="aspect-square bg-muted flex items-center justify-center">
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="aspect-square bg-muted flex items-center justify-center">
               <ImageIcon size={32} className="text-muted-foreground/30" />
-            </div>
-          ))}
+            </div>)}
         </div>
       </div>
 
       {/* Modals */}
-      <ProfilePictureUploadModal
-        isOpen={profilePictureModalOpen}
-        onClose={() => {
-          setProfilePictureModalOpen(false);
-          loadCreatorData();
-        }}
-        creatorId={user!.id}
-        currentAvatarUrl={profile.avatar_url}
-        onUpdate={(url) => setProfile({ ...profile, avatar_url: url })}
-      />
+      <ProfilePictureUploadModal isOpen={profilePictureModalOpen} onClose={() => {
+      setProfilePictureModalOpen(false);
+      loadCreatorData();
+    }} creatorId={user!.id} currentAvatarUrl={profile.avatar_url} onUpdate={url => setProfile({
+      ...profile,
+      avatar_url: url
+    })} />
 
-      <PricingManagementModal
-        isOpen={pricingModalOpen}
-        onClose={() => setPricingModalOpen(false)}
-        creatorId={user!.id}
-      />
-    </div>
-  );
+      <PricingManagementModal isOpen={pricingModalOpen} onClose={() => setPricingModalOpen(false)} creatorId={user!.id} />
+    </div>;
 }
