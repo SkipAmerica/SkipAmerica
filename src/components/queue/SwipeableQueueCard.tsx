@@ -5,13 +5,20 @@ type SwipeableQueueCardProps = {
   nextUpPanel: React.ReactNode;
   broadcastPanel: React.ReactNode;
   className?: string;
+  onBroadcastClose?: () => void;
 };
 
 export function SwipeableQueueCard({
   nextUpPanel,
   broadcastPanel,
   className,
+  onBroadcastClose,
 }: SwipeableQueueCardProps) {
+  // Handle close from broadcast panel
+  const handleBroadcastClose = () => {
+    setCurrentPanel(0); // Switch back to Panel 1
+    onBroadcastClose?.();
+  };
   const [currentPanel, setCurrentPanel] = useState<0 | 1>(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
@@ -185,7 +192,11 @@ export function SwipeableQueueCard({
 
         {/* Panel 2: Broadcast (1 row: video only) */}
         <div className="w-1/2 flex-shrink-0 h-auto">
-          {broadcastPanel}
+          {React.isValidElement(broadcastPanel)
+            ? React.cloneElement(broadcastPanel as React.ReactElement<any>, {
+                onClose: handleBroadcastClose
+              })
+            : broadcastPanel}
         </div>
       </div>
 

@@ -325,3 +325,45 @@ export const createQueuePrivateConfig = (
     }
   };
 };
+
+// Fullscreen Lobby Chat Configuration for Creator Broadcast
+export const createFullscreenLobbyConfig = (creatorId: string): ChatConfig => ({
+  tableName: 'lobby_chat_messages',
+  channelPrefix: 'lobby-chat',
+  filterField: 'creator_id',
+  filterValue: creatorId,
+  appearance: {
+    height: 'h-full',
+    width: 'w-full',
+    showProfiles: true,
+    showUsernames: true,
+    usernameStyle: 'bold',
+    compact: false,
+    messageFlow: 'newest-bottom',
+    showScrollbar: true,
+    emptyStateText: 'No messages yet. Chat with your fans!',
+    className: 'bg-transparent border-0',
+    inputClassName: '[&_textarea]:!bg-transparent [&_textarea]:border [&_textarea]:border-white [&_textarea]:text-white [&_textarea]:placeholder:text-white/70 [&_button]:bg-transparent [&_button]:border [&_button]:border-white [&_button]:text-white [&_button]:hover:bg-white/20'
+  },
+  messaging: {
+    enabled: true,
+    placeholder: 'Chat with your lobby...',
+    requireAuth: true,
+    showSendButton: true
+  },
+  richText: {
+    enabled: false
+  },
+  positioning: {
+    mode: 'relative',
+    allowPositionToggle: false
+  },
+  sendMessage: async ({ filterValue, userId, username, text }) => {
+    await sendLobbyMessage({
+      creatorId: filterValue,
+      userId,
+      username,
+      text
+    });
+  }
+});

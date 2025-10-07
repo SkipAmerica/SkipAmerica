@@ -217,14 +217,14 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
                   )}
                   <div className="min-w-0">
                     {showUsernames ? (
-                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
+                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/70 backdrop-blur-md rounded-lg px-3 py-1.5`}>
                         <span className={`${usernameStyle === 'bold' ? 'font-bold' : 'font-medium'} ${textSizes.name}`}>
                           {profileInfo.fullName}:
                         </span>{' '}
                         <RichTextMessage message={message.message} />
                       </span>
                     ) : (
-                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/50 backdrop-blur-sm rounded-lg px-2 py-1`}>
+                      <span className={`inline-block text-foreground break-words ${textSizes.message} bg-white/70 backdrop-blur-md rounded-lg px-3 py-1.5`}>
                         <RichTextMessage message={message.message} />
                       </span>
                     )}

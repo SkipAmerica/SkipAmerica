@@ -12,7 +12,7 @@ import { NextUserPreview } from '@/components/queue/NextUserPreview'
 import { CreatorQueueChat } from '@/components/queue/CreatorQueueChat'
 import { CollapsibleChat } from '@/components/queue/CollapsibleChat'
 import { SwipeableQueueCard } from '@/components/queue/SwipeableQueueCard'
-import { BroadcastPreview } from '@/components/queue/BroadcastPreview'
+import { CreatorBroadcastFullscreen } from '@/components/queue/CreatorBroadcastFullscreen'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -418,29 +418,17 @@ export function QueueContent() {
                     </div>
                   }
                   broadcastPanel={
-                    <div className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex flex-col">
-                          <p className="text-sm text-destructive font-medium">
-                            Broadcasting
-                          </p>
-                          <p className="text-sm font-medium text-foreground mt-1">
-                            To Lobby
-                          </p>
-                        </div>
-                        <div className="flex flex-col items-end text-right">
-                          <p className="text-xs text-muted-foreground">
-                            Swipe to View
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <span className="text-primary">←</span>
-                            Next Up
-                          </p>
-                        </div>
-                      </div>
-                      <BroadcastPreview />
-                    </div>
+                    <CreatorBroadcastFullscreen
+                      creatorId={user.id}
+                      onClose={() => {
+                        // Close handler will be wired through SwipeableQueueCard
+                        console.log('[QueueContent] Broadcast close requested');
+                      }}
+                    />
                   }
+                  onBroadcastClose={() => {
+                    console.log('[QueueContent] Switching back to Panel 1');
+                  }}
                 />
               </div>
             )}
