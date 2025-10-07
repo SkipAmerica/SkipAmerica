@@ -68,6 +68,21 @@ export function SwipeableQueueCard({
 
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Check if click target is an interactive element
+    const target = e.target as HTMLElement;
+    const isInteractive = 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.isContentEditable ||
+      target.closest('input, textarea, button, a, [contenteditable="true"]') ||
+      target.closest('[data-no-drag]');
+    
+    if (isInteractive) {
+      return; // Don't start dragging
+    }
+    
     e.preventDefault();
     handleStart(e.clientX);
   };
@@ -82,6 +97,21 @@ export function SwipeableQueueCard({
 
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Check if touch target is an interactive element
+    const target = e.target as HTMLElement;
+    const isInteractive = 
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'BUTTON' ||
+      target.tagName === 'A' ||
+      target.isContentEditable ||
+      target.closest('input, textarea, button, a, [contenteditable="true"]') ||
+      target.closest('[data-no-drag]');
+    
+    if (isInteractive) {
+      return; // Don't start dragging
+    }
+    
     handleStart(e.touches[0].clientX);
   };
 

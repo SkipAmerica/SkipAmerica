@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Clock, Phone, AlertTriangle, RotateCcw } from 'lucide-react'
+import { Clock, Phone, AlertTriangle, RotateCcw, Users } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
@@ -360,8 +360,8 @@ export function QueueContent() {
                       </CollapsibleChat>
 
                       {/* Row 3: Remaining Queue */}
-                      {state.entries.length > 1 && (
-                        <div className="flex-1 overflow-y-auto pt-3 px-4 pb-4">
+                      <div className="flex-1 overflow-y-auto pt-3 px-4 pb-4">
+                        {state.entries.length > 1 ? (
                           <div className="space-y-3">
                             {state.entries.slice(1).map((entry, index) => (
                               <div
@@ -401,8 +401,20 @@ export function QueueContent() {
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="flex flex-col items-center justify-center py-8 text-center">
+                            <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                              <Users className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <p className="text-sm font-medium text-muted-foreground mb-1">
+                              No one else waiting
+                            </p>
+                            <p className="text-xs text-muted-foreground/70">
+                              You'll see the next fans here
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   }
                   broadcastPanel={
