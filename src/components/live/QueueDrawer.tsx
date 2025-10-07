@@ -301,7 +301,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     <ViewportDrawer
       isOpen={isOpen}
       onClose={handleClose}
-      config={{ size: 'xl', variant: 'default', dismissible: true, peekMode: false }}
+      config={{ size: 'full', variant: 'default', dismissible: true, peekMode: false }}
     >
       <QueueContent />
     </ViewportDrawer>

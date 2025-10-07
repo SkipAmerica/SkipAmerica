@@ -313,13 +313,24 @@ export function QueueContent() {
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
                 {/* Unified card-style layout */}
                 <div className="p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-primary font-medium">
-                      Next Up
-                    </p>
-                    <p className="text-sm font-medium text-foreground">
-                      {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                    </p>
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex flex-col">
+                      <p className="text-sm text-primary font-medium">
+                        Next Up
+                      </p>
+                      <p className="text-sm font-medium text-foreground mt-1">
+                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end text-right">
+                      <p className="text-xs text-muted-foreground">
+                        Swipe to Go Live
+                      </p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        In Your Lobby
+                        <span className="text-primary">→</span>
+                      </p>
+                    </div>
                   </div>
                   <NextUserPreview
                     userId={state.entries[0].fan_id}
