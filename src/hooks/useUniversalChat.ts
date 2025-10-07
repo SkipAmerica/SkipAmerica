@@ -7,19 +7,26 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
 
+  // Extract stable primitive values to prevent unnecessary re-renders
+  const tableName = config.tableName;
+  const filterField = config.filterField;
+  const filterValue = config.filterValue;
+  const channelPrefix = config.channelPrefix;
+  const messageFlow = config.appearance?.messageFlow || 'newest-bottom';
+
   // Fetch initial messages - Based on PQ implementation
   useEffect(() => {
-    if (!config.filterValue) return;
+    if (!filterValue) return;
 
     const fetchMessages = async () => {
       try {
         // Fetch messages and then get profile data separately
         const { data: messagesData, error: messagesError } = await supabase
-          .from(config.tableName as any)
+          .from(tableName as any)
           .select('*')
-          .eq(config.filterField, config.filterValue)
+          .eq(filterField, filterValue)
           .order('created_at', { 
-            ascending: config.appearance?.messageFlow === 'newest-top' ? false : true 
+            ascending: messageFlow === 'newest-top' ? false : true 
           })
           .limit(50);
 
@@ -67,14 +74,14 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
 
     // Subscribe to new messages - Based on PQ implementation
     const channel = supabase
-      .channel(`${config.channelPrefix}-${config.filterValue}`)
+      .channel(`${channelPrefix}-${filterValue}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: config.tableName,
-          filter: `${config.filterField}=eq.${config.filterValue}`
+          table: tableName,
+          filter: `${filterField}=eq.${filterValue}`
         },
         async (payload) => {
           // Handle both user_id and sender_id for different table structures
@@ -103,9 +110,8 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
             profiles: profileData || undefined
           };
 
-          const flow = config.appearance?.messageFlow || 'newest-bottom';
           setMessages(prev => {
-            const newMessages = flow === 'newest-top' 
+            const newMessages = messageFlow === 'newest-top' 
               ? [enrichedMessage, ...prev]
               : [...prev, enrichedMessage];
             
@@ -125,7 +131,7 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
         console.error('[useUniversalChat] Error removing channel:', error);
       }
     };
-  }, [config.tableName, config.filterField, config.filterValue, config.channelPrefix, config.appearance?.messageFlow, onNewMessage]);
+  }, [tableName, filterField, filterValue, channelPrefix, messageFlow, onNewMessage]);
 
   return {
     messages,
