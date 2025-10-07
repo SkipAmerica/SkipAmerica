@@ -255,7 +255,7 @@ export const createQueueLobbyConfig = (creatorId: string): ChatConfig => ({
   appearance: {
     height: 'h-full',
     showProfiles: true,
-    showProfileToggle: true,
+    showProfileToggle: false,
     showUsernames: true,
     usernameStyle: 'bold',
     messageFlow: 'newest-bottom',
@@ -303,8 +303,8 @@ export const createQueuePrivateConfig = (
       height: 'h-full',
       showScrollbar: true,
       messageFlow: 'newest-bottom',
-      showProfiles: false,
-      showProfileToggle: true,
+      showProfiles: true,
+      showProfileToggle: false,
       showUsernames: true,
       usernameStyle: 'bold',
       emptyStateText: 'Start your private conversation...'

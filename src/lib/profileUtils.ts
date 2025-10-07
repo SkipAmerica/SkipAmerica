@@ -105,15 +105,15 @@ export function getTextSizeClasses(compact?: boolean): {
 } {
   if (compact) {
     return {
-      name: 'text-xs',
-      message: 'text-xs',
-      timestamp: 'text-xs'
+      name: 'text-[0.625rem]',
+      message: 'text-[0.625rem]',
+      timestamp: 'text-[0.5rem]'
     };
   }
   
   return {
-    name: 'text-sm',
-    message: 'text-sm',
-    timestamp: 'text-xs'
+    name: 'text-xs',
+    message: 'text-xs',
+    timestamp: 'text-[0.625rem]'
   };
 }
