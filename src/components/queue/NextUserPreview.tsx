@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
+import { useParticipants } from '@livekit/components-react';
 import { cn } from '@/lib/utils';
 
 interface NextUserPreviewProps {
@@ -23,11 +24,16 @@ export function NextUserPreview({
   onFullscreen
 }: NextUserPreviewProps) {
   const [showNotification, setShowNotification] = useState(true);
+  const participants = useParticipants();
 
   useEffect(() => {
     const timer = setTimeout(() => setShowNotification(false), 8000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Check if target participant is connected but has no video
+  const targetParticipant = participants.find(p => p.identity === userId);
+  const hasVideoTrack = targetParticipant?.videoTrackPublications.size > 0;
 
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`;
@@ -69,7 +75,11 @@ export function NextUserPreview({
             <div className="flex items-center justify-center text-white">
               <div className="text-center">
                 <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
-                <p className="text-sm">Loading {userName}'s video...</p>
+                <p className="text-sm">
+                  {targetParticipant && !hasVideoTrack
+                    ? `${userName} is connected—waiting for camera...`
+                    : `Loading ${userName}'s video...`}
+                </p>
               </div>
             </div>
           }

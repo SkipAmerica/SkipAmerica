@@ -6,6 +6,7 @@ interface LiveKitPublisherProps {
   config: LiveKitRoomConfig;
   publishAudio?: boolean;
   publishVideo?: boolean;
+  mediaStream?: MediaStream; // Optional: use provided stream instead of creating tracks
   onPublished?: () => void;
   onError?: (error: Error) => void;
 }
@@ -18,6 +19,7 @@ export function LiveKitPublisher({
   config,
   publishAudio = true,
   publishVideo = true,
+  mediaStream,
   onPublished,
   onError,
 }: LiveKitPublisherProps) {
@@ -32,16 +34,27 @@ export function LiveKitPublisher({
     const publish = async (attempt = 1) => {
       try {
         setIsPublishing(true);
-        console.log(`[LiveKitPublisher] Creating local tracks... (attempt ${attempt})`);
 
-        const tracks = await createLocalTracks({
-          audio: publishAudio,
-          video: publishVideo ? { facingMode: 'user' } : false,
-        });
+        let tracks;
+        
+        // Use provided MediaStream if available, otherwise create tracks
+        if (mediaStream) {
+          console.log(`[LiveKitPublisher] Publishing ${mediaStream.getTracks().length} tracks from provided stream (attempt ${attempt})`);
+          tracks = mediaStream.getTracks();
+        } else {
+          console.log(`[LiveKitPublisher] Creating local tracks... (attempt ${attempt})`);
+          const localTracks = await createLocalTracks({
+            audio: publishAudio,
+            video: publishVideo ? { facingMode: 'user' } : false,
+          });
+          tracks = localTracks;
+        }
 
         if (!mounted) {
           // Clean up tracks if component unmounted
-          tracks.forEach(track => track.stop());
+          if (!mediaStream) {
+            tracks.forEach(track => track.stop());
+          }
           return;
         }
 
@@ -78,7 +91,7 @@ export function LiveKitPublisher({
     return () => {
       mounted = false;
     };
-  }, [room, isConnected, publishAudio, publishVideo, onPublished, onError, isPublishing]);
+  }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 
   return null; // This is a headless component
 }

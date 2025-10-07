@@ -66,6 +66,7 @@ export default function JoinQueue() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [hasConsentedToBroadcast, setHasConsentedToBroadcast] = useState(false);
   const [actualPosition, setActualPosition] = useState<number | null>(null);
+  const [consentStream, setConsentStream] = useState<MediaStream | undefined>(undefined);
 
   const isUnloadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -391,12 +392,17 @@ export default function JoinQueue() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       
+      // Clean up consent stream
+      if (consentStream) {
+        consentStream.getTracks().forEach(track => track.stop());
+      }
+      
       // Only cleanup if not already unloading
       if (!isUnloadingRef.current) {
         cleanupQueue('component-unmount');
       }
     };
-  }, [user, creatorId, isInQueue]); // Removed cleanupQueue from dependencies
+  }, [user, creatorId, isInQueue, consentStream]);
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;
@@ -486,6 +492,13 @@ export default function JoinQueue() {
       setDiscussionTopic('');
       setHasConsentedToBroadcast(false); // Reset consent
       setActualPosition(null);
+      
+      // Clean up consent stream
+      if (consentStream) {
+        consentStream.getTracks().forEach(track => track.stop());
+        setConsentStream(undefined);
+      }
+      
       console.log('[JoinQueue] Successfully left queue');
       toast({
         title: "Left queue",
@@ -504,13 +517,19 @@ export default function JoinQueue() {
   const handleConsentAgree = async () => {
     console.log('[JoinQueue] Fan consented to broadcast');
     
-    // Pre-warm media permissions to preserve user activation
+    // Capture media stream to use for publishing
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log('[JoinQueue] ✅ Media permissions granted, stopping pre-warm stream');
-      stream.getTracks().forEach(track => track.stop());
+      console.log('[JoinQueue] ✅ Media stream captured for broadcasting');
+      setConsentStream(stream);
     } catch (err) {
-      console.warn('[JoinQueue] ⚠️ Pre-warm media permission failed:', err);
+      console.error('[JoinQueue] ❌ Failed to capture media stream:', err);
+      toast({
+        title: "Camera Access Required",
+        description: "Please allow camera and microphone access to broadcast your video.",
+        variant: "destructive"
+      });
+      return;
     }
     
     setHasConsentedToBroadcast(true);
@@ -614,6 +633,7 @@ export default function JoinQueue() {
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
                 shouldPublishFanVideo={isInQueue && (hasConsentedToBroadcast || forceBroadcast)}
+                consentStream={consentStream}
               />
             </div>
           </div>

@@ -11,11 +11,18 @@ interface BroadcastViewerProps {
   sessionId: string;
   isInQueue: boolean;
   shouldPublishFanVideo?: boolean;
+  consentStream?: MediaStream; // Optional: MediaStream captured during consent
 }
 
 type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'offline' | 'retry';
 
-export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublishFanVideo = false }: BroadcastViewerProps) {
+export function BroadcastViewer({ 
+  creatorId, 
+  sessionId, 
+  isInQueue,
+  shouldPublishFanVideo = false,
+  consentStream
+}: BroadcastViewerProps) {
   const queueId = creatorId;
   
   if (!queueId) {
@@ -166,8 +173,8 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
       )}
 
       {/* Fan video publisher (headless) */}
-      {shouldPublishFanVideo && fanUserId && resolvedCreatorId && (
-        <LiveKitPublisher
+        {shouldPublishFanVideo && fanUserId && resolvedCreatorId && (
+          <LiveKitPublisher
           config={{
             role: 'publisher',
             creatorId: resolvedCreatorId,
@@ -175,6 +182,7 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
           }}
           publishAudio={true}
           publishVideo={true}
+          mediaStream={consentStream}
           onPublished={() => {
             console.log('[BroadcastViewer] ✅ Fan video published successfully with identity:', fanUserId);
           }}
@@ -182,13 +190,17 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
             console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
           }}
         />
-      )}
+        )}
       
       {/* Self video PIP */}
-      {showSelfVideo && (
+      {showSelfVideo && (consentStream || localStream) && (
         <div className="absolute bottom-20 right-4 z-30 w-32 h-24 sm:w-40 sm:h-30 rounded-lg overflow-hidden border-2 border-white shadow-lg">
           <video
-            ref={selfVideoRef}
+            ref={(el) => {
+              if (el) {
+                el.srcObject = consentStream || localStream;
+              }
+            }}
             autoPlay
             playsInline
             muted
