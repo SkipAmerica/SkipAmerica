@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
 import { NextUserPreview } from '@/components/queue/NextUserPreview'
 import { CreatorQueueChat } from '@/components/queue/CreatorQueueChat'
+import { CollapsibleChat } from '@/components/queue/CollapsibleChat'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -343,21 +344,21 @@ export function QueueContent() {
                     }}
                     onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
                   />
-                  
-                  {/* Tabbed Chat Below Video */}
-                  <div className="mt-4 h-[224px] border rounded-lg overflow-hidden flex flex-col">
-                    <CreatorQueueChat
-                      creatorId={user.id}
-                      fanId={state.entries[0].fan_id}
-                    />
-                  </div>
                 </div>
+                
+                {/* Collapsible Tabbed Chat */}
+                <CollapsibleChat className="border-t">
+                  <CreatorQueueChat
+                    creatorId={user.id}
+                    fanId={state.entries[0].fan_id}
+                  />
+                </CollapsibleChat>
               </div>
             )}
 
-            {/* Scrollable Remaining Entries */}
+            {/* Scrollable Remaining Entries (smooth transition) */}
             {state.entries.length > 1 && (
-              <div className="flex-1 overflow-y-auto pt-3">
+              <div className="flex-1 overflow-y-auto pt-3 transition-all duration-300 ease-in-out">
                 <div className="space-y-3">
                   {state.entries.slice(1).map((entry, index) => (
                     <div
