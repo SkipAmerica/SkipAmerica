@@ -46,6 +46,9 @@ export default function JoinQueue() {
   const { profile } = useProfile();
   const { toast } = useToast();
   
+  // URL flag to force broadcasting for testing (bypass consent)
+  const forceBroadcast = new URLSearchParams(window.location.search).get('broadcast') === '1';
+  
   // Use centralized presence hook for online status
   const { isOnline } = useCreatorPresence(creatorId || null);
 
@@ -599,7 +602,7 @@ export default function JoinQueue() {
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
-                shouldPublishFanVideo={hasConsentedToBroadcast && actualPosition === 1}
+                shouldPublishFanVideo={(hasConsentedToBroadcast || forceBroadcast) && actualPosition === 1}
               />
             </div>
           </div>

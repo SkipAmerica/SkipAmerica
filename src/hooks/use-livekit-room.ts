@@ -74,8 +74,8 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           if (mounted) setConnectionState('connected');
         });
 
-        // Connect to room
-        await newRoom.connect(url, token);
+        // Connect to room with auto-subscribe enabled
+        await newRoom.connect(url, token, { autoSubscribe: true });
 
         if (!mounted) {
           await newRoom.disconnect();

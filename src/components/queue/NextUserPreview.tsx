@@ -62,6 +62,7 @@ export function NextUserPreview({
             creatorId: creatorId,
             identity: `viewer_${creatorId}`,
           }}
+          targetParticipantId={userId}
           className="w-full aspect-video object-cover bg-black"
           muted={true}
           fallbackContent={
