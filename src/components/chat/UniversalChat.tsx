@@ -52,12 +52,16 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
 
     setSending(true);
     try {
-      // Get user profile for avatar - Based on PQ implementation
-      const { data: profile } = await supabase
+      // Try to fetch profile, but don't block if it fails
+      const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("full_name, avatar_url")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
+      
+      if (profileError) {
+        console.warn('[UniversalChat] Profile lookup failed:', profileError);
+      }
       
       const username = profile?.full_name?.split(" ")[0] ?? user.email?.split("@")[0] ?? "guest";
       
