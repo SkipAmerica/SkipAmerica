@@ -11,6 +11,8 @@ import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
 import { NextUserPreview } from '@/components/queue/NextUserPreview'
 import { CreatorQueueChat } from '@/components/queue/CreatorQueueChat'
 import { CollapsibleChat } from '@/components/queue/CollapsibleChat'
+import { SwipeableQueueCard } from '@/components/queue/SwipeableQueueCard'
+import { BroadcastPreview } from '@/components/queue/BroadcastPreview'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -312,39 +314,66 @@ export function QueueContent() {
             {/* Sticky First Entry */}
             {state.entries.length > 0 && (
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
-                {/* Unified card-style layout */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex flex-col">
-                      <p className="text-sm text-primary font-medium">
-                        Next Up
-                      </p>
-                      <p className="text-sm font-medium text-foreground mt-1">
-                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                      </p>
+                <SwipeableQueueCard
+                  nextUpPanel={
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex flex-col">
+                          <p className="text-sm text-primary font-medium">
+                            Next Up
+                          </p>
+                          <p className="text-sm font-medium text-foreground mt-1">
+                            {state.entries[0].profiles?.full_name || 'Anonymous User'}
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end text-right">
+                          <p className="text-xs text-muted-foreground">
+                            Swipe to Go Live
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            In Your Lobby
+                            <span className="text-primary">→</span>
+                          </p>
+                        </div>
+                      </div>
+                      <NextUserPreview
+                        userId={state.entries[0].fan_id}
+                        creatorId={user.id}
+                        userName={state.entries[0].profiles?.full_name}
+                        discussionTopic={state.entries[0].discussion_topic}
+                        waitTime={state.entries[0].estimated_wait_minutes}
+                        onStartCall={() => {
+                          console.log("Starting call with:", state.entries[0].fan_id);
+                        }}
+                        onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
+                      />
                     </div>
-                    <div className="flex flex-col items-end text-right">
-                      <p className="text-xs text-muted-foreground">
-                        Swipe to Go Live
-                      </p>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        In Your Lobby
-                        <span className="text-primary">→</span>
-                      </p>
+                  }
+                  broadcastPanel={
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex flex-col">
+                          <p className="text-sm text-destructive font-medium">
+                            Broadcasting
+                          </p>
+                          <p className="text-sm font-medium text-foreground mt-1">
+                            To Lobby
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end text-right">
+                          <p className="text-xs text-muted-foreground">
+                            Swipe to View
+                          </p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <span className="text-primary">←</span>
+                            Next Up
+                          </p>
+                        </div>
+                      </div>
+                      <BroadcastPreview />
                     </div>
-                  </div>
-                  <NextUserPreview
-                    userId={state.entries[0].fan_id}
-                    creatorId={user.id}
-                    userName={state.entries[0].profiles?.full_name}
-                    discussionTopic={state.entries[0].discussion_topic}
-                    waitTime={state.entries[0].estimated_wait_minutes}
-                    onStartCall={() => {
-                      console.log("Starting call with:", state.entries[0].fan_id);
-                    }}
-                    onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
-                  />
-                </div>
+                  }
+                />
                 
                 {/* Collapsible Tabbed Chat */}
                 <CollapsibleChat className="border-t">
