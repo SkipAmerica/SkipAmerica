@@ -15,6 +15,7 @@ import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useCreatorPresence } from '@/shared/hooks';
 import { QueueChat } from '@/components/queue/QueueChat';
+import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { z } from 'zod';
 
 const displayNameSchema = z.string()
@@ -59,6 +60,9 @@ export default function JoinQueue() {
   const [autoLoginAttempted, setAutoLoginAttempted] = useState(false);
   const [autoLoginLoading, setAutoLoginLoading] = useState(false);
   const [displayName, setDisplayName] = useState('');
+  const [showConsentModal, setShowConsentModal] = useState(false);
+  const [hasConsentedToBroadcast, setHasConsentedToBroadcast] = useState(false);
+  const [actualPosition, setActualPosition] = useState<number | null>(null);
 
   const isUnloadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -223,14 +227,30 @@ export default function JoinQueue() {
         setDiscussionTopic(queueEntry.discussion_topic || '');
       }
 
-      // Get total queue count
-      const { count } = await supabase
+      // Get total queue count and calculate this user's position
+      const { data: allQueueEntries } = await supabase
         .from('call_queue')
-        .select('*', { count: 'exact', head: true })
+        .select('*')
         .eq('creator_id', creatorId)
-        .eq('status', 'waiting');
+        .eq('status', 'waiting')
+        .order('joined_at', { ascending: true });
 
-      setQueueCount(count || 0);
+      const count = allQueueEntries?.length || 0;
+      setQueueCount(count);
+
+      // Calculate user's position (1-indexed)
+      if (queueEntry && allQueueEntries) {
+        const position = allQueueEntries.findIndex(entry => entry.id === queueEntry.id) + 1;
+        setActualPosition(position);
+        console.log('[JoinQueue] User position in queue:', position);
+        
+        // Show consent modal when user becomes "Next Up" (position 1)
+        if (position === 1 && !hasConsentedToBroadcast) {
+          setShowConsentModal(true);
+        }
+      } else {
+        setActualPosition(null);
+      }
     };
 
     checkLiveStatus();
@@ -460,6 +480,8 @@ export default function JoinQueue() {
 
       setIsInQueue(false);
       setDiscussionTopic('');
+      setHasConsentedToBroadcast(false); // Reset consent
+      setActualPosition(null);
       console.log('[JoinQueue] Successfully left queue');
       toast({
         title: "Left queue",
@@ -473,6 +495,26 @@ export default function JoinQueue() {
         variant: "destructive"
       });
     }
+  };
+
+  const handleConsentAgree = () => {
+    console.log('[JoinQueue] Fan consented to broadcast');
+    setHasConsentedToBroadcast(true);
+    setShowConsentModal(false);
+    toast({
+      title: "Broadcasting Started",
+      description: `${creator?.full_name} can now see your video preview.`,
+    });
+  };
+
+  const handleConsentDecline = () => {
+    console.log('[JoinQueue] Fan declined broadcast consent');
+    setShowConsentModal(false);
+    toast({
+      title: "Not Ready",
+      description: "You can agree when you're ready. You'll keep your position in line.",
+      variant: "default"
+    });
   };
 
   if (authLoading || autoLoginLoading || loading) {
@@ -557,6 +599,7 @@ export default function JoinQueue() {
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
+                shouldPublishFanVideo={hasConsentedToBroadcast && actualPosition === 1}
               />
             </div>
           </div>
@@ -611,13 +654,31 @@ export default function JoinQueue() {
                       {joining ? 'Joining...' : 'Join Queue'}
                     </Button>
                   </div>
-                ) : (
+                 ) : (
                   <div className="space-y-2.5">
                     <div className="text-center">
                       <div className="text-2xl mb-1">✅</div>
                       <p className="font-medium text-sm mb-1">You're in queue!</p>
+                      {actualPosition !== null && (
+                        <div className="mb-2">
+                          {actualPosition === 1 ? (
+                            <Badge className="bg-primary text-primary-foreground">
+                              🎯 You're Next Up!
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">
+                              Position: {actualPosition}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
                       <p className="text-muted-foreground text-xs">
-                        The creator will connect with you soon
+                        {actualPosition === 1 
+                          ? hasConsentedToBroadcast 
+                            ? "Broadcasting to creator - wait for them to start your call"
+                            : "Click 'I Agree' when ready to start broadcasting"
+                          : "The creator will connect with you soon"
+                        }
                       </p>
                       {discussionTopic && (
                         <div className="mt-2 p-2 bg-muted rounded border">
@@ -649,6 +710,15 @@ export default function JoinQueue() {
           />
         </div>
       </div>
+
+      {/* Next Up Consent Modal */}
+      <NextUpConsentModal
+        isOpen={showConsentModal}
+        onAgree={handleConsentAgree}
+        onDecline={handleConsentDecline}
+        creatorName={creator?.full_name || 'Creator'}
+        creatorTerms={undefined} // TODO: Add creator terms from database
+      />
     </div>
   );
 }

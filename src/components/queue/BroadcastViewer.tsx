@@ -13,11 +13,12 @@ interface BroadcastViewerProps {
   creatorId: string;
   sessionId: string;
   isInQueue: boolean;
+  shouldPublishFanVideo?: boolean; // Only publish when fan is next up and has consented
 }
 
 type ConnectionState = 'checking' | 'connecting' | 'connected' | 'failed' | 'offline' | 'retry';
 
-export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastViewerProps) {
+export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublishFanVideo = false }: BroadcastViewerProps) {
   const queueId = creatorId; // The creatorId parameter is actually the queueId from URL
   
   if (!queueId) {
@@ -210,9 +211,16 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
     };
   }, [localStream]);
 
-  // Fan video publishing when in queue
+  // Fan video publishing when next up and consented
   useEffect(() => {
-    if (!USE_SFU || !isInQueue || !fanUserId) return;
+    if (!USE_SFU || !shouldPublishFanVideo || !fanUserId) {
+      console.log('[BroadcastViewer] Fan publishing skipped:', { 
+        shouldPublish: shouldPublishFanVideo, 
+        fanUserId, 
+        useSfu: USE_SFU 
+      });
+      return;
+    }
     
     console.log(`[BroadcastViewer] 📹 Fan publishing video to their own room: ${fanUserId}`);
     console.log(`[BroadcastViewer] 📺 Publishing to Room: lobby_${fanUserId}`);
@@ -257,7 +265,7 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue }: BroadcastVi
         publisherRoomKeyRef.current = null;
       }
     };
-  }, [isInQueue, fanUserId]);
+  }, [shouldPublishFanVideo, fanUserId]);
 
   return (
     <div className="relative w-full h-full">
