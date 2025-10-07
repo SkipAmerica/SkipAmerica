@@ -312,22 +312,9 @@ export function QueueContent() {
               <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
                 {/* Unified card-style layout */}
                 <div className="p-4">
-                  {/* Header with Next Up and User Info */}
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-primary font-medium">
-                      Next Up
-                    </p>
-                    <div className="text-right">
-                      <p className="font-semibold text-base leading-tight">
-                        {state.entries[0].profiles?.full_name || 'Anonymous User'}
-                      </p>
-                      {state.entries[0].discussion_topic && (
-                        <p className="text-sm text-muted-foreground leading-tight">
-                          {state.entries[0].discussion_topic}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-sm text-primary font-medium mb-3">
+                    Next Up
+                  </p>
                   <NextUserPreview
                     userId={state.entries[0].fan_id}
                     creatorId={user.id}
