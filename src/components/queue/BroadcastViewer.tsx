@@ -144,6 +144,7 @@ export function BroadcastViewer({
             creatorId: resolvedCreatorId,
             identity: viewerIdentity,
           }}
+          targetParticipantId={resolvedCreatorId}
           className="w-full h-full object-cover bg-black"
           muted={isMuted}
           onConnectionStateChange={(connected) => {
