@@ -735,13 +735,15 @@ export default function JoinQueue() {
         </div>
 
         {/* Chat section below video */}
-        <div className="mt-6">
-          <QueueChat 
-            creatorId={creatorId!}
-            fanId={user?.id || ''}
-            isInQueue={isInQueue}
-          />
-        </div>
+        {user && (
+          <div className="mt-6">
+            <QueueChat 
+              creatorId={creatorId!}
+              fanId={user.id}
+              isInQueue={isInQueue}
+            />
+          </div>
+        )}
       </div>
 
       {/* Next Up Consent Modal */}
