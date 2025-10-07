@@ -200,21 +200,13 @@ export function SwipeableQueueCard({
         </div>
       </div>
 
-      {/* Swipe Indicator Dots */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 pointer-events-none">
-        <div
-          className={cn(
-            "w-1.5 h-1.5 rounded-full transition-all duration-300",
-            currentPanel === 0 ? "bg-primary w-4" : "bg-muted-foreground/30"
-          )}
-        />
-        <div
-          className={cn(
-            "w-1.5 h-1.5 rounded-full transition-all duration-300",
-            currentPanel === 1 ? "bg-primary w-4" : "bg-muted-foreground/30"
-          )}
-        />
-      </div>
+      {/* Swipe Indicator Dots - only show on Panel 1 */}
+      {currentPanel === 0 && (
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 pointer-events-none">
+          <div className="w-1.5 h-1.5 rounded-full bg-primary w-4" />
+          <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/30" />
+        </div>
+      )}
     </div>
   );
 }

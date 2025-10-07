@@ -6,6 +6,8 @@ import { UniversalChat } from "@/components/chat/UniversalChat";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { LiveKitVideoPlayer } from "@/components/video/LiveKitVideoPlayer";
 import { createFullscreenLobbyConfig } from "@/lib/chatConfigs";
+import { useLiveStore } from "@/stores/live-store";
+import type { LiveState } from "@/shared/types/live";
 
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
@@ -16,29 +18,53 @@ export function CreatorBroadcastFullscreen({
   creatorId,
   onClose,
 }: CreatorBroadcastFullscreenProps) {
+  const { isLive, state: liveState, goLive, endLive, canGoLive } = useLiveStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const lobbyConfig = createFullscreenLobbyConfig(creatorId);
+  
+  const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
+
+  const handleGoLive = async () => {
+    try {
+      await goLive();
+    } catch (error) {
+      console.error('[CreatorBroadcast] Failed to go live:', error);
+    }
+  };
+
+  const handleClose = () => {
+    if (isLive) {
+      if (window.confirm("End your live broadcast?")) {
+        endLive();
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
 
   return (
-    <div className="relative h-full w-full bg-black">
-      {/* Publisher (headless - publishes creator stream to room) */}
-      <LiveKitPublisher
-        config={{
-          role: 'publisher',
-          creatorId,
-          identity: creatorId,
-        }}
-        publishAudio={true}
-        publishVideo={true}
-        onPublished={() => {
-          console.log('[CreatorBroadcast] Stream published');
-          setIsPublishing(true);
-        }}
-        onError={(error) => {
-          console.error('[CreatorBroadcast] Publishing error:', error);
-          setIsPublishing(false);
-        }}
-      />
+    <div className="fixed inset-0 z-[9999] bg-black">
+      {/* Publisher (headless - only when live) */}
+      {isLive && (
+        <LiveKitPublisher
+          config={{
+            role: 'publisher',
+            creatorId,
+            identity: creatorId,
+          }}
+          publishAudio={true}
+          publishVideo={true}
+          onPublished={() => {
+            console.log('[CreatorBroadcast] Stream published');
+            setIsPublishing(true);
+          }}
+          onError={(error) => {
+            console.error('[CreatorBroadcast] Publishing error:', error);
+            setIsPublishing(false);
+          }}
+        />
+      )}
 
       {/* Video Player (shows creator's own stream fullscreen) */}
       <LiveKitVideoPlayer
@@ -48,42 +74,73 @@ export function CreatorBroadcastFullscreen({
           identity: `viewer_${creatorId}_self`,
         }}
         targetParticipantId={creatorId}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="fixed inset-0 w-full h-full object-cover"
         muted={true}
         fallbackContent={
           <div className="flex items-center justify-center h-full bg-black/80">
             <div className="text-center">
               <div className="animate-pulse text-white text-lg mb-2">
-                Starting broadcast...
+                {isLive ? 'Starting broadcast...' : 'Camera preview'}
               </div>
               <div className="text-white/60 text-sm">
-                Camera and microphone initializing
+                {isLive ? 'Camera and microphone initializing' : 'Tap GO LIVE to start broadcasting'}
               </div>
             </div>
           </div>
         }
       />
 
-      {/* LIVE Indicator */}
-      <div className="absolute top-4 left-4 z-20">
-        <Badge variant="destructive" className="px-3 py-1 text-sm font-bold">
-          LIVE
-        </Badge>
-      </div>
+      {/* LIVE Indicator (only when live) */}
+      {isLive && (
+        <div 
+          className="absolute left-4 z-20" 
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+        >
+          <Badge variant="destructive" className="px-3 py-1 text-sm font-bold animate-pulse">
+            ● LIVE
+          </Badge>
+        </div>
+      )}
 
       {/* Close Button */}
       <Button
         variant="outline"
         size="icon"
-        className="absolute top-4 right-4 z-20 bg-black/40 border-white/20 text-white hover:bg-black/60 hover:text-white backdrop-blur-sm"
-        onClick={onClose}
+        className="absolute right-4 z-20 bg-black/40 border-white/20 text-white hover:bg-black/60 hover:text-white backdrop-blur-sm"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+        onClick={handleClose}
         data-no-drag
       >
         <X className="h-5 w-5" />
       </Button>
 
+      {/* GO LIVE Button (only when not live) */}
+      {!isLive && (
+        <div 
+          className="absolute left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)' }}
+        >
+          <button
+            onClick={handleGoLive}
+            disabled={!canGoLive || isGoingLive}
+            className="relative w-20 h-20 rounded-full bg-red-600 hover:bg-red-700 
+                       disabled:bg-gray-400 transition-all duration-200
+                       shadow-[0_0_20px_rgba(239,68,68,0.5)]
+                       active:scale-95"
+          >
+            <div className="absolute inset-2 rounded-full border-4 border-white" />
+          </button>
+          <span className="text-white text-sm font-semibold">
+            {isGoingLive ? 'Starting...' : 'GO LIVE'}
+          </span>
+        </div>
+      )}
+
       {/* Lobby Chat Overlay */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 max-h-[50vh] overflow-hidden">
+      <div 
+        className="absolute bottom-0 left-0 right-0 z-10 max-h-[50vh] overflow-hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
         <UniversalChat config={lobbyConfig} />
       </div>
     </div>
