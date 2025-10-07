@@ -142,8 +142,8 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
   `.trim();
 
   const scrollAreaClasses = showScrollbar 
-    ? "flex-1 min-h-0 h-full p-4" 
-    : "flex-1 min-h-0 h-full p-4 [&>div>div]:!scrollbar-hide";
+    ? "p-4" 
+    : "p-4 [&>div>div]:!scrollbar-hide";
 
   return (
     <div className={`flex flex-col min-h-0 ${height} ${containerClasses}`}>
@@ -185,7 +185,7 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
         </div>
       )}
       
-      <ScrollArea className={scrollAreaClasses}>
+      <ScrollArea className={`flex-1 min-h-0 ${scrollAreaClasses}`}>
         <div className={`pb-2 ${compact ? "space-y-0.5" : "space-y-2"}`}>
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
