@@ -42,7 +42,7 @@ export function NextUserPreview({
   }, [userId, creatorId]);
 
   return (
-    <div className="relative max-w-md mx-auto">
+    <div className="relative w-full">
       {/* Privacy Notification */}
       <div className={cn(
         "absolute top-4 left-1/2 -translate-x-1/2 z-50",
