@@ -58,8 +58,8 @@ export function CreatorQueueChat({ creatorId, fanId }: Props) {
   };
 
   return (
-    <Card className="p-4 h-full flex flex-col">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
+    <Card className="p-4 h-full min-h-0 flex flex-col">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full min-h-0 flex flex-col">
         <TabsList className="w-full sticky top-0 z-10 bg-background shrink-0">
           <TabsTrigger value="lobby" className="flex-1">
             Lobby Chat

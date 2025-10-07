@@ -142,11 +142,11 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
   `.trim();
 
   const scrollAreaClasses = showScrollbar 
-    ? "flex-1 p-4" 
-    : "flex-1 p-4 [&>div>div]:!scrollbar-hide";
+    ? "flex-1 min-h-0 p-4" 
+    : "flex-1 min-h-0 p-4 [&>div>div]:!scrollbar-hide";
 
   return (
-    <div className={`flex flex-col ${height} ${containerClasses}`}>
+    <div className={`flex flex-col min-h-0 ${height} ${containerClasses}`}>
       {/* Header with controls */}
       {(showProfileToggle || allowPositionToggle) && (
         <div className="p-3 border-b bg-muted/50 space-y-2">
