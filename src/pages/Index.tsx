@@ -364,7 +364,10 @@ const Index = () => {
           <IOSInstagramHeader 
             onMenuClick={() => setShowMenu(true)}
             onCreatorSelect={(id) => setActiveTab("creator-profile")}
-            hideBottomRow={activeTab === "following" && profile?.account_type === 'creator'}
+            hideBottomRow={
+              (activeTab === "following" && profile?.account_type === 'creator') ||
+              activeTab === "creator-profile-management"
+            }
           />
         )}
 
