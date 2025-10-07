@@ -163,11 +163,11 @@ export function BroadcastViewer({ creatorId, sessionId, isInQueue, shouldPublish
       )}
 
       {/* Fan video publisher (headless) */}
-      {shouldPublishFanVideo && fanUserId && (
+      {shouldPublishFanVideo && fanUserId && resolvedCreatorId && (
         <LiveKitPublisher
           config={{
             role: 'publisher',
-            creatorId: fanUserId,
+            creatorId: resolvedCreatorId,
             identity: fanUserId,
           }}
           publishAudio={true}
