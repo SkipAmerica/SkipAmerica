@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { VideoFullscreenModal } from '@/components/shared/VideoFullscreenModal'
 import { NextUserPreview } from '@/components/queue/NextUserPreview'
+import { QueueChat } from '@/components/queue/QueueChat'
 import { isMobile } from '@/shared/lib/platform'
 
 interface QueueEntry {
@@ -331,6 +332,15 @@ export function QueueContent() {
                     }}
                     onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
                   />
+                  
+                  {/* Tabbed Chat Below Video */}
+                  <div className="mt-4 h-64 border rounded-lg overflow-hidden">
+                    <QueueChat
+                      creatorId={user.id}
+                      fanId={state.entries[0].fan_id}
+                      isInQueue={true}
+                    />
+                  </div>
                 </div>
               </div>
             )}

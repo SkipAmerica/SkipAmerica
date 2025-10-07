@@ -8,7 +8,7 @@ export function BlankPage() {
     <div className="w-screen h-screen bg-background flex items-center justify-center">
       <ViewportDrawer 
         trigger={<Button>View Queue (Enhanced)</Button>}
-        config={{ size: 'lg', variant: 'default' }}
+        config={{ size: 'xl', variant: 'default' }}
       >
         <QueueContent />
       </ViewportDrawer>
