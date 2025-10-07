@@ -1,79 +1,76 @@
-/**
- * Updated MediaPreview component to work with new MediaOrchestrator
- * Never calls getUserMedia - only attaches provided streams
- */
-
-import React, { useEffect, useRef } from 'react'
-import { mediaManager } from '@/media/MediaOrchestrator'
-import { RUNTIME } from '@/config/runtime';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
+import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
 
 interface MediaPreviewProps {
-  className?: string
-  muted?: boolean
-  autoPlay?: boolean
+  className?: string;
+  muted?: boolean;
+  autoPlay?: boolean;
 }
 
+/**
+ * MediaPreview component using LiveKit for local camera preview
+ * Publishes to user's own room and displays the local video
+ */
 export function MediaPreview({ className, muted = true, autoPlay = true }: MediaPreviewProps) {
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-
-    // Attach stream from media manager if available
-    const attachStream = () => {
-      const stream = mediaManager.getLocalStream()
-      if (stream && video.srcObject !== stream) {
-        if (RUNTIME.DEBUG_LOGS) {
-          console.error('[MEDIA][PREVIEW] Attaching stream to video element');
-        }
-        video.srcObject = stream
-        video.muted = muted
-        video.autoplay = autoPlay
-        // @ts-ignore
-        video.playsInline = true
-        const playPromise = video.play?.()
-        if (playPromise && typeof playPromise.then === 'function') {
-          playPromise.catch(() => {})
-        }
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.id) {
+        setUserId(data.user.id);
       }
-    }
+    });
 
-    // Initial attach
-    attachStream()
-
-    // Watch for stream changes
-    const interval = setInterval(attachStream, 500)
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      const uid = session?.user?.id;
+      if (uid) {
+        setUserId(uid);
+      }
+    });
 
     return () => {
-      clearInterval(interval)
-      
-      // Clean up video element
-      try {
-        video.pause()
-        video.srcObject = null
-        video.removeAttribute('src')
-        video.load()
-      } catch (err) {
-        if (RUNTIME.DEBUG_LOGS) {
-          console.error('[MEDIA][PREVIEW] Failed to cleanup video:', err);
-        }
-      }
-    }
-  }, [muted, autoPlay])
+      try { authListener?.subscription?.unsubscribe(); } catch {}
+    };
+  }, []);
+
+  if (!userId) {
+    return (
+      <div className={className} style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="text-white text-sm">Loading preview...</div>
+      </div>
+    );
+  }
 
   return (
-    <video
-      ref={videoRef}
-      className={className}
-      muted={muted}
-      autoPlay={autoPlay}
-      playsInline
-      style={{ 
-        width: '100%', 
-        height: '100%', 
-        objectFit: 'cover' 
-      }}
-    />
-  )
+    <div className="relative w-full h-full">
+      {/* Publish to own room */}
+      <LiveKitPublisher
+        config={{
+          role: 'publisher',
+          creatorId: userId,
+          identity: userId,
+        }}
+        publishAudio={false}
+        publishVideo={true}
+      />
+
+      {/* Display own video */}
+      <LiveKitVideoPlayer
+        config={{
+          role: 'viewer',
+          creatorId: userId,
+          identity: `${userId}_preview`,
+        }}
+        className={className}
+        muted={muted}
+        fallbackContent={
+          <div className="flex items-center justify-center text-white">
+            <div className="text-sm animate-pulse">Starting camera...</div>
+          </div>
+        }
+      />
+    </div>
+  );
 }

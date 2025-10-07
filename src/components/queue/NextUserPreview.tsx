@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { UserVideoSFU } from '@/components/shared/UserVideoSFU';
+import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { cn } from '@/lib/utils';
 
 interface NextUserPreviewProps {
-  userId: string; // The fan whose video we're viewing
+  userId: string;
   creatorId: string;
   userName?: string;
   discussionTopic?: string;
@@ -55,23 +55,25 @@ export function NextUserPreview({
       </div>
       
       {/* Fan's Camera Feed - Creator viewing fan's room */}
-      <UserVideoSFU
-        userId={userId}
-        role="viewer"
-        videoRoomCreatorId={userId}
-        chatCreatorId={creatorId}
-        identityOverride={creatorId}
-        chatParticipantFilter={userId}
-        dimensions="w-full aspect-video"
-        showChat={false}
-        muted={true}
-        showControls={false}
-        showFullscreenButton={true}
-        fallbackName={userName}
-        userName={userName}
-        className="border border-primary/20 rounded-lg"
-        onFullscreen={onFullscreen}
-      />
+      <div className="border border-primary/20 rounded-lg overflow-hidden">
+        <LiveKitVideoPlayer
+          config={{
+            role: 'viewer',
+            creatorId: userId,
+            identity: creatorId,
+          }}
+          className="w-full aspect-video object-cover bg-black"
+          muted={true}
+          fallbackContent={
+            <div className="flex items-center justify-center text-white">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
+                <p className="text-sm">Loading {userName}'s video...</p>
+              </div>
+            </div>
+          }
+        />
+      </div>
       
       {/* Bottom Overlay with Controls */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent rounded-b-lg p-3">

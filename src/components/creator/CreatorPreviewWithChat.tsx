@@ -1,17 +1,15 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import OverlayChat from "@/components/live/OverlayChat";
 import { createOverlayConfig } from "@/lib/chatConfigs";
 import { useExternalChatInput } from "@/hooks/useExternalChatInput";
+import { LiveKitVideoPlayer } from "@/components/video/LiveKitVideoPlayer";
+import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 
 type Props = { creatorId: string };
 
 export default function CreatorPreviewWithChat({ creatorId }: Props) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [attached, setAttached] = useState(false);
-  const [connected, setConnected] = useState(false);
   const [text, setText] = useState("");
   
-  // Set up external chat input integration
   const chatConfig = createOverlayConfig(creatorId);
   const { sendExternalMessage, sending } = useExternalChatInput(chatConfig);
 
@@ -19,7 +17,6 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     console.log("[CreatorPreview] using creatorId:", creatorId, " (will subscribe to realtime:lobby-chat-" + creatorId + ")");
   }, [creatorId]);
 
-  // Ensure creatorId is stable and valid
   if (!creatorId) {
     console.warn("[CreatorPreviewWithChat] No creatorId available");
     return (
@@ -31,107 +28,6 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     );
   }
 
-  // --- LiveKit-driven preview + instant getUserMedia fallback ---
-  useEffect(() => {
-    let fallbackStream: MediaStream | null = null;
-
-    const attachLocalTrackIfAny = () => {
-      // @ts-ignore
-      const sfu = (window as any).__creatorSFU;
-      const room = sfu?.room;
-      const lp = room?.localParticipant;
-      if (!room || !lp) return false;
-
-      setConnected(room.state === "connected");
-
-      // find a published local video track
-      const pubs = lp.videoTracks ? Array.from(lp.videoTracks.values()) : [];
-      const activePub = pubs.find((p: any) => p?.track) as any;
-      const track = activePub?.track;
-
-      if (track && videoRef.current) {
-        // prefer LiveKit track over fallback stream
-        try {
-          // stop fallback if active
-          if (fallbackStream) {
-            fallbackStream.getTracks().forEach(t => t.stop());
-            fallbackStream = null;
-          }
-        } catch { }
-        try { track.detach(videoRef.current); } catch { }
-        track.attach(videoRef.current);
-        videoRef.current.autoplay = true;
-        videoRef.current.playsInline = true;
-        videoRef.current.muted = true;
-        setAttached(true);
-        return true;
-      }
-      return false;
-    };
-
-    const startFallbackPreview = async () => {
-      if (attached || !videoRef.current) return;
-      try {
-        fallbackStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
-          audio: false,
-        });
-        videoRef.current.srcObject = fallbackStream;
-        videoRef.current.autoplay = true;
-        videoRef.current.playsInline = true;
-        videoRef.current.muted = true;
-      } catch (e) {
-        // ignore (user might block camera)
-      }
-    };
-
-    // 1) Try to attach any existing LK track now
-    const hadTrack = attachLocalTrackIfAny();
-    // 2) If no LK track yet, start a temporary fallback so the creator sees themselves instantly
-    if (!hadTrack) startFallbackPreview();
-
-    // 3) Listen to SFU lifecycle
-    const onConnected = () => {
-      setTimeout(() => attachLocalTrackIfAny(), 50);
-    };
-    const onPublished = () => {
-      setTimeout(() => attachLocalTrackIfAny(), 50);
-    };
-
-    window.addEventListener("sfu:creator:connected", onConnected);
-    window.addEventListener("sfu:creator:published", onPublished);
-
-    // 4) Also subscribe directly to room events if available
-    // @ts-ignore
-    const sfu = (window as any).__creatorSFU;
-    const room = sfu?.room;
-    const detachRoomHandlers = () => { };
-    if (room) {
-      const onState = () => onConnected();
-      const onLocalPub = () => onPublished();
-      room.on("connectionstatechanged", onState);
-      room.on("localtrackpublished", onLocalPub);
-      // keep a tiny disposer
-      (detachRoomHandlers as any).fn = () => {
-        try { room.off("connectionstatechanged", onState); } catch { }
-        try { room.off("localtrackpublished", onLocalPub); } catch { }
-      };
-    }
-
-    return () => {
-      window.removeEventListener("sfu:creator:connected", onConnected);
-      window.removeEventListener("sfu:creator:published", onPublished);
-      try { (detachRoomHandlers as any).fn?.(); } catch { }
-      // cleanup fallback stream if still running
-      try {
-        if (fallbackStream) {
-          fallbackStream.getTracks().forEach(t => t.stop());
-          fallbackStream = null;
-        }
-      } catch { }
-    };
-  }, [attached]);
-
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
     const t = text.trim();
@@ -139,28 +35,47 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     
     try {
       await sendExternalMessage(t);
-      setText(""); // Clear input only after successful send
+      setText("");
     } catch (error) {
       console.error('[CreatorPreview] Failed to send message:', error);
-      // Keep text in input on error so user can retry
     }
   }
 
   return (
     <div className="w-full min-w-0 flex-1 flex flex-col">
-      {/* ensure overlay can sit above video */}
       <div className="relative w-full flex-1 bg-black overflow-hidden rounded-xl">
-        <video
-          id="creator-preview"
-          ref={videoRef}
-          className="w-full h-full object-cover"
-          muted
-          playsInline
-          autoPlay
+        {/* Publish creator's camera */}
+        <LiveKitPublisher
+          config={{
+            role: 'publisher',
+            creatorId: creatorId,
+            identity: creatorId,
+          }}
+          publishAudio={true}
+          publishVideo={true}
         />
+
+        {/* Display creator's own video */}
+        <LiveKitVideoPlayer
+          config={{
+            role: 'viewer',
+            creatorId: creatorId,
+            identity: `${creatorId}_preview`,
+          }}
+          className="w-full h-full object-cover"
+          muted={true}
+          fallbackContent={
+            <div className="flex items-center justify-center text-white">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
+                <p className="text-sm">Starting preview...</p>
+              </div>
+            </div>
+          }
+        />
+
         <OverlayChat creatorId={creatorId} />
       </div>
-
     </div>
   );
 }

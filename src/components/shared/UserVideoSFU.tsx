@@ -1,24 +1,24 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { RemoteTrack } from 'livekit-client';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
-import { useVideoConnection } from '@/hooks/use-video-connection';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import OverlayChat from '@/components/live/OverlayChat';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
+import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
 
 export interface UserVideoSFUProps {
-  userId: string; // Target user whose video/room we're joining
+  userId: string;
   role: 'viewer' | 'publisher';
-  dimensions?: string; // CSS classes for sizing
+  dimensions?: string;
   showChat?: boolean;
   chatMode?: 'lobby' | 'private';
-  chatCreatorId?: string; // Override which room to join for chat
-  videoRoomCreatorId?: string; // Override which room to connect for video
-  chatParticipantFilter?: string; // Filter chat messages by specific participant
-  identityOverride?: string; // Override identity to prevent LiveKit collisions
+  chatCreatorId?: string;
+  videoRoomCreatorId?: string;
+  chatParticipantFilter?: string;
+  identityOverride?: string;
   className?: string;
   muted?: boolean;
   showControls?: boolean;
@@ -50,18 +50,14 @@ export function UserVideoSFU({
   onConnectionChange,
   onFullscreen
 }: UserVideoSFUProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const lastTrackRef = useRef<RemoteTrack | null>(null);
   const [isMuted, setIsMuted] = useState(muted);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [roomCreatorId, setRoomCreatorId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
   const { toast } = useToast();
 
   const toggleMute = useCallback(() => {
-    if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(videoRef.current.muted);
-    }
+    setIsMuted(prev => !prev);
   }, []);
 
   const getInitials = (name: string) => {
@@ -76,10 +72,6 @@ export function UserVideoSFU({
   // Resolve room creator ID for VIDEO connection
   useEffect(() => {
     const resolveRoom = async () => {
-      // VIDEO ROOM LOGIC:
-      // - If videoRoomCreatorId is explicitly provided: use it
-      // - Publishers: join their own room (userId as room)
-      // - Viewers: join the resolved creator's room
       const resolved = videoRoomCreatorId || (role === 'publisher' 
         ? userId 
         : (await resolveCreatorUserId(userId)) || userId);
@@ -99,144 +91,65 @@ export function UserVideoSFU({
     resolveRoom();
   }, [userId, role, videoRoomCreatorId, chatCreatorId]);
 
-  // Use centralized video connection manager
-  const { connectionState, isConnected, connect: reconnect } = useVideoConnection({
-    config: {
-      role,
-      creatorId: roomCreatorId || userId,
-      // Unique identity: publishers use their userId, viewers use override or create unique identity
-      identity: role === 'publisher' 
-        ? userId 
-        : (identityOverride || `${userId}-viewer-${Date.now()}`),
-    },
-    onRemoteTrack: (track, participantIdentity) => {
-      console.log(`[UserVideoSFU] 📹 Received RemoteTrack for ${participantIdentity}`);
-      
-      // Only attach video if it matches the filter (for QCC fan video filtering)
-      if (chatParticipantFilter && participantIdentity !== chatParticipantFilter) {
-        console.debug('[UserVideoSFU] Ignoring track from non-matching participant');
-        return;
-      }
-      
-      if (!videoRef.current) {
-        console.warn('[UserVideoSFU] Video ref not ready');
-        return;
-      }
-      
-      // Detach previous track if exists
-      if (lastTrackRef.current) {
-        console.log('[UserVideoSFU] 🔄 Detaching previous track');
-        lastTrackRef.current.detach(videoRef.current);
-      }
-      
-      // Attach the new RemoteTrack directly to our video element
-      videoRef.current.autoplay = true;
-      videoRef.current.playsInline = true;
-      videoRef.current.muted = isMuted;
-      
-      track.attach(videoRef.current);
-      lastTrackRef.current = track;
-      
-      // Attempt playback
-      videoRef.current.play().catch((err) => {
-        console.warn('[UserVideoSFU] Autoplay prevented:', err);
-      });
-      
-      const { clientWidth, clientHeight } = videoRef.current;
-      console.log(`[UserVideoSFU] ✅ Track attached, element size: ${clientWidth}x${clientHeight}, readyState: ${videoRef.current.readyState}`);
-    },
-    onDisconnected: () => {
-      console.warn('[UserVideoSFU] Connection disconnected');
-    },
-    autoConnect: !!roomCreatorId, // Only connect once room is resolved
-  });
-
-  const handleReconnect = useCallback(() => {
-    console.log('[UserVideoSFU] Manual reconnect triggered');
-    reconnect();
-  }, [reconnect]);
-  
-  // Cleanup: detach track on unmount
-  useEffect(() => {
-    return () => {
-      if (lastTrackRef.current && videoRef.current) {
-        console.log('[UserVideoSFU] 🧹 Cleanup: detaching track');
-        lastTrackRef.current.detach(videoRef.current);
-        videoRef.current.srcObject = null;
-        lastTrackRef.current = null;
-      }
-    };
-  }, []);
-
-  // Notify parent of connection state changes and show error toast
-  useEffect(() => {
-    onConnectionChange?.(connectionState);
+  const handleConnectionChange = useCallback((connected: boolean) => {
+    setIsConnected(connected);
+    onConnectionChange?.(connected ? 'connected' : 'connecting');
     
-    if (connectionState === 'failed') {
+    if (!connected) {
       toast({
-        title: "Connection Failed",
-        description: "Unable to connect to video call. Check console for details.",
-        variant: "destructive",
+        title: "Connection Issue",
+        description: "Attempting to reconnect to video...",
+        variant: "default",
       });
     }
-  }, [connectionState, onConnectionChange, toast]);
+  }, [onConnectionChange, toast]);
 
   // Sync muted prop with state
   useEffect(() => {
     setIsMuted(muted);
-    if (videoRef.current) {
-      videoRef.current.muted = muted;
-    }
   }, [muted]);
 
   const renderFallback = () => (
     <div className="flex items-center justify-center w-full h-full bg-muted/20 rounded-lg">
-      {connectionState === 'connecting' ? (
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <span className="text-xs">Connecting...</span>
-        </div>
-      ) : connectionState === 'failed' ? (
-        <div className="flex flex-col items-center gap-3 text-muted-foreground p-4">
-          <AlertCircle className="w-6 h-6 text-destructive" />
-          <div className="text-center space-y-1">
-            <p className="text-xs font-medium">Connection failed</p>
-            <p className="text-[10px] text-muted-foreground/60">Check your internet connection</p>
-          </div>
-          <Button
-            onClick={handleReconnect}
-            size="sm"
-            variant="outline"
-            className="h-7 text-xs"
-          >
-            Retry Connection
-          </Button>
-        </div>
-      ) : (
-        <Avatar className="w-8 h-8">
-          <AvatarFallback className="bg-primary/10 text-xs">
-            {getInitials(fallbackName)}
-          </AvatarFallback>
-        </Avatar>
-      )}
+      <div className="flex flex-col items-center gap-2 text-muted-foreground">
+        <Loader2 className="w-4 h-4 animate-spin" />
+        <span className="text-xs">Connecting...</span>
+      </div>
     </div>
   );
 
+  const identity = role === 'publisher' 
+    ? userId 
+    : (identityOverride || `${userId}-viewer-${Date.now()}`);
+
   return (
     <div className={cn("relative overflow-hidden rounded-lg bg-black", dimensions, className)}>
-      <video
-        ref={videoRef}
-        muted={isMuted}
-        playsInline
-        autoPlay
-        className="w-full h-full object-cover"
-      />
-      
-      {/* Fallback overlay when not connected */}
-      {!isConnected && (
-        <div className="absolute inset-0">
-          {renderFallback()}
-        </div>
+      {/* Publisher: publish local tracks */}
+      {role === 'publisher' && roomCreatorId && (
+        <LiveKitPublisher
+          config={{
+            role: 'publisher',
+            creatorId: roomCreatorId,
+            identity: identity,
+          }}
+          publishAudio={true}
+          publishVideo={true}
+        />
+      )}
+
+      {/* Video player */}
+      {roomCreatorId && (
+        <LiveKitVideoPlayer
+          config={{
+            role: role,
+            creatorId: roomCreatorId,
+            identity: identity,
+          }}
+          className="w-full h-full object-cover"
+          muted={isMuted}
+          onConnectionStateChange={handleConnectionChange}
+          fallbackContent={renderFallback()}
+        />
       )}
 
       {/* Chat overlay */}
