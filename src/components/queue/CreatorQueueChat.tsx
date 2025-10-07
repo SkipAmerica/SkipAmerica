@@ -58,7 +58,7 @@ export function CreatorQueueChat({ creatorId, fanId }: Props) {
   };
 
   return (
-    <Card className="p-4 h-full min-h-0 flex flex-col">
+    <Card className="p-0 h-full min-h-0 flex flex-col">
       <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full min-h-0 flex flex-col">
         <TabsList className="w-full sticky top-0 z-10 bg-background shrink-0">
           <TabsTrigger value="lobby" className="flex-1">
@@ -75,12 +75,12 @@ export function CreatorQueueChat({ creatorId, fanId }: Props) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="lobby" className="mt-4 flex flex-col flex-1 min-h-0">
+        <TabsContent value="lobby" className="flex flex-col flex-1 min-h-0 p-0">
           <UniversalChat config={lobbyConfig} />
         </TabsContent>
 
         {/* Always render private messages for creator */}
-        <TabsContent value="private" className="mt-4 flex flex-col flex-1 min-h-0">
+        <TabsContent value="private" className="flex flex-col flex-1 min-h-0 p-0">
           <UniversalChat config={privateConfig} />
         </TabsContent>
       </Tabs>

@@ -142,8 +142,8 @@ export function UniversalChat({ config, className = '', leftButton }: UniversalC
   `.trim();
 
   const scrollAreaClasses = showScrollbar 
-    ? "flex-1 min-h-0 p-4" 
-    : "flex-1 min-h-0 p-4 [&>div>div]:!scrollbar-hide";
+    ? "flex-1 min-h-0 h-full p-4" 
+    : "flex-1 min-h-0 h-full p-4 [&>div>div]:!scrollbar-hide";
 
   return (
     <div className={`flex flex-col min-h-0 ${height} ${containerClasses}`}>
