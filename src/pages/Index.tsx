@@ -457,6 +457,18 @@ const Index = () => {
       >
         {user && (
           <>
+            {/* User Info Section */}
+            <div className="px-4 py-2 text-center">
+              <p className="text-sm text-muted-foreground">
+                {profile?.full_name || 'User'} 
+                {profile?.username && (
+                  <span className="text-xs"> (@{profile.username})</span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {user.email}
+              </p>
+            </div>
             <div className="px-4 py-3 mb-2 bg-[hsl(var(--turquoise))] text-white rounded-lg mx-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Coins className="h-5 w-5" />

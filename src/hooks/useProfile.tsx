@@ -9,6 +9,7 @@ interface Profile {
   avatar_url: string | null
   account_type: 'fan' | 'creator' | 'agency' | 'industry_resource'
   is_verified: boolean | null
+  username: string | null
 }
 
 export const useProfile = () => {
@@ -27,7 +28,7 @@ export const useProfile = () => {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('id, full_name, bio, avatar_url, account_type, is_verified, interests, created_at')
+          .select('id, full_name, bio, avatar_url, account_type, is_verified, interests, created_at, username')
           .eq('id', user.id)
           .single()
 
