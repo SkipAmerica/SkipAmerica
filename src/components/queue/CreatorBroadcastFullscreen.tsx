@@ -10,9 +10,11 @@ import { useDoubleTap } from "@/hooks/use-double-tap";
 import { GoLiveCountdown } from "./GoLiveCountdown";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
+  isVisible?: boolean;
 }
 export function CreatorBroadcastFullscreen({
-  creatorId
+  creatorId,
+  isVisible = true
 }: CreatorBroadcastFullscreenProps) {
   const {
     isLobbyBroadcasting,
@@ -75,10 +77,29 @@ export function CreatorBroadcastFullscreen({
     }
   }, [filteredStream]);
 
-  // Start camera immediately when filter is ready
+  // Clean up stream when broadcast ends
+  useEffect(() => {
+    if (!isLobbyBroadcasting && filteredStream) {
+      console.log('[CreatorBroadcast] Broadcast ended - cleaning up stream');
+      
+      // Stop all tracks in the filtered stream
+      filteredStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[CreatorBroadcast] Stopped track:', track.kind);
+      });
+      
+      // Stop the filter processor
+      filterProcessorRef.current.stop();
+      
+      // Clear the stream state to allow restart
+      setFilteredStream(null);
+    }
+  }, [isLobbyBroadcasting, filteredStream]);
+
+  // Start camera when visible and filter is ready
   useEffect(() => {
     const startCamera = async () => {
-      if (isFilterReady && !filteredStream) {
+      if (isVisible && isFilterReady && !filteredStream) {
         try {
           console.log('[CreatorBroadcast] Starting camera...');
           // Get high-quality media stream
@@ -115,6 +136,13 @@ export function CreatorBroadcastFullscreen({
           } else {
             setFilteredStream(stream);
           }
+          
+          // Log what tracks we're sending to LiveKitPublisher
+          console.log('[CreatorBroadcast] Stream ready for publishing:', {
+            videoTracks: stream.getVideoTracks().length,
+            audioTracks: stream.getAudioTracks().length,
+            audioEnabled: stream.getAudioTracks()[0]?.enabled
+          });
         } catch (error) {
           console.error('[CreatorBroadcast] Failed to start camera:', error);
           toast.error('Camera access failed');
@@ -123,7 +151,7 @@ export function CreatorBroadcastFullscreen({
     };
 
     startCamera();
-  }, [isFilterReady, currentFilter, filteredStream]);
+  }, [isVisible, isFilterReady, currentFilter, filteredStream, isLobbyBroadcasting]);
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
