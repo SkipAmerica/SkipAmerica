@@ -6,6 +6,8 @@ import type { LiveState } from "@/shared/types/live";
 import { FilterSelector } from "./FilterSelector";
 import { getFilterProcessor, type FilterPreset } from "@/lib/advancedFilterProcessor";
 import { toast } from "sonner";
+import { useDoubleTap } from "@/hooks/use-double-tap";
+import { GoLiveCountdown } from "./GoLiveCountdown";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
 }
@@ -22,9 +24,27 @@ export function CreatorBroadcastFullscreen({
   const [currentFilter, setCurrentFilter] = useState<FilterPreset>('none');
   const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
   const [isFilterReady, setIsFilterReady] = useState(false);
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
   const filterProcessorRef = useRef(getFilterProcessor());
   const videoRef = useRef<HTMLVideoElement>(null);
   const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
+
+  // Double-tap handler for go-live
+  const { onTapStart } = useDoubleTap({
+    onDoubleTap: () => {
+      if (isCountdownActive) {
+        // Cancel countdown
+        setIsCountdownActive(false);
+        toast.info('Go live cancelled');
+      } else if (!isLive && !isGoingLive) {
+        // Start countdown
+        setIsCountdownActive(true);
+      } else if (isLive) {
+        toast.info('Already broadcasting');
+      }
+    },
+    delay: 400
+  });
 
   // Initialize filter processor
   useEffect(() => {
@@ -138,11 +158,13 @@ export function CreatorBroadcastFullscreen({
       }
     }
   };
-  const handleGoLive = async () => {
+  const handleCountdownComplete = async () => {
+    setIsCountdownActive(false);
     try {
       await goLive();
     } catch (error) {
       console.error('[CreatorBroadcast] Failed to go live:', error);
+      toast.error('Failed to go live');
     }
   };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
@@ -160,7 +182,10 @@ export function CreatorBroadcastFullscreen({
     }} />}
 
       {/* Local camera preview with filters */}
-      <div className="absolute inset-0 rounded-2xl overflow-hidden">
+      <div 
+        className="absolute inset-0 rounded-2xl overflow-hidden"
+        onPointerDown={onTapStart}
+      >
         <video
           ref={videoRef}
           autoPlay
@@ -183,6 +208,21 @@ export function CreatorBroadcastFullscreen({
           </div>
         )}
       </div>
+
+      {/* Countdown Overlay */}
+      {isCountdownActive && (
+        <GoLiveCountdown
+          onComplete={handleCountdownComplete}
+          onCancel={() => setIsCountdownActive(false)}
+        />
+      )}
+
+      {/* Pulsing Green Border When Live */}
+      {isLive && (
+        <div className="absolute inset-0 pointer-events-none z-20 rounded-2xl">
+          <div className="w-full h-full border-[2px] border-green-500 rounded-2xl animate-pulse" />
+        </div>
+      )}
 
       {/* LIVE Indicator (only when live) */}
       {isLive && <div className="absolute left-4 z-20" style={{
