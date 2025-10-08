@@ -63,21 +63,22 @@ export function LiveKitVideoPlayer({
         attachedTrack = null;
       }
       
-      // Prefer the target participant if specified
-      let targetParticipant = null;
-      if (targetParticipantId) {
-        targetParticipant = remoteParticipants.find(p => p.identity === targetParticipantId);
-        if (targetParticipant) {
-          console.log('[LiveKitVideoPlayer] Found target participant:', targetParticipantId);
-        } else {
-          console.log('[LiveKitVideoPlayer] Target participant not found:', targetParticipantId);
-        }
-      }
+      // If targetParticipantId is specified, ONLY show that participant
+      let participantsToTry = remoteParticipants;
       
-      // If target found, try their tracks first, otherwise try all participants
-      const participantsToTry = targetParticipant 
-        ? [targetParticipant, ...remoteParticipants.filter(p => p !== targetParticipant)]
-        : remoteParticipants;
+      if (targetParticipantId) {
+        const targetParticipant = remoteParticipants.find(p => p.identity === targetParticipantId);
+        if (!targetParticipant) {
+          console.log('[LiveKitVideoPlayer] Target participant not found, showing fallback');
+          if (mounted) {
+            setHasVideo(false);
+          }
+          return; // Don't show any video
+        }
+        console.log('[LiveKitVideoPlayer] Found target participant:', targetParticipantId);
+        // Only try the target participant's tracks
+        participantsToTry = [targetParticipant];
+      }
       
       for (const participant of participantsToTry) {
         // Try any video track publication (camera, screen share, etc.)
