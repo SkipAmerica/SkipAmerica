@@ -420,10 +420,6 @@ export function QueueContent() {
                   broadcastPanel={
                     <CreatorBroadcastFullscreen
                       creatorId={user.id}
-                      onClose={() => {
-                        // Close handler will be wired through SwipeableQueueCard
-                        console.log('[QueueContent] Broadcast close requested');
-                      }}
                     />
                   }
                   onBroadcastClose={() => {

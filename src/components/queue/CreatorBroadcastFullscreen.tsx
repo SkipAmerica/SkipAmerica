@@ -1,26 +1,19 @@
 import { useState } from "react";
-import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UniversalChat } from "@/components/chat/UniversalChat";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { LiveKitVideoPlayer } from "@/components/video/LiveKitVideoPlayer";
-import { createFullscreenLobbyConfig } from "@/lib/chatConfigs";
 import { useLiveStore } from "@/stores/live-store";
 import type { LiveState } from "@/shared/types/live";
 
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
-  onClose: () => void;
 }
 
 export function CreatorBroadcastFullscreen({
   creatorId,
-  onClose,
 }: CreatorBroadcastFullscreenProps) {
-  const { isLive, state: liveState, goLive, endLive, canGoLive } = useLiveStore();
+  const { isLive, state: liveState, goLive, canGoLive } = useLiveStore();
   const [isPublishing, setIsPublishing] = useState(false);
-  const lobbyConfig = createFullscreenLobbyConfig(creatorId);
   
   const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
 
@@ -29,17 +22,6 @@ export function CreatorBroadcastFullscreen({
       await goLive();
     } catch (error) {
       console.error('[CreatorBroadcast] Failed to go live:', error);
-    }
-  };
-
-  const handleClose = () => {
-    if (isLive) {
-      if (window.confirm("End your live broadcast?")) {
-        endLive();
-        onClose();
-      }
-    } else {
-      onClose();
     }
   };
 
@@ -102,18 +84,6 @@ export function CreatorBroadcastFullscreen({
         </div>
       )}
 
-      {/* Close Button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="absolute right-4 z-20 bg-black/40 border-white/20 text-white hover:bg-black/60 hover:text-white backdrop-blur-sm"
-        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
-        onClick={handleClose}
-        data-no-drag
-      >
-        <X className="h-5 w-5" />
-      </Button>
-
       {/* GO LIVE Button (only when not live) */}
       {!isLive && (
         <div 
@@ -135,14 +105,6 @@ export function CreatorBroadcastFullscreen({
           </span>
         </div>
       )}
-
-      {/* Lobby Chat Overlay */}
-      <div 
-        className="absolute bottom-0 left-0 right-0 z-10 max-h-[50vh] overflow-hidden"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        <UniversalChat config={lobbyConfig} />
-      </div>
     </div>
   );
 }
