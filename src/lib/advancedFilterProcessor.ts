@@ -12,14 +12,14 @@ interface FilterSettings {
 
 const FILTER_PRESETS: Record<FilterPreset, FilterSettings> = {
   none: { smoothing: 0, brightness: 0, warmth: 0, eyeEnhance: 0, sharpen: 0 },
-  natural: { smoothing: 0.3, brightness: 0.05, warmth: 0.1, eyeEnhance: 0, sharpen: 0.1 },
-  glam: { smoothing: 0.5, brightness: 0.1, warmth: 0.15, eyeEnhance: 0.15, sharpen: 0.2 },
-  bright: { smoothing: 0.4, brightness: 0.2, warmth: 0.2, eyeEnhance: 0.1, sharpen: 0.15 },
-  cool: { smoothing: 0.3, brightness: 0.05, warmth: -0.15, eyeEnhance: 0, sharpen: 0.25 },
-  radiant: { smoothing: 0.6, brightness: 0.15, warmth: 0.25, eyeEnhance: 0.2, sharpen: 0.2 },
-  porcelain: { smoothing: 0.75, brightness: 0.08, warmth: 0.05, eyeEnhance: 0, sharpen: 0 },
-  softfocus: { smoothing: 0.65, brightness: 0.06, warmth: 0.12, eyeEnhance: 0, sharpen: 0.05 },
-  hdclear: { smoothing: 0.2, brightness: 0.02, warmth: 0.03, eyeEnhance: 0, sharpen: 0.3 },
+  natural: { smoothing: 0.4, brightness: 0.08, warmth: 0.12, eyeEnhance: 0.1, sharpen: 0.15 },
+  glam: { smoothing: 0.6, brightness: 0.18, warmth: 0.22, eyeEnhance: 0.25, sharpen: 0.35 },
+  bright: { smoothing: 0.35, brightness: 0.35, warmth: 0.28, eyeEnhance: 0.15, sharpen: 0.2 },
+  cool: { smoothing: 0.25, brightness: 0.08, warmth: -0.35, eyeEnhance: 0.05, sharpen: 0.4 },
+  radiant: { smoothing: 0.55, brightness: 0.25, warmth: 0.4, eyeEnhance: 0.3, sharpen: 0.25 },
+  porcelain: { smoothing: 0.85, brightness: 0.12, warmth: 0.05, eyeEnhance: 0, sharpen: 0 },
+  softfocus: { smoothing: 0.7, brightness: 0.15, warmth: 0.18, eyeEnhance: 0.05, sharpen: 0.05 },
+  hdclear: { smoothing: 0.15, brightness: 0.05, warmth: 0, eyeEnhance: 0, sharpen: 0.55 },
 };
 
 export class AdvancedFilterProcessor {

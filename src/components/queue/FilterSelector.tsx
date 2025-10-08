@@ -15,24 +15,7 @@ const FILTERS: Array<{
   icon: React.ReactNode;
   description: string;
 }> = [
-  { 
-    id: 'none', 
-    label: 'None', 
-    icon: <X className="w-4 h-4" />,
-    description: 'Original'
-  },
-  { 
-    id: 'natural', 
-    label: 'Natural', 
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Subtle glow'
-  },
-  { 
-    id: 'glam', 
-    label: 'Glam', 
-    icon: <Star className="w-4 h-4" />,
-    description: 'Full glam'
-  },
+  // Tone-based filters first
   { 
     id: 'bright', 
     label: 'Bright', 
@@ -49,13 +32,20 @@ const FILTERS: Array<{
     id: 'radiant', 
     label: 'Radiant', 
     icon: <Zap className="w-4 h-4" />,
-    description: 'Maximum glow'
+    description: 'Golden glow'
+  },
+  // Skin enhancement filters
+  { 
+    id: 'natural', 
+    label: 'Natural', 
+    icon: <Sparkles className="w-4 h-4" />,
+    description: 'Balanced look'
   },
   { 
     id: 'porcelain', 
     label: 'Porcelain', 
     icon: <Gem className="w-4 h-4" />,
-    description: 'Smooth skin'
+    description: 'Ultra smooth'
   },
   { 
     id: 'softfocus', 
@@ -63,11 +53,25 @@ const FILTERS: Array<{
     icon: <Cloud className="w-4 h-4" />,
     description: 'Dreamy blur'
   },
+  // Clarity filters
+  { 
+    id: 'glam', 
+    label: 'Glam', 
+    icon: <Star className="w-4 h-4" />,
+    description: 'Red carpet'
+  },
   { 
     id: 'hdclear', 
     label: 'HD Clear', 
     icon: <Focus className="w-4 h-4" />,
-    description: 'Sharp & clear'
+    description: 'Max detail'
+  },
+  // None at the end
+  { 
+    id: 'none', 
+    label: 'None', 
+    icon: <X className="w-4 h-4" />,
+    description: 'Original'
   },
 ];
 
