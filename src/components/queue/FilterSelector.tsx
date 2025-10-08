@@ -56,8 +56,8 @@ const FILTERS: Array<{
 export function FilterSelector({ currentFilter, onFilterChange, className }: FilterSelectorProps) {
   return (
     <div className={cn("bg-black/40 backdrop-blur-sm rounded-full p-2", className)}>
-      <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-2">
+      <ScrollArea className="w-full overflow-x-auto">
+        <div className="flex gap-2 pb-2">
           {FILTERS.map((filter) => (
             <button
               key={filter.id}

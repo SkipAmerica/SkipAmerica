@@ -56,11 +56,12 @@ export function CreatorBroadcastFullscreen({
     }
   }, [filteredStream]);
 
-  // Start filter processing when going live
+  // Start camera immediately when filter is ready
   useEffect(() => {
-    const startFiltering = async () => {
-      if (isLive && isFilterReady) {
+    const startCamera = async () => {
+      if (isFilterReady && !filteredStream) {
         try {
+          console.log('[CreatorBroadcast] Starting camera...');
           // Get the original media stream
           const stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'user', width: 1280, height: 720 },
@@ -77,14 +78,14 @@ export function CreatorBroadcastFullscreen({
             setFilteredStream(stream);
           }
         } catch (error) {
-          console.error('[CreatorBroadcast] Failed to start filtering:', error);
+          console.error('[CreatorBroadcast] Failed to start camera:', error);
           toast.error('Camera access failed');
         }
       }
     };
 
-    startFiltering();
-  }, [isLive, isFilterReady, currentFilter]);
+    startCamera();
+  }, [isFilterReady, currentFilter, filteredStream]);
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
@@ -165,7 +166,7 @@ export function CreatorBroadcastFullscreen({
 
       {/* Filter Selector */}
       {isFilterReady && (
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+        <div className="absolute bottom-4 left-4 right-4 z-20">
           <FilterSelector 
             currentFilter={currentFilter}
             onFilterChange={handleFilterChange}

@@ -68,16 +68,26 @@ export class AdvancedFilterProcessor {
         minTrackingConfidence: 0.5,
       });
 
-      if (this.gl) {
-        this.initWebGL();
-      }
-
-      this.isInitialized = true;
-      console.log('[AdvancedFilter] Initialized successfully');
+      console.log('[AdvancedFilter] MediaPipe loaded successfully');
     } catch (error) {
-      console.error('[AdvancedFilter] Initialization failed:', error);
-      throw error;
+      console.error('[AdvancedFilter] MediaPipe initialization failed:', error);
+      console.warn('[AdvancedFilter] Continuing with WebGL-only filters (no face detection)');
+      // Continue without MediaPipe - WebGL filters will still work
     }
+
+    // Initialize WebGL (works independently of MediaPipe)
+    if (this.gl) {
+      try {
+        this.initWebGL();
+        console.log('[AdvancedFilter] WebGL initialized');
+      } catch (glError) {
+        console.error('[AdvancedFilter] WebGL initialization failed:', glError);
+        throw new Error('WebGL initialization failed - filters unavailable');
+      }
+    }
+
+    this.isInitialized = true;
+    console.log('[AdvancedFilter] Initialized successfully');
   }
 
   private initWebGL(): void {
