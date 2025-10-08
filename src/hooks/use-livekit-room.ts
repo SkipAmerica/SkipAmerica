@@ -72,6 +72,19 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         // Setup handlers before connecting
         newRoom.on(RoomEvent.Connected, () => {
           console.log('[useLiveKitRoom] Connected to room:', roomName);
+          console.log('[useLiveKitRoom] Room participants:', {
+            localParticipant: newRoom.localParticipant.identity,
+            remoteParticipantsCount: newRoom.remoteParticipants.size,
+            remoteParticipants: Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
+          });
+          
+          // Log audio context state
+          if (typeof AudioContext !== 'undefined') {
+            const audioContext = new AudioContext();
+            console.log('[useLiveKitRoom] AudioContext state:', audioContext.state);
+            audioContext.close();
+          }
+          
           if (mounted) setConnectionState('connected');
         });
 
@@ -91,7 +104,10 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         });
 
         // Connect to room with auto-subscribe enabled
-        await newRoom.connect(url, token, { autoSubscribe: true });
+        const connectOptions = { autoSubscribe: true };
+        console.log('[useLiveKitRoom] Connecting with options:', connectOptions);
+        
+        await newRoom.connect(url, token, connectOptions);
 
         if (!mounted) {
           await newRoom.disconnect();
@@ -99,7 +115,11 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         }
 
         setRoom(newRoom);
-        console.log('[useLiveKitRoom] ✅ Connection established');
+        console.log('[useLiveKitRoom] ✅ Connection established', {
+          role: config.role,
+          identity: config.identity,
+          roomName: roomName
+        });
       } catch (err) {
         console.error('[useLiveKitRoom] Connection error:', err);
         if (mounted) {

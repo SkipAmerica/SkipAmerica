@@ -128,8 +128,56 @@ export function LiveKitVideoPlayer({
             console.log('[LiveKitVideoPlayer] ✅ Attaching audio track from:', participant.identity);
             
             const audioTrack = audioPublication.track;
-            audioTrack.attach(audioRef.current);
+            const audioElement = audioRef.current;
+            
+            // Log MediaStreamTrack properties
+            const mediaStreamTrack = audioTrack.mediaStreamTrack;
+            console.log('[LiveKitVideoPlayer] MediaStreamTrack state:', {
+              enabled: mediaStreamTrack?.enabled,
+              muted: mediaStreamTrack?.muted,
+              readyState: mediaStreamTrack?.readyState,
+              id: mediaStreamTrack?.id,
+              label: mediaStreamTrack?.label
+            });
+            
+            audioTrack.attach(audioElement);
             attachedAudioTrack = audioTrack;
+            
+            // Log HTMLAudioElement state after attachment
+            console.log('[LiveKitVideoPlayer] HTMLAudioElement state after attach:', {
+              muted: audioElement.muted,
+              volume: audioElement.volume,
+              paused: audioElement.paused,
+              readyState: audioElement.readyState,
+              srcObject: !!audioElement.srcObject,
+              autoplay: audioElement.autoplay
+            });
+            
+            // Add audio element event listeners for debugging
+            const onPlay = () => console.log('[LiveKitVideoPlayer] 🔊 Audio element PLAY event');
+            const onPlaying = () => console.log('[LiveKitVideoPlayer] 🔊 Audio element PLAYING event');
+            const onPause = () => console.log('[LiveKitVideoPlayer] 🔇 Audio element PAUSE event');
+            const onError = (e: any) => console.error('[LiveKitVideoPlayer] ❌ Audio element ERROR:', e);
+            const onSuspend = () => console.log('[LiveKitVideoPlayer] ⏸️ Audio element SUSPEND event');
+            const onWaiting = () => console.log('[LiveKitVideoPlayer] ⏳ Audio element WAITING event');
+            
+            audioElement.addEventListener('play', onPlay);
+            audioElement.addEventListener('playing', onPlaying);
+            audioElement.addEventListener('pause', onPause);
+            audioElement.addEventListener('error', onError);
+            audioElement.addEventListener('suspend', onSuspend);
+            audioElement.addEventListener('waiting', onWaiting);
+            
+            // Attempt to play the audio explicitly
+            console.log('[LiveKitVideoPlayer] Attempting to play audio...');
+            audioElement.play().then(() => {
+              console.log('[LiveKitVideoPlayer] ✅ Audio play() succeeded');
+            }).catch((err) => {
+              console.error('[LiveKitVideoPlayer] ❌ Audio play() failed:', err.name, err.message);
+              if (err.name === 'NotAllowedError') {
+                console.error('[LiveKitVideoPlayer] Audio blocked by autoplay policy - user interaction required');
+              }
+            });
           }
         }
         

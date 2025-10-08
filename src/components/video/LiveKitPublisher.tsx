@@ -98,14 +98,37 @@ export function LiveKitPublisher({
             });
             await room.localParticipant.publishTrack(track, videoPublishOptions);
           } else {
+            // Log MediaStreamTrack properties before publishing
+            console.log('[LiveKitPublisher] MediaStreamTrack properties:', {
+              kind: track.kind,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState,
+              id: track.id,
+              label: track.label,
+              settings: track.getSettings?.()
+            });
+            
             console.log('[LiveKitPublisher] Publishing audio track with settings:', {
               bitrate: '128 kbps',
               dtx: false,
               enabled: track.enabled,
               muted: track.muted
             });
+            
             await room.localParticipant.publishTrack(track, audioPublishOptions);
+            
             console.log('[LiveKitPublisher] ✅ Audio track published successfully');
+            
+            // Log published audio track details
+            const audioPublications = Array.from(room.localParticipant.audioTrackPublications.values());
+            console.log('[LiveKitPublisher] Local audio publications:', audioPublications.map(pub => ({
+              trackSid: pub.trackSid,
+              trackName: pub.trackName,
+              source: pub.source,
+              muted: pub.isMuted,
+              enabled: pub.track?.mediaStreamTrack?.enabled
+            })));
           }
         }
 
