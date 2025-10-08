@@ -112,7 +112,7 @@ export function ViewportDrawer({
         </div>
         
         {/* Footer Section */}
-        {footer || (
+        {footer !== undefined ? footer : (
           <DrawerFooter>
             <DrawerClose asChild>
               <Button variant="outline">Close</Button>
