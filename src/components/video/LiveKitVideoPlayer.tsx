@@ -25,6 +25,7 @@ export function LiveKitVideoPlayer({
   targetParticipantId,
 }: LiveKitVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const { room, connectionState, isConnected } = useLiveKitRoom(config);
 
@@ -38,9 +39,10 @@ export function LiveKitVideoPlayer({
     if (!room || !videoRef.current) return;
 
     let mounted = true;
-    let attachedTrack: any = null;
+    let attachedVideoTrack: any = null;
+    let attachedAudioTrack: any = null;
 
-    const attachVideoTrack = () => {
+    const attachTracks = () => {
       const remoteParticipants = Array.from(room.remoteParticipants.values());
       
       console.log('[LiveKitVideoPlayer] Remote participants:', remoteParticipants.map(p => ({
@@ -53,14 +55,23 @@ export function LiveKitVideoPlayer({
         }))
       })));
 
-      // Detach any existing track first
-      if (attachedTrack && videoRef.current) {
+      // Detach any existing tracks first
+      if (attachedVideoTrack && videoRef.current) {
         try {
-          attachedTrack.detach(videoRef.current);
+          attachedVideoTrack.detach(videoRef.current);
         } catch (e) {
-          console.warn('[LiveKitVideoPlayer] Failed to detach previous track:', e);
+          console.warn('[LiveKitVideoPlayer] Failed to detach previous video track:', e);
         }
-        attachedTrack = null;
+        attachedVideoTrack = null;
+      }
+      
+      if (attachedAudioTrack && audioRef.current) {
+        try {
+          attachedAudioTrack.detach(audioRef.current);
+        } catch (e) {
+          console.warn('[LiveKitVideoPlayer] Failed to detach previous audio track:', e);
+        }
+        attachedAudioTrack = null;
       }
       
       // If targetParticipantId is specified, ONLY show that participant
@@ -81,59 +92,84 @@ export function LiveKitVideoPlayer({
       }
       
       for (const participant of participantsToTry) {
-        // Try any video track publication (camera, screen share, etc.)
         const allPublications = Array.from(participant.trackPublications.values()) as RemoteTrackPublication[];
-        const videoPublications = allPublications.filter(pub => pub.kind === 'video' && pub.track !== undefined);
         
+        // Attach VIDEO tracks
+        const videoPublications = allPublications.filter(pub => pub.kind === 'video' && pub.track !== undefined);
         for (const videoPublication of videoPublications) {
           if (videoPublication.track && videoRef.current) {
             console.log('[LiveKitVideoPlayer] ✅ Attaching video track from:', participant.identity, 'source:', videoPublication.source);
             
             // Request high quality (1080p with automatic fallback to 720p)
             videoPublication.setVideoQuality(VideoQuality.HIGH);
-            console.log('[LiveKitVideoPlayer] Requested HIGH video quality (1080p @ ~2.5Mbps)');
+            console.log('[LiveKitVideoPlayer] Requested HIGH video quality (1080p @ ~5Mbps)');
             
             const videoTrack = videoPublication.track;
             videoTrack.attach(videoRef.current);
-            attachedTrack = videoTrack;
+            attachedVideoTrack = videoTrack;
             
             if (mounted) {
               setHasVideo(true);
             }
-            return;
           }
+        }
+        
+        // Attach AUDIO tracks
+        const audioPublications = allPublications.filter(pub => pub.kind === 'audio' && pub.track !== undefined);
+        for (const audioPublication of audioPublications) {
+          if (audioPublication.track && audioRef.current) {
+            console.log('[LiveKitVideoPlayer] ✅ Attaching audio track from:', participant.identity);
+            
+            const audioTrack = audioPublication.track;
+            audioTrack.attach(audioRef.current);
+            attachedAudioTrack = audioTrack;
+          }
+        }
+        
+        // If we found tracks for this participant, we're done
+        if (attachedVideoTrack || attachedAudioTrack) {
+          return;
         }
       }
       
-      console.log('[LiveKitVideoPlayer] No video tracks available to attach');
+      console.log('[LiveKitVideoPlayer] No tracks available to attach');
     };
 
     // Try to attach existing tracks
-    attachVideoTrack();
+    attachTracks();
 
     // Listen for track, participant, and publishing changes
     const handleTrackSubscribed = () => {
       console.log('[LiveKitVideoPlayer] Track subscribed event');
-      attachVideoTrack();
+      attachTracks();
     };
     const handleTrackPublished = () => {
       console.log('[LiveKitVideoPlayer] Track published event');
-      attachVideoTrack();
+      attachTracks();
     };
     const handleParticipantConnected = () => {
       console.log('[LiveKitVideoPlayer] Participant connected event');
-      attachVideoTrack();
+      attachTracks();
     };
     const handleTrackUnsubscribed = (track: any) => {
       console.log('[LiveKitVideoPlayer] Track unsubscribed');
-      if (track === attachedTrack && videoRef.current) {
+      if (track === attachedVideoTrack && videoRef.current) {
         try {
           track.detach(videoRef.current);
         } catch (e) {
-          console.warn('[LiveKitVideoPlayer] Failed to detach on unsubscribe:', e);
+          console.warn('[LiveKitVideoPlayer] Failed to detach video on unsubscribe:', e);
         }
-        attachedTrack = null;
+        attachedVideoTrack = null;
         videoRef.current.srcObject = null;
+      }
+      if (track === attachedAudioTrack && audioRef.current) {
+        try {
+          track.detach(audioRef.current);
+        } catch (e) {
+          console.warn('[LiveKitVideoPlayer] Failed to detach audio on unsubscribe:', e);
+        }
+        attachedAudioTrack = null;
+        audioRef.current.srcObject = null;
       }
       if (mounted) {
         setHasVideo(false);
@@ -144,7 +180,11 @@ export function LiveKitVideoPlayer({
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
-      attachedTrack = null;
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
+      }
+      attachedVideoTrack = null;
+      attachedAudioTrack = null;
       if (mounted) {
         setHasVideo(false);
       }
@@ -164,17 +204,29 @@ export function LiveKitVideoPlayer({
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
       
-      // Detach track on cleanup
-      if (attachedTrack && videoRef.current) {
+      // Detach tracks on cleanup
+      if (attachedVideoTrack && videoRef.current) {
         try {
-          attachedTrack.detach(videoRef.current);
+          attachedVideoTrack.detach(videoRef.current);
         } catch (e) {
-          console.warn('[LiveKitVideoPlayer] Failed to detach on cleanup:', e);
+          console.warn('[LiveKitVideoPlayer] Failed to detach video on cleanup:', e);
+        }
+      }
+      
+      if (attachedAudioTrack && audioRef.current) {
+        try {
+          attachedAudioTrack.detach(audioRef.current);
+        } catch (e) {
+          console.warn('[LiveKitVideoPlayer] Failed to detach audio on cleanup:', e);
         }
       }
       
       if (videoRef.current) {
         videoRef.current.srcObject = null;
+      }
+      
+      if (audioRef.current) {
+        audioRef.current.srcObject = null;
       }
     };
   }, [room, targetParticipantId]);
@@ -190,6 +242,14 @@ export function LiveKitVideoPlayer({
         playsInline
         muted={muted}
         style={{ opacity: showFallback ? 0 : 1 }}
+      />
+      
+      {/* Hidden audio element for remote audio playback */}
+      <audio
+        ref={audioRef}
+        autoPlay
+        playsInline
+        muted={muted}
       />
       
       {showFallback && fallbackContent && (
