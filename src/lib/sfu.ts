@@ -26,6 +26,14 @@ export function createSFU(): SFUHandle {
         el.muted = false;
         track.attach(el); 
         cb(el, participant.identity);
+      } else if (track.kind === Track.Kind.Audio) {
+        console.log("[SFU] Audio track subscribed:", participant.identity);
+        const audioEl = document.createElement("audio");
+        audioEl.autoplay = true;
+        audioEl.muted = false;
+        track.attach(audioEl);
+        // Append to body so browser can play it
+        document.body.appendChild(audioEl);
       }
     });
   }
@@ -35,6 +43,15 @@ export function createSFU(): SFUHandle {
       if (track.kind === Track.Kind.Video) {
         console.log("[SFU] Video track unsubscribed (normal):", participant.identity);
         cb();
+      } else if (track.kind === Track.Kind.Audio) {
+        console.log("[SFU] Audio track unsubscribed:", participant.identity);
+        // Clean up audio elements when track ends
+        const audioElements = document.querySelectorAll('audio');
+        audioElements.forEach(el => {
+          if (el.srcObject && (el.srcObject as MediaStream).active === false) {
+            el.remove();
+          }
+        });
       }
     });
   }
