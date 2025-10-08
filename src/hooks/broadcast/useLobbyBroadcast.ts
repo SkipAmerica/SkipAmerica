@@ -31,6 +31,7 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const streamRef = useRef<MediaStream | null>(null);
+  const originalStreamRef = useRef<MediaStream | null>(null); // Track unfiltered camera stream
   const startingRef = useRef(false);
   
   const filters = useBroadcastFilters();
@@ -89,6 +90,9 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
         frameRate: settings.frameRate
       });
 
+      // Store original stream
+      originalStreamRef.current = mediaStream;
+
       // Apply filter if selected
       let finalStream = mediaStream;
       if (filters.currentFilter !== 'none') {
@@ -108,15 +112,28 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
 
   const stopStream = useCallback(() => {
     const currentStream = streamRef.current;
-    if (!currentStream) return;
+    const originalStream = originalStreamRef.current;
 
     console.log('[LobbyBroadcast] Stopping stream');
-    currentStream.getTracks().forEach(track => {
-      track.stop();
-      console.log('[LobbyBroadcast] Stopped track:', track.kind);
-    });
+    
+    // Stop processed stream tracks
+    if (currentStream) {
+      currentStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[LobbyBroadcast] Stopped processed track:', track.kind);
+      });
+    }
+
+    // Stop original camera stream tracks if different
+    if (originalStream && originalStream !== currentStream) {
+      originalStream.getTracks().forEach(track => {
+        track.stop();
+        console.log('[LobbyBroadcast] Stopped original track:', track.kind);
+      });
+    }
 
     streamRef.current = null;
+    originalStreamRef.current = null;
     setStream(null);
     setIsStreaming(false);
   }, []);
@@ -136,36 +153,25 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
   }, []);
 
   const changeFilter = useCallback(async (filter: FilterPreset) => {
-    if (!stream) {
-      console.warn('[LobbyBroadcast] No stream to apply filter to');
+    const originalStream = originalStreamRef.current;
+    if (!originalStream) {
+      console.warn('[LobbyBroadcast] No original stream to apply filter to');
       return;
     }
 
     console.log('[LobbyBroadcast] Changing filter to:', filter);
 
     try {
-      // Get original stream without filters
-      const originalStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'user',
-          width: { ideal: 1920, min: 1280 },
-          height: { ideal: 1080, min: 720 },
-          frameRate: { ideal: 30, max: 60 },
-          aspectRatio: { ideal: 16/9 }
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 48000, // CD quality
-          channelCount: 2,   // Stereo
-        }
-      });
+      // Stop old processed stream (but keep original camera stream)
+      const oldProcessedStream = streamRef.current;
+      if (oldProcessedStream && oldProcessedStream !== originalStream) {
+        oldProcessedStream.getTracks().forEach(track => {
+          track.stop();
+          console.log('[LobbyBroadcast] Stopped old processed track:', track.kind);
+        });
+      }
 
-      // Stop old stream
-      stream.getTracks().forEach(track => track.stop());
-
-      // Apply new filter
+      // Apply new filter to original stream
       let newStream = originalStream;
       if (filter !== 'none') {
         newStream = await filters.applyFilter(filter, originalStream);
@@ -179,7 +185,7 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     } catch (error) {
       console.error('[LobbyBroadcast] Failed to change filter:', error);
     }
-  }, [stream, filters]);
+  }, [filters]);
 
   return {
     stream,

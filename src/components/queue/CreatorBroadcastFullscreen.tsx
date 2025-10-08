@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
@@ -39,10 +39,14 @@ export function CreatorBroadcastFullscreen({
     delay: 400
   });
 
-  // Update video element when stream changes
-  if (videoRef.current && broadcast.stream) {
-    videoRef.current.srcObject = broadcast.stream;
-  }
+  // Update video element reactively when stream changes
+  useEffect(() => {
+    if (videoRef.current && broadcast.stream) {
+      videoRef.current.srcObject = broadcast.stream;
+    } else if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, [broadcast.stream]);
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
