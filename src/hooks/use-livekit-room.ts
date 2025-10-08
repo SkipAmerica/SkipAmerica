@@ -25,7 +25,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
       return;
     }
 
-    let mounted = true;
+    let isMounted = true;
     let currentRoom: Room | null = null;
 
     const connect = async () => {
@@ -42,7 +42,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           identity: config.identity,
         });
 
-        if (!mounted) return;
+        if (!isMounted) return;
 
         // Create room with broadcast-grade quality settings
         const newRoom = new Room({
@@ -85,22 +85,22 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
             audioContext.close();
           }
           
-          if (mounted) setConnectionState('connected');
+          if (isMounted) setConnectionState('connected');
         });
 
         newRoom.on(RoomEvent.Disconnected, () => {
           console.log('[useLiveKitRoom] Disconnected from room');
-          if (mounted) setConnectionState('disconnected');
+          if (isMounted) setConnectionState('disconnected');
         });
 
         newRoom.on(RoomEvent.Reconnecting, () => {
           console.log('[useLiveKitRoom] Reconnecting...');
-          if (mounted) setConnectionState('connecting');
+          if (isMounted) setConnectionState('connecting');
         });
 
         newRoom.on(RoomEvent.Reconnected, () => {
           console.log('[useLiveKitRoom] Reconnected');
-          if (mounted) setConnectionState('connected');
+          if (isMounted) setConnectionState('connected');
         });
 
         // Connect to room with auto-subscribe enabled
@@ -109,7 +109,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         
         await newRoom.connect(url, token, connectOptions);
 
-        if (!mounted) {
+        if (!isMounted) {
           await newRoom.disconnect();
           return;
         }
@@ -122,7 +122,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         });
       } catch (err) {
         console.error('[useLiveKitRoom] Connection error:', err);
-        if (mounted) {
+        if (isMounted) {
           setError(err instanceof Error ? err : new Error('Connection failed'));
           setConnectionState('failed');
         }
@@ -132,14 +132,14 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
     connect();
 
     return () => {
-      mounted = false;
+      isMounted = false;
       if (currentRoom) {
         console.log('[useLiveKitRoom] Cleaning up room connection');
         currentRoom.disconnect();
         setRoom(null);
       }
     };
-  }, [config?.role, config?.creatorId, config?.identity]);
+  }, [config]);
 
   return {
     room,

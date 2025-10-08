@@ -85,28 +85,37 @@ export async function orchestrateStop(reason: string = 'manual') {
   await mediaManager.stop(reason);
 }
 
-export function routeMediaError(err: any) {
+export function routeMediaError(err: unknown) {
   // Map to UI toasts/messages; do not confuse state blocks with permission issues
-  const code = err?.code || 'UNKNOWN';
+  const error = err as MediaError | Error | { code?: string };
+  const code = (error && typeof error === 'object' && 'code' in error) ? error.code : 'UNKNOWN';
+  
+  metrics.onError?.(code as any, err, { handler: 'routeMediaError' });
+  
   switch (code) {
     case 'STATE_BLOCK':
-      showToast({ type: 'info', msg: 'Preparing session… initializing media when ready.' });
+      logToast('info', 'Preparing session… initializing media when ready.');
       break;
     case 'PERMISSION_DENIED':
-      showToast({ type: 'warning', msg: 'Camera/Mic blocked. Enable permissions in Safari and try again.' });
+      logToast('warning', 'Camera/Mic blocked. Enable permissions in Safari and try again.');
       break;
     case 'DEVICE_NOT_FOUND':
-      showToast({ type: 'error', msg: 'No camera/microphone detected.' });
+      logToast('error', 'No camera/microphone detected.');
       break;
     case 'HARDWARE_ERROR':
-      showToast({ type: 'error', msg: 'Camera/mic busy. Close other apps and retry.' });
+      logToast('error', 'Camera/mic busy. Close other apps and retry.');
       break;
     default:
-      showToast({ type: 'error', msg: 'Could not start camera/mic. Please try again.' });
+      logToast('error', 'Could not start camera/mic. Please try again.');
   }
 }
 
-// TODO: replace with your app's toast system
-function showToast(p: { type: 'info'|'warning'|'error'; msg: string }) {
-  console.log('[TOAST]', p.type, p.msg);
+/**
+ * Structured logging for user-facing messages
+ * Replace this with your app's toast/notification system
+ */
+function logToast(type: 'info' | 'warning' | 'error', msg: string) {
+  const prefix = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
+  console.log(`[MEDIA][USER] ${prefix} ${msg}`);
+  metrics.onEvent?.('user_message', { type, msg });
 }

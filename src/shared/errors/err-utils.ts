@@ -7,18 +7,18 @@ export interface NormalizedError {
   message: string
   code?: string | number
   stack?: string
-  cause?: any
-  meta: Record<string, any>
+  cause?: unknown
+  meta: Record<string, unknown>
 }
 
 /**
  * JSON stringify with cycle-safe replacer and size limits
  */
-export function safeStringify(input: any, maxBytes = 2048): string {
+export function safeStringify(input: unknown, maxBytes = 2048): string {
   const seen = new WeakSet()
   
   try {
-    const json = JSON.stringify(input, (key, value) => {
+    const json = JSON.stringify(input, (_key, value: unknown) => {
       // Handle circular references
       if (typeof value === 'object' && value !== null) {
         if (seen.has(value)) {
@@ -50,7 +50,7 @@ export function safeStringify(input: any, maxBytes = 2048): string {
 /**
  * Normalize any error into a consistent, serializable structure
  */
-export function normalizeError(err: any, meta: Record<string, any> = {}): NormalizedError {
+export function normalizeError(err: unknown, meta: Record<string, unknown> = {}): NormalizedError {
   const normalized: NormalizedError = {
     message: 'Unknown error occurred',
     meta: {
@@ -65,26 +65,27 @@ export function normalizeError(err: any, meta: Record<string, any> = {}): Normal
     normalized.name = err.name
     normalized.message = err.message || 'Error occurred'
     normalized.stack = err.stack
-    normalized.cause = (err as any).cause
+    normalized.cause = (err as Error & { cause?: unknown }).cause
     
     // Copy enumerable properties
     Object.keys(err).forEach(key => {
       if (!['name', 'message', 'stack', 'cause'].includes(key)) {
-        normalized.meta[key] = (err as any)[key]
+        normalized.meta[key] = (err as unknown as Record<string, unknown>)[key]
       }
     })
   } else if (err && typeof err === 'object') {
     // Object-like error (API errors, custom errors, etc)
-    normalized.name = err.name || 'ObjectError'
-    normalized.message = err.message || err.error || err.msg || 'Error occurred'
-    normalized.code = err.code || err.status || err.statusCode
-    normalized.stack = err.stack
-    normalized.cause = err.cause || err.details
+    const errObj = err as Record<string, unknown>
+    normalized.name = String(errObj.name || 'ObjectError')
+    normalized.message = String(errObj.message || errObj.error || errObj.msg || 'Error occurred')
+    normalized.code = (errObj.code || errObj.status || errObj.statusCode) as string | number | undefined
+    normalized.stack = errObj.stack as string | undefined
+    normalized.cause = errObj.cause || errObj.details
     
     // Merge additional properties into meta
-    Object.keys(err).forEach(key => {
+    Object.keys(errObj).forEach(key => {
       if (!['name', 'message', 'error', 'msg', 'code', 'status', 'statusCode', 'stack', 'cause', 'details'].includes(key)) {
-        normalized.meta[key] = err[key]
+        normalized.meta[key] = errObj[key]
       }
     })
   } else if (typeof err === 'string') {
@@ -92,9 +93,10 @@ export function normalizeError(err: any, meta: Record<string, any> = {}): Normal
     normalized.message = err
   } else {
     // Fallback for any other type
-    const errorValue = String(err?.message ?? err ?? 'Unknown error')
+    const errorValue = String((err as { message?: unknown })?.message ?? err ?? 'Unknown error')
     normalized.message = errorValue
     normalized.meta.originalValue = err
+    normalized.meta.originalType = typeof err
     
     // Wrap into proper Error to get stack trace
     try {

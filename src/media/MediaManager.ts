@@ -9,14 +9,27 @@ export class MediaManager {
   private startPromise: Promise<MediaStream> | null = null;
   private pc: RTCPeerConnection | null = null;
   private metrics: MediaMetrics;
+  private visibilityHandler: () => void;
+  private unloadHandler: () => void;
 
   constructor(metrics?: MediaMetrics) {
     this.metrics = metrics || {};
-    // Auto-cleanup on tab hide/unload
-    document.addEventListener('visibilitychange', () => {
+    
+    // Auto-cleanup on tab hide/unload with proper cleanup tracking
+    this.visibilityHandler = () => {
       if (document.visibilityState === 'hidden') this.stop('visibilitychange');
-    });
-    window.addEventListener('beforeunload', () => this.stop('beforeunload'));
+    };
+    this.unloadHandler = () => this.stop('beforeunload');
+    
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+    window.addEventListener('beforeunload', this.unloadHandler);
+  }
+  
+  destroy() {
+    // Cleanup event listeners to prevent memory leaks
+    document.removeEventListener('visibilitychange', this.visibilityHandler);
+    window.removeEventListener('beforeunload', this.unloadHandler);
+    this.stop('destroy');
   }
 
   hasLocalStream() { return !!this.currentStream; }
@@ -25,28 +38,46 @@ export class MediaManager {
 
   private attach(el: HTMLMediaElement | null | undefined, stream: MediaStream, muted = false) {
     if (!el) return;
-    // iOS/Safari requirements
-    // @ts-ignore
-    el.playsInline = true;
+    
+    // iOS/Safari requirements - properly typed
+    if (el instanceof HTMLVideoElement) {
+      el.playsInline = true;
+    }
     el.autoplay = true;
-    (el as any).muted = muted;
-    (el as any).srcObject = stream;
-    const p = (el as any).play?.();
-    if (p && typeof p.then === 'function') p.catch(() => {});
+    el.muted = muted;
+    el.srcObject = stream;
+    
+    const playPromise = el.play?.();
+    if (playPromise && typeof playPromise.then === 'function') {
+      playPromise.catch((err) => {
+        this.metrics.onEvent?.('media_play_failed', { error: err.message });
+      });
+    }
   }
 
   private detachAll() {
-    document.querySelectorAll('video, audio').forEach((el: any) => {
-      if (el?.srcObject) {
+    document.querySelectorAll<HTMLMediaElement>('video, audio').forEach((el) => {
+      if (el.srcObject) {
         el.srcObject = null;
-        try { el.pause?.(); } catch {}
+        try { 
+          el.pause(); 
+        } catch (err) {
+          this.metrics.onEvent?.('media_detach_error', { error: String(err) });
+        }
       }
     });
   }
 
   private stopTracks(stream: MediaStream | null) {
     if (!stream) return;
-    stream.getTracks().forEach(t => { try { t.stop(); } catch {} });
+    stream.getTracks().forEach(track => { 
+      try { 
+        track.enabled = false;
+        track.stop(); 
+      } catch (err) {
+        this.metrics.onEvent?.('track_stop_error', { kind: track.kind, error: String(err) });
+      }
+    });
   }
 
   async start(opts: MediaInitOptions): Promise<MediaStream> {

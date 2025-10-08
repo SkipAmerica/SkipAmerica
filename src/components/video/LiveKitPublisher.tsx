@@ -29,7 +29,7 @@ export function LiveKitPublisher({
   useEffect(() => {
     if (!room || !isConnected || isPublishing) return;
 
-    let mounted = true;
+    let isMounted = true;
 
     const publish = async (attempt = 1) => {
       try {
@@ -78,7 +78,7 @@ export function LiveKitPublisher({
           tracks = localTracks;
         }
 
-        if (!mounted) {
+        if (!isMounted) {
           // Clean up tracks if component unmounted
           if (!mediaStream) {
             tracks.forEach(track => track.stop());
@@ -138,17 +138,17 @@ export function LiveKitPublisher({
         console.error(`[LiveKitPublisher] Failed to publish tracks (attempt ${attempt}):`, err);
         
         // Retry up to 2 times for NotAllowedError or timing issues
-        if (attempt < 3 && mounted) {
+        if (attempt < 3 && isMounted) {
           console.log(`[LiveKitPublisher] Retrying in 300ms...`);
           setTimeout(() => {
-            if (mounted) publish(attempt + 1);
+            if (isMounted) publish(attempt + 1);
           }, 300);
         } else {
           const error = err instanceof Error ? err : new Error('Failed to publish');
           onError?.(error);
         }
       } finally {
-        if (mounted && attempt >= 3) {
+        if (isMounted && attempt >= 3) {
           setIsPublishing(false);
         }
       }
@@ -157,7 +157,7 @@ export function LiveKitPublisher({
     publish();
 
     return () => {
-      mounted = false;
+      isMounted = false;
     };
   }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 
