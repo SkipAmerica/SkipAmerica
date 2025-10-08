@@ -17,7 +17,7 @@ interface LiveKitVideoPlayerProps {
  */
 export function LiveKitVideoPlayer({
   config,
-  className = "w-full h-full object-cover",
+  className = "w-full h-full object-cover rounded-2xl",
   muted = true,
   onConnectionStateChange,
   fallbackContent,
