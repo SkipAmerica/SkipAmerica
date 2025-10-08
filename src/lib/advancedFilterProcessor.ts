@@ -1,30 +1,56 @@
-import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+// import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 
-export type FilterPreset = 'none' | 'natural' | 'glam' | 'bright' | 'cool' | 'radiant' | 'porcelain' | 'softfocus' | 'hdclear';
+export type FilterPreset = 
+  | 'none'
+  | 'cool'
+  | 'hdclear';
 
 interface FilterSettings {
-  smoothing: number;
   brightness: number;
+  contrast: number;
+  saturation: number;
   warmth: number;
-  eyeEnhance: number;
-  sharpen: number;
-  teethWhiten: number;
+  clarity: number;
+  smoothing: number;
+  // eyeEnhance: number;
+  // teethWhiten: number;
 }
 
 const FILTER_PRESETS: Record<FilterPreset, FilterSettings> = {
-  none: { smoothing: 0, brightness: 0, warmth: 0, eyeEnhance: 0, sharpen: 0, teethWhiten: 0 },
-  natural: { smoothing: 0.4, brightness: 0.08, warmth: 0.12, eyeEnhance: 0.1, sharpen: 0.15, teethWhiten: 0.15 },
-  glam: { smoothing: 0.6, brightness: 0.18, warmth: 0.22, eyeEnhance: 0.35, sharpen: 0.35, teethWhiten: 0.4 },
-  bright: { smoothing: 0.35, brightness: 0.35, warmth: 0.28, eyeEnhance: 0.2, sharpen: 0.2, teethWhiten: 0.25 },
-  cool: { smoothing: 0.25, brightness: 0.08, warmth: -0.35, eyeEnhance: 0.15, sharpen: 0.4, teethWhiten: 0.2 },
-  radiant: { smoothing: 0.55, brightness: 0.25, warmth: 0.4, eyeEnhance: 0.35, sharpen: 0.25, teethWhiten: 0.35 },
-  porcelain: { smoothing: 0.85, brightness: 0.12, warmth: 0.05, eyeEnhance: 0, sharpen: 0, teethWhiten: 0.1 },
-  softfocus: { smoothing: 0.7, brightness: 0.15, warmth: 0.18, eyeEnhance: 0.1, sharpen: 0.05, teethWhiten: 0.15 },
-  hdclear: { smoothing: 0.15, brightness: 0.05, warmth: 0, eyeEnhance: 0, sharpen: 0.55, teethWhiten: 0.1 },
+  none: {
+    brightness: 0,
+    contrast: 0,
+    saturation: 0,
+    warmth: 0,
+    clarity: 0,
+    smoothing: 0,
+    // eyeEnhance: 0,
+    // teethWhiten: 0,
+  },
+  cool: {
+    brightness: 0.08,
+    contrast: 0.12,
+    saturation: 0.1,
+    warmth: -0.12,
+    clarity: 0.15,
+    smoothing: 0.2,
+    // eyeEnhance: 0,
+    // teethWhiten: 0,
+  },
+  hdclear: {
+    brightness: 0.05,
+    contrast: 0.25,
+    saturation: 0.15,
+    warmth: 0,
+    clarity: 0.4,
+    smoothing: 0.05,
+    // eyeEnhance: 0,
+    // teethWhiten: 0,
+  },
 };
 
 export class AdvancedFilterProcessor {
-  private faceLandmarker: FaceLandmarker | null = null;
+  // private faceLandmarker: FaceLandmarker | null = null;
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D | null;
   private glCanvas: HTMLCanvasElement;
@@ -36,10 +62,10 @@ export class AdvancedFilterProcessor {
   private isInitialized = false;
   private program: WebGLProgram | null = null;
   private textureCache: Map<string, WebGLTexture> = new Map();
-  private lastLandmarks: { x: number; y: number }[] | null = null;
-  private eyeEnhanceEnabled = true;
-  private teethWhitenEnabled = true;
-  private frameCount = 0;
+  // private lastLandmarks: { x: number; y: number }[] | null = null;
+  // private eyeEnhanceEnabled = true;
+  // private teethWhitenEnabled = true;
+  // private frameCount = 0;
   
   // WebGL buffers and locations
   private positionBuffer: WebGLBuffer | null = null;
@@ -79,6 +105,8 @@ export class AdvancedFilterProcessor {
   async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
+    // MediaPipe face detection disabled
+    /*
     try {
       console.log('[AdvancedFilter] Initializing MediaPipe...');
       
@@ -116,6 +144,7 @@ export class AdvancedFilterProcessor {
       console.warn('[AdvancedFilter] Continuing with WebGL-only filters (no face detection)');
       // Continue without MediaPipe - WebGL filters will still work
     }
+    */
 
     // Initialize WebGL (works independently of MediaPipe)
     if (this.gl) {
@@ -362,6 +391,8 @@ export class AdvancedFilterProcessor {
   private processFrame = (): void => {
     if (!this.sourceVideo.paused && !this.sourceVideo.ended) {
       try {
+        // Face landmarks detection disabled
+        /*
         // Detect face landmarks (throttled - run every 2 frames for performance)
         this.frameCount++;
         if (this.faceLandmarker && this.frameCount % 2 === 0) {
@@ -378,6 +409,7 @@ export class AdvancedFilterProcessor {
             }));
           }
         }
+        */
 
         // Draw current frame to 2D canvas
         if (this.ctx) {
@@ -398,7 +430,7 @@ export class AdvancedFilterProcessor {
     if (!this.gl || !this.program || !this.ctx) return;
 
     const settings = FILTER_PRESETS[this.currentFilter];
-    if (settings.smoothing === 0 && settings.brightness === 0 && settings.warmth === 0 && settings.sharpen === 0) {
+    if (settings.smoothing === 0 && settings.brightness === 0 && settings.warmth === 0 && settings.clarity === 0) {
       // No filter, just copy canvas to glCanvas
       const glCtx = this.glCanvas.getContext('2d');
       if (glCtx) {
@@ -440,8 +472,10 @@ export class AdvancedFilterProcessor {
     this.gl.uniform1f(smoothingLoc, settings.smoothing);
     this.gl.uniform1f(brightnessLoc, settings.brightness);
     this.gl.uniform1f(warmthLoc, settings.warmth);
-    this.gl.uniform1f(sharpenLoc, settings.sharpen);
+    this.gl.uniform1f(sharpenLoc, settings.clarity); // Using clarity as sharpen
 
+    // Eye/teeth enhancement disabled
+    /*
     // Calculate and pass landmark-based parameters for eye/teeth enhancement
     const params = this.calculateLandmarkParams();
     
@@ -476,6 +510,7 @@ export class AdvancedFilterProcessor {
     const teethWhitenLoc = this.gl.getUniformLocation(this.program, 'u_teethWhiten');
     this.gl.uniform1f(eyeEnhanceLoc, this.eyeEnhanceEnabled ? settings.eyeEnhance : 0);
     this.gl.uniform1f(teethWhitenLoc, this.teethWhitenEnabled ? settings.teethWhiten : 0);
+    */
 
     // Bind and set up position buffer
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
@@ -499,6 +534,8 @@ export class AdvancedFilterProcessor {
     this.currentFilter = filter;
   }
 
+  // Eye/teeth enhancement methods disabled
+  /*
   setEyeEnhance(enabled: boolean): void {
     this.eyeEnhanceEnabled = enabled;
     console.log('[AdvancedFilter] Eye enhance:', enabled);
@@ -559,6 +596,7 @@ export class AdvancedFilterProcessor {
       mouthHeight: mouthHeight / 2
     };
   }
+  */
 
   stop(): void {
     if (this.animationId !== null) {
@@ -581,10 +619,13 @@ export class AdvancedFilterProcessor {
   dispose(): void {
     this.stop();
     
+    // MediaPipe cleanup disabled
+    /*
     if (this.faceLandmarker) {
       this.faceLandmarker.close();
       this.faceLandmarker = null;
     }
+    */
 
     if (this.gl && this.program) {
       this.gl.deleteProgram(this.program);

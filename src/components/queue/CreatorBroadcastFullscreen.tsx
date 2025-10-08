@@ -19,8 +19,8 @@ export function CreatorBroadcastFullscreen({
 }: CreatorBroadcastFullscreenProps) {
   const { isLobbyBroadcasting, setLobbyBroadcasting } = useLiveStore();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [eyeEnhanceEnabled, setEyeEnhanceEnabled] = useState(true);
-  const [teethWhitenEnabled, setTeethWhitenEnabled] = useState(true);
+  // const [eyeEnhanceEnabled, setEyeEnhanceEnabled] = useState(true);
+  // const [teethWhitenEnabled, setTeethWhitenEnabled] = useState(true);
   
   // Use new broadcast hook - handles all media lifecycle
   const broadcast = useLobbyBroadcast({ isVisible });
@@ -77,15 +77,15 @@ export function CreatorBroadcastFullscreen({
     toast.success('Now broadcasting to your lobby');
   };
 
-  const handleEyeEnhanceToggle = (enabled: boolean) => {
-    setEyeEnhanceEnabled(enabled);
-    broadcast.setEyeEnhance(enabled);
-  };
+  // const handleEyeEnhanceToggle = (enabled: boolean) => {
+  //   setEyeEnhanceEnabled(enabled);
+  //   broadcast.setEyeEnhance(enabled);
+  // };
 
-  const handleTeethWhitenToggle = (enabled: boolean) => {
-    setTeethWhitenEnabled(enabled);
-    broadcast.setTeethWhiten(enabled);
-  };
+  // const handleTeethWhitenToggle = (enabled: boolean) => {
+  //   setTeethWhitenEnabled(enabled);
+  //   broadcast.setTeethWhiten(enabled);
+  // };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when broadcasting) */}
       {isLobbyBroadcasting && broadcast.stream && <LiveKitPublisher config={{
@@ -163,8 +163,8 @@ export function CreatorBroadcastFullscreen({
         </div>
       </div>
 
-      {/* Beauty Toggles */}
-      {broadcast.isFilterReady && (
+      {/* Beauty Toggles - DISABLED */}
+      {/* broadcast.isFilterReady && (
         <div className="absolute bottom-32 left-4 right-4 z-20">
           <BeautyToggles
             eyeEnhance={eyeEnhanceEnabled}
@@ -173,7 +173,7 @@ export function CreatorBroadcastFullscreen({
             onTeethWhitenToggle={handleTeethWhitenToggle}
           />
         </div>
-      )}
+      ) */}
 
       {/* Filter Selector */}
       {broadcast.isFilterReady && (

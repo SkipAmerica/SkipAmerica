@@ -1,4 +1,4 @@
-import { Sparkles, Sun, Snowflake, Star, Zap, X, Gem, Cloud, Focus } from 'lucide-react';
+import { Snowflake, X, Focus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import type { FilterPreset } from '@/lib/advancedFilterProcessor';
@@ -15,12 +15,11 @@ const FILTERS: Array<{
   icon: React.ReactNode;
   description: string;
 }> = [
-  // Tone-based filters first
   { 
-    id: 'bright', 
-    label: 'Bright', 
-    icon: <Sun className="w-4 h-4" />,
-    description: 'Sun-kissed'
+    id: 'hdclear', 
+    label: 'Crystal', 
+    icon: <Focus className="w-4 h-4" />,
+    description: 'Max detail'
   },
   { 
     id: 'cool', 
@@ -28,45 +27,6 @@ const FILTERS: Array<{
     icon: <Snowflake className="w-4 h-4" />,
     description: 'Cool tone'
   },
-  { 
-    id: 'radiant', 
-    label: 'Radiant', 
-    icon: <Zap className="w-4 h-4" />,
-    description: 'Golden glow'
-  },
-  // Skin enhancement filters
-  { 
-    id: 'natural', 
-    label: 'Natural', 
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Balanced look'
-  },
-  { 
-    id: 'porcelain', 
-    label: 'Porcelain', 
-    icon: <Gem className="w-4 h-4" />,
-    description: 'Ultra smooth'
-  },
-  { 
-    id: 'softfocus', 
-    label: 'Soft Focus', 
-    icon: <Cloud className="w-4 h-4" />,
-    description: 'Dreamy blur'
-  },
-  // Clarity filters
-  { 
-    id: 'glam', 
-    label: 'Glam', 
-    icon: <Star className="w-4 h-4" />,
-    description: 'Red carpet'
-  },
-  { 
-    id: 'hdclear', 
-    label: 'Crystal', 
-    icon: <Focus className="w-4 h-4" />,
-    description: 'Max detail'
-  },
-  // None at the end
   { 
     id: 'none', 
     label: 'None', 
