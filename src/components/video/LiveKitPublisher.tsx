@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Room, createLocalTracks } from 'livekit-client';
+import { Room, createLocalTracks, VideoPresets, TrackPublishOptions } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
 
 interface LiveKitPublisherProps {
@@ -35,6 +35,21 @@ export function LiveKitPublisher({
       try {
         setIsPublishing(true);
 
+        // Define high-quality video publishing options
+        const videoPublishOptions: TrackPublishOptions = {
+          videoCodec: 'h264', // H.264 for Safari/iOS hardware acceleration
+          videoEncoding: {
+            maxBitrate: 2_500_000, // 2.5 Mbps
+            maxFramerate: 30,
+          },
+          simulcast: true, // Enable adaptive bitrate with multiple layers
+          videoSimulcastLayers: [
+            VideoPresets.h1080, // 1920x1080 @ 2.5 Mbps
+            VideoPresets.h720,  // 1280x720 @ 1.2 Mbps
+            VideoPresets.h360,  // 640x360 @ 500 kbps
+          ],
+        };
+
         let tracks;
         
         // Use provided MediaStream if available, otherwise create tracks
@@ -45,7 +60,11 @@ export function LiveKitPublisher({
           console.log(`[LiveKitPublisher] Creating local tracks... (attempt ${attempt})`);
           const localTracks = await createLocalTracks({
             audio: publishAudio,
-            video: publishVideo ? { facingMode: 'user' } : false,
+            video: publishVideo ? {
+              facingMode: 'user',
+              resolution: VideoPresets.h1080.resolution, // 1920x1080
+              frameRate: 30,
+            } : false,
           });
           tracks = localTracks;
         }
@@ -61,7 +80,17 @@ export function LiveKitPublisher({
         console.log(`[LiveKitPublisher] Publishing ${tracks.length} tracks...`);
 
         for (const track of tracks) {
-          await room.localParticipant.publishTrack(track);
+          if (track.kind === 'video') {
+            console.log('[LiveKitPublisher] Publishing video with:', {
+              codec: 'h264',
+              maxBitrate: '2.5 Mbps',
+              resolution: '1920x1080 @ 30fps',
+              simulcast: true
+            });
+            await room.localParticipant.publishTrack(track, videoPublishOptions);
+          } else {
+            await room.localParticipant.publishTrack(track); // Audio, no special options
+          }
         }
 
         console.log('[LiveKitPublisher] ✅ Tracks published successfully');
