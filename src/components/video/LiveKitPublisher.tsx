@@ -98,7 +98,14 @@ export function LiveKitPublisher({
             });
             await room.localParticipant.publishTrack(track, videoPublishOptions);
           } else {
+            console.log('[LiveKitPublisher] Publishing audio track with settings:', {
+              bitrate: '128 kbps',
+              dtx: false,
+              enabled: track.enabled,
+              muted: track.muted
+            });
             await room.localParticipant.publishTrack(track, audioPublishOptions);
+            console.log('[LiveKitPublisher] ✅ Audio track published successfully');
           }
         }
 

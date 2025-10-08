@@ -116,7 +116,14 @@ export function LiveKitVideoPlayer({
         
         // Attach AUDIO tracks
         const audioPublications = allPublications.filter(pub => pub.kind === 'audio' && pub.track !== undefined);
+        console.log('[LiveKitVideoPlayer] Found audio publications:', audioPublications.length, 'from', participant.identity);
         for (const audioPublication of audioPublications) {
+          console.log('[LiveKitVideoPlayer] Audio track details:', {
+            isMuted: audioPublication.isMuted,
+            kind: audioPublication.kind,
+            participant: participant.identity,
+            subscribed: audioPublication.isSubscribed
+          });
           if (audioPublication.track && audioRef.current) {
             console.log('[LiveKitVideoPlayer] ✅ Attaching audio track from:', participant.identity);
             
