@@ -37,7 +37,9 @@ export function CreatorBroadcastFullscreen({
         // Start countdown
         setIsCountdownActive(true);
       } else {
-        toast.info('Already broadcasting');
+        // End broadcast
+        setLobbyBroadcasting(false);
+        toast.success('Broadcast ended');
       }
     },
     delay: 400
@@ -213,7 +215,7 @@ export function CreatorBroadcastFullscreen({
       {/* Pulsing Green Border When Broadcasting */}
       {isLobbyBroadcasting && (
         <div className="absolute inset-0 pointer-events-none z-20 rounded-2xl">
-          <div className="w-full h-full border-[2px] border-green-500 rounded-2xl animate-pulse" />
+          <div className="w-full h-full border-[10px] border-green-500 rounded-2xl animate-pulse" />
         </div>
       )}
 
@@ -225,6 +227,19 @@ export function CreatorBroadcastFullscreen({
             ● LIVE
           </Badge>
         </div>}
+
+      {/* Status Text Overlay */}
+      <div className="absolute bottom-20 left-0 right-0 z-20 flex justify-center pointer-events-none">
+        <div className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
+          <p className="text-white text-sm font-medium text-center">
+            {isLobbyBroadcasting ? (
+              <>You are live • Double-tap to go offline</>
+            ) : (
+              <>Double-tap to go live</>
+            )}
+          </p>
+        </div>
+      </div>
 
       {/* Filter Selector */}
       {isFilterReady && (
