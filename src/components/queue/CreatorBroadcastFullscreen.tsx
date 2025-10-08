@@ -44,7 +44,7 @@ export function CreatorBroadcastFullscreen({
       role: 'viewer',
       creatorId,
       identity: `viewer_${creatorId}_self`
-    }} targetParticipantId={creatorId} className="absolute inset-0 w-full h-full object-cover" muted={true} fallbackContent={<div className="flex items-center justify-center h-full bg-black/80">
+    }} targetParticipantId={creatorId} className="absolute inset-0 w-full h-full object-cover rounded-2xl" muted={true} fallbackContent={<div className="flex items-center justify-center h-full bg-black/80">
             <div className="text-center">
               <div className="animate-pulse text-white text-lg mb-2">
                 {isLive ? 'Starting broadcast...' : 'Camera preview'}
