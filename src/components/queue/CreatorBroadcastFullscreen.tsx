@@ -48,6 +48,21 @@ export function CreatorBroadcastFullscreen({
     }
   }, [broadcast.stream]);
 
+  // Listen for end broadcast command from LSB
+  useEffect(() => {
+    const handleEndBroadcast = () => {
+      console.log('[CreatorBroadcast] Received end broadcast command');
+      if (isLobbyBroadcasting) {
+        setLobbyBroadcasting(false);
+        broadcast.stopStream();
+        toast.success('Broadcast ended');
+      }
+    };
+
+    window.addEventListener('end-broadcast', handleEndBroadcast);
+    return () => window.removeEventListener('end-broadcast', handleEndBroadcast);
+  }, [isLobbyBroadcasting, broadcast, setLobbyBroadcasting]);
+
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
     await broadcast.changeFilter(filter);
