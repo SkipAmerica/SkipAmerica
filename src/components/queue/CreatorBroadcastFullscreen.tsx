@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
-import { LiveKitVideoPlayer } from "@/components/video/LiveKitVideoPlayer";
 import { useLiveStore } from "@/stores/live-store";
 import type { LiveState } from "@/shared/types/live";
 import { FilterSelector } from "./FilterSelector";
@@ -24,6 +23,7 @@ export function CreatorBroadcastFullscreen({
   const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
   const [isFilterReady, setIsFilterReady] = useState(false);
   const filterProcessorRef = useRef(getFilterProcessor());
+  const videoRef = useRef<HTMLVideoElement>(null);
   const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
 
   // Initialize filter processor
@@ -47,6 +47,13 @@ export function CreatorBroadcastFullscreen({
       }
       processor.stop();
     };
+  }, [filteredStream]);
+
+  // Update video element when filtered stream changes
+  useEffect(() => {
+    if (videoRef.current && filteredStream) {
+      videoRef.current.srcObject = filteredStream;
+    }
   }, [filteredStream]);
 
   // Start filter processing when going live
@@ -122,22 +129,29 @@ export function CreatorBroadcastFullscreen({
       setIsPublishing(false);
     }} />}
 
-      {/* Video Player (shows creator's own stream fullscreen) */}
+      {/* Local camera preview with filters */}
       <div className="absolute inset-0 rounded-2xl overflow-hidden">
-        <LiveKitVideoPlayer config={{
-        role: 'viewer',
-        creatorId,
-        identity: `viewer_${creatorId}_self`
-      }} targetParticipantId={creatorId} className="w-full h-full object-cover rounded-2xl" muted={true} fallbackContent={<div className="flex items-center justify-center h-full bg-black/80">
-              <div className="text-center">
-                <div className="animate-pulse text-white text-lg mb-2">
-                  {isLive ? 'Starting broadcast...' : 'Camera preview'}
-                </div>
-                <div className="text-white/60 text-sm">
-                  {isLive ? 'Camera and microphone initializing' : 'Tap GO LIVE to start broadcasting'}
-                </div>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="w-full h-full object-cover rounded-2xl"
+        />
+        
+        {/* Fallback when no stream */}
+        {!filteredStream && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+            <div className="text-center">
+              <div className="animate-pulse text-white text-lg mb-2">
+                {isLive ? 'Starting camera...' : 'Camera preview'}
               </div>
-            </div>} />
+              <div className="text-white/60 text-sm">
+                {isLive ? 'Initializing camera and filters' : 'Tap GO LIVE to start broadcasting'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* LIVE Indicator (only when live) */}
