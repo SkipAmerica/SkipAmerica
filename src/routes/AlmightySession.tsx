@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { SessionProvider, useSession } from '@/modules/almighty/providers/SessionProvider'
+import { MediaProvider, useMedia } from '@/modules/almighty/providers/MediaProvider'
 import { UIProvider, useUIContext, Pane } from '@/modules/almighty/providers/UIProvider'
 import { useSwipeGestures } from '@/modules/almighty/hooks/useSwipeGestures'
 import { useWakeLock } from '@/modules/almighty/hooks/useWakeLock'
@@ -25,14 +26,18 @@ export default function AlmightySession() {
 
   return (
     <SessionProvider>
-      <UIProvider>
-        <AlmightyShell />
-      </UIProvider>
+      <MediaProvider>
+        <UIProvider>
+          <AlmightyShell />
+        </UIProvider>
+      </MediaProvider>
     </SessionProvider>
   )
 }
 
 function AlmightyShell() {
+  const { sessionId, role } = useSession()
+  const { join, leave, connected, micEnabled, camEnabled, unlockAudio } = useMedia()
   const { activePane, swipeLocked, isDragging, lockSwipe } = useUIContext()
   const {
     containerRef,
@@ -41,8 +46,26 @@ function AlmightyShell() {
     handlePointerUp,
     handlePointerCancel
   } = useSwipeGestures()
-
-  useWakeLock()
+  
+  const isPublishing = connected && (micEnabled || camEnabled)
+  useWakeLock(isPublishing)
+  
+  // Auto-join on mount
+  useEffect(() => {
+    const identity = `${role}-${sessionId}-${Math.random().toString(36).slice(2, 6)}`
+    join(sessionId, identity, role).catch(err => {
+      console.error('[Media] Join failed:', err)
+    })
+    
+    return () => {
+      leave()
+    }
+  }, [sessionId, role, join, leave])
+  
+  // Trigger audio unlock on any user action
+  const handleUserAction = useCallback(() => {
+    unlockAudio().catch(() => {}) // Idempotent, safe to call multiple times
+  }, [unlockAudio])
 
   const handleResizeRef = useRef<() => void>()
 
@@ -191,6 +214,8 @@ function AlmightyShell() {
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
+      onClick={handleUserAction}
+      onTouchStart={handleUserAction}
     >
       <div className="inline-block w-screen svh align-top">
         <PaneErrorBoundary paneName="Left Pane">

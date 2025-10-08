@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import { useSession } from './SessionProvider'
 
 export enum Pane {
   LEFT = 0,
@@ -13,6 +14,9 @@ interface UIContextValue {
   toggleChat: (open: boolean, analytics?: { duration: number }) => void
   pipPrimary: 'creator' | 'user'
   swapPIP: () => void
+  primaryFocus: 'remote' | 'local'
+  setPrimaryFocus: (focus: 'remote' | 'local') => void
+  manualPinActive: boolean
   swipeLocked: boolean
   lockSwipe: (locked: boolean) => void
   isDragging: boolean
@@ -22,11 +26,20 @@ interface UIContextValue {
 const UIContext = createContext<UIContextValue | null>(null)
 
 export function UIProvider({ children }: { children: React.ReactNode }) {
+  const { sessionId } = useSession()
   const [activePane, _setActivePane] = useState<Pane>(Pane.CENTER)
   const [chatOpen, _setChatOpen] = useState(false)
   const [pipPrimary, setPipPrimary] = useState<'creator' | 'user'>('creator')
   const [swipeLocked, setSwipeLocked] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  
+  // Primary focus state with sessionStorage persistence
+  const [primaryFocus, _setPrimaryFocus] = useState<'remote' | 'local'>(() => {
+    if (typeof sessionStorage === 'undefined') return 'remote'
+    const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
+    return (stored === 'local' || stored === 'remote') ? stored : 'remote'
+  })
+  const [manualPinActive, setManualPinActive] = useState(false)
 
   const setActivePane = useCallback((newPane: Pane, analytics?: { velocity: number; msHeld: number }) => {
     const clampedPane = Math.max(Pane.LEFT, Math.min(Pane.RIGHT, newPane)) as Pane
@@ -62,6 +75,22 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     }
     setPipPrimary(prev => prev === 'creator' ? 'user' : 'creator')
   }, [pipPrimary])
+  
+  const setPrimaryFocus = useCallback((focus: 'remote' | 'local') => {
+    // Idempotent: don't spam console if already set
+    if (focus === primaryFocus) return
+    
+    _setPrimaryFocus(focus)
+    setManualPinActive(true) // User manually swapped
+    
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(`almighty_focus_${sessionId}`, focus)
+    }
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Analytics] primary_focus_change', { from: primaryFocus, to: focus })
+    }
+  }, [primaryFocus, sessionId])
 
   return (
     <UIContext.Provider
@@ -72,6 +101,9 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
         toggleChat,
         pipPrimary,
         swapPIP,
+        primaryFocus,
+        setPrimaryFocus,
+        manualPinActive,
         swipeLocked,
         lockSwipe: setSwipeLocked,
         isDragging,

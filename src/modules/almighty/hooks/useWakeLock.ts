@@ -1,10 +1,23 @@
 import { useEffect, useRef } from 'react'
 
-export function useWakeLock() {
+export function useWakeLock(enabled: boolean = true) {
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const noopIntervalRef = useRef<number | null>(null)
 
   useEffect(() => {
+    if (!enabled) {
+      // Release wake lock when disabled
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release()
+        wakeLockRef.current = null
+      }
+      if (noopIntervalRef.current) {
+        clearInterval(noopIntervalRef.current)
+        noopIntervalRef.current = null
+      }
+      return
+    }
+    
     const requestWakeLock = async () => {
       if (typeof window === 'undefined') return
 
@@ -31,8 +44,21 @@ export function useWakeLock() {
     }
 
     requestWakeLock()
+    
+    // Re-acquire on visibility change (if still enabled)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible' && enabled) {
+        requestWakeLock()
+      } else {
+        wakeLockRef.current?.release()
+        wakeLockRef.current = null
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibility)
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
       if (wakeLockRef.current) {
         wakeLockRef.current.release()
         if (process.env.NODE_ENV !== 'production') {
@@ -43,5 +69,5 @@ export function useWakeLock() {
         clearInterval(noopIntervalRef.current)
       }
     }
-  }, [])
+  }, [enabled])
 }

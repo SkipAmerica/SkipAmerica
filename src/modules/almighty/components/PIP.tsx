@@ -1,12 +1,14 @@
 import { useDoubleTap } from '@/hooks/use-double-tap'
 import { useUIContext } from '../providers/UIProvider'
+import VideoTile, { TrackRef } from './VideoTile'
 
 interface PIPProps {
-  role: 'creator' | 'user'
+  trackRef?: TrackRef
+  mirror?: boolean
   onDoubleTap: () => void
 }
 
-export function PIP({ role, onDoubleTap }: PIPProps) {
+export function PIP({ trackRef, mirror, onDoubleTap }: PIPProps) {
   const { onTapStart } = useDoubleTap({ onDoubleTap, delay: 300 })
   const { chatOpen } = useUIContext()
 
@@ -16,7 +18,6 @@ export function PIP({ role, onDoubleTap }: PIPProps) {
       style={{
         bottom: 'calc(16px + env(safe-area-inset-bottom))',
         right: 'calc(16px + env(safe-area-inset-right))',
-        left: 'calc(16px + env(safe-area-inset-left))',
         width: 112,
         height: 112,
         pointerEvents: chatOpen ? 'none' : 'auto',
@@ -25,9 +26,14 @@ export function PIP({ role, onDoubleTap }: PIPProps) {
       }}
       onPointerDown={onTapStart}
     >
-      <div className="w-24 h-24 bg-gray-700 rounded-lg border-2 border-white/20 flex items-center justify-center text-xs text-white">
-        {role === 'creator' ? 'Creator' : 'User'}
-      </div>
+      <VideoTile
+        trackRef={trackRef}
+        mirror={mirror}
+        rounded
+        className="w-24 h-24 border-2 border-white/20"
+      />
+      
+      {/* TODO: Phase 1C - Make PIP draggable within safe-area bounds */}
     </div>
   )
 }
