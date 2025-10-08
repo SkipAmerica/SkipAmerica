@@ -191,7 +191,7 @@ export function SwipeableQueueCard({
         </div>
 
         {/* Panel 2: Broadcast (1 row: video only) */}
-        <div className="w-1/2 flex-shrink-0 min-h-[600px] h-full">
+        <div className="w-1/2 flex-shrink-0 min-h-[600px]">
           {React.isValidElement(broadcastPanel)
             ? React.cloneElement(broadcastPanel as React.ReactElement<any>, {
                 onClose: handleBroadcastClose
