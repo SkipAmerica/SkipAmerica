@@ -18,6 +18,8 @@ export interface LobbyBroadcastAPI {
   cancelCountdown: () => void;
   completeCountdown: () => void;
   changeFilter: (filter: FilterPreset) => Promise<void>;
+  setEyeEnhance: (enabled: boolean) => void;
+  setTeethWhiten: (enabled: boolean) => void;
 }
 
 /**
@@ -188,6 +190,14 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     }
   }, [filters]);
 
+  const setEyeEnhance = useCallback((enabled: boolean) => {
+    filters.setEyeEnhance(enabled);
+  }, [filters]);
+
+  const setTeethWhiten = useCallback((enabled: boolean) => {
+    filters.setTeethWhiten(enabled);
+  }, [filters]);
+
   return {
     stream,
     isStreaming,
@@ -199,6 +209,8 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     startCountdown,
     cancelCountdown,
     completeCountdown,
-    changeFilter
+    changeFilter,
+    setEyeEnhance,
+    setTeethWhiten
   };
 }

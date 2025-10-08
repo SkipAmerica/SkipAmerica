@@ -62,7 +62,7 @@ const FILTERS: Array<{
   },
   { 
     id: 'hdclear', 
-    label: 'HD Clear', 
+    label: 'Crystal', 
     icon: <Focus className="w-4 h-4" />,
     description: 'Max detail'
   },

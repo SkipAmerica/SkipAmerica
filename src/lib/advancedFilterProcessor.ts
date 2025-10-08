@@ -8,18 +8,19 @@ interface FilterSettings {
   warmth: number;
   eyeEnhance: number;
   sharpen: number;
+  teethWhiten: number;
 }
 
 const FILTER_PRESETS: Record<FilterPreset, FilterSettings> = {
-  none: { smoothing: 0, brightness: 0, warmth: 0, eyeEnhance: 0, sharpen: 0 },
-  natural: { smoothing: 0.4, brightness: 0.08, warmth: 0.12, eyeEnhance: 0.1, sharpen: 0.15 },
-  glam: { smoothing: 0.6, brightness: 0.18, warmth: 0.22, eyeEnhance: 0.25, sharpen: 0.35 },
-  bright: { smoothing: 0.35, brightness: 0.35, warmth: 0.28, eyeEnhance: 0.15, sharpen: 0.2 },
-  cool: { smoothing: 0.25, brightness: 0.08, warmth: -0.35, eyeEnhance: 0.05, sharpen: 0.4 },
-  radiant: { smoothing: 0.55, brightness: 0.25, warmth: 0.4, eyeEnhance: 0.3, sharpen: 0.25 },
-  porcelain: { smoothing: 0.85, brightness: 0.12, warmth: 0.05, eyeEnhance: 0, sharpen: 0 },
-  softfocus: { smoothing: 0.7, brightness: 0.15, warmth: 0.18, eyeEnhance: 0.05, sharpen: 0.05 },
-  hdclear: { smoothing: 0.15, brightness: 0.05, warmth: 0, eyeEnhance: 0, sharpen: 0.55 },
+  none: { smoothing: 0, brightness: 0, warmth: 0, eyeEnhance: 0, sharpen: 0, teethWhiten: 0 },
+  natural: { smoothing: 0.4, brightness: 0.08, warmth: 0.12, eyeEnhance: 0.1, sharpen: 0.15, teethWhiten: 0.15 },
+  glam: { smoothing: 0.6, brightness: 0.18, warmth: 0.22, eyeEnhance: 0.35, sharpen: 0.35, teethWhiten: 0.4 },
+  bright: { smoothing: 0.35, brightness: 0.35, warmth: 0.28, eyeEnhance: 0.2, sharpen: 0.2, teethWhiten: 0.25 },
+  cool: { smoothing: 0.25, brightness: 0.08, warmth: -0.35, eyeEnhance: 0.15, sharpen: 0.4, teethWhiten: 0.2 },
+  radiant: { smoothing: 0.55, brightness: 0.25, warmth: 0.4, eyeEnhance: 0.35, sharpen: 0.25, teethWhiten: 0.35 },
+  porcelain: { smoothing: 0.85, brightness: 0.12, warmth: 0.05, eyeEnhance: 0, sharpen: 0, teethWhiten: 0.1 },
+  softfocus: { smoothing: 0.7, brightness: 0.15, warmth: 0.18, eyeEnhance: 0.1, sharpen: 0.05, teethWhiten: 0.15 },
+  hdclear: { smoothing: 0.15, brightness: 0.05, warmth: 0, eyeEnhance: 0, sharpen: 0.55, teethWhiten: 0.1 },
 };
 
 export class AdvancedFilterProcessor {
@@ -35,6 +36,10 @@ export class AdvancedFilterProcessor {
   private isInitialized = false;
   private program: WebGLProgram | null = null;
   private textureCache: Map<string, WebGLTexture> = new Map();
+  private lastLandmarks: { x: number; y: number }[] | null = null;
+  private eyeEnhanceEnabled = true;
+  private teethWhitenEnabled = true;
+  private frameCount = 0;
   
   // WebGL buffers and locations
   private positionBuffer: WebGLBuffer | null = null;
@@ -149,6 +154,14 @@ export class AdvancedFilterProcessor {
       uniform float u_brightness;
       uniform float u_warmth;
       uniform float u_sharpen;
+      uniform float u_eyeEnhance;
+      uniform float u_teethWhiten;
+      uniform vec2 u_leftEyeCenter;
+      uniform vec2 u_rightEyeCenter;
+      uniform vec2 u_mouthCenter;
+      uniform float u_eyeRadius;
+      uniform float u_mouthWidth;
+      uniform float u_mouthHeight;
       
       void main() {
         vec4 color = texture2D(u_image, v_texCoord);
@@ -189,6 +202,50 @@ export class AdvancedFilterProcessor {
           sharp -= texture2D(u_image, v_texCoord + vec2(0.0, texelSize.y)) * u_sharpen;
           sharp -= texture2D(u_image, v_texCoord - vec2(0.0, texelSize.y)) * u_sharpen;
           color = sharp;
+        }
+        
+        // Eye enhancement (if landmarks detected)
+        if (u_eyeEnhance > 0.0 && u_eyeRadius > 0.0) {
+          vec2 pixelCoord = v_texCoord * u_resolution;
+          
+          // Check distance to left eye
+          float distLeft = length(pixelCoord - u_leftEyeCenter);
+          float leftMask = smoothstep(u_eyeRadius * 1.2, u_eyeRadius * 0.5, distLeft);
+          
+          // Check distance to right eye
+          float distRight = length(pixelCoord - u_rightEyeCenter);
+          float rightMask = smoothstep(u_eyeRadius * 1.2, u_eyeRadius * 0.5, distRight);
+          
+          float eyeMask = max(leftMask, rightMask);
+          
+          if (eyeMask > 0.0) {
+            // Brighten eyes
+            color.rgb += vec3(0.15, 0.15, 0.18) * eyeMask * u_eyeEnhance;
+            // Add contrast to iris
+            color.rgb = mix(color.rgb, (color.rgb - 0.5) * 1.3 + 0.5, eyeMask * u_eyeEnhance * 0.4);
+          }
+        }
+        
+        // Teeth whitening (if landmarks detected)
+        if (u_teethWhiten > 0.0 && u_mouthWidth > 0.0) {
+          vec2 pixelCoord = v_texCoord * u_resolution;
+          vec2 mouthOffset = pixelCoord - u_mouthCenter;
+          
+          // Elliptical mask for mouth region
+          float mouthDist = length(mouthOffset / vec2(u_mouthWidth, u_mouthHeight));
+          float mouthMask = smoothstep(1.0, 0.5, mouthDist);
+          
+          if (mouthMask > 0.0) {
+            float luminance = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+            // Only whiten bright pixels (teeth, not dark mouth interior)
+            float brightnessMask = smoothstep(0.35, 0.65, luminance);
+            float finalMask = mouthMask * brightnessMask;
+            
+            // Whiten teeth
+            color.rgb += vec3(0.08, 0.08, 0.12) * finalMask * u_teethWhiten;
+            // Reduce yellowness
+            color.b += 0.05 * finalMask * u_teethWhiten;
+          }
         }
         
         gl_FragColor = clamp(color, 0.0, 1.0);
@@ -305,6 +362,23 @@ export class AdvancedFilterProcessor {
   private processFrame = (): void => {
     if (!this.sourceVideo.paused && !this.sourceVideo.ended) {
       try {
+        // Detect face landmarks (throttled - run every 2 frames for performance)
+        this.frameCount++;
+        if (this.faceLandmarker && this.frameCount % 2 === 0) {
+          const results = this.faceLandmarker.detectForVideo(
+            this.sourceVideo,
+            performance.now()
+          );
+          
+          if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+            // Convert normalized landmarks to pixel coordinates
+            this.lastLandmarks = results.faceLandmarks[0].map(lm => ({
+              x: lm.x * this.canvas.width,
+              y: lm.y * this.canvas.height
+            }));
+          }
+        }
+
         // Draw current frame to 2D canvas
         if (this.ctx) {
           this.ctx.drawImage(this.sourceVideo, 0, 0, this.canvas.width, this.canvas.height);
@@ -368,6 +442,41 @@ export class AdvancedFilterProcessor {
     this.gl.uniform1f(warmthLoc, settings.warmth);
     this.gl.uniform1f(sharpenLoc, settings.sharpen);
 
+    // Calculate and pass landmark-based parameters for eye/teeth enhancement
+    const params = this.calculateLandmarkParams();
+    
+    if (params && (settings.eyeEnhance > 0 || settings.teethWhiten > 0)) {
+      // Pass eye enhancement data
+      const leftEyeLoc = this.gl.getUniformLocation(this.program, 'u_leftEyeCenter');
+      const rightEyeLoc = this.gl.getUniformLocation(this.program, 'u_rightEyeCenter');
+      const eyeRadiusLoc = this.gl.getUniformLocation(this.program, 'u_eyeRadius');
+      
+      this.gl.uniform2f(leftEyeLoc, params.leftEyeCenter[0], params.leftEyeCenter[1]);
+      this.gl.uniform2f(rightEyeLoc, params.rightEyeCenter[0], params.rightEyeCenter[1]);
+      this.gl.uniform1f(eyeRadiusLoc, params.eyeRadius);
+      
+      // Pass teeth whitening data
+      const mouthCenterLoc = this.gl.getUniformLocation(this.program, 'u_mouthCenter');
+      const mouthWidthLoc = this.gl.getUniformLocation(this.program, 'u_mouthWidth');
+      const mouthHeightLoc = this.gl.getUniformLocation(this.program, 'u_mouthHeight');
+      
+      this.gl.uniform2f(mouthCenterLoc, params.mouthCenter[0], params.mouthCenter[1]);
+      this.gl.uniform1f(mouthWidthLoc, params.mouthWidth);
+      this.gl.uniform1f(mouthHeightLoc, params.mouthHeight);
+    } else {
+      // No landmarks or effects disabled - set radius/width to 0 to skip effects
+      const eyeRadiusLoc = this.gl.getUniformLocation(this.program, 'u_eyeRadius');
+      const mouthWidthLoc = this.gl.getUniformLocation(this.program, 'u_mouthWidth');
+      this.gl.uniform1f(eyeRadiusLoc, 0);
+      this.gl.uniform1f(mouthWidthLoc, 0);
+    }
+
+    // Pass effect intensity (respecting toggles)
+    const eyeEnhanceLoc = this.gl.getUniformLocation(this.program, 'u_eyeEnhance');
+    const teethWhitenLoc = this.gl.getUniformLocation(this.program, 'u_teethWhiten');
+    this.gl.uniform1f(eyeEnhanceLoc, this.eyeEnhanceEnabled ? settings.eyeEnhance : 0);
+    this.gl.uniform1f(teethWhitenLoc, this.teethWhitenEnabled ? settings.teethWhiten : 0);
+
     // Bind and set up position buffer
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
     this.gl.enableVertexAttribArray(this.positionLocation);
@@ -388,6 +497,67 @@ export class AdvancedFilterProcessor {
   setFilter(filter: FilterPreset): void {
     console.log('[AdvancedFilter] Setting filter:', filter);
     this.currentFilter = filter;
+  }
+
+  setEyeEnhance(enabled: boolean): void {
+    this.eyeEnhanceEnabled = enabled;
+    console.log('[AdvancedFilter] Eye enhance:', enabled);
+  }
+
+  setTeethWhiten(enabled: boolean): void {
+    this.teethWhitenEnabled = enabled;
+    console.log('[AdvancedFilter] Teeth whiten:', enabled);
+  }
+
+  private calculateLandmarkParams(): {
+    leftEyeCenter: [number, number];
+    rightEyeCenter: [number, number];
+    mouthCenter: [number, number];
+    eyeRadius: number;
+    mouthWidth: number;
+    mouthHeight: number;
+  } | null {
+    if (!this.lastLandmarks || this.lastLandmarks.length < 478) {
+      return null;
+    }
+
+    const lm = this.lastLandmarks;
+
+    // Left eye center (average of landmarks 33, 133, 160, 144)
+    const leftEye = {
+      x: (lm[33].x + lm[133].x + lm[160].x + lm[144].x) / 4,
+      y: (lm[33].y + lm[133].y + lm[160].y + lm[144].y) / 4
+    };
+
+    // Right eye center (average of landmarks 362, 263, 387, 373)
+    const rightEye = {
+      x: (lm[362].x + lm[263].x + lm[387].x + lm[373].x) / 4,
+      y: (lm[362].y + lm[263].y + lm[387].y + lm[373].y) / 4
+    };
+
+    // Eye radius (distance between outer and inner eye corners)
+    const leftEyeWidth = Math.abs(lm[33].x - lm[133].x);
+    const rightEyeWidth = Math.abs(lm[362].x - lm[263].x);
+    const eyeRadius = (leftEyeWidth + rightEyeWidth) / 4;
+
+    // Mouth center (average of upper and lower lip centers)
+    const mouthCenter = {
+      x: (lm[61].x + lm[291].x + lm[146].x + lm[375].x) / 4,
+      y: (lm[61].y + lm[291].y + lm[146].y + lm[375].y) / 4
+    };
+
+    // Mouth dimensions
+    const mouthWidth = Math.abs(lm[61].x - lm[291].x);
+    const mouthHeight = Math.abs(lm[0].y - lm[17].y) * 0.3; // 30% of vertical distance
+
+    return {
+      leftEyeCenter: [leftEye.x, leftEye.y],
+      rightEyeCenter: [rightEye.x, rightEye.y],
+      mouthCenter: [mouthCenter.x, mouthCenter.y],
+      eyeRadius,
+      mouthWidth: mouthWidth / 2, // Half-width for ellipse
+      mouthHeight: mouthHeight / 2
+    };
   }
 
   stop(): void {

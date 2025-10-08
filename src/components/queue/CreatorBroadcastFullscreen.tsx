@@ -1,8 +1,9 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
 import { FilterSelector } from "./FilterSelector";
+import { BeautyToggles } from "./BeautyToggles";
 import type { FilterPreset } from "@/lib/advancedFilterProcessor";
 import { toast } from "sonner";
 import { useDoubleTap } from "@/hooks/use-double-tap";
@@ -18,6 +19,8 @@ export function CreatorBroadcastFullscreen({
 }: CreatorBroadcastFullscreenProps) {
   const { isLobbyBroadcasting, setLobbyBroadcasting } = useLiveStore();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [eyeEnhanceEnabled, setEyeEnhanceEnabled] = useState(true);
+  const [teethWhitenEnabled, setTeethWhitenEnabled] = useState(true);
   
   // Use new broadcast hook - handles all media lifecycle
   const broadcast = useLobbyBroadcast({ isVisible });
@@ -72,6 +75,16 @@ export function CreatorBroadcastFullscreen({
     broadcast.completeCountdown();
     setLobbyBroadcasting(true);
     toast.success('Now broadcasting to your lobby');
+  };
+
+  const handleEyeEnhanceToggle = (enabled: boolean) => {
+    setEyeEnhanceEnabled(enabled);
+    broadcast.setEyeEnhance(enabled);
+  };
+
+  const handleTeethWhitenToggle = (enabled: boolean) => {
+    setTeethWhitenEnabled(enabled);
+    broadcast.setTeethWhiten(enabled);
   };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when broadcasting) */}
@@ -149,6 +162,18 @@ export function CreatorBroadcastFullscreen({
           </p>
         </div>
       </div>
+
+      {/* Beauty Toggles */}
+      {broadcast.isFilterReady && (
+        <div className="absolute bottom-32 left-4 right-4 z-20">
+          <BeautyToggles
+            eyeEnhance={eyeEnhanceEnabled}
+            teethWhiten={teethWhitenEnabled}
+            onEyeEnhanceToggle={handleEyeEnhanceToggle}
+            onTeethWhitenToggle={handleTeethWhitenToggle}
+          />
+        </div>
+      )}
 
       {/* Filter Selector */}
       {broadcast.isFilterReady && (

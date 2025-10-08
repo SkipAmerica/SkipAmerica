@@ -7,6 +7,8 @@ export interface BroadcastFiltersAPI {
   applyFilter: (filter: FilterPreset, sourceStream: MediaStream) => Promise<MediaStream>;
   removeFilter: (sourceStream: MediaStream) => Promise<MediaStream>;
   setFilter: (filter: FilterPreset) => void;
+  setEyeEnhance: (enabled: boolean) => void;
+  setTeethWhiten: (enabled: boolean) => void;
 }
 
 /**
@@ -77,11 +79,25 @@ export function useBroadcastFilters(): BroadcastFiltersAPI {
     }
   };
 
+  const setEyeEnhance = (enabled: boolean) => {
+    if (processorRef.current) {
+      processorRef.current.setEyeEnhance(enabled);
+    }
+  };
+
+  const setTeethWhiten = (enabled: boolean) => {
+    if (processorRef.current) {
+      processorRef.current.setTeethWhiten(enabled);
+    }
+  };
+
   return {
     isReady,
     currentFilter,
     applyFilter,
     removeFilter,
-    setFilter: setFilterImperative
+    setFilter: setFilterImperative,
+    setEyeEnhance,
+    setTeethWhiten
   };
 }
