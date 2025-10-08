@@ -141,6 +141,17 @@ export default function JoinQueue() {
   useEffect(() => {
     const fetchCreator = async () => {
       if (!creatorId) return;
+      
+      // Wait for auth to complete before fetching creator (RLS requires auth)
+      if (authLoading || autoLoginLoading) {
+        console.log('[JoinQueue] Waiting for authentication before fetching creator...');
+        return;
+      }
+      
+      if (!user) {
+        console.error('[JoinQueue] No user after auth - cannot fetch creator');
+        return;
+      }
 
       try {
         console.log('[JoinQueue] Looking up creator:', creatorId);
@@ -200,7 +211,7 @@ export default function JoinQueue() {
     };
 
     fetchCreator();
-  }, [creatorId, toast, navigate]);
+  }, [creatorId, authLoading, autoLoginLoading, user, toast, navigate]);
 
   // Check if creator is live and get queue status
   const checkLiveStatus = useCallback(async () => {
