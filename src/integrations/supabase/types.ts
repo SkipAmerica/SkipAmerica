@@ -2466,6 +2466,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      clear_all_queues: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       creator_inbox_counts: {
         Args: { p_creator_id: string }
         Returns: {
