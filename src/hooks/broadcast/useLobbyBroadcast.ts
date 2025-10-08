@@ -162,13 +162,14 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     console.log('[LobbyBroadcast] Changing filter to:', filter);
 
     try {
-      // Stop old processed stream (but keep original camera stream)
+      // Stop old processed stream VIDEO tracks only (audio is shared)
       const oldProcessedStream = streamRef.current;
       if (oldProcessedStream && oldProcessedStream !== originalStream) {
-        oldProcessedStream.getTracks().forEach(track => {
+        oldProcessedStream.getVideoTracks().forEach(track => {
           track.stop();
-          console.log('[LobbyBroadcast] Stopped old processed track:', track.kind);
+          console.log('[LobbyBroadcast] Stopped old processed video track');
         });
+        // DO NOT stop audio tracks - they're shared with original stream
       }
 
       // Apply new filter to original stream
