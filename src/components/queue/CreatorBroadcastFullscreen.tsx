@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { LiveKitVideoPlayer } from "@/components/video/LiveKitVideoPlayer";
 import { useLiveStore } from "@/stores/live-store";
 import type { LiveState } from "@/shared/types/live";
+import { FilterSelector } from "./FilterSelector";
+import { getFilterProcessor, type FilterPreset } from "@/lib/advancedFilterProcessor";
+import { toast } from "sonner";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
 }
@@ -17,7 +20,87 @@ export function CreatorBroadcastFullscreen({
     canGoLive
   } = useLiveStore();
   const [isPublishing, setIsPublishing] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState<FilterPreset>('none');
+  const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
+  const [isFilterReady, setIsFilterReady] = useState(false);
+  const filterProcessorRef = useRef(getFilterProcessor());
   const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
+
+  // Initialize filter processor
+  useEffect(() => {
+    const processor = filterProcessorRef.current;
+    
+    processor.initialize().then(() => {
+      console.log('[CreatorBroadcast] Filter processor initialized');
+      setIsFilterReady(true);
+    }).catch((error) => {
+      console.error('[CreatorBroadcast] Filter initialization failed:', error);
+      toast.error('Beauty filters unavailable', {
+        description: 'Video will work without filters'
+      });
+      setIsFilterReady(true); // Continue without filters
+    });
+
+    return () => {
+      if (filteredStream) {
+        filteredStream.getTracks().forEach(track => track.stop());
+      }
+      processor.stop();
+    };
+  }, [filteredStream]);
+
+  // Start filter processing when going live
+  useEffect(() => {
+    const startFiltering = async () => {
+      if (isLive && isFilterReady) {
+        try {
+          // Get the original media stream
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: 1280, height: 720 },
+            audio: true
+          });
+          
+          // Apply filter if not 'none'
+          if (currentFilter !== 'none') {
+            const processor = filterProcessorRef.current;
+            const filtered = await processor.start(stream);
+            setFilteredStream(filtered);
+            console.log('[CreatorBroadcast] Filter applied to stream');
+          } else {
+            setFilteredStream(stream);
+          }
+        } catch (error) {
+          console.error('[CreatorBroadcast] Failed to start filtering:', error);
+          toast.error('Camera access failed');
+        }
+      }
+    };
+
+    startFiltering();
+  }, [isLive, isFilterReady, currentFilter]);
+
+  // Handle filter changes
+  const handleFilterChange = async (filter: FilterPreset) => {
+    console.log('[CreatorBroadcast] Filter changed to:', filter);
+    setCurrentFilter(filter);
+    
+    if (filteredStream) {
+      const processor = filterProcessorRef.current;
+      
+      if (filter === 'none') {
+        // Stop filtering, use original stream
+        const originalStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: 1280, height: 720 },
+          audio: true
+        });
+        processor.stop();
+        setFilteredStream(originalStream);
+      } else {
+        // Apply new filter
+        processor.setFilter(filter);
+      }
+    }
+  };
   const handleGoLive = async () => {
     try {
       await goLive();
@@ -27,11 +110,11 @@ export function CreatorBroadcastFullscreen({
   };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when live) */}
-      {isLive && <LiveKitPublisher config={{
+      {isLive && filteredStream && <LiveKitPublisher config={{
       role: 'publisher',
       creatorId,
       identity: creatorId
-    }} publishAudio={true} publishVideo={true} onPublished={() => {
+    }} mediaStream={filteredStream} publishAudio={true} publishVideo={true} onPublished={() => {
       console.log('[CreatorBroadcast] Stream published');
       setIsPublishing(true);
     }} onError={error => {
@@ -65,6 +148,16 @@ export function CreatorBroadcastFullscreen({
             ● LIVE
           </Badge>
         </div>}
+
+      {/* Filter Selector */}
+      {isFilterReady && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+          <FilterSelector 
+            currentFilter={currentFilter}
+            onFilterChange={handleFilterChange}
+          />
+        </div>
+      )}
 
       {/* GO LIVE Button (only when not live) */}
       {!isLive}
