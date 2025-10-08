@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Room, Track, RoomEvent, RemoteTrackPublication } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
+import { cn } from '@/lib/utils';
 
 interface LiveKitVideoPlayerProps {
   config: LiveKitRoomConfig;
@@ -176,10 +177,10 @@ export function LiveKitVideoPlayer({
   const showFallback = !isConnected || !hasVideo;
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full rounded-2xl overflow-hidden">
       <video
         ref={videoRef}
-        className={className}
+        className={cn("w-full h-full object-cover", className)}
         autoPlay
         playsInline
         muted={muted}
@@ -187,7 +188,7 @@ export function LiveKitVideoPlayer({
       />
       
       {showFallback && fallbackContent && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/80">
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 rounded-2xl">
           {fallbackContent}
         </div>
       )}
