@@ -14,6 +14,7 @@ export interface LobbyBroadcastAPI {
   isFilterReady: boolean;
   startStream: () => Promise<void>;
   stopStream: () => void;
+  forceCleanup: () => void;
   startCountdown: () => void;
   cancelCountdown: () => void;
   completeCountdown: () => void;
@@ -190,6 +191,11 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     }
   }, [filters]);
 
+  const forceCleanup = useCallback(() => {
+    console.log('[LobbyBroadcast] Force cleanup requested');
+    stopStream();
+  }, [stopStream]);
+
   // Eye/teeth enhancement disabled
   /*
   const setEyeEnhance = useCallback((enabled: boolean) => {
@@ -209,6 +215,7 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     isFilterReady: filters.isReady,
     startStream,
     stopStream,
+    forceCleanup,
     startCountdown,
     cancelCountdown,
     completeCountdown,

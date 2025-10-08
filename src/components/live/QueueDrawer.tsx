@@ -285,16 +285,51 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       .slice(0, 2)
   }
 
+  /**
+   * Closes the QueueDrawer and conditionally cleans up media resources.
+   * 
+   * Cleanup conditions:
+   * - SKIP cleanup if in SESSION_PREP, SESSION_JOINING, or SESSION_ACTIVE
+   * - SKIP cleanup if actively broadcasting to lobby
+   * - PERFORM cleanup only in DISCOVERABLE state with no active broadcast
+   * - Cleanup already handled by FSM if transitioning to OFFLINE
+   */
   const handleClose = useCallback(async () => {
-    console.log('[QueueDrawer] Closing and cleaning up media')
-    try {
-      await teardownMedia()
-      console.log('[QueueDrawer] Media cleanup complete')
-    } catch (error) {
-      console.error('[QueueDrawer] Error during media cleanup:', error)
+    const currentState = store.state;
+    const isActiveBroadcast = store.isLobbyBroadcasting;
+    
+    // Guard: NEVER cleanup during active sessions
+    const isActiveSession = [
+      'SESSION_PREP',
+      'SESSION_JOINING', 
+      'SESSION_ACTIVE'
+    ].includes(currentState);
+    
+    console.log('[QueueDrawer] Close requested', {
+      state: currentState,
+      isLobbyBroadcasting: isActiveBroadcast,
+      willCleanup: !isActiveSession && !isActiveBroadcast
+    });
+    
+    if (isActiveSession || isActiveBroadcast) {
+      console.log('[QueueDrawer] Skipping media cleanup - active session or broadcast');
+      onClose();
+      return;
     }
-    onClose()
-  }, [onClose])
+    
+    // Safe to clean up - user is just browsing queue in DISCOVERABLE state
+    if (currentState === 'DISCOVERABLE') {
+      console.log('[QueueDrawer] Cleaning up media for DISCOVERABLE state');
+      try {
+        await teardownMedia();
+        console.log('[QueueDrawer] Media cleanup complete');
+      } catch (error) {
+        console.error('[QueueDrawer] Error during media cleanup:', error);
+      }
+    }
+    
+    onClose();
+  }, [onClose, store.state, store.isLobbyBroadcasting])
 
   return (
       <ViewportDrawer
