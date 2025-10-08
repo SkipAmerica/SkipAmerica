@@ -1,6 +1,6 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 
-export type FilterPreset = 'none' | 'natural' | 'glam' | 'bright' | 'cool' | 'radiant';
+export type FilterPreset = 'none' | 'natural' | 'glam' | 'bright' | 'cool' | 'radiant' | 'porcelain' | 'softfocus' | 'hdclear';
 
 interface FilterSettings {
   smoothing: number;
@@ -17,6 +17,9 @@ const FILTER_PRESETS: Record<FilterPreset, FilterSettings> = {
   bright: { smoothing: 0.4, brightness: 0.2, warmth: 0.2, eyeEnhance: 0.1, sharpen: 0.15 },
   cool: { smoothing: 0.3, brightness: 0.05, warmth: -0.15, eyeEnhance: 0, sharpen: 0.25 },
   radiant: { smoothing: 0.6, brightness: 0.15, warmth: 0.25, eyeEnhance: 0.2, sharpen: 0.2 },
+  porcelain: { smoothing: 0.75, brightness: 0.08, warmth: 0.05, eyeEnhance: 0, sharpen: 0 },
+  softfocus: { smoothing: 0.65, brightness: 0.06, warmth: 0.12, eyeEnhance: 0, sharpen: 0.05 },
+  hdclear: { smoothing: 0.2, brightness: 0.02, warmth: 0.03, eyeEnhance: 0, sharpen: 0.3 },
 };
 
 export class AdvancedFilterProcessor {

@@ -1,4 +1,4 @@
-import { Sparkles, Sun, Snowflake, Star, Zap, X } from 'lucide-react';
+import { Sparkles, Sun, Snowflake, Star, Zap, X, Gem, Cloud, Focus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import type { FilterPreset } from '@/lib/advancedFilterProcessor';
@@ -50,6 +50,24 @@ const FILTERS: Array<{
     label: 'Radiant', 
     icon: <Zap className="w-4 h-4" />,
     description: 'Maximum glow'
+  },
+  { 
+    id: 'porcelain', 
+    label: 'Porcelain', 
+    icon: <Gem className="w-4 h-4" />,
+    description: 'Smooth skin'
+  },
+  { 
+    id: 'softfocus', 
+    label: 'Soft Focus', 
+    icon: <Cloud className="w-4 h-4" />,
+    description: 'Dreamy blur'
+  },
+  { 
+    id: 'hdclear', 
+    label: 'HD Clear', 
+    icon: <Focus className="w-4 h-4" />,
+    description: 'Sharp & clear'
   },
 ];
 
