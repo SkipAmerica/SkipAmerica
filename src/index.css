@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dynamic viewport height fallback for older browsers */
+.svh {
+  height: 100vh;
+  height: 100svh;
+}
+
 /* Creator Economy Design System - FaceTime for Creators */
 @layer base {
   :root {

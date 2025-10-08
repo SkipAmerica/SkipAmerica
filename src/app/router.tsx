@@ -19,6 +19,8 @@ const ThreadViewPage = lazy(() => import('@/pages/ThreadView'))
 const NotFoundPage = lazy(() => import('@/pages/NotFound'))
 const DevCanvasPage = lazy(() => import('@/pages/DevCanvas'))
 const CreatorOnboardingPage = lazy(() => import('@/pages/CreatorOnboarding'))
+const AlmightySessionPage = lazy(() => import('@/routes/AlmightySession'))
+const DevAlmightyPage = lazy(() => import('@/routes/DevAlmighty'))
 
 // Route wrapper with error boundary and suspense
 function RouteWrapper({ children }: { children: React.ReactNode }) {
@@ -114,6 +116,23 @@ export function AppRouter() {
             <DevCanvasPage />
           </RouteWrapper>
         } />
+
+        {/* Almighty Session Routes */}
+        <Route path="/session/:sessionId" element={
+          <ErrorBoundary>
+            <Suspense fallback={<LoadingSpinner />}>
+              <AlmightySessionPage />
+            </Suspense>
+          </ErrorBoundary>
+        } />
+
+        {process.env.NODE_ENV !== 'production' && (
+          <Route path="/dev/almighty" element={
+            <RouteWrapper>
+              <DevAlmightyPage />
+            </RouteWrapper>
+          } />
+        )}
         
         <Route path="/onboarding/creator" element={
           <RouteWrapper>
