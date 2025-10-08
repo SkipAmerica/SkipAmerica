@@ -136,8 +136,8 @@ export function BroadcastViewer({
 
   return (
     <div className="relative w-full h-full">
-      {/* Main creator video stream - only show when NOT publishing fan video */}
-      {!shouldPublishFanVideo && resolvedCreatorId && (
+      {/* Main creator video stream - always visible */}
+      {resolvedCreatorId && (
         <LiveKitVideoPlayer
           config={{
             role: 'viewer',
@@ -151,11 +151,18 @@ export function BroadcastViewer({
             setConnectionState(connected ? 'connected' : 'connecting');
           }}
           fallbackContent={
-            <div className="text-center text-white">
+            <div className="text-center text-white px-4">
               {connectionState === 'checking' && (
                 <div className="animate-pulse">
                   <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
                   <div className="text-sm">Connecting to stream...</div>
+                </div>
+              )}
+              {connectionState === 'connected' && (
+                <div>
+                  <div className="text-6xl mb-4">🎬</div>
+                  <div className="text-lg font-medium mb-2">Creator Offline</div>
+                  <p className="text-sm text-white/70 mb-4">The creator is not broadcasting yet.<br />You'll see them as soon as they go live!</p>
                 </div>
               )}
               {connectionState === 'failed' && (
@@ -171,17 +178,6 @@ export function BroadcastViewer({
             </div>
           }
         />
-      )}
-
-      {/* Fallback when publishing fan video */}
-      {shouldPublishFanVideo && (
-        <div className="w-full h-full bg-black flex items-center justify-center">
-          <div className="text-center text-white px-4">
-            <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
-            <p className="text-lg font-medium mb-2">Your preview is live to the creator</p>
-            <p className="text-sm text-white/70">You'll see the creator's stream when the call begins</p>
-          </div>
-        </div>
       )}
 
       {/* Fan video publisher (headless) */}
