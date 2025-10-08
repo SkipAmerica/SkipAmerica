@@ -102,6 +102,17 @@ export function CreatorBroadcastFullscreen({
         </div>
       )}
 
+      {/* Close Button */}
+      <Button
+        variant="outline"
+        size="icon"
+        className="absolute right-4 z-20 bg-black/40 border-white/20 text-white hover:bg-black/60 hover:text-white backdrop-blur-sm"
+        style={{ top: 'calc(env(safe-area-inset-top, 0px) + 16px)' }}
+        onClick={handleClose}
+        data-no-drag
+      >
+        <X className="h-5 w-5" />
+      </Button>
 
       {/* GO LIVE Button (only when not live) */}
       {!isLive && (
@@ -125,6 +136,13 @@ export function CreatorBroadcastFullscreen({
         </div>
       )}
 
+      {/* Lobby Chat Overlay */}
+      <div 
+        className="absolute bottom-0 left-0 right-0 z-10 max-h-[50vh] overflow-hidden"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      >
+        <UniversalChat config={lobbyConfig} />
+      </div>
     </div>
   );
 }
