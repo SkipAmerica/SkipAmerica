@@ -79,7 +79,7 @@ export function CreatorBroadcastFullscreen({
 
   // Clean up stream when broadcast ends
   useEffect(() => {
-    if (!isLobbyBroadcasting && filteredStream) {
+    if (!isLobbyBroadcasting && !isCountdownActive && filteredStream) {
       console.log('[CreatorBroadcast] Broadcast ended - cleaning up stream');
       
       // Stop all tracks in the filtered stream
