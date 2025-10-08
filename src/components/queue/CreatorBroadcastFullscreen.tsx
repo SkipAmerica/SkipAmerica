@@ -62,10 +62,29 @@ export function CreatorBroadcastFullscreen({
       if (isFilterReady && !filteredStream) {
         try {
           console.log('[CreatorBroadcast] Starting camera...');
-          // Get the original media stream
+          // Get high-quality media stream
           const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'user', width: 1280, height: 720 },
-            audio: true
+            video: { 
+              facingMode: 'user',
+              width: { ideal: 1920, min: 1280 },
+              height: { ideal: 1080, min: 720 },
+              frameRate: { ideal: 30, max: 60 },
+              aspectRatio: { ideal: 16/9 }
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+          
+          // Log actual resolution
+          const videoTrack = stream.getVideoTracks()[0];
+          const settings = videoTrack.getSettings();
+          console.log('[CreatorBroadcast] Camera started:', {
+            resolution: `${settings.width}x${settings.height}`,
+            frameRate: settings.frameRate,
+            facingMode: settings.facingMode
           });
           
           // Apply filter if not 'none'
@@ -98,8 +117,18 @@ export function CreatorBroadcastFullscreen({
       if (filter === 'none') {
         // Stop filtering, use original stream
         const originalStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: 1280, height: 720 },
-          audio: true
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 30, max: 60 },
+            aspectRatio: { ideal: 16/9 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
         });
         processor.stop();
         setFilteredStream(originalStream);

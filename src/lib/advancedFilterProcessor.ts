@@ -35,11 +35,16 @@ export class AdvancedFilterProcessor {
 
   constructor() {
     this.canvas = document.createElement('canvas');
-    this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    this.ctx = this.canvas.getContext('2d', { 
+      willReadFrequently: false,
+      alpha: true
+    });
     this.glCanvas = document.createElement('canvas');
     this.gl = this.glCanvas.getContext('webgl', { 
       premultipliedAlpha: false,
-      preserveDrawingBuffer: true 
+      preserveDrawingBuffer: true,
+      antialias: false,
+      powerPreference: 'high-performance'
     });
     this.sourceVideo = document.createElement('video');
     this.sourceVideo.autoplay = true;
@@ -52,25 +57,38 @@ export class AdvancedFilterProcessor {
 
     try {
       console.log('[AdvancedFilter] Initializing MediaPipe...');
-      const vision = await FilesetResolver.forVisionTasks(
-        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm'
+      
+      // Add timeout for loading
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('MediaPipe loading timeout (10s)')), 10000)
       );
 
-      this.faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
-        baseOptions: {
-          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
-          delegate: 'GPU'
-        },
-        runningMode: 'VIDEO',
-        numFaces: 1,
-        minFaceDetectionConfidence: 0.5,
-        minFacePresenceConfidence: 0.5,
-        minTrackingConfidence: 0.5,
-      });
+      const loadPromise = FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm'
+      ).then(vision => 
+        FaceLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+            delegate: 'GPU'
+          },
+          runningMode: 'VIDEO',
+          numFaces: 1,
+          minFaceDetectionConfidence: 0.5,
+          minFacePresenceConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        })
+      );
 
+      this.faceLandmarker = await Promise.race([loadPromise, timeoutPromise]) as FaceLandmarker;
       console.log('[AdvancedFilter] MediaPipe loaded successfully');
     } catch (error) {
-      console.error('[AdvancedFilter] MediaPipe initialization failed:', error);
+      // Detailed error logging
+      console.error('[AdvancedFilter] MediaPipe initialization failed:', {
+        error,
+        errorType: error?.constructor?.name,
+        errorMessage: error instanceof Error ? error.message : String(error),
+        errorStack: error instanceof Error ? error.stack : undefined
+      });
       console.warn('[AdvancedFilter] Continuing with WebGL-only filters (no face detection)');
       // Continue without MediaPipe - WebGL filters will still work
     }
@@ -124,14 +142,15 @@ export class AdvancedFilterProcessor {
         color.g += u_warmth * 0.05;
         color.b -= u_warmth * 0.05;
         
-        // Simple smoothing (bilateral approximation)
+        // Optimized smoothing (reduced kernel size for performance)
         if (u_smoothing > 0.0) {
           vec2 texelSize = vec2(1.0) / u_resolution;
           vec4 sum = vec4(0.0);
           float weightSum = 0.0;
           
-          for (int x = -2; x <= 2; x++) {
-            for (int y = -2; y <= 2; y++) {
+          // Reduced from 5x5 to 3x3 kernel for better performance
+          for (int x = -1; x <= 1; x++) {
+            for (int y = -1; y <= 1; y++) {
               vec2 offset = vec2(float(x), float(y)) * texelSize;
               vec4 sample = texture2D(u_image, v_texCoord + offset);
               float weight = 1.0 - (length(offset) * u_smoothing);
@@ -139,7 +158,7 @@ export class AdvancedFilterProcessor {
               weightSum += weight;
             }
           }
-          color = mix(color, sum / weightSum, u_smoothing);
+          color = mix(color, sum / weightSum, u_smoothing * 0.8);
         }
         
         // Sharpen
@@ -224,14 +243,21 @@ export class AdvancedFilterProcessor {
     const track = inputStream.getVideoTracks()[0];
     const settings = track.getSettings();
     
-    this.canvas.width = settings.width || 640;
-    this.canvas.height = settings.height || 480;
-    this.glCanvas.width = this.canvas.width;
-    this.glCanvas.height = this.canvas.height;
+    // Use actual stream resolution (no downscaling)
+    const width = settings.width || 1280;
+    const height = settings.height || 720;
+    
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.glCanvas.width = width;
+    this.glCanvas.height = height;
+
+    console.log('[AdvancedFilter] Processing at resolution:', width, 'x', height);
 
     this.processFrame();
 
-    this.outputStream = this.glCanvas.captureStream(30);
+    // Try 60fps first, fallback to 30fps
+    this.outputStream = this.glCanvas.captureStream(60);
     
     // Copy audio tracks
     inputStream.getAudioTracks().forEach(audioTrack => {
