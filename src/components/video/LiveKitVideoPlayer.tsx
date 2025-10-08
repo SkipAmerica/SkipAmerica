@@ -180,7 +180,7 @@ export function LiveKitVideoPlayer({
     <div className="relative w-full h-full rounded-2xl overflow-hidden">
       <video
         ref={videoRef}
-        className={cn("w-full h-full object-cover", className)}
+        className={cn("w-full h-full object-cover rounded-2xl", className)}
         autoPlay
         playsInline
         muted={muted}

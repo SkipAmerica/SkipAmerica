@@ -25,7 +25,7 @@ export function CreatorBroadcastFullscreen({
       console.error('[CreatorBroadcast] Failed to go live:', error);
     }
   };
-  return <div className="relative h-full w-full bg-black overflow-hidden">
+  return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when live) */}
       {isLive && <LiveKitPublisher config={{
       role: 'publisher',
@@ -40,20 +40,22 @@ export function CreatorBroadcastFullscreen({
     }} />}
 
       {/* Video Player (shows creator's own stream fullscreen) */}
-      <LiveKitVideoPlayer config={{
-      role: 'viewer',
-      creatorId,
-      identity: `viewer_${creatorId}_self`
-    }} targetParticipantId={creatorId} className="absolute inset-0" muted={true} fallbackContent={<div className="flex items-center justify-center h-full bg-black/80">
-            <div className="text-center">
-              <div className="animate-pulse text-white text-lg mb-2">
-                {isLive ? 'Starting broadcast...' : 'Camera preview'}
+      <div className="absolute inset-0 rounded-2xl overflow-hidden">
+        <LiveKitVideoPlayer config={{
+        role: 'viewer',
+        creatorId,
+        identity: `viewer_${creatorId}_self`
+      }} targetParticipantId={creatorId} className="w-full h-full object-cover rounded-2xl" muted={true} fallbackContent={<div className="flex items-center justify-center h-full bg-black/80">
+              <div className="text-center">
+                <div className="animate-pulse text-white text-lg mb-2">
+                  {isLive ? 'Starting broadcast...' : 'Camera preview'}
+                </div>
+                <div className="text-white/60 text-sm">
+                  {isLive ? 'Camera and microphone initializing' : 'Tap GO LIVE to start broadcasting'}
+                </div>
               </div>
-              <div className="text-white/60 text-sm">
-                {isLive ? 'Camera and microphone initializing' : 'Tap GO LIVE to start broadcasting'}
-              </div>
-            </div>
-          </div>} />
+            </div>} />
+      </div>
 
       {/* LIVE Indicator (only when live) */}
       {isLive && <div className="absolute left-4 z-20" style={{
