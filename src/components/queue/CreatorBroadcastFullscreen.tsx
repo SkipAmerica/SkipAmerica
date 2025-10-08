@@ -151,7 +151,7 @@ export function CreatorBroadcastFullscreen({
     };
 
     startCamera();
-  }, [isVisible, isFilterReady, currentFilter, filteredStream, isLobbyBroadcasting]);
+  }, [isVisible, isFilterReady, currentFilter, filteredStream]);
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
