@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Room, Track, RoomEvent, RemoteTrackPublication } from 'livekit-client';
+import { Room, Track, RoomEvent, RemoteTrackPublication, VideoQuality } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
 import { cn } from '@/lib/utils';
 
@@ -87,6 +87,10 @@ export function LiveKitVideoPlayer({
         for (const videoPublication of videoPublications) {
           if (videoPublication.track && videoRef.current) {
             console.log('[LiveKitVideoPlayer] ✅ Attaching video track from:', participant.identity, 'source:', videoPublication.source);
+            
+            // Request high quality (1080p with automatic fallback to 720p)
+            videoPublication.setVideoQuality(VideoQuality.HIGH);
+            console.log('[LiveKitVideoPlayer] Requested HIGH video quality (1080p @ ~2.5Mbps)');
             
             const videoTrack = videoPublication.track;
             videoTrack.attach(videoRef.current);

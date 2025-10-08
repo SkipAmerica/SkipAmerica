@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Room, RoomEvent, Track, RemoteTrack } from 'livekit-client';
+import { Room, RoomEvent, Track, RemoteTrack, VideoPresets } from 'livekit-client';
 import { fetchLiveKitToken } from '@/lib/sfuToken';
 
 export type LiveKitRoomConfig = {
@@ -44,11 +44,15 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
         if (!mounted) return;
 
-        // Create room with optimized settings
+        // Create room with optimized settings for high-quality video
         const newRoom = new Room({
           adaptiveStream: true,
           dynacast: true,
           disconnectOnPageLeave: false,
+          videoCaptureDefaults: {
+            resolution: VideoPresets.h1080.resolution,
+            deviceId: undefined,
+          },
         });
 
         currentRoom = newRoom;
