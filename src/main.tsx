@@ -5,7 +5,6 @@ import "./index.css";
 import { config } from "./shared/config/index.ts";
 import { normalizeError, safeStringify } from "./shared/errors/err-utils";
 import { defineCustomElements } from '@ionic/pwa-elements/loader';
-import './utils/clear-queues';
 
 // Initialize PWA Elements for Capacitor Camera web support
 defineCustomElements(window);
