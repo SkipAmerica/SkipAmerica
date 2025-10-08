@@ -232,9 +232,6 @@ export class AdvancedFilterProcessor {
       this.gl.STATIC_DRAW
     );
 
-    // Configure texture coordinate flipping
-    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
-
     console.log('[AdvancedFilter] WebGL initialized');
   }
 
