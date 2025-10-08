@@ -170,7 +170,7 @@ export function SwipeableQueueCard({
   return (
     <div
       ref={containerRef}
-      className={cn("relative overflow-hidden cursor-grab active:cursor-grabbing", className)}
+      className={cn("relative overflow-hidden cursor-grab active:cursor-grabbing p-0 m-0", className)}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onKeyDown={handleKeyDown}
@@ -180,7 +180,7 @@ export function SwipeableQueueCard({
     >
       <div
         className={cn(
-          "flex w-[200%]",
+          "flex w-[200%] gap-0",
           !isDragging && "transition-transform duration-300 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]"
         )}
         style={{ transform: getTransform(), willChange: 'transform' }}
@@ -191,7 +191,7 @@ export function SwipeableQueueCard({
         </div>
 
         {/* Panel 2: Broadcast (1 row: video only) */}
-        <div className="w-1/2 flex-shrink-0 h-auto">
+        <div className="w-1/2 flex-shrink-0 min-h-[600px] h-full">
           {React.isValidElement(broadcastPanel)
             ? React.cloneElement(broadcastPanel as React.ReactElement<any>, {
                 onClose: handleBroadcastClose
