@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
-import type { LiveState } from "@/shared/types/live";
 import { FilterSelector } from "./FilterSelector";
-import { getFilterProcessor, type FilterPreset } from "@/lib/advancedFilterProcessor";
+import type { FilterPreset } from "@/lib/advancedFilterProcessor";
 import { toast } from "sonner";
 import { useDoubleTap } from "@/hooks/use-double-tap";
 import { GoLiveCountdown } from "./GoLiveCountdown";
+import { useLobbyBroadcast } from "@/hooks/broadcast/useLobbyBroadcast";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
   isVisible?: boolean;
@@ -16,192 +16,54 @@ export function CreatorBroadcastFullscreen({
   creatorId,
   isVisible = true
 }: CreatorBroadcastFullscreenProps) {
-  const {
-    isLobbyBroadcasting,
-    setLobbyBroadcasting
-  } = useLiveStore();
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [currentFilter, setCurrentFilter] = useState<FilterPreset>('none');
-  const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
-  const [isFilterReady, setIsFilterReady] = useState(false);
-  const [isCountdownActive, setIsCountdownActive] = useState(false);
-  const filterProcessorRef = useRef(getFilterProcessor());
+  const { isLobbyBroadcasting, setLobbyBroadcasting } = useLiveStore();
   const videoRef = useRef<HTMLVideoElement>(null);
+  
+  // Use new broadcast hook - handles all media lifecycle
+  const broadcast = useLobbyBroadcast({ isVisible });
 
   // Double-tap handler for go-live
   const { onTapStart } = useDoubleTap({
     onDoubleTap: () => {
-      if (isCountdownActive) {
-        // Cancel countdown
-        setIsCountdownActive(false);
+      if (broadcast.isCountdownActive) {
+        broadcast.cancelCountdown();
         toast.info('Go live cancelled');
       } else if (!isLobbyBroadcasting) {
-        // Start countdown
-        setIsCountdownActive(true);
+        broadcast.startCountdown();
       } else {
-        // End broadcast
         setLobbyBroadcasting(false);
+        broadcast.stopStream();
         toast.success('Broadcast ended');
       }
     },
     delay: 400
   });
 
-  // Initialize filter processor
-  useEffect(() => {
-    const processor = filterProcessorRef.current;
-    
-    processor.initialize().then(() => {
-      console.log('[CreatorBroadcast] Filter processor initialized');
-      setIsFilterReady(true);
-    }).catch((error) => {
-      console.error('[CreatorBroadcast] Filter initialization failed:', error);
-      toast.error('Beauty filters unavailable', {
-        description: 'Video will work without filters'
-      });
-      setIsFilterReady(true); // Continue without filters
-    });
-
-    return () => {
-      if (filteredStream) {
-        filteredStream.getTracks().forEach(track => track.stop());
-      }
-      processor.stop();
-    };
-  }, [filteredStream]);
-
-  // Update video element when filtered stream changes
-  useEffect(() => {
-    if (videoRef.current && filteredStream) {
-      videoRef.current.srcObject = filteredStream;
-    }
-  }, [filteredStream]);
-
-  // Clean up stream when broadcast ends
-  useEffect(() => {
-    if (!isLobbyBroadcasting && !isCountdownActive && filteredStream) {
-      console.log('[CreatorBroadcast] Broadcast ended - cleaning up stream');
-      
-      // Stop all tracks in the filtered stream
-      filteredStream.getTracks().forEach(track => {
-        track.stop();
-        console.log('[CreatorBroadcast] Stopped track:', track.kind);
-      });
-      
-      // Stop the filter processor
-      filterProcessorRef.current.stop();
-      
-      // Clear the stream state to allow restart
-      setFilteredStream(null);
-    }
-  }, [isLobbyBroadcasting, filteredStream]);
-
-  // Start camera when visible and filter is ready
-  useEffect(() => {
-    const startCamera = async () => {
-      if (isVisible && isFilterReady && !filteredStream) {
-        try {
-          console.log('[CreatorBroadcast] Starting camera...');
-          // Get high-quality media stream
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { 
-              facingMode: 'user',
-              width: { ideal: 1920, min: 1280 },
-              height: { ideal: 1080, min: 720 },
-              frameRate: { ideal: 30, max: 60 },
-              aspectRatio: { ideal: 16/9 }
-            },
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true
-            }
-          });
-          
-          // Log actual resolution
-          const videoTrack = stream.getVideoTracks()[0];
-          const settings = videoTrack.getSettings();
-          console.log('[CreatorBroadcast] Camera started:', {
-            resolution: `${settings.width}x${settings.height}`,
-            frameRate: settings.frameRate,
-            facingMode: settings.facingMode
-          });
-          
-          // Apply filter if not 'none'
-          if (currentFilter !== 'none') {
-            const processor = filterProcessorRef.current;
-            const filtered = await processor.start(stream);
-            setFilteredStream(filtered);
-            console.log('[CreatorBroadcast] Filter applied to stream');
-          } else {
-            setFilteredStream(stream);
-          }
-          
-          // Log what tracks we're sending to LiveKitPublisher
-          console.log('[CreatorBroadcast] Stream ready for publishing:', {
-            videoTracks: stream.getVideoTracks().length,
-            audioTracks: stream.getAudioTracks().length,
-            audioEnabled: stream.getAudioTracks()[0]?.enabled
-          });
-        } catch (error) {
-          console.error('[CreatorBroadcast] Failed to start camera:', error);
-          toast.error('Camera access failed');
-        }
-      }
-    };
-
-    startCamera();
-  }, [isVisible, isFilterReady, currentFilter, filteredStream]);
+  // Update video element when stream changes
+  if (videoRef.current && broadcast.stream) {
+    videoRef.current.srcObject = broadcast.stream;
+  }
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
-    console.log('[CreatorBroadcast] Filter changed to:', filter);
-    setCurrentFilter(filter);
-    
-    if (filteredStream) {
-      const processor = filterProcessorRef.current;
-      
-      if (filter === 'none') {
-        // Stop filtering, use original stream
-        const originalStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'user',
-            width: { ideal: 1920, min: 1280 },
-            height: { ideal: 1080, min: 720 },
-            frameRate: { ideal: 30, max: 60 },
-            aspectRatio: { ideal: 16/9 }
-          },
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
-        });
-        processor.stop();
-        setFilteredStream(originalStream);
-      } else {
-        // Apply new filter
-        processor.setFilter(filter);
-      }
-    }
+    await broadcast.changeFilter(filter);
   };
+
   const handleCountdownComplete = () => {
-    setIsCountdownActive(false);
+    broadcast.completeCountdown();
     setLobbyBroadcasting(true);
     toast.success('Now broadcasting to your lobby');
   };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when broadcasting) */}
-      {isLobbyBroadcasting && filteredStream && <LiveKitPublisher config={{
+      {isLobbyBroadcasting && broadcast.stream && <LiveKitPublisher config={{
       role: 'publisher',
       creatorId,
       identity: creatorId
-    }} mediaStream={filteredStream} publishAudio={true} publishVideo={true} onPublished={() => {
+    }} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
       console.log('[CreatorBroadcast] Stream published');
-      setIsPublishing(true);
     }} onError={error => {
       console.error('[CreatorBroadcast] Publishing error:', error);
-      setIsPublishing(false);
     }} />}
 
       {/* Local camera preview with filters */}
@@ -218,7 +80,7 @@ export function CreatorBroadcastFullscreen({
         />
         
         {/* Fallback when no stream */}
-        {!filteredStream && (
+        {!broadcast.stream && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
             <div className="text-center">
               <div className="animate-pulse text-white text-lg mb-2">
@@ -233,10 +95,10 @@ export function CreatorBroadcastFullscreen({
       </div>
 
       {/* Countdown Overlay */}
-      {isCountdownActive && (
+      {broadcast.isCountdownActive && (
         <GoLiveCountdown
           onComplete={handleCountdownComplete}
-          onCancel={() => setIsCountdownActive(false)}
+          onCancel={() => broadcast.cancelCountdown()}
         />
       )}
 
@@ -270,10 +132,10 @@ export function CreatorBroadcastFullscreen({
       </div>
 
       {/* Filter Selector */}
-      {isFilterReady && (
+      {broadcast.isFilterReady && (
         <div className="absolute bottom-4 left-4 right-4 z-20">
           <FilterSelector 
-            currentFilter={currentFilter}
+            currentFilter={broadcast.currentFilter}
             onFilterChange={handleFilterChange}
           />
         </div>
