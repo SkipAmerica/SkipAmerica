@@ -313,7 +313,7 @@ export function QueueContent() {
           <div className="flex flex-col h-full">
             {/* Sticky First Entry */}
             {state.entries.length > 0 && (
-              <div className="sticky top-0 bg-background z-10 pb-3 border-b shadow-sm">
+              <div className="sticky top-0 bg-background z-10 pb-3 shadow-sm">
                 <SwipeableQueueCard
                   nextUpPanel={
                     <div className="flex flex-col h-full">
@@ -352,7 +352,7 @@ export function QueueContent() {
                       </div>
 
                       {/* Row 2: Collapsible Chat */}
-                      <CollapsibleChat>
+                      <CollapsibleChat className="border-t">
                         <CreatorQueueChat
                           creatorId={user.id}
                           fanId={state.entries[0].fan_id}
