@@ -352,7 +352,7 @@ export function QueueContent() {
                       </div>
 
                       {/* Row 2: Collapsible Chat */}
-                      <CollapsibleChat className="border-t">
+                      <CollapsibleChat>
                         <CreatorQueueChat
                           creatorId={user.id}
                           fanId={state.entries[0].fan_id}

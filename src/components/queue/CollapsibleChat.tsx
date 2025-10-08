@@ -18,7 +18,7 @@ export function CollapsibleChat({ children, className }: Props) {
   return (
     <div className={cn("sticky top-0 z-20", className)}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <CollapsibleTrigger className="w-full bg-muted/80 backdrop-blur-sm hover:bg-muted transition-colors px-4 py-2 flex items-center justify-between border-b">
+        <CollapsibleTrigger className="w-full bg-muted/80 backdrop-blur-sm hover:bg-muted transition-colors px-4 py-2 flex items-center justify-between">
           <span className="text-sm font-medium">
             Chat {isOpen ? "-" : "+"}
           </span>
