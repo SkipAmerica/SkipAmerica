@@ -32,6 +32,12 @@ export class AdvancedFilterProcessor {
   private isInitialized = false;
   private program: WebGLProgram | null = null;
   private textureCache: Map<string, WebGLTexture> = new Map();
+  
+  // WebGL buffers and locations
+  private positionBuffer: WebGLBuffer | null = null;
+  private texCoordBuffer: WebGLBuffer | null = null;
+  private positionLocation: number = -1;
+  private texCoordLocation: number = -1;
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -50,6 +56,16 @@ export class AdvancedFilterProcessor {
     this.sourceVideo.autoplay = true;
     this.sourceVideo.playsInline = true;
     this.sourceVideo.muted = true;
+
+    // Handle WebGL context loss
+    this.glCanvas.addEventListener('webglcontextlost', (e) => {
+      console.error('[AdvancedFilter] WebGL context lost');
+      e.preventDefault();
+    });
+    this.glCanvas.addEventListener('webglcontextrestored', () => {
+      console.log('[AdvancedFilter] WebGL context restored, reinitializing');
+      this.initWebGL();
+    });
   }
 
   async initialize(): Promise<void> {
@@ -194,22 +210,30 @@ export class AdvancedFilterProcessor {
       return;
     }
 
-    // Set up vertex buffer
-    const positionBuffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
+    // Get attribute/uniform locations
+    this.positionLocation = this.gl.getAttribLocation(this.program, 'a_position');
+    this.texCoordLocation = this.gl.getAttribLocation(this.program, 'a_texCoord');
+
+    // Set up position buffer
+    this.positionBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
       new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
       this.gl.STATIC_DRAW
     );
 
-    const texCoordBuffer = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer);
+    // Set up texture coordinate buffer
+    this.texCoordBuffer = this.gl.createBuffer();
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer);
     this.gl.bufferData(
       this.gl.ARRAY_BUFFER,
       new Float32Array([0, 1, 1, 1, 0, 0, 1, 0]),
       this.gl.STATIC_DRAW
     );
+
+    // Configure texture coordinate flipping
+    this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
 
     console.log('[AdvancedFilter] WebGL initialized');
   }
@@ -256,15 +280,25 @@ export class AdvancedFilterProcessor {
 
     this.processFrame();
 
-    // Try 60fps first, fallback to 30fps
-    this.outputStream = this.glCanvas.captureStream(60);
+    // Capture from WebGL canvas if available, fallback to 2D canvas
+    if (this.gl && this.program) {
+      this.outputStream = this.glCanvas.captureStream(60);
+      const videoTrack = this.outputStream.getVideoTracks()[0];
+      if (!videoTrack || videoTrack.readyState === 'ended') {
+        console.warn('[AdvancedFilter] WebGL capture failed, using 2D canvas fallback');
+        this.outputStream = this.canvas.captureStream(30);
+      }
+    } else {
+      console.warn('[AdvancedFilter] WebGL not available, using 2D canvas');
+      this.outputStream = this.canvas.captureStream(30);
+    }
     
     // Copy audio tracks
     inputStream.getAudioTracks().forEach(audioTrack => {
       this.outputStream?.addTrack(audioTrack);
     });
 
-    console.log('[AdvancedFilter] Started processing');
+    console.log('[AdvancedFilter] Started processing with', this.outputStream.getVideoTracks()[0]?.label);
     return this.outputStream;
   }
 
@@ -299,10 +333,17 @@ export class AdvancedFilterProcessor {
       return;
     }
 
+    // Use the shader program
     this.gl.useProgram(this.program);
 
-    // Create/update texture
+    // Set viewport and clear
+    this.gl.viewport(0, 0, this.glCanvas.width, this.glCanvas.height);
+    this.gl.clearColor(0, 0, 0, 0);
+    this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+
+    // Create and bind texture
     const texture = this.gl.createTexture();
+    this.gl.activeTexture(this.gl.TEXTURE0);
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
@@ -310,7 +351,11 @@ export class AdvancedFilterProcessor {
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.canvas);
 
-    // Set uniforms
+    // Set sampler uniform to texture unit 0
+    const imageLoc = this.gl.getUniformLocation(this.program, 'u_image');
+    this.gl.uniform1i(imageLoc, 0);
+
+    // Set filter uniforms
     const resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
     const smoothingLoc = this.gl.getUniformLocation(this.program, 'u_smoothing');
     const brightnessLoc = this.gl.getUniformLocation(this.program, 'u_brightness');
@@ -323,15 +368,17 @@ export class AdvancedFilterProcessor {
     this.gl.uniform1f(warmthLoc, settings.warmth);
     this.gl.uniform1f(sharpenLoc, settings.sharpen);
 
-    // Set up vertex attributes
-    const positionLoc = this.gl.getAttribLocation(this.program, 'a_position');
-    const texCoordLoc = this.gl.getAttribLocation(this.program, 'a_texCoord');
+    // Bind and set up position buffer
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
+    this.gl.enableVertexAttribArray(this.positionLocation);
+    this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0);
 
-    this.gl.enableVertexAttribArray(positionLoc);
-    this.gl.enableVertexAttribArray(texCoordLoc);
+    // Bind and set up texture coordinate buffer
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer);
+    this.gl.enableVertexAttribArray(this.texCoordLocation);
+    this.gl.vertexAttribPointer(this.texCoordLocation, 2, this.gl.FLOAT, false, 0, 0);
 
-    // Draw
-    this.gl.viewport(0, 0, this.glCanvas.width, this.glCanvas.height);
+    // Draw the quad
     this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
 
     // Cleanup
