@@ -298,12 +298,13 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   }, [onClose])
 
   return (
-    <ViewportDrawer
-      isOpen={isOpen}
-      onClose={handleClose}
-      config={{ size: 'full', variant: 'default', dismissible: true, peekMode: false }}
-    >
-      <QueueContent />
+      <ViewportDrawer
+        isOpen={isOpen}
+        onClose={handleClose}
+        config={{ size: 'full', variant: 'default', dismissible: true, peekMode: false }}
+        footer={null}
+      >
+        <QueueContent />
     </ViewportDrawer>
   )
 }
