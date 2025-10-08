@@ -15,10 +15,8 @@ export function CreatorBroadcastFullscreen({
   creatorId
 }: CreatorBroadcastFullscreenProps) {
   const {
-    isLive,
-    state: liveState,
-    goLive,
-    canGoLive
+    isLobbyBroadcasting,
+    setLobbyBroadcasting
   } = useLiveStore();
   const [isPublishing, setIsPublishing] = useState(false);
   const [currentFilter, setCurrentFilter] = useState<FilterPreset>('none');
@@ -27,7 +25,6 @@ export function CreatorBroadcastFullscreen({
   const [isCountdownActive, setIsCountdownActive] = useState(false);
   const filterProcessorRef = useRef(getFilterProcessor());
   const videoRef = useRef<HTMLVideoElement>(null);
-  const isGoingLive = liveState === 'GOING_LIVE' as LiveState;
 
   // Double-tap handler for go-live
   const { onTapStart } = useDoubleTap({
@@ -36,10 +33,10 @@ export function CreatorBroadcastFullscreen({
         // Cancel countdown
         setIsCountdownActive(false);
         toast.info('Go live cancelled');
-      } else if (!isLive && !isGoingLive) {
+      } else if (!isLobbyBroadcasting) {
         // Start countdown
         setIsCountdownActive(true);
-      } else if (isLive) {
+      } else {
         toast.info('Already broadcasting');
       }
     },
@@ -158,18 +155,14 @@ export function CreatorBroadcastFullscreen({
       }
     }
   };
-  const handleCountdownComplete = async () => {
+  const handleCountdownComplete = () => {
     setIsCountdownActive(false);
-    try {
-      await goLive();
-    } catch (error) {
-      console.error('[CreatorBroadcast] Failed to go live:', error);
-      toast.error('Failed to go live');
-    }
+    setLobbyBroadcasting(true);
+    toast.success('Now broadcasting to your lobby');
   };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
-      {/* Publisher (headless - only when live) */}
-      {isLive && filteredStream && <LiveKitPublisher config={{
+      {/* Publisher (headless - only when broadcasting) */}
+      {isLobbyBroadcasting && filteredStream && <LiveKitPublisher config={{
       role: 'publisher',
       creatorId,
       identity: creatorId
@@ -199,10 +192,10 @@ export function CreatorBroadcastFullscreen({
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
             <div className="text-center">
               <div className="animate-pulse text-white text-lg mb-2">
-                {isLive ? 'Starting camera...' : 'Camera preview'}
+                {isLobbyBroadcasting ? 'Starting camera...' : 'Camera preview'}
               </div>
               <div className="text-white/60 text-sm">
-                {isLive ? 'Initializing camera and filters' : 'Tap GO LIVE to start broadcasting'}
+                {isLobbyBroadcasting ? 'Initializing camera and filters' : 'Double-tap to start broadcasting'}
               </div>
             </div>
           </div>
@@ -217,15 +210,15 @@ export function CreatorBroadcastFullscreen({
         />
       )}
 
-      {/* Pulsing Green Border When Live */}
-      {isLive && (
+      {/* Pulsing Green Border When Broadcasting */}
+      {isLobbyBroadcasting && (
         <div className="absolute inset-0 pointer-events-none z-20 rounded-2xl">
           <div className="w-full h-full border-[2px] border-green-500 rounded-2xl animate-pulse" />
         </div>
       )}
 
-      {/* LIVE Indicator (only when live) */}
-      {isLive && <div className="absolute left-4 z-20" style={{
+      {/* LIVE Indicator (only when broadcasting) */}
+      {isLobbyBroadcasting && <div className="absolute left-4 z-20" style={{
       top: 'calc(env(safe-area-inset-top, 0px) + 16px)'
     }}>
           <Badge variant="destructive" className="px-3 py-1 text-sm font-bold animate-pulse">
@@ -243,7 +236,7 @@ export function CreatorBroadcastFullscreen({
         </div>
       )}
 
-      {/* GO LIVE Button (only when not live) */}
-      {!isLive}
+      {/* GO LIVE Button (only when not broadcasting) */}
+      {!isLobbyBroadcasting}
     </div>;
 }
