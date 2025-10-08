@@ -43,13 +43,15 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     }
   }, [isVisible, filters.isReady]);
 
-  // Cleanup when visibility changes
+  // Cleanup ONLY on unmount (broadcast persists when hidden)
   useEffect(() => {
-    if (!isVisible && stream) {
-      console.log('[LobbyBroadcast] Component hidden, cleaning up stream');
-      stopStream();
-    }
-  }, [isVisible]);
+    return () => {
+      if (streamRef.current) {
+        console.log('[LobbyBroadcast] Component unmounting, cleaning up stream');
+        stopStream();
+      }
+    };
+  }, []);
 
   const startStream = useCallback(async () => {
     if (startingRef.current || streamRef.current) {
@@ -71,11 +73,13 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
           frameRate: { ideal: 30, max: 60 },
           aspectRatio: { ideal: 16/9 }
         },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 48000, // CD quality
+            channelCount: 2,   // Stereo
+          }
       });
       
       const videoTrack = mediaStream.getVideoTracks()[0];
@@ -152,7 +156,9 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: 48000, // CD quality
+          channelCount: 2,   // Stereo
         }
       });
 

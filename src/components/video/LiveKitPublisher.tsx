@@ -35,19 +35,28 @@ export function LiveKitPublisher({
       try {
         setIsPublishing(true);
 
-        // Define high-quality video publishing options
+        // Define broadcast-grade video publishing options (Instagram/TikTok quality)
         const videoPublishOptions: TrackPublishOptions = {
           videoCodec: 'h264', // H.264 for Safari/iOS hardware acceleration
           videoEncoding: {
-            maxBitrate: 2_500_000, // 2.5 Mbps
+            maxBitrate: 5_000_000, // 5 Mbps for crystal-clear 1080p
             maxFramerate: 30,
           },
+          scalabilityMode: 'L3T3_KEY', // Better temporal scalability
           simulcast: true, // Enable adaptive bitrate with multiple layers
           videoSimulcastLayers: [
-            VideoPresets.h1080, // 1920x1080 @ 2.5 Mbps
-            VideoPresets.h720,  // 1280x720 @ 1.2 Mbps
-            VideoPresets.h360,  // 640x360 @ 500 kbps
+            VideoPresets.h1080, // 1920x1080 high quality
+            VideoPresets.h720,  // 1280x720 medium quality
+            VideoPresets.h360,  // 640x360 low quality
           ],
+        };
+
+        // Define high-quality audio publishing options
+        const audioPublishOptions: TrackPublishOptions = {
+          dtx: false, // Don't drop audio during silence
+          audioPreset: {
+            maxBitrate: 128_000, // 128 kbps stereo - matches Instagram/TikTok
+          },
         };
 
         let tracks;
@@ -89,7 +98,7 @@ export function LiveKitPublisher({
             });
             await room.localParticipant.publishTrack(track, videoPublishOptions);
           } else {
-            await room.localParticipant.publishTrack(track); // Audio, no special options
+            await room.localParticipant.publishTrack(track, audioPublishOptions);
           }
         }
 
