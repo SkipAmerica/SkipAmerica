@@ -291,6 +291,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 2: Fetch token
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 2: Fetching LiveKit token...', { sessionId, identity })
+      }
+
       const tokenData = await fetchLiveKitToken({
         role: 'publisher',
         creatorId: sessionId,
@@ -304,10 +308,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'))
           const payload = JSON.parse(json)
           console.log('[LK token]', {
-            room: payload?.room,
+            room: payload?.video?.room || payload?.room,
             identity: payload?.sub ?? payload?.identity,
-            grants: payload?.video ?? payload?.grants,
+            grants: payload?.video,
           })
+          console.log('[LK token] Raw payload:', payload)
         } catch (e) {
           console.warn('[LK token] decode failed', e)
         }
