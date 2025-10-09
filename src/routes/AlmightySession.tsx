@@ -70,16 +70,9 @@ function AlmightyShell() {
     
     joinedRef.current = true
     
-    // Generate unique identity per role (creator vs viewer)
     const identity = getIdentityForRole(sessionId, role)
-    
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[AlmightySession] Joining with identity:', identity, 'role:', role)
-    }
-    
-    join(sessionId, identity, role).catch(err => {
-      console.error('[Media] Join failed:', err)
-    })
+    console.log('[AlmightySession] Joining with identity:', identity, 'role:', role)
+    join(sessionId, identity, role).catch(err => console.error('[Media] Join failed:', err))
     
     return () => {
       console.log('[AlmightySession] unmount → leave()')
