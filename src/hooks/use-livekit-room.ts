@@ -44,24 +44,23 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
         if (!isMounted) return;
 
-        // Create room with broadcast-grade quality settings
+        // Create room with queue-optimized quality settings (540p for performance)
         const newRoom = new Room({
           adaptiveStream: true,
           dynacast: true,
           disconnectOnPageLeave: false,
           videoCaptureDefaults: {
-            resolution: VideoPresets.h1080.resolution,
+            resolution: VideoPresets.h540.resolution, // 960x540 @ 30fps
             deviceId: undefined,
           },
           publishDefaults: {
             videoSimulcastLayers: [
-              VideoPresets.h1080, // 1920x1080 high quality
-              VideoPresets.h720,  // 1280x720 medium quality
+              VideoPresets.h540,  // 960x540 medium quality
               VideoPresets.h360,  // 640x360 low quality
             ],
             dtx: false,
             videoEncoding: {
-              maxBitrate: 5_000_000,
+              maxBitrate: 2_000_000, // 2Mbps for queue preview (down from 5Mbps)
               maxFramerate: 30,
             },
           },

@@ -19,7 +19,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
   const { room, isConnected } = useLiveKitRoom({
     role: 'publisher',
     creatorId: creatorId,
-    identity: creatorId,
+    identity: `creator_${creatorId}`,
   });
 
   useEffect(() => {
@@ -86,7 +86,7 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
           config={{
             role: 'publisher',
             creatorId: creatorId,
-            identity: creatorId,
+            identity: `creator_${creatorId}`,
           }}
           publishAudio={true}
           publishVideo={true}

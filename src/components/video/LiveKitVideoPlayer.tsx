@@ -107,9 +107,9 @@ export function LiveKitVideoPlayer({
           if (videoPublication.track && videoRef.current) {
             console.log('[LiveKitVideoPlayer] ✅ Attaching video track from:', participant.identity, 'source:', videoPublication.source);
             
-            // Request high quality (1080p with automatic fallback to 720p)
-            videoPublication.setVideoQuality(VideoQuality.HIGH);
-            console.log('[LiveKitVideoPlayer] Requested HIGH video quality (1080p @ ~5Mbps)');
+            // Request medium quality (720p) for queue context to reduce bandwidth
+            videoPublication.setVideoQuality(VideoQuality.MEDIUM);
+            console.log('[LiveKitVideoPlayer] Requested MEDIUM video quality (720p for queue)');
             
             const videoTrack = videoPublication.track;
             videoTrack.attach(videoRef.current);
