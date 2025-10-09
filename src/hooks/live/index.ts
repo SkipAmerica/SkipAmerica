@@ -51,6 +51,10 @@ export function useLive() {
     // Modal fields
     showDiscoverabilityModal: store.showDiscoverabilityModal,
     
+    // Lobby broadcasting
+    isLobbyBroadcasting: store.isLobbyBroadcasting,
+    setLobbyBroadcasting: store.setLobbyBroadcasting,
+    
     // Store reference for LiveControlBar
     store,
     

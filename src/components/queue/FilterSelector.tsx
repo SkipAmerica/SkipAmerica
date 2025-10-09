@@ -1,4 +1,4 @@
-import { Sparkles, Sun, Snowflake, Star, Zap, X } from 'lucide-react';
+import { Snowflake, X, Focus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import type { FilterPreset } from '@/lib/advancedFilterProcessor';
@@ -16,28 +16,10 @@ const FILTERS: Array<{
   description: string;
 }> = [
   { 
-    id: 'none', 
-    label: 'None', 
-    icon: <X className="w-4 h-4" />,
-    description: 'Original'
-  },
-  { 
-    id: 'natural', 
-    label: 'Natural', 
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Subtle glow'
-  },
-  { 
-    id: 'glam', 
-    label: 'Glam', 
-    icon: <Star className="w-4 h-4" />,
-    description: 'Full glam'
-  },
-  { 
-    id: 'bright', 
-    label: 'Bright', 
-    icon: <Sun className="w-4 h-4" />,
-    description: 'Sun-kissed'
+    id: 'hdclear', 
+    label: 'Crystal', 
+    icon: <Focus className="w-4 h-4" />,
+    description: 'Max detail'
   },
   { 
     id: 'cool', 
@@ -46,10 +28,10 @@ const FILTERS: Array<{
     description: 'Cool tone'
   },
   { 
-    id: 'radiant', 
-    label: 'Radiant', 
-    icon: <Zap className="w-4 h-4" />,
-    description: 'Maximum glow'
+    id: 'none', 
+    label: 'None', 
+    icon: <X className="w-4 h-4" />,
+    description: 'Original'
   },
 ];
 

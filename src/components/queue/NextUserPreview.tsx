@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { cn } from '@/lib/utils';
+import { Volume2, VolumeX } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NextUserPreviewProps {
   userId: string;
@@ -9,8 +11,11 @@ interface NextUserPreviewProps {
   userName?: string;
   discussionTopic?: string;
   waitTime?: number;
+  muted?: boolean;
+  onMuteToggle?: () => void;
   onStartCall?: () => void;
   onFullscreen?: () => void;
+  disableMuteToggle?: boolean;
 }
 
 export function NextUserPreview({
@@ -19,8 +24,11 @@ export function NextUserPreview({
   userName = 'Anonymous User',
   discussionTopic,
   waitTime,
+  muted = true,
+  onMuteToggle,
   onStartCall,
-  onFullscreen
+  onFullscreen,
+  disableMuteToggle = false
 }: NextUserPreviewProps) {
   const [showNotification, setShowNotification] = useState(true);
 
@@ -64,7 +72,7 @@ export function NextUserPreview({
           }}
           targetParticipantId={userId}
           className="w-full aspect-video object-cover bg-black"
-          muted={true}
+          muted={muted}
           fallbackContent={
             <div className="flex items-center justify-center text-white">
               <div className="text-center">
@@ -91,15 +99,49 @@ export function NextUserPreview({
               </p>
             )}
           </div>
-          {onStartCall && (
-            <Button
-              size="sm"
-              className="bg-primary hover:bg-primary/90 ml-3 px-4 shrink-0"
-              onClick={onStartCall}
-            >
-              Start
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {onMuteToggle && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={cn(
+                        "h-8 w-8 p-0 rounded-full",
+                        disableMuteToggle && "opacity-50 cursor-not-allowed"
+                      )}
+                      onClick={onMuteToggle}
+                      disabled={disableMuteToggle}
+                    >
+                      {muted ? (
+                        <VolumeX className="h-4 w-4 text-white" />
+                      ) : (
+                        <Volume2 className="h-4 w-4 text-white" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {disableMuteToggle 
+                      ? "Unmute after broadcast" 
+                      : muted 
+                        ? "Unmute fan audio" 
+                        : "Mute fan audio"
+                    }
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {onStartCall && (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 px-4 shrink-0"
+                onClick={onStartCall}
+              >
+                Start
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

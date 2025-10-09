@@ -25,7 +25,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
       return;
     }
 
-    let mounted = true;
+    let isMounted = true;
     let currentRoom: Room | null = null;
 
     const connect = async () => {
@@ -42,9 +42,9 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           identity: config.identity,
         });
 
-        if (!mounted) return;
+        if (!isMounted) return;
 
-        // Create room with optimized settings for high-quality video
+        // Create room with broadcast-grade quality settings
         const newRoom = new Room({
           adaptiveStream: true,
           dynacast: true,
@@ -53,6 +53,18 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
             resolution: VideoPresets.h1080.resolution,
             deviceId: undefined,
           },
+          publishDefaults: {
+            videoSimulcastLayers: [
+              VideoPresets.h1080, // 1920x1080 high quality
+              VideoPresets.h720,  // 1280x720 medium quality
+              VideoPresets.h360,  // 640x360 low quality
+            ],
+            dtx: false,
+            videoEncoding: {
+              maxBitrate: 5_000_000,
+              maxFramerate: 30,
+            },
+          },
         });
 
         currentRoom = newRoom;
@@ -60,37 +72,57 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         // Setup handlers before connecting
         newRoom.on(RoomEvent.Connected, () => {
           console.log('[useLiveKitRoom] Connected to room:', roomName);
-          if (mounted) setConnectionState('connected');
+          console.log('[useLiveKitRoom] Room participants:', {
+            localParticipant: newRoom.localParticipant.identity,
+            remoteParticipantsCount: newRoom.remoteParticipants.size,
+            remoteParticipants: Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
+          });
+          
+          // Log audio context state
+          if (typeof AudioContext !== 'undefined') {
+            const audioContext = new AudioContext();
+            console.log('[useLiveKitRoom] AudioContext state:', audioContext.state);
+            audioContext.close();
+          }
+          
+          if (isMounted) setConnectionState('connected');
         });
 
         newRoom.on(RoomEvent.Disconnected, () => {
           console.log('[useLiveKitRoom] Disconnected from room');
-          if (mounted) setConnectionState('disconnected');
+          if (isMounted) setConnectionState('disconnected');
         });
 
         newRoom.on(RoomEvent.Reconnecting, () => {
           console.log('[useLiveKitRoom] Reconnecting...');
-          if (mounted) setConnectionState('connecting');
+          if (isMounted) setConnectionState('connecting');
         });
 
         newRoom.on(RoomEvent.Reconnected, () => {
           console.log('[useLiveKitRoom] Reconnected');
-          if (mounted) setConnectionState('connected');
+          if (isMounted) setConnectionState('connected');
         });
 
         // Connect to room with auto-subscribe enabled
-        await newRoom.connect(url, token, { autoSubscribe: true });
+        const connectOptions = { autoSubscribe: true };
+        console.log('[useLiveKitRoom] Connecting with options:', connectOptions);
+        
+        await newRoom.connect(url, token, connectOptions);
 
-        if (!mounted) {
+        if (!isMounted) {
           await newRoom.disconnect();
           return;
         }
 
         setRoom(newRoom);
-        console.log('[useLiveKitRoom] ✅ Connection established');
+        console.log('[useLiveKitRoom] ✅ Connection established', {
+          role: config.role,
+          identity: config.identity,
+          roomName: roomName
+        });
       } catch (err) {
         console.error('[useLiveKitRoom] Connection error:', err);
-        if (mounted) {
+        if (isMounted) {
           setError(err instanceof Error ? err : new Error('Connection failed'));
           setConnectionState('failed');
         }
@@ -100,14 +132,14 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
     connect();
 
     return () => {
-      mounted = false;
+      isMounted = false;
       if (currentRoom) {
         console.log('[useLiveKitRoom] Cleaning up room connection');
         currentRoom.disconnect();
         setRoom(null);
       }
     };
-  }, [config?.role, config?.creatorId, config?.identity]);
+  }, [config]);
 
   return {
     room,
