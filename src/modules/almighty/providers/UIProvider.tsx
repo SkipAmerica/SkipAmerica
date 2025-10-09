@@ -35,9 +35,9 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
   
   // Primary focus state with sessionStorage persistence
   const [primaryFocus, _setPrimaryFocus] = useState<'remote' | 'local'>(() => {
-    if (typeof sessionStorage === 'undefined') return 'remote'
+    if (typeof sessionStorage === 'undefined') return 'local'
     const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
-    return (stored === 'local' || stored === 'remote') ? stored : 'remote'
+    return (stored === 'local' || stored === 'remote') ? stored : 'local'
   })
   const [manualPinActive, setManualPinActive] = useState(false)
 

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { useUIContext } from '../providers/UIProvider'
 import { useMedia } from '../providers/MediaProvider'
@@ -45,9 +45,14 @@ export function CenterPane() {
   const canFlip = canFlipCamera()
   const hotZoneHeight = typeof window !== 'undefined' && window.innerWidth < 360 ? 28 : 32
   
-  // Primary/PIP logic based on focus
-  const primary = primaryFocus === 'remote' && primaryRemoteVideo ? primaryRemoteVideo : localVideo
-  const pip = primary === localVideo ? primaryRemoteVideo : localVideo
+  // Primary/PIP logic based on focus (memoized to prevent recalc on every render)
+  const primary = useMemo(() => {
+    return primaryFocus === 'remote' && primaryRemoteVideo ? primaryRemoteVideo : localVideo
+  }, [primaryFocus, primaryRemoteVideo, localVideo])
+  
+  const pip = useMemo(() => {
+    return primary === localVideo ? primaryRemoteVideo : localVideo
+  }, [primary, localVideo, primaryRemoteVideo])
   
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present

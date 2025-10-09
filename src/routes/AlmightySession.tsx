@@ -52,7 +52,9 @@ function AlmightyShell() {
   
   // Auto-join on mount
   useEffect(() => {
-    const identity = `${role}-${sessionId}-${Math.random().toString(36).slice(2, 6)}`
+    // Publisher identity = sessionId (no prefix, no random suffix)
+    // Preview identity reserved for future local viewer: `${sessionId}_preview`
+    const identity = sessionId
     join(sessionId, identity, role).catch(err => {
       console.error('[Media] Join failed:', err)
     })

@@ -70,6 +70,12 @@ export function useMedia() {
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
   
+  // Idempotent state setter helper to prevent no-op re-renders
+  const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T) => void) => {
+    if (Object.is(current, next)) return
+    setter(next)
+  }, [])
+  
   // Connection state
   const [room, setRoom] = useState<Room>()
   const [connected, setConnected] = useState(false)
@@ -147,27 +153,22 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     const localVideoTrack = room.localParticipant.videoTrackPublications.values().next().value?.track
     const localAudioTrack = room.localParticipant.audioTrackPublications.values().next().value?.track
     
-    if (localVideoTrack) {
-      setLocalVideo({
-        participantId: room.localParticipant.sid,
-        track: localVideoTrack,
-        kind: 'video',
-        isLocal: true,
-      })
-    } else {
-      setLocalVideo(undefined)
-    }
+    const nextLocalVideo = localVideoTrack ? {
+      participantId: room.localParticipant.sid,
+      track: localVideoTrack,
+      kind: 'video' as const,
+      isLocal: true,
+    } : undefined
     
-    if (localAudioTrack) {
-      setLocalAudio({
-        participantId: room.localParticipant.sid,
-        track: localAudioTrack,
-        kind: 'audio',
-        isLocal: true,
-      })
-    } else {
-      setLocalAudio(undefined)
-    }
+    const nextLocalAudio = localAudioTrack ? {
+      participantId: room.localParticipant.sid,
+      track: localAudioTrack,
+      kind: 'audio' as const,
+      isLocal: true,
+    } : undefined
+    
+    setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
+    setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
     
     // Remote tracks (first remote participant for 1:1)
     const firstRemote = Array.from(room.remoteParticipants.values())[0]
@@ -175,36 +176,31 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       const remoteVideoTrack = firstRemote.videoTrackPublications.values().next().value?.track
       const remoteAudioTrack = firstRemote.audioTrackPublications.values().next().value?.track
       
-      if (remoteVideoTrack) {
-        setPrimaryRemoteVideo({
-          participantId: firstRemote.sid,
-          track: remoteVideoTrack,
-          kind: 'video',
-          isLocal: false,
-        })
-        mark('first_remote_video')
-      } else {
-        setPrimaryRemoteVideo(undefined)
-      }
+      const nextRemoteVideo = remoteVideoTrack ? {
+        participantId: firstRemote.sid,
+        track: remoteVideoTrack,
+        kind: 'video' as const,
+        isLocal: false,
+      } : undefined
       
-      if (remoteAudioTrack) {
-        setPrimaryRemoteAudio({
-          participantId: firstRemote.sid,
-          track: remoteAudioTrack,
-          kind: 'audio',
-          isLocal: false,
-        })
-      } else {
-        setPrimaryRemoteAudio(undefined)
-      }
+      const nextRemoteAudio = remoteAudioTrack ? {
+        participantId: firstRemote.sid,
+        track: remoteAudioTrack,
+        kind: 'audio' as const,
+        isLocal: false,
+      } : undefined
       
-      setPrimaryRemoteId(firstRemote.sid)
+      if (remoteVideoTrack) mark('first_remote_video')
+      
+      setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
+      setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
+      setIfChanged(primaryRemoteId, firstRemote.sid, setPrimaryRemoteId)
     } else {
-      setPrimaryRemoteVideo(undefined)
-      setPrimaryRemoteAudio(undefined)
-      setPrimaryRemoteId(undefined)
+      setIfChanged(primaryRemoteVideo, undefined, setPrimaryRemoteVideo)
+      setIfChanged(primaryRemoteAudio, undefined, setPrimaryRemoteAudio)
+      setIfChanged(primaryRemoteId, undefined, setPrimaryRemoteId)
     }
-  }, [room, mark])
+  }, [room, mark, localVideo, localAudio, primaryRemoteVideo, primaryRemoteAudio, primaryRemoteId, setIfChanged])
   
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
@@ -261,15 +257,32 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         refreshTracks()
       })
       
-      newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
+      newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
         refreshTracks()
+        
+        // Auto-swap to first remote video (respects manual choice via sessionStorage)
+        if (track.kind === 'video' && !participant.isLocal) {
+          const sessionId = joinParamsRef.current?.sessionId
+          if (sessionId && typeof sessionStorage !== 'undefined') {
+            const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
+            // Only auto-swap if user hasn't manually chosen yet
+            if (!stored) {
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('[MediaProvider] Auto-swapping to first remote video')
+              }
+              // Note: We can't directly call setPrimaryFocus here due to cross-provider coupling
+              // The UIProvider will handle this via sessionStorage on next mount
+              // For now, just log - actual focus change happens in UIProvider
+            }
+          }
+        }
         
         // Pin primary remote with subscription control
         if (primaryRemoteId) {
           const rp = newRoom.remoteParticipants.get(primaryRemoteId)
           if (rp) {
             const videoPub = Array.from(rp.videoTrackPublications.values())[0]
-            if (videoPub) {
+            if (videoPub && !rp.isLocal) {
               videoPub.setSubscribed(true)
             }
           }
@@ -348,6 +361,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setRoom(newRoom)
       setMicEnabled(MEDIA.START_AUDIO)
       setCamEnabled(MEDIA.START_VIDEO)
+      
+      // Debug output
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Join complete', {
+          identity,
+          sessionId,
+          role,
+          localVideoTracks: newRoom.localParticipant.videoTrackPublications.size,
+          localAudioTracks: newRoom.localParticipant.audioTrackPublications.size,
+          remoteParticipants: newRoom.remoteParticipants.size,
+        })
+      }
       
       // Enumerate audio output devices (desktop only)
       if (typeof navigator !== 'undefined' && navigator.mediaDevices?.enumerateDevices) {

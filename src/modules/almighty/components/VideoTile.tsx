@@ -19,17 +19,42 @@ interface VideoTileProps {
 export default function VideoTile({ trackRef, mirror, rounded, className }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   
+  // Stable trackId to prevent attach churn on trackRef rewrap
+  const track = trackRef?.track as LocalVideoTrack | RemoteVideoTrack | undefined
+  const trackId = track?.sid ?? track?.mediaStreamTrack?.id
+  
   useEffect(() => {
-    const track = trackRef?.track
     const el = videoRef.current
     
     if (!track || track.kind !== 'video' || !el) return
     
-    track.attach(el)
+    // Ensure element is mounted in DOM before attaching
+    if (!el.isConnected) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[VideoTile] Element not mounted, deferring attach')
+      }
+      return
+    }
+    
+    // Micro-defer to dodge layout/visibility races
+    requestAnimationFrame(() => {
+      track.attach(el)
+      el.muted = trackRef?.isLocal ?? true
+      el.playsInline = true
+      el.autoplay = true
+      
+      // Kick playback for Safari/iOS autoplay policy
+      el.play().catch(err => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[VideoTile] Autoplay blocked, waiting for user gesture:', err)
+        }
+      })
+    })
+    
     return () => {
       track.detach(el)
     }
-  }, [trackRef?.track])
+  }, [trackId, trackRef?.isLocal])
   
   if (!trackRef) {
     return (
