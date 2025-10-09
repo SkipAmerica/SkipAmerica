@@ -518,7 +518,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 4: Connect to room with autoSubscribe disabled
-      await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: false })
+      await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: true })
       
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 5: Waiting for Connected event...')
