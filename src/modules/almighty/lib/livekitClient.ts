@@ -1,8 +1,13 @@
-import { Room, createLocalAudioTrack, createLocalVideoTrack, LocalTrack, LocalVideoTrack, VideoPresets } from 'livekit-client'
+import { Room, RoomOptions, createLocalAudioTrack, createLocalVideoTrack, LocalTrack, LocalVideoTrack, VideoPresets } from 'livekit-client'
 import { MEDIA } from '../config'
 
 export function createRoom(): Room {
-  return new Room({
+  // Optional: gate by query param or env
+  const relayEnabled =
+    (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('relay') === '1') ||
+    (import.meta?.env?.VITE_LK_FORCE_RELAY === '1')
+
+  const options: RoomOptions = {
     adaptiveStream: true,
     dynacast: true,
     videoCaptureDefaults: {
@@ -18,7 +23,15 @@ export function createRoom(): Room {
       dtx: true, // Discontinuous transmission for audio
       videoSimulcastLayers: [VideoPresets.h540, VideoPresets.h360, VideoPresets.h180],
     },
-  })
+    // TEMP: ensure ICE succeeds on restrictive networks
+    ...(relayEnabled && { rtcConfig: { iceTransportPolicy: 'relay' } as any }),
+  }
+
+  if (process.env.NODE_ENV !== 'production' && relayEnabled) {
+    console.log('[LK] TURN relay forced (relay=1 or VITE_LK_FORCE_RELAY=1)')
+  }
+
+  return new Room(options)
 }
 
 export async function createLocalTracksWithFallback(options: {

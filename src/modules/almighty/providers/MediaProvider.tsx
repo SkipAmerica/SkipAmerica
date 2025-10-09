@@ -296,8 +296,22 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         creatorId: sessionId,
         identity,
       })
-      
+
+      // Decode and log token payload for debugging
       if (process.env.NODE_ENV !== 'production') {
+        try {
+          const [, payloadB64] = tokenData.token.split('.')
+          const json = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'))
+          const payload = JSON.parse(json)
+          console.log('[LK token]', {
+            room: payload?.room,
+            identity: payload?.sub ?? payload?.identity,
+            grants: payload?.video ?? payload?.grants,
+          })
+        } catch (e) {
+          console.warn('[LK token] decode failed', e)
+        }
+        
         console.log('[MediaProvider] Step 3: Creating room instance...')
       }
       
