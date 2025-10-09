@@ -427,25 +427,79 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 5: Waiting for Connected event...')
       }
-      
-      // Step 5: Wait for Connected event with 30s timeout
+
+      /** Extra diagnostics */
+      newRoom.on(RoomEvent.SignalConnected, () => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] SignalConnected (WS handshake complete)')
+        }
+      })
+
+      newRoom.on(RoomEvent.ConnectionStateChanged, (s) => {
+        if (process.env.NODE_ENV !== 'production') console.log('[LK] PC:', s)
+      })
+
+      /** Wait for "Connected" with race-safe fallback + rich timeout dump */
       await new Promise<void>((resolve, reject) => {
+        const dump = (label: string) => {
+          const engine: any = (newRoom as any)?.engine
+          const pc: RTCPeerConnection | undefined = engine?.client?.pc
+          const diagnostics = {
+            label,
+            roomState: (newRoom as any)?.state,                           // 'connecting'|'connected'|'disconnected'
+            engineConn: engine?.connectionState,                          // lk engine state
+            pcConn: pc?.connectionState,                                  // 'new'|'checking'|'connected'|...
+            localSid: newRoom.localParticipant?.sid,
+            localIdentity: newRoom.localParticipant?.identity,
+            remoteCount: newRoom.remoteParticipants?.size,
+            localPubCount: newRoom.localParticipant?.trackPublications?.size,
+          }
+          console.error('[LK] Connected wait diagnostics:', diagnostics)
+        }
+
         const timeout = setTimeout(() => {
+          dump('timeout')
           reject(new Error('LiveKit connection timeout (30s)'))
-        }, 30000)
-        
-        const onConnected = () => {
+        }, 30_000)
+
+        const finish = (why: string) => {
           clearTimeout(timeout)
-          newRoom!.off(RoomEvent.Connected, onConnected)
           if (process.env.NODE_ENV !== 'production') {
-            console.log('[LK] CONNECTED')
+            console.log('[LK] CONNECTED (proceed)', { why, roomState: (newRoom as any)?.state })
           }
           mark('lk_join_end')
           connectedOnceRef.current = true
           resolve()
         }
-        
-        newRoom!.on(RoomEvent.Connected, onConnected)
+
+        const onConnected = () => {
+          newRoom.off(RoomEvent.Connected, onConnected)
+          finish('RoomEvent.Connected')
+        }
+
+        // RACE-SAFE GUARD: if state is already connected at listener attach time, go now.
+        const stateAtAttach = (newRoom as any)?.state
+        if (stateAtAttach === 'connected') {
+          finish('state-already-connected')
+          return
+        }
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Waiting for RoomEvent.Connected…', { stateAtAttach })
+        }
+        newRoom.on(RoomEvent.Connected, onConnected)
+
+        // Optional: after SignalConnected, poll once more in case the event was missed
+        const onSignalConnected = () => {
+          newRoom.off(RoomEvent.SignalConnected, onSignalConnected)
+          // Small micro-wait then re-check room state
+          setTimeout(() => {
+            if ((newRoom as any)?.state === 'connected') {
+              finish('signal-connected-poll')
+            }
+          }, 200)
+        }
+        newRoom.on(RoomEvent.SignalConnected, onSignalConnected)
       })
       
       // Step 6: Set room in state (triggers rendering)
