@@ -107,6 +107,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const flipDebounceRef = useRef<NodeJS.Timeout>()
   const audioUnlockedRef = useRef(false)
   const shouldSampleAnalytics = useRef(Math.random() < MEDIA.ANALYTICS_SAMPLE_RATE)
+  const refreshTracksDebounceRef = useRef<NodeJS.Timeout>()
   
   // Analytics helper
   const mark = useCallback((name: string) => {
@@ -139,13 +140,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setParticipants(roster)
   }, [room])
   
-  // Refresh track refs
+  // Refresh track refs (debounced to reduce CPU usage)
   const refreshTracks = useCallback(() => {
     if (!room) return
     
-    // Local tracks
-    const localVideoTrack = room.localParticipant.videoTrackPublications.values().next().value?.track
-    const localAudioTrack = room.localParticipant.audioTrackPublications.values().next().value?.track
+    // Debounce to prevent excessive re-renders
+    if (refreshTracksDebounceRef.current) {
+      clearTimeout(refreshTracksDebounceRef.current)
+    }
+    
+    refreshTracksDebounceRef.current = setTimeout(() => {
+      // Local tracks
+      const localVideoTrack = room.localParticipant.videoTrackPublications.values().next().value?.track
+      const localAudioTrack = room.localParticipant.audioTrackPublications.values().next().value?.track
     
     if (localVideoTrack) {
       setLocalVideo({
@@ -204,6 +211,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setPrimaryRemoteAudio(undefined)
       setPrimaryRemoteId(undefined)
     }
+    }, MEDIA.TRACK_REFRESH_DEBOUNCE_MS)
   }, [room, mark])
   
   // Join room
@@ -261,19 +269,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         refreshTracks()
       })
       
-      newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-        refreshTracks()
-        
-        // Pin primary remote with subscription control
-        if (primaryRemoteId) {
-          const rp = newRoom.remoteParticipants.get(primaryRemoteId)
-          if (rp) {
-            const videoPub = Array.from(rp.videoTrackPublications.values())[0]
-            if (videoPub) {
-              videoPub.setSubscribed(true)
-            }
-          }
-        }
+      newRoom.on(RoomEvent.TrackSubscribed, () => {
+        // Track subscription is handled by ParticipantConnected
+        // Removed refreshTracks here to reduce CPU usage
       })
       
       newRoom.on(RoomEvent.TrackUnsubscribed, () => {

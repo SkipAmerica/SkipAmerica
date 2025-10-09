@@ -16,7 +16,7 @@ export function createRoom(): Room {
     publishDefaults: {
       videoCodec: 'h264', // h264 for camera; vp9 for screenshare (Phase 1C)
       dtx: true, // Discontinuous transmission for audio
-      videoSimulcastLayers: [VideoPresets.h540, VideoPresets.h360, VideoPresets.h180],
+      videoSimulcastLayers: [VideoPresets.h540, VideoPresets.h360], // Reduced from 3 to 2 layers for CPU savings
     },
   })
 }

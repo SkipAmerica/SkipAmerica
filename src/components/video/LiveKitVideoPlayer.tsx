@@ -34,15 +34,22 @@ export function LiveKitVideoPlayer({
     onConnectionStateChange?.(isConnected);
   }, [isConnected, onConnectionStateChange]);
 
-  // Handle video track attachment
+  // Handle video track attachment (debounced for stability)
   useEffect(() => {
     if (!room || !videoRef.current) return;
 
     let mounted = true;
     let attachedVideoTrack: any = null;
     let attachedAudioTrack: any = null;
+    let debounceTimer: NodeJS.Timeout | null = null;
 
     const attachTracks = () => {
+      // Debounce to prevent rapid attachment/detachment cycles
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      
+      debounceTimer = setTimeout(() => {
       const remoteParticipants = Array.from(room.remoteParticipants.values());
       
       console.log('[LiveKitVideoPlayer] Remote participants:', remoteParticipants.map(p => ({
@@ -188,22 +195,17 @@ export function LiveKitVideoPlayer({
       }
       
       console.log('[LiveKitVideoPlayer] No tracks available to attach');
+      }, 100); // 100ms debounce
     };
 
     // Try to attach existing tracks
     attachTracks();
 
-    // Listen for track, participant, and publishing changes
+    // Listen for track and participant changes (reduced event handlers for CPU)
     const handleTrackSubscribed = () => {
-      console.log('[LiveKitVideoPlayer] Track subscribed event');
-      attachTracks();
-    };
-    const handleTrackPublished = () => {
-      console.log('[LiveKitVideoPlayer] Track published event');
       attachTracks();
     };
     const handleParticipantConnected = () => {
-      console.log('[LiveKitVideoPlayer] Participant connected event');
       attachTracks();
     };
     const handleTrackUnsubscribed = (track: any) => {
@@ -246,15 +248,16 @@ export function LiveKitVideoPlayer({
     };
 
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
-    room.on(RoomEvent.TrackPublished, handleTrackPublished);
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
     room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
     room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
     return () => {
       mounted = false;
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
-      room.off(RoomEvent.TrackPublished, handleTrackPublished);
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);

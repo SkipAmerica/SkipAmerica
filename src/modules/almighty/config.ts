@@ -28,8 +28,9 @@ export const MEDIA = {
   ENABLE_ACTIVE_SPEAKER_FOCUS: false,
   ACTIVE_SPEAKER_HYSTERESIS_MS: 3000, // 3s before switching focus
   
-  // Analytics sampling
-  ANALYTICS_SAMPLE_RATE: 0.3, // 30% of sessions
+  // Performance optimization
+  TRACK_REFRESH_DEBOUNCE_MS: 200, // Debounce track refreshes
+  ANALYTICS_SAMPLE_RATE: 0.1, // 10% of sessions (reduced from 30%)
 }
 
 export const UI = {
