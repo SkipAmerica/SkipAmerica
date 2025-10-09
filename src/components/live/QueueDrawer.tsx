@@ -338,19 +338,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         config={{ size: 'full', variant: 'default', dismissible: true, peekMode: false }}
         footer={null}
       >
-        <div className="flex flex-col h-full">
-          {/* Creator's own video preview at top */}
-          {lobbyCreatorId && (
-            <div className="flex-shrink-0 h-[40vh] bg-black">
-              <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
-            </div>
-          )}
-          
-          {/* Queue list below */}
-          <div className="flex-1 overflow-y-auto">
-            <QueueContent />
-          </div>
-        </div>
+        <QueueContent />
     </ViewportDrawer>
   )
 }

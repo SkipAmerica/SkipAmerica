@@ -130,9 +130,9 @@ export function BroadcastViewer({
   }, [localStream]);
 
   // Use distinct identity for viewer to avoid collision with publisher
-  const viewerIdentity = fanUserId ? `fan_${fanUserId}` : `fan_${crypto.randomUUID()}`;
+  const viewerIdentity = fanUserId ? `viewer_${fanUserId}` : `viewer_${crypto.randomUUID()}`;
 
-  console.log('[BroadcastViewer] Identities:', { viewerIdentity, publisherIdentity: `fan_${fanUserId}`, fanUserId, resolvedCreatorId, targetCreator: `creator_${resolvedCreatorId}` });
+  console.log('[BroadcastViewer] Identities:', { viewerIdentity, publisherIdentity: fanUserId, fanUserId, resolvedCreatorId });
 
   return (
     <div className="relative w-full h-full">
@@ -144,7 +144,7 @@ export function BroadcastViewer({
             creatorId: resolvedCreatorId,
             identity: viewerIdentity,
           }}
-          targetParticipantId={`creator_${resolvedCreatorId}`}
+          targetParticipantId={resolvedCreatorId}
           className="w-full h-full object-cover bg-black"
           muted={isMuted}
           onConnectionStateChange={(connected) => {
@@ -186,7 +186,7 @@ export function BroadcastViewer({
           config={{
             role: 'publisher',
             creatorId: resolvedCreatorId,
-            identity: `fan_${fanUserId}`,
+            identity: fanUserId,
           }}
           publishAudio={true}
           publishVideo={true}

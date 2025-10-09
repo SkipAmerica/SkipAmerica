@@ -34,22 +34,15 @@ export function LiveKitVideoPlayer({
     onConnectionStateChange?.(isConnected);
   }, [isConnected, onConnectionStateChange]);
 
-  // Handle video track attachment (debounced for stability)
+  // Handle video track attachment
   useEffect(() => {
     if (!room || !videoRef.current) return;
 
     let mounted = true;
     let attachedVideoTrack: any = null;
     let attachedAudioTrack: any = null;
-    let debounceTimer: NodeJS.Timeout | null = null;
 
     const attachTracks = () => {
-      // Debounce to prevent rapid attachment/detachment cycles
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
-      
-      debounceTimer = setTimeout(() => {
       const remoteParticipants = Array.from(room.remoteParticipants.values());
       
       console.log('[LiveKitVideoPlayer] Remote participants:', remoteParticipants.map(p => ({
@@ -107,9 +100,9 @@ export function LiveKitVideoPlayer({
           if (videoPublication.track && videoRef.current) {
             console.log('[LiveKitVideoPlayer] ✅ Attaching video track from:', participant.identity, 'source:', videoPublication.source);
             
-            // Request medium quality (720p) for queue context to reduce bandwidth
-            videoPublication.setVideoQuality(VideoQuality.MEDIUM);
-            console.log('[LiveKitVideoPlayer] Requested MEDIUM video quality (720p for queue)');
+            // Request high quality (1080p with automatic fallback to 720p)
+            videoPublication.setVideoQuality(VideoQuality.HIGH);
+            console.log('[LiveKitVideoPlayer] Requested HIGH video quality (1080p @ ~5Mbps)');
             
             const videoTrack = videoPublication.track;
             videoTrack.attach(videoRef.current);
@@ -195,17 +188,22 @@ export function LiveKitVideoPlayer({
       }
       
       console.log('[LiveKitVideoPlayer] No tracks available to attach');
-      }, 100); // 100ms debounce
     };
 
     // Try to attach existing tracks
     attachTracks();
 
-    // Listen for track and participant changes (reduced event handlers for CPU)
+    // Listen for track, participant, and publishing changes
     const handleTrackSubscribed = () => {
+      console.log('[LiveKitVideoPlayer] Track subscribed event');
+      attachTracks();
+    };
+    const handleTrackPublished = () => {
+      console.log('[LiveKitVideoPlayer] Track published event');
       attachTracks();
     };
     const handleParticipantConnected = () => {
+      console.log('[LiveKitVideoPlayer] Participant connected event');
       attachTracks();
     };
     const handleTrackUnsubscribed = (track: any) => {
@@ -248,16 +246,15 @@ export function LiveKitVideoPlayer({
     };
 
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+    room.on(RoomEvent.TrackPublished, handleTrackPublished);
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
     room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
     room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
 
     return () => {
       mounted = false;
-      if (debounceTimer) {
-        clearTimeout(debounceTimer);
-      }
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
+      room.off(RoomEvent.TrackPublished, handleTrackPublished);
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
