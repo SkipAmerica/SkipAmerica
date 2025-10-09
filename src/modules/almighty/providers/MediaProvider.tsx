@@ -13,6 +13,64 @@ import {
 } from '../lib/livekitClient'
 import type { TrackRef } from '../components/VideoTile'
 
+// Debug toggle: enable with ?debug=1 or VITE_ALMIGHTY_DEBUG=1
+const isDebug = () =>
+  (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1') ||
+  (import.meta?.env?.VITE_ALMIGHTY_DEBUG === '1');
+
+// Persist/merge a global debug handle across remounts
+function exportDebug(state: {
+  room?: any;
+  localVideo?: any;
+  localAudio?: any;
+  connectionState?: string;
+  phase?: string;
+}) {
+  if (!isDebug()) return;
+  const prev: any = (window as any).__almightyDebug || {};
+  (window as any).__almightyDebug = {
+    ...prev,
+    ...state,
+    // never lose previous values if we pass undefined this time
+    room: state.room ?? prev.room,
+    localVideo: state.localVideo ?? prev.localVideo,
+    localAudio: state.localAudio ?? prev.localAudio,
+    connectionState: state.connectionState ?? prev.connectionState,
+  };
+  // one-time marker helps confirm in console
+  if (!(window as any).__almightyDebug.__ready) {
+    (window as any).__almightyDebug.__ready = true;
+    console.log('[Almighty] debug handle persistent');
+  }
+}
+
+// Attach a floating <video> for the local preview (only in debug)
+function attachDebugPreview(track: any, id = 'almighty-self-debug') {
+  if (!isDebug() || !track) return;
+  let el = document.getElementById(id) as HTMLVideoElement | null;
+  if (!el) {
+    el = document.createElement('video');
+    el.id = id;
+    el.style.cssText = [
+      'position:fixed', 'right:12px', 'bottom:12px', 'width:220px', 'height:auto',
+      'z-index:2147483647', 'background:#000', 'border-radius:10px',
+      'box-shadow:0 6px 24px rgba(0,0,0,.35)', 'outline:1px solid rgba(255,255,255,.2)'
+    ].join(';');
+    document.body.appendChild(el);
+  }
+  try {
+    track.attach?.(el);
+    if (!el.srcObject && track.mediaStreamTrack) {
+      el.srcObject = new MediaStream([track.mediaStreamTrack]);
+    }
+    el.muted = true; el.autoplay = true; el.playsInline = true;
+    const tryPlay = () => el!.play().catch(() => {});
+    el.play().catch(() => { setTimeout(tryPlay, 200); document.addEventListener('click', tryPlay, { once: true }); });
+  } catch (e) {
+    console.warn('[Almighty] debug preview attach failed', e);
+  }
+}
+
 interface MediaContext {
   // Connection
   room?: Room
@@ -72,10 +130,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // === 1. Debug: MediaProvider mounted ===
   useEffect(() => {
-    ;(window as any).__almightyDebug = Object.assign(
-      (window as any).__almightyDebug || {},
-      { phase: 'MediaProvider:mounted' }
-    )
+    exportDebug({ phase: 'MediaProvider:mounted' })
     console.log('[MediaProvider] mounted')
   }, [])
   
@@ -224,9 +279,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
     
     // ---- Debug mode check (used throughout join flow) ----
-    const DEBUG_ON =
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).has('debug');
+    const DEBUG_ON = isDebug();
     
     joinInProgressRef.current = true
     setConnecting(true)
@@ -300,17 +353,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         })
       }
       
-      // ---- B) After createLocalTracks(...) ----
-      // expose the immediate camera track for preview (even before publish)
-      if (DEBUG_ON) {
-        (window as any).__almightyDebug = Object.assign(
-          (window as any).__almightyDebug || {},
-          { 
-            get localPreviewTrack() { return localVideo?.track; },
-            phase: 'MediaProvider:tracks-created'
-          }
-        );
-        console.log('[MediaProvider] tracks created', { hasVideo: !!localVideo, hasAudio: !!localAudio })
+      // DEV: attach floating self preview so we can *see* the camera even if UI wiring fails
+      attachDebugPreview(camTrack);
+      
+      // Export initial debug state (no room yet)
+      exportDebug({ 
+        localVideo: camTrack, 
+        localAudio: micTrack, 
+        phase: 'MediaProvider:tracks-created',
+        connectionState: 'tracks-created'
+      });
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] tracks created', { hasVideo: !!camTrack, hasAudio: !!micTrack })
       }
       
       if (process.env.NODE_ENV !== 'production') {
@@ -350,21 +405,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       // Step 3: Create room
       newRoom = createRoom()
       
-      // ---- A) Enable debug export in prod when ?debug=1 ----
-      if (DEBUG_ON) {
-        (window as any).__almightyDebug = Object.assign(
-          (window as any).__almightyDebug || {},
-          {
-            // live handles so reads always reflect current state
-            room: newRoom,
-            get localVideo() { return localVideo; },
-            get primaryRemoteVideo() { return primaryRemoteVideo; },
-            get connectionState() { return connectionState; },
-            phase: 'MediaProvider:room-created'
-          }
-        );
+      // Export room state
+      exportDebug({ 
+        room: newRoom, 
+        phase: 'MediaProvider:room-created',
+        connectionState: 'room-created'
+      });
+      
+      if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] room created');
-        console.log('[MediaProvider] Debug export active (?debug=1)');
       }
       
       // Set up event listeners before connecting
@@ -380,6 +429,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         setConnected(false)
         setConnectionState('disconnected')
+        
+        // Export disconnected state
+        exportDebug({ connectionState: `disconnected:${String(reason ?? '')}` });
       })
       
       newRoom.on(RoomEvent.Reconnecting, () => {
@@ -513,6 +565,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           }
           mark('lk_join_end')
           connectedOnceRef.current = true
+          
+          // Export connected state
+          exportDebug({ 
+            room: newRoom, 
+            connectionState: 'connected',
+            phase: 'MediaProvider:connected'
+          });
+          
           resolve()
         }
 
