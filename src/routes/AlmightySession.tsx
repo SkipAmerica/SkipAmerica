@@ -53,6 +53,13 @@ function AlmightyShell() {
   // Auto-join on mount (strict once-only with ref guard)
   const joinedRef = useRef(false)
   useEffect(() => {
+    // === 4. Debug: AlmightySession mounted ===
+    ;(window as any).__almightyDebug = Object.assign(
+      (window as any).__almightyDebug || {},
+      { phase: 'AlmightySession:mounted' }
+    )
+    console.log('[AlmightySession] mounted')
+    
     if (joinedRef.current) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('[AlmightyShell] Join blocked (already joined once)')
@@ -69,6 +76,7 @@ function AlmightyShell() {
     })
     
     return () => {
+      console.log('[AlmightySession] unmount → leave()')
       leave()
     }
   }, [sessionId, role, join, leave])

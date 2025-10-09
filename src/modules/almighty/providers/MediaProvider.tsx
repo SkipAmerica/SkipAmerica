@@ -70,6 +70,15 @@ export function useMedia() {
 export function MediaProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast()
   
+  // === 1. Debug: MediaProvider mounted ===
+  useEffect(() => {
+    ;(window as any).__almightyDebug = Object.assign(
+      (window as any).__almightyDebug || {},
+      { phase: 'MediaProvider:mounted' }
+    )
+    console.log('[MediaProvider] mounted')
+  }, [])
+  
   // Idempotent state setter helper to prevent no-op re-renders
   const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T) => void) => {
     if (Object.is(current, next)) return
@@ -296,8 +305,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (DEBUG_ON) {
         (window as any).__almightyDebug = Object.assign(
           (window as any).__almightyDebug || {},
-          { get localPreviewTrack() { return localVideo?.track; } }
+          { 
+            get localPreviewTrack() { return localVideo?.track; },
+            phase: 'MediaProvider:tracks-created'
+          }
         );
+        console.log('[MediaProvider] tracks created', { hasVideo: !!localVideo, hasAudio: !!localAudio })
       }
       
       if (process.env.NODE_ENV !== 'production') {
@@ -347,8 +360,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
             get localVideo() { return localVideo; },
             get primaryRemoteVideo() { return primaryRemoteVideo; },
             get connectionState() { return connectionState; },
+            phase: 'MediaProvider:room-created'
           }
         );
+        console.log('[MediaProvider] room created');
         console.log('[MediaProvider] Debug export active (?debug=1)');
       }
       
