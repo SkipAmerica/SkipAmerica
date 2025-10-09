@@ -265,6 +265,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         setCurrentQualityLevel(usedConstraints.video.level)
       }
       
+      // NEW: Expose self-preview immediately (before connect/publish)
+      const camTrack = localTracks.find(t => t.kind === 'video') as LocalVideoTrack | undefined
+      if (camTrack) {
+        setLocalVideo({
+          participantId: 'local',
+          track: camTrack,
+          kind: 'video',
+          isLocal: true,
+        })
+      }
+      
+      const micTrack = localTracks.find(t => t.kind === 'audio')
+      if (micTrack) {
+        setLocalAudio({
+          participantId: 'local',
+          track: micTrack,
+          kind: 'audio',
+          isLocal: true,
+        })
+      }
+      
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 2: Fetching LiveKit token...')
       }
@@ -290,9 +311,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
       })
       
-      newRoom.on(RoomEvent.Disconnected, () => {
+      newRoom.on(RoomEvent.Disconnected, (reason?: any) => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Disconnected')
+          console.warn('[LK] Disconnected', { reason })
         }
         setConnected(false)
         setConnectionState('disconnected')
@@ -450,6 +471,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         if (outputs.length > 1) {
           setAudioOutputDevices(outputs)
         }
+      }
+      
+      // Expose debug handle for console inspection
+      if (process.env.NODE_ENV !== 'production') {
+        (window as any).__almightyDebug = {
+          room: newRoom,
+          get localVideo() { return localVideo },
+          get primaryRemoteVideo() { return primaryRemoteVideo },
+          get connectionState() { return connectionState },
+        }
+        console.log('[MediaProvider] Debug available: window.__almightyDebug')
       }
       
     } catch (err: any) {

@@ -51,6 +51,7 @@ export function CenterPane() {
   }, [primaryFocus, primaryRemoteVideo, localVideo])
   
   const pip = useMemo(() => {
+    if (!localVideo && !primaryRemoteVideo) return undefined
     return primary === localVideo ? primaryRemoteVideo : localVideo
   }, [primary, localVideo, primaryRemoteVideo])
   
@@ -117,12 +118,16 @@ export function CenterPane() {
       </div>
       
       {/* PIP */}
-      {pip && (
+      {pip ? (
         <PIP
           trackRef={pip}
           mirror={pip.isLocal && facingMode === 'user'}
           onDoubleTap={handleSwapPIP}
         />
+      ) : (
+        <div className="absolute top-4 right-4 w-24 h-32 rounded-lg bg-gray-800/80 flex items-center justify-center text-white/60 text-xs">
+          No video
+        </div>
       )}
       
       {/* Media Controls */}

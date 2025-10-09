@@ -39,6 +39,12 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
     // Micro-defer to dodge layout/visibility races
     const rafId = requestAnimationFrame(() => {
       track.attach(el)
+      
+      // Explicit MediaStream helps Safari/iOS paint immediately
+      if (!el.srcObject) {
+        el.srcObject = new MediaStream([track.mediaStreamTrack])
+      }
+      
       el.muted = trackRef?.isLocal ?? true
       el.playsInline = true
       el.autoplay = true
