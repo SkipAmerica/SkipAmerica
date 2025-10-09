@@ -214,6 +214,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       return
     }
     
+    // ---- Debug mode check (used throughout join flow) ----
+    const DEBUG_ON =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('debug');
+    
     joinInProgressRef.current = true
     setConnecting(true)
     setConnectionState('connecting')
@@ -286,6 +291,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         })
       }
       
+      // ---- B) After createLocalTracks(...) ----
+      // expose the immediate camera track for preview (even before publish)
+      if (DEBUG_ON) {
+        (window as any).__almightyDebug = Object.assign(
+          (window as any).__almightyDebug || {},
+          { get localPreviewTrack() { return localVideo?.track; } }
+        );
+      }
+      
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 2: Fetching LiveKit token...')
       }
@@ -322,6 +336,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       // Step 3: Create room
       newRoom = createRoom()
+      
+      // ---- A) Enable debug export in prod when ?debug=1 ----
+      if (DEBUG_ON) {
+        (window as any).__almightyDebug = Object.assign(
+          (window as any).__almightyDebug || {},
+          {
+            // live handles so reads always reflect current state
+            room: newRoom,
+            get localVideo() { return localVideo; },
+            get primaryRemoteVideo() { return primaryRemoteVideo; },
+            get connectionState() { return connectionState; },
+          }
+        );
+        console.log('[MediaProvider] Debug export active (?debug=1)');
+      }
       
       // Set up event listeners before connecting
       newRoom.on(RoomEvent.ConnectionStateChanged, (state) => {
