@@ -9,6 +9,7 @@ import { PaneErrorBoundary } from '@/modules/almighty/components/PaneErrorBounda
 import { LeftPane } from '@/modules/almighty/panes/LeftPane'
 import { CenterPane } from '@/modules/almighty/panes/CenterPane'
 import { RightPane } from '@/modules/almighty/panes/RightPane'
+import { getIdentityForRole } from '@/modules/almighty/lib/identity'
 
 export default function AlmightySession() {
   const { sessionId } = useParams()
@@ -69,8 +70,13 @@ function AlmightyShell() {
     
     joinedRef.current = true
     
-    // Publisher identity = sessionId (no prefix, no random suffix)
-    const identity = sessionId
+    // Generate unique identity per role (creator vs viewer)
+    const identity = getIdentityForRole(sessionId, role)
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AlmightySession] Joining with identity:', identity, 'role:', role)
+    }
+    
     join(sessionId, identity, role).catch(err => {
       console.error('[Media] Join failed:', err)
     })
