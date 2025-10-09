@@ -24,40 +24,47 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
   const trackId = track?.sid ?? track?.mediaStreamTrack?.id
   
   useEffect(() => {
-    const el = videoRef.current
-    
-    if (!track || track.kind !== 'video' || !el) return
-    
-    // Ensure element is mounted in DOM before attaching
-    if (!el.isConnected) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.warn('[VideoTile] Element not mounted, deferring attach')
-      }
-      return
+    const track = trackRef?.track
+    const el = videoRef.current as HTMLVideoElement | null
+    if (!track || track.kind !== 'video' || !el || !el.isConnected) return
+
+    let cancelled = false
+    let retryTimer: number | undefined
+    const tryPlay = () => {
+      if (!cancelled) el.play().catch(() => {})
     }
-    
-    // Micro-defer to dodge layout/visibility races
+
+    const onTap = () => {
+      document.removeEventListener('click', onTap)
+      tryPlay()
+    }
+
     const rafId = requestAnimationFrame(() => {
+      if (cancelled) return
+
       track.attach(el)
-      
-      // Explicit MediaStream helps Safari/iOS paint immediately
+
+      // Help Safari/iOS paint immediately
       if (!el.srcObject) {
         el.srcObject = new MediaStream([track.mediaStreamTrack])
       }
-      
-      el.muted = trackRef?.isLocal ?? true
+
+      el.muted = !!trackRef?.isLocal
       el.playsInline = true
       el.autoplay = true
-      
-      // Kick playback for Safari/iOS autoplay policy
-      el.play().catch(err => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('[VideoTile] Autoplay blocked, waiting for user gesture:', err)
-        }
+
+      el.play().catch(() => {
+        // Chrome sometimes needs a post-layout retry
+        retryTimer = window.setTimeout(tryPlay, 200)
+        // Safari/iOS: start on next user gesture
+        document.addEventListener('click', onTap, { once: true })
       })
     })
-    
+
     return () => {
+      cancelled = true
+      if (retryTimer) clearTimeout(retryTimer)
+      document.removeEventListener('click', onTap)
       cancelAnimationFrame(rafId)
       track.detach(el)
     }
