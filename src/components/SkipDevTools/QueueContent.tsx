@@ -14,7 +14,6 @@ import { CollapsibleChat } from '@/components/queue/CollapsibleChat'
 import { SwipeableQueueCard } from '@/components/queue/SwipeableQueueCard'
 import { CreatorBroadcastFullscreen } from '@/components/queue/CreatorBroadcastFullscreen'
 import { isMobile } from '@/shared/lib/platform'
-import { useLiveStore } from '@/stores/live-store'
 
 interface QueueEntry {
   id: string
@@ -39,7 +38,6 @@ interface QueueState {
 export function QueueContent() {
   const { user } = useAuth()
   const { toast } = useToast()
-  const { isLobbyBroadcasting } = useLiveStore()
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
@@ -54,19 +52,6 @@ export function QueueContent() {
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false)
   const [fullscreenUserId, setFullscreenUserId] = useState<string | null>(null)
   const [showNotification, setShowNotification] = useState(false)
-  const [fanMuted, setFanMuted] = useState(true)
-
-  // Auto-mute fan when creator starts broadcasting
-  useEffect(() => {
-    if (isLobbyBroadcasting && !fanMuted) {
-      setFanMuted(true)
-      toast({
-        title: "Fan audio muted",
-        description: "Audio muted during your broadcast",
-        duration: 3000,
-      })
-    }
-  }, [isLobbyBroadcasting, fanMuted, toast])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -359,9 +344,6 @@ export function QueueContent() {
                           userName={state.entries[0].profiles?.full_name}
                           discussionTopic={state.entries[0].discussion_topic}
                           waitTime={state.entries[0].estimated_wait_minutes}
-                          muted={fanMuted}
-                          onMuteToggle={() => setFanMuted(!fanMuted)}
-                          disableMuteToggle={isLobbyBroadcasting}
                           onStartCall={() => {
                             console.log("Starting call with:", state.entries[0].fan_id);
                           }}

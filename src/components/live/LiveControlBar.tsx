@@ -30,8 +30,6 @@ const LiveControlBarContent: React.FC = () => {
   const isDiscoverable = live?.isDiscoverable || false;
   const state = live?.state || 'OFFLINE';
   const queueCount = live?.queueCount || 0;
-  const isLobbyBroadcasting = live?.isLobbyBroadcasting || false;
-  const setLobbyBroadcasting = live?.setLobbyBroadcasting;
   
   // Check if user is a creator
   const isCreator = profile?.account_type === 'creator';
@@ -81,16 +79,6 @@ const LiveControlBarContent: React.FC = () => {
     setCounterMode(nextMode);
     localStorage.setItem('lsb-counter-mode', nextMode);
   }, [animatingToggle, counterMode]);
-
-  const handleEndBroadcast = useCallback(() => {
-    console.log('[LiveControlBar] Ending broadcast');
-    
-    // Dispatch custom event to CreatorBroadcastFullscreen
-    window.dispatchEvent(new CustomEvent('end-broadcast'));
-    
-    // Update state
-    setLobbyBroadcasting?.(false);
-  }, [setLobbyBroadcasting]);
 
   // Add body class for live state
   useEffect(() => {
@@ -272,23 +260,10 @@ const LiveControlBarContent: React.FC = () => {
             <span key={`count-${queueCount}`} className="text-sm font-medium tabular-nums">{queueCount}</span>
           </Button>
 
-          {/* Center - Live Status or End Broadcast */}
+          {/* Center - Live Status */}
           <div className="flex items-center gap-2 justify-self-center">
-            {isLobbyBroadcasting ? (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleEndBroadcast}
-                className="h-7 px-3 text-xs font-bold uppercase bg-red-500 hover:bg-red-600"
-              >
-                End Broadcast
-              </Button>
-            ) : (
-              <>
-                <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                <span className="text-sm font-bold text-white uppercase">DISCOVERABLE</span>
-              </>
-            )}
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+            <span className="text-sm font-bold text-white uppercase">DISCOVERABLE</span>
           </div>
 
           {/* Right - Counter Display */}

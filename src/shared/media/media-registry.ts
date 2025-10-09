@@ -180,15 +180,13 @@ export async function teardownMedia(): Promise<void> {
 }
 
 /**
- * Media diagnostics helper with structured logging
+ * Media diagnostics helper
  */
 export function mediaSummary(tag: string): void {
   const tracks = mediaRegistry.stream ? mediaRegistry.stream.getTracks().map(t => ({
     kind: t.kind,
     state: t.readyState,
-    enabled: t.enabled,
-    id: t.id,
-    label: t.label
+    enabled: t.enabled
   })) : []
 
   const summary = {
@@ -198,35 +196,22 @@ export function mediaSummary(tag: string): void {
     videos: mediaRegistry.videos.size,
     phase: mediaRegistry.phase,
     tracks,
-    liveTracksCount: tracks.filter(t => t.state === 'live').length,
-    timestamp: new Date().toISOString()
+    liveTracksCount: tracks.filter(t => t.state === 'live').length
   }
 
   console.info(`[MEDIA][${tag.toUpperCase()}]`, summary)
 
-  // Structured leak detection
-  const leaks: string[] = []
-  
+  // Check for leaks
   if (summary.liveTracksCount > 0 && tag === 'after-end') {
-    const msg = `Found ${summary.liveTracksCount} live tracks after teardown`
-    console.warn(`[MEDIA][LEAK] ${msg}`, tracks.filter(t => t.state === 'live'))
-    leaks.push(msg)
+    console.warn('[MEDIA][LEAK] Found live tracks after teardown:', summary.liveTracksCount)
   }
   
   if (mediaRegistry.pc && mediaRegistry.pc.connectionState !== 'closed' && tag === 'after-end') {
-    const msg = `PeerConnection still open (${mediaRegistry.pc.connectionState})`
-    console.warn(`[MEDIA][LEAK] ${msg}`)
-    leaks.push(msg)
+    console.warn('[MEDIA][LEAK] PeerConnection still open after teardown')
   }
 
   if (summary.videos > 0 && tag === 'after-end') {
-    const msg = `${summary.videos} video elements still registered`
-    console.warn(`[MEDIA][LEAK] ${msg}`)
-    leaks.push(msg)
-  }
-  
-  if (leaks.length > 0 && import.meta.env.DEV) {
-    console.warn('[MEDIA][LEAK SUMMARY]', { tag, leaks, summary })
+    console.warn('[MEDIA][LEAK] Video elements still registered:', summary.videos)
   }
 }
 

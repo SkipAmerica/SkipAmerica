@@ -30,7 +30,7 @@ export function BroadcastViewer({
   }
 
   const selfVideoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(false); // Start UNMUTED for broadcasts
+  const [isMuted, setIsMuted] = useState(true);
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);

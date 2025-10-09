@@ -1,20 +1,16 @@
-// LiveKit token utilities
 import { supabase } from "@/integrations/supabase/client";
 
-export async function fetchLiveKitToken(payload: {
+export type TokenPayload = {
   role: "viewer" | "publisher";
   creatorId: string;
   identity: string;
-}) {
+};
+
+export async function fetchLiveKitToken(payload: TokenPayload) {
   const { data, error } = await supabase.functions.invoke("get_livekit_token", {
-    body: payload,
+    body: payload, // POST with JSON, includes auth automatically
   });
   if (error) throw error;
-  // data is { token, url, room }
   if (!data?.token || !data?.url) throw new Error("Bad token response");
   return data as { token: string; url: string; room?: string };
-}
-
-export function getIdentity(fallback?: string) { 
-  return fallback || crypto.randomUUID(); 
 }

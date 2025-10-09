@@ -85,37 +85,28 @@ export async function orchestrateStop(reason: string = 'manual') {
   await mediaManager.stop(reason);
 }
 
-export function routeMediaError(err: unknown) {
+export function routeMediaError(err: any) {
   // Map to UI toasts/messages; do not confuse state blocks with permission issues
-  const error = err as MediaError | Error | { code?: string };
-  const code = (error && typeof error === 'object' && 'code' in error) ? error.code : 'UNKNOWN';
-  
-  metrics.onError?.(code as any, err, { handler: 'routeMediaError' });
-  
+  const code = err?.code || 'UNKNOWN';
   switch (code) {
     case 'STATE_BLOCK':
-      logToast('info', 'Preparing session… initializing media when ready.');
+      showToast({ type: 'info', msg: 'Preparing session… initializing media when ready.' });
       break;
     case 'PERMISSION_DENIED':
-      logToast('warning', 'Camera/Mic blocked. Enable permissions in Safari and try again.');
+      showToast({ type: 'warning', msg: 'Camera/Mic blocked. Enable permissions in Safari and try again.' });
       break;
     case 'DEVICE_NOT_FOUND':
-      logToast('error', 'No camera/microphone detected.');
+      showToast({ type: 'error', msg: 'No camera/microphone detected.' });
       break;
     case 'HARDWARE_ERROR':
-      logToast('error', 'Camera/mic busy. Close other apps and retry.');
+      showToast({ type: 'error', msg: 'Camera/mic busy. Close other apps and retry.' });
       break;
     default:
-      logToast('error', 'Could not start camera/mic. Please try again.');
+      showToast({ type: 'error', msg: 'Could not start camera/mic. Please try again.' });
   }
 }
 
-/**
- * Structured logging for user-facing messages
- * Replace this with your app's toast/notification system
- */
-function logToast(type: 'info' | 'warning' | 'error', msg: string) {
-  const prefix = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️';
-  console.log(`[MEDIA][USER] ${prefix} ${msg}`);
-  metrics.onEvent?.('user_message', { type, msg });
+// TODO: replace with your app's toast system
+function showToast(p: { type: 'info'|'warning'|'error'; msg: string }) {
+  console.log('[TOAST]', p.type, p.msg);
 }

@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
+import LobbyBroadcastPanel from './LobbyBroadcastPanel'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
 import { QueueContent } from '@/components/SkipDevTools/QueueContent'
 import { ViewportDrawer } from '@/components/SkipDevTools/ViewportDrawer'
@@ -285,51 +286,16 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       .slice(0, 2)
   }
 
-  /**
-   * Closes the QueueDrawer and conditionally cleans up media resources.
-   * 
-   * Cleanup conditions:
-   * - SKIP cleanup if in SESSION_PREP, SESSION_JOINING, or SESSION_ACTIVE
-   * - SKIP cleanup if actively broadcasting to lobby
-   * - PERFORM cleanup only in DISCOVERABLE state with no active broadcast
-   * - Cleanup already handled by FSM if transitioning to OFFLINE
-   */
   const handleClose = useCallback(async () => {
-    const currentState = store.state;
-    const isActiveBroadcast = store.isLobbyBroadcasting;
-    
-    // Guard: NEVER cleanup during active sessions
-    const isActiveSession = [
-      'SESSION_PREP',
-      'SESSION_JOINING', 
-      'SESSION_ACTIVE'
-    ].includes(currentState);
-    
-    console.log('[QueueDrawer] Close requested', {
-      state: currentState,
-      isLobbyBroadcasting: isActiveBroadcast,
-      willCleanup: !isActiveSession && !isActiveBroadcast
-    });
-    
-    if (isActiveSession || isActiveBroadcast) {
-      console.log('[QueueDrawer] Skipping media cleanup - active session or broadcast');
-      onClose();
-      return;
+    console.log('[QueueDrawer] Closing and cleaning up media')
+    try {
+      await teardownMedia()
+      console.log('[QueueDrawer] Media cleanup complete')
+    } catch (error) {
+      console.error('[QueueDrawer] Error during media cleanup:', error)
     }
-    
-    // Safe to clean up - user is just browsing queue in DISCOVERABLE state
-    if (currentState === 'DISCOVERABLE') {
-      console.log('[QueueDrawer] Cleaning up media for DISCOVERABLE state');
-      try {
-        await teardownMedia();
-        console.log('[QueueDrawer] Media cleanup complete');
-      } catch (error) {
-        console.error('[QueueDrawer] Error during media cleanup:', error);
-      }
-    }
-    
-    onClose();
-  }, [onClose, store.state, store.isLobbyBroadcasting])
+    onClose()
+  }, [onClose])
 
   return (
       <ViewportDrawer
@@ -342,3 +308,107 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     </ViewportDrawer>
   )
 }
+
+{/* 
+  ============================================================================
+  PRE-CALL LOBBY - PRESERVED FOR FUTURE INTEGRATION
+  ============================================================================
+  This section contains the Pre-Call Lobby interface that was previously shown
+  when QueueDrawer opened. It includes:
+  - Creator preview with chat (CreatorPreviewWithChat)
+  - Live broadcast toggle button
+  - Room navigation button
+  - Next call button
+  - LobbyBroadcastPanel for video streaming
+  
+  This will be integrated into QueueContent component later.
+  
+  Original structure:
+  - Sheet wrapper with bottom slide-in drawer
+  - SheetHeader with title and close button
+  - Control buttons (Live, Room, Next)
+  - Conditional LobbyBroadcastPanel when broadcasting
+  - CreatorPreviewWithChat component
+  
+  State used:
+  - store.isLobbyBroadcasting (from useLive hook)
+  - store.setLobbyBroadcasting (from useLive hook)
+  - lobbyCreatorId (authenticated user's ID)
+  
+  Components:
+  - LobbyBroadcastPanel: Video streaming component for creator
+  - CreatorPreviewWithChat: Preview panel with integrated chat
+  ============================================================================
+
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent 
+        side="bottom" 
+        className="h-[90vh] rounded-t-2xl flex flex-col [&>button]:hidden"
+        aria-describedby="queue-description"
+      >
+        <SheetHeader className="pb-2 flex-shrink-0">
+          <SheetTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5" aria-hidden="true" />
+              {user?.user_metadata?.full_name ? 
+                `${user.user_metadata.full_name.split(' ')[0]}'s Lobby (${state.entries.length})` : 
+                `Creator Lobby (${state.entries.length})`
+              }
+            </div>
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              size="sm"
+            >
+              Close
+            </Button>
+          </SheetTitle>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => store.setLobbyBroadcasting(!store.isLobbyBroadcasting)}
+              variant={store.isLobbyBroadcasting ? "destructive" : "default"}
+              className="flex-1"
+              aria-pressed={store.isLobbyBroadcasting}
+            >
+              <Video className="w-4 h-4 mr-2" />
+              {store.isLobbyBroadcasting ? "End" : "Live"}
+            </Button>
+            <Button
+              onClick={() => setIsDevCanvasOpen(!isDevCanvasOpen)}
+              variant="default"
+              className="flex-1"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              {isDevCanvasOpen ? "Exit" : "Room"}
+            </Button>
+            <Button
+              variant="default"
+              className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              Next
+            </Button>
+          </div>
+        </SheetHeader>
+
+        {store.isLobbyBroadcasting && (
+          <div className="flex-shrink-0 px-6">
+            <LobbyBroadcastPanel 
+              onEnd={() => store.setLobbyBroadcasting(false)}
+            />
+          </div>
+        )}
+
+        <div className="w-full min-w-0">
+          {lobbyCreatorId ? (
+            <CreatorPreviewWithChat creatorId={lobbyCreatorId} />
+          ) : (
+            <div className="text-sm text-red-400">Missing creator id; overlay disabled.</div>
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  
+  ============================================================================
+*/}

@@ -1,101 +1,177 @@
-import { useRef, useEffect, useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
+import type { LiveState } from "@/shared/types/live";
 import { FilterSelector } from "./FilterSelector";
-import { BeautyToggles } from "./BeautyToggles";
-import type { FilterPreset } from "@/lib/advancedFilterProcessor";
+import { getFilterProcessor, type FilterPreset } from "@/lib/advancedFilterProcessor";
 import { toast } from "sonner";
 import { useDoubleTap } from "@/hooks/use-double-tap";
 import { GoLiveCountdown } from "./GoLiveCountdown";
-import { useLobbyBroadcast } from "@/hooks/broadcast/useLobbyBroadcast";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
-  isVisible?: boolean;
 }
 export function CreatorBroadcastFullscreen({
-  creatorId,
-  isVisible = true
+  creatorId
 }: CreatorBroadcastFullscreenProps) {
-  const { isLobbyBroadcasting, setLobbyBroadcasting } = useLiveStore();
+  const {
+    isLobbyBroadcasting,
+    setLobbyBroadcasting
+  } = useLiveStore();
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [currentFilter, setCurrentFilter] = useState<FilterPreset>('none');
+  const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
+  const [isFilterReady, setIsFilterReady] = useState(false);
+  const [isCountdownActive, setIsCountdownActive] = useState(false);
+  const filterProcessorRef = useRef(getFilterProcessor());
   const videoRef = useRef<HTMLVideoElement>(null);
-  // const [eyeEnhanceEnabled, setEyeEnhanceEnabled] = useState(true);
-  // const [teethWhitenEnabled, setTeethWhitenEnabled] = useState(true);
-  
-  // Use new broadcast hook - handles all media lifecycle
-  const broadcast = useLobbyBroadcast({ isVisible });
 
   // Double-tap handler for go-live
   const { onTapStart } = useDoubleTap({
     onDoubleTap: () => {
-      if (broadcast.isCountdownActive) {
-        broadcast.cancelCountdown();
+      if (isCountdownActive) {
+        // Cancel countdown
+        setIsCountdownActive(false);
         toast.info('Go live cancelled');
       } else if (!isLobbyBroadcasting) {
-        broadcast.startCountdown();
+        // Start countdown
+        setIsCountdownActive(true);
       } else {
-        setLobbyBroadcasting(false);
-        broadcast.stopStream();
-        toast.success('Broadcast ended');
+        toast.info('Already broadcasting');
       }
     },
     delay: 400
   });
 
-  // Update video element reactively when stream changes
+  // Initialize filter processor
   useEffect(() => {
-    if (videoRef.current && broadcast.stream) {
-      videoRef.current.srcObject = broadcast.stream;
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, [broadcast.stream]);
+    const processor = filterProcessorRef.current;
+    
+    processor.initialize().then(() => {
+      console.log('[CreatorBroadcast] Filter processor initialized');
+      setIsFilterReady(true);
+    }).catch((error) => {
+      console.error('[CreatorBroadcast] Filter initialization failed:', error);
+      toast.error('Beauty filters unavailable', {
+        description: 'Video will work without filters'
+      });
+      setIsFilterReady(true); // Continue without filters
+    });
 
-  // Listen for end broadcast command from LSB
+    return () => {
+      if (filteredStream) {
+        filteredStream.getTracks().forEach(track => track.stop());
+      }
+      processor.stop();
+    };
+  }, [filteredStream]);
+
+  // Update video element when filtered stream changes
   useEffect(() => {
-    const handleEndBroadcast = () => {
-      console.log('[CreatorBroadcast] Received end broadcast command');
-      if (isLobbyBroadcasting) {
-        setLobbyBroadcasting(false);
-        broadcast.stopStream();
-        toast.success('Broadcast ended');
+    if (videoRef.current && filteredStream) {
+      videoRef.current.srcObject = filteredStream;
+    }
+  }, [filteredStream]);
+
+  // Start camera immediately when filter is ready
+  useEffect(() => {
+    const startCamera = async () => {
+      if (isFilterReady && !filteredStream) {
+        try {
+          console.log('[CreatorBroadcast] Starting camera...');
+          // Get high-quality media stream
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: 'user',
+              width: { ideal: 1920, min: 1280 },
+              height: { ideal: 1080, min: 720 },
+              frameRate: { ideal: 30, max: 60 },
+              aspectRatio: { ideal: 16/9 }
+            },
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            }
+          });
+          
+          // Log actual resolution
+          const videoTrack = stream.getVideoTracks()[0];
+          const settings = videoTrack.getSettings();
+          console.log('[CreatorBroadcast] Camera started:', {
+            resolution: `${settings.width}x${settings.height}`,
+            frameRate: settings.frameRate,
+            facingMode: settings.facingMode
+          });
+          
+          // Apply filter if not 'none'
+          if (currentFilter !== 'none') {
+            const processor = filterProcessorRef.current;
+            const filtered = await processor.start(stream);
+            setFilteredStream(filtered);
+            console.log('[CreatorBroadcast] Filter applied to stream');
+          } else {
+            setFilteredStream(stream);
+          }
+        } catch (error) {
+          console.error('[CreatorBroadcast] Failed to start camera:', error);
+          toast.error('Camera access failed');
+        }
       }
     };
 
-    window.addEventListener('end-broadcast', handleEndBroadcast);
-    return () => window.removeEventListener('end-broadcast', handleEndBroadcast);
-  }, [isLobbyBroadcasting, broadcast, setLobbyBroadcasting]);
+    startCamera();
+  }, [isFilterReady, currentFilter, filteredStream]);
 
   // Handle filter changes
   const handleFilterChange = async (filter: FilterPreset) => {
-    await broadcast.changeFilter(filter);
+    console.log('[CreatorBroadcast] Filter changed to:', filter);
+    setCurrentFilter(filter);
+    
+    if (filteredStream) {
+      const processor = filterProcessorRef.current;
+      
+      if (filter === 'none') {
+        // Stop filtering, use original stream
+        const originalStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'user',
+            width: { ideal: 1920, min: 1280 },
+            height: { ideal: 1080, min: 720 },
+            frameRate: { ideal: 30, max: 60 },
+            aspectRatio: { ideal: 16/9 }
+          },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        processor.stop();
+        setFilteredStream(originalStream);
+      } else {
+        // Apply new filter
+        processor.setFilter(filter);
+      }
+    }
   };
-
   const handleCountdownComplete = () => {
-    broadcast.completeCountdown();
+    setIsCountdownActive(false);
     setLobbyBroadcasting(true);
     toast.success('Now broadcasting to your lobby');
   };
-
-  // const handleEyeEnhanceToggle = (enabled: boolean) => {
-  //   setEyeEnhanceEnabled(enabled);
-  //   broadcast.setEyeEnhance(enabled);
-  // };
-
-  // const handleTeethWhitenToggle = (enabled: boolean) => {
-  //   setTeethWhitenEnabled(enabled);
-  //   broadcast.setTeethWhiten(enabled);
-  // };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when broadcasting) */}
-      {isLobbyBroadcasting && broadcast.stream && <LiveKitPublisher config={{
+      {isLobbyBroadcasting && filteredStream && <LiveKitPublisher config={{
       role: 'publisher',
       creatorId,
       identity: creatorId
-    }} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
+    }} mediaStream={filteredStream} publishAudio={true} publishVideo={true} onPublished={() => {
       console.log('[CreatorBroadcast] Stream published');
+      setIsPublishing(true);
     }} onError={error => {
       console.error('[CreatorBroadcast] Publishing error:', error);
+      setIsPublishing(false);
     }} />}
 
       {/* Local camera preview with filters */}
@@ -112,7 +188,7 @@ export function CreatorBroadcastFullscreen({
         />
         
         {/* Fallback when no stream */}
-        {!broadcast.stream && (
+        {!filteredStream && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/80">
             <div className="text-center">
               <div className="animate-pulse text-white text-lg mb-2">
@@ -127,17 +203,17 @@ export function CreatorBroadcastFullscreen({
       </div>
 
       {/* Countdown Overlay */}
-      {broadcast.isCountdownActive && (
+      {isCountdownActive && (
         <GoLiveCountdown
           onComplete={handleCountdownComplete}
-          onCancel={() => broadcast.cancelCountdown()}
+          onCancel={() => setIsCountdownActive(false)}
         />
       )}
 
       {/* Pulsing Green Border When Broadcasting */}
       {isLobbyBroadcasting && (
         <div className="absolute inset-0 pointer-events-none z-20 rounded-2xl">
-          <div className="w-full h-full border-[10px] border-green-500 rounded-2xl animate-pulse" />
+          <div className="w-full h-full border-[2px] border-green-500 rounded-2xl animate-pulse" />
         </div>
       )}
 
@@ -150,36 +226,11 @@ export function CreatorBroadcastFullscreen({
           </Badge>
         </div>}
 
-      {/* Status Text Overlay */}
-      <div className="absolute bottom-20 left-0 right-0 z-20 flex justify-center pointer-events-none">
-        <div className="bg-black/70 backdrop-blur-sm px-4 py-2 rounded-full">
-          <p className="text-white text-sm font-medium text-center">
-            {isLobbyBroadcasting ? (
-              <>You are live • Double-tap to go offline</>
-            ) : (
-              <>Double-tap to go live</>
-            )}
-          </p>
-        </div>
-      </div>
-
-      {/* Beauty Toggles - DISABLED */}
-      {/* broadcast.isFilterReady && (
-        <div className="absolute bottom-32 left-4 right-4 z-20">
-          <BeautyToggles
-            eyeEnhance={eyeEnhanceEnabled}
-            teethWhiten={teethWhitenEnabled}
-            onEyeEnhanceToggle={handleEyeEnhanceToggle}
-            onTeethWhitenToggle={handleTeethWhitenToggle}
-          />
-        </div>
-      ) */}
-
       {/* Filter Selector */}
-      {broadcast.isFilterReady && (
+      {isFilterReady && (
         <div className="absolute bottom-4 left-4 right-4 z-20">
           <FilterSelector 
-            currentFilter={broadcast.currentFilter}
+            currentFilter={currentFilter}
             onFilterChange={handleFilterChange}
           />
         </div>

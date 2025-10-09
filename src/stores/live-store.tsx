@@ -369,13 +369,6 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     try {
       const st = state.state;
 
-      // Auto-end lobby broadcast when going undiscoverable
-      if (state.isLobbyBroadcasting) {
-        console.log('[LiveStore] Auto-ending broadcast on undiscoverable');
-        window.dispatchEvent(new CustomEvent('end-broadcast'));
-        dispatch({ type: 'SET_LOBBY_BROADCASTING', broadcasting: false });
-      }
-
       // Stop heartbeat using centralized service
       await creatorPresenceService.stopHeartbeat()
 
@@ -388,7 +381,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     } finally {
       __discToggleInFlight = false;
     }
-  }, [handleDispatch, state.state, state.isLobbyBroadcasting])
+  }, [handleDispatch, state.state])
 
   // GO LIVE: availability only (no media)
   const goLive = useCallback(async () => {
