@@ -91,6 +91,27 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
       console.log('[Analytics] primary_focus_change', { from: primaryFocus, to: focus })
     }
   }, [primaryFocus, sessionId])
+  
+  // Listen for sessionStorage changes (from MediaProvider's auto-swap)
+  useEffect(() => {
+    if (typeof sessionStorage === 'undefined') return
+    
+    const handleStorageChange = () => {
+      const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
+      if (stored === 'remote' && primaryFocus === 'local' && !manualPinActive) {
+        _setPrimaryFocus('remote')
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[UIProvider] Auto-swapped to remote via sessionStorage')
+        }
+      }
+    }
+    
+    // Check on mount and interval (sessionStorage doesn't fire storage event in same tab)
+    handleStorageChange()
+    const interval = setInterval(handleStorageChange, 500)
+    
+    return () => clearInterval(interval)
+  }, [sessionId, primaryFocus, manualPinActive])
 
   return (
     <UIContext.Provider

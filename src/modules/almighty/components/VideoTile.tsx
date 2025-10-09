@@ -37,7 +37,7 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
     }
     
     // Micro-defer to dodge layout/visibility races
-    requestAnimationFrame(() => {
+    const rafId = requestAnimationFrame(() => {
       track.attach(el)
       el.muted = trackRef?.isLocal ?? true
       el.playsInline = true
@@ -52,6 +52,7 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
     })
     
     return () => {
+      cancelAnimationFrame(rafId)
       track.detach(el)
     }
   }, [trackId, trackRef?.isLocal])

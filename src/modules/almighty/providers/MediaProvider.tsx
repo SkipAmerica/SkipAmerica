@@ -110,6 +110,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Refs
   const joinParamsRef = useRef<{ sessionId: string; identity: string; role: 'creator' | 'user' }>()
+  const joinInProgressRef = useRef(false)
+  const connectedOnceRef = useRef(false)
   const flipDebounceRef = useRef<NodeJS.Timeout>()
   const audioUnlockedRef = useRef(false)
   const shouldSampleAnalytics = useRef(Math.random() < MEDIA.ANALYTICS_SAMPLE_RATE)
@@ -204,8 +206,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
-    if (connecting || connected) return
+    // Guard: prevent duplicate joins
+    if (joinInProgressRef.current || connecting || connected) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Join blocked (already joining/connected)')
+      }
+      return
+    }
     
+    joinInProgressRef.current = true
     setConnecting(true)
     setConnectionState('connecting')
     setPermissionError(undefined)
@@ -214,117 +223,22 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     mark('lk_join_start')
     
+    let newRoom: Room | undefined
+    let localTracks: any[] = []
+    
     try {
-      // Fetch token
-      const tokenData = await fetchLiveKitToken({
-        role: 'publisher',
-        creatorId: sessionId,
-        identity,
-      })
-      
-      // Create room
-      const newRoom = createRoom()
-      
-      // Set up event listeners before connecting
-      newRoom.on(RoomEvent.Connected, () => {
-        mark('lk_join_end')
-        setConnected(true)
-        setConnectionState('connected')
-        refreshParticipants()
-        refreshTracks()
-      })
-      
-      newRoom.on(RoomEvent.Disconnected, () => {
-        setConnected(false)
-        setConnectionState('disconnected')
-      })
-      
-      newRoom.on(RoomEvent.Reconnecting, () => {
-        setConnectionState('reconnecting')
-      })
-      
-      newRoom.on(RoomEvent.Reconnected, () => {
-        setConnectionState('connected')
-      })
-      
-      newRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-        refreshParticipants()
-        refreshTracks()
-      })
-      
-      newRoom.on(RoomEvent.ParticipantDisconnected, () => {
-        refreshParticipants()
-        refreshTracks()
-      })
-      
-      newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
-        refreshTracks()
-        
-        // Auto-swap to first remote video (respects manual choice via sessionStorage)
-        if (track.kind === 'video' && !participant.isLocal) {
-          const sessionId = joinParamsRef.current?.sessionId
-          if (sessionId && typeof sessionStorage !== 'undefined') {
-            const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
-            // Only auto-swap if user hasn't manually chosen yet
-            if (!stored) {
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('[MediaProvider] Auto-swapping to first remote video')
-              }
-              // Note: We can't directly call setPrimaryFocus here due to cross-provider coupling
-              // The UIProvider will handle this via sessionStorage on next mount
-              // For now, just log - actual focus change happens in UIProvider
-            }
-          }
-        }
-        
-        // Pin primary remote with subscription control
-        if (primaryRemoteId) {
-          const rp = newRoom.remoteParticipants.get(primaryRemoteId)
-          if (rp) {
-            const videoPub = Array.from(rp.videoTrackPublications.values())[0]
-            if (videoPub && !rp.isLocal) {
-              videoPub.setSubscribed(true)
-            }
-          }
-        }
-      })
-      
-      newRoom.on(RoomEvent.TrackUnsubscribed, () => {
-        refreshTracks()
-      })
-      
-      newRoom.on(RoomEvent.AudioPlaybackStatusChanged, () => {
-        const canPlay = newRoom.canPlaybackAudio
-        setNeedsAudioUnlock(!canPlay)
-        audioUnlockedRef.current = canPlay
-      })
-      
-      newRoom.on(RoomEvent.MediaDevicesChanged, () => {
-        // Handle device changes (unplug/plug)
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LiveKit] Media devices changed')
-        }
-      })
-      
-      // Active speaker tracking (opt-in)
-      if (MEDIA.ENABLE_ACTIVE_SPEAKER_FOCUS) {
-        newRoom.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
-          if (speakers.length > 0 && speakers[0].sid !== newRoom.localParticipant.sid) {
-            setActiveSpeakerId(speakers[0].sid)
-          }
-        })
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 1: Creating local tracks...')
       }
       
-      // Connect to room
-      await newRoom.connect(tokenData.url, tokenData.token)
-      
-      // Create local tracks with fallback ladder
+      // Step 1: Create local tracks BEFORE connecting
       const { tracks, usedConstraints } = await createLocalTracksWithFallback({
         audio: MEDIA.START_AUDIO,
         video: MEDIA.START_VIDEO,
         facingMode: cachedFacingMode || 'user',
         cachedDeviceIds,
       })
+      localTracks = tracks
       
       // Cache device IDs
       const videoTrack = tracks.find(t => t.kind === 'video')
@@ -351,20 +265,175 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         setCurrentQualityLevel(usedConstraints.video.level)
       }
       
-      // Publish tracks
-      await publishTracks(newRoom, tracks)
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 2: Fetching LiveKit token...')
+      }
+      
+      // Step 2: Fetch token
+      const tokenData = await fetchLiveKitToken({
+        role: 'publisher',
+        creatorId: sessionId,
+        identity,
+      })
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 3: Creating room instance...')
+      }
+      
+      // Step 3: Create room
+      newRoom = createRoom()
+      
+      // Set up event listeners before connecting
+      newRoom.on(RoomEvent.ConnectionStateChanged, (state) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] PC:', state)
+        }
+      })
+      
+      newRoom.on(RoomEvent.Disconnected, () => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Disconnected')
+        }
+        setConnected(false)
+        setConnectionState('disconnected')
+      })
+      
+      newRoom.on(RoomEvent.Reconnecting, () => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Reconnecting...')
+        }
+        setConnectionState('reconnecting')
+      })
+      
+      newRoom.on(RoomEvent.Reconnected, () => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Reconnected')
+        }
+        setConnectionState('connected')
+      })
+      
+      newRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Participant joined:', participant.identity)
+        }
+        refreshParticipants()
+        refreshTracks()
+      })
+      
+      newRoom.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Participant left:', participant.identity)
+        }
+        refreshParticipants()
+        refreshTracks()
+      })
+      
+      newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Track subscribed:', track.kind, 'from', participant.identity)
+        }
+        refreshTracks()
+        
+        // Auto-swap to first remote video (only if user hasn't manually chosen)
+        if (track.kind === 'video' && !participant.isLocal) {
+          const sessionId = joinParamsRef.current?.sessionId
+          if (sessionId && typeof sessionStorage !== 'undefined') {
+            const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
+            if (!stored) {
+              sessionStorage.setItem(`almighty_focus_${sessionId}`, 'remote')
+              if (process.env.NODE_ENV !== 'production') {
+                console.log('[MediaProvider] Auto-set focus to remote (first video)')
+              }
+            }
+          }
+        }
+      })
+      
+      newRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Track unsubscribed:', track.kind)
+        }
+        refreshTracks()
+      })
+      
+      newRoom.on(RoomEvent.AudioPlaybackStatusChanged, () => {
+        const canPlay = newRoom!.canPlaybackAudio
+        setNeedsAudioUnlock(!canPlay)
+        audioUnlockedRef.current = canPlay
+      })
+      
+      newRoom.on(RoomEvent.MediaDevicesChanged, () => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Media devices changed')
+        }
+      })
+      
+      // Active speaker tracking (opt-in)
+      if (MEDIA.ENABLE_ACTIVE_SPEAKER_FOCUS) {
+        newRoom.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+          if (speakers.length > 0 && speakers[0].sid !== newRoom!.localParticipant.sid) {
+            setActiveSpeakerId(speakers[0].sid)
+          }
+        })
+      }
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 4: Connecting to room...')
+      }
+      
+      // Step 4: Connect to room with autoSubscribe disabled
+      await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: false })
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 5: Waiting for Connected event...')
+      }
+      
+      // Step 5: Wait for Connected event with 30s timeout
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error('LiveKit connection timeout (30s)'))
+        }, 30000)
+        
+        const onConnected = () => {
+          clearTimeout(timeout)
+          newRoom!.off(RoomEvent.Connected, onConnected)
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('[LK] CONNECTED')
+          }
+          mark('lk_join_end')
+          connectedOnceRef.current = true
+          resolve()
+        }
+        
+        newRoom!.on(RoomEvent.Connected, onConnected)
+      })
+      
+      // Step 6: Set room in state (triggers rendering)
+      setRoom(newRoom)
+      setConnected(true)
+      setConnectionState('connected')
+      refreshParticipants()
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[MediaProvider] Step 6: Publishing tracks...')
+      }
+      
+      // Step 7: Publish tracks (only after Connected)
+      await publishTracks(newRoom, localTracks)
       
       // Set initial mute states via LiveKit APIs
       await newRoom.localParticipant.setMicrophoneEnabled(MEDIA.START_AUDIO)
       await newRoom.localParticipant.setCameraEnabled(MEDIA.START_VIDEO)
       
-      setRoom(newRoom)
       setMicEnabled(MEDIA.START_AUDIO)
       setCamEnabled(MEDIA.START_VIDEO)
       
+      // Refresh tracks to capture published state
+      refreshTracks()
+      
       // Debug output
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[MediaProvider] Join complete', {
+        console.log('[MediaProvider] ✅ Join complete', {
           identity,
           sessionId,
           role,
@@ -387,6 +456,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.error('[LiveKit] Join failed:', err)
       setConnectionState('failed')
       
+      // Cleanup on failure
+      if (newRoom) {
+        try {
+          await newRoom.disconnect()
+        } catch {}
+      }
+      localTracks.forEach(t => {
+        try {
+          t.stop?.()
+        } catch {}
+      })
+      
       // Classify error
       if (err.is401Or403) {
         setTokenError({ is401Or403: true, message: err.message })
@@ -402,8 +483,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
     } finally {
       setConnecting(false)
+      joinInProgressRef.current = false
     }
-  }, [connecting, connected, cachedDeviceIds, cachedFacingMode, primaryRemoteId, refreshParticipants, refreshTracks, toast, mark])
+  }, [connecting, connected, cachedDeviceIds, cachedFacingMode, refreshParticipants, refreshTracks, toast, mark])
   
   // Leave room
   const leave = useCallback(async () => {

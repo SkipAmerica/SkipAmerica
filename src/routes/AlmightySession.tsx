@@ -50,10 +50,19 @@ function AlmightyShell() {
   const isPublishing = connected && (micEnabled || camEnabled)
   useWakeLock(isPublishing)
   
-  // Auto-join on mount
+  // Auto-join on mount (strict once-only with ref guard)
+  const joinedRef = useRef(false)
   useEffect(() => {
+    if (joinedRef.current) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[AlmightyShell] Join blocked (already joined once)')
+      }
+      return
+    }
+    
+    joinedRef.current = true
+    
     // Publisher identity = sessionId (no prefix, no random suffix)
-    // Preview identity reserved for future local viewer: `${sessionId}_preview`
     const identity = sessionId
     join(sessionId, identity, role).catch(err => {
       console.error('[Media] Join failed:', err)
