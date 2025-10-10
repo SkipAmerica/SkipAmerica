@@ -27,6 +27,11 @@ export function PIP({ trackRef, mirror, onDoubleTap }: PIPProps) {
       onPointerDown={onTapStart}
     >
       <VideoTile
+        key={
+          trackRef?.track?.sid ||
+          trackRef?.track?.mediaStreamTrack?.id ||
+          (trackRef?.isLocal ? 'local' : 'remote')
+        }
         trackRef={trackRef}
         mirror={mirror}
         rounded

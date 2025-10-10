@@ -112,6 +112,11 @@ export function CenterPane() {
       {/* Primary Video */}
       <div className="absolute inset-0">
         <VideoTile
+          key={
+            primary?.track?.sid ||
+            primary?.track?.mediaStreamTrack?.id ||
+            (primary?.isLocal ? 'local' : 'remote')
+          }
           trackRef={primary}
           mirror={primary?.isLocal && facingMode === 'user'}
         />

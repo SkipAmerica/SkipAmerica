@@ -30,6 +30,8 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
 
     let cancelled = false
     let retryTimer: number | undefined
+    let watchdogTimer: number | undefined
+
     const tryPlay = () => {
       if (!cancelled) el.play().catch(() => {})
     }
@@ -39,13 +41,11 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       tryPlay()
     }
 
-    const rafId = requestAnimationFrame(() => {
-      if (cancelled) return
-
+    const attachOnce = () => {
       track.attach(el)
 
       // Help Safari/iOS paint immediately
-      if (!el.srcObject) {
+      if (!el.srcObject && track.mediaStreamTrack) {
         el.srcObject = new MediaStream([track.mediaStreamTrack])
       }
 
@@ -59,16 +59,50 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
         // Safari/iOS: start on next user gesture
         document.addEventListener('click', onTap, { once: true })
       })
+    }
+
+    // Initial attach (after layout)
+    const rafId = requestAnimationFrame(() => {
+      if (cancelled) return
+      attachOnce()
     })
+
+    // Watchdog: if not painting after 400ms, detach/reattach once
+    watchdogTimer = window.setTimeout(() => {
+      if (cancelled) return
+      const notPainting = !el.videoWidth || !el.videoHeight || el.readyState < 2
+      if (notPainting) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn('[VideoTile] Watchdog: element not painting, re-attaching', {
+            videoWidth: el.videoWidth,
+            videoHeight: el.videoHeight,
+            readyState: el.readyState,
+            trackSid: track.sid
+          })
+        }
+        try {
+          track.detach(el)
+        } catch {}
+        attachOnce()
+      }
+    }, 400)
 
     return () => {
       cancelled = true
       if (retryTimer) clearTimeout(retryTimer)
+      if (watchdogTimer) clearTimeout(watchdogTimer)
       document.removeEventListener('click', onTap)
       cancelAnimationFrame(rafId)
-      track.detach(el)
+      try {
+        track.detach(el)
+      } catch {}
     }
-  }, [trackId, trackRef?.isLocal])
+  }, [
+    // IMPORTANT: include track identity that actually changes
+    trackRef?.track?.sid,
+    trackRef?.track?.mediaStreamTrack?.id,
+    trackRef?.isLocal
+  ])
   
   if (!trackRef) {
     return (
