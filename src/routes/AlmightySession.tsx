@@ -222,7 +222,6 @@ function AlmightyShell() {
       data-almighty-root="true"
       style={{
         width: '300vw',
-        height: '100svh',
         transform: `translate3d(-${activePane * 100}vw, 0, 0)`,
         transition: isDragging ? 'none' : `transform ${transitionDuration} cubic-bezier(0.25, 0.1, 0.25, 1)`,
         touchAction: 'pan-x',
