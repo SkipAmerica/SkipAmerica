@@ -222,9 +222,8 @@ export default function PIPDock({
   useEffect(() => {
     const setSizeAndCorner = () => {
       const r = getRect();
-      const targetW = Math.max(280, Math.min(360, Math.round(r.width * 0.28)));
-      stateRef.current.w = targetW;
-      stateRef.current.h = Math.round(targetW * 9 / 16);
+      stateRef.current.w = 162;  // fixed width (vertical)
+      stateRef.current.h = 288;  // fixed height (vertical)
 
       const el = frameRef.current;
       if (el) {
