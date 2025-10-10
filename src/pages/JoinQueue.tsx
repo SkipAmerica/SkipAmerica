@@ -525,12 +525,28 @@ export default function JoinQueue() {
   };
 
   const handleConsentAgree = async () => {
-    console.log('[JoinQueue] Fan consented to broadcast');
+    console.log('[JoinQueue] 🎥 Fan consented to broadcast');
     
     // Capture media stream to use for publishing
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      console.log('[JoinQueue] ✅ Media stream captured for broadcasting');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          facingMode: 'user'
+        }, 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      console.log('[JoinQueue] ✅ Media stream captured:', {
+        videoTracks: stream.getVideoTracks().length,
+        audioTracks: stream.getAudioTracks().length,
+        videoEnabled: stream.getVideoTracks()[0]?.enabled,
+        audioEnabled: stream.getAudioTracks()[0]?.enabled
+      });
       setConsentStream(stream);
     } catch (err) {
       console.error('[JoinQueue] ❌ Failed to capture media stream:', err);
@@ -544,11 +560,25 @@ export default function JoinQueue() {
     
     setHasConsentedToBroadcast(true);
     setShowConsentModal(false);
+    
+    console.log('[JoinQueue] 🚀 Broadcasting state updated - BroadcastViewer will switch to publisher mode');
+    
     toast({
       title: "Broadcasting Started",
       description: `${creator?.full_name} can now see your video preview.`,
     });
   };
+
+  // Log state changes for debugging
+  useEffect(() => {
+    console.log('[JoinQueue] State change:', {
+      shouldPublishFanVideo: isInQueue && (hasConsentedToBroadcast || forceBroadcast),
+      hasConsentedToBroadcast,
+      forceBroadcast,
+      isInQueue,
+      hasConsentStream: !!consentStream
+    });
+  }, [isInQueue, hasConsentedToBroadcast, forceBroadcast, consentStream]);
 
   const handleConsentDecline = () => {
     console.log('[JoinQueue] Fan declined broadcast consent');

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Room, createLocalTracks, VideoPresets, TrackPublishOptions } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
 
@@ -25,14 +25,33 @@ export function LiveKitPublisher({
 }: LiveKitPublisherProps) {
   const { room, isConnected } = useLiveKitRoom(config);
   const [isPublishing, setIsPublishing] = useState(false);
+  const publishLockRef = useRef(false);
+  const lastPublishAttemptRef = useRef(0);
 
   useEffect(() => {
     if (!room || !isConnected || isPublishing) return;
+    
+    // Connection lock: Prevent concurrent publishing attempts
+    if (publishLockRef.current) {
+      console.log('[LiveKitPublisher] 🔒 Publish already in progress, skipping');
+      return;
+    }
+    
+    // Debounce: Prevent rapid reconnect attempts (min 1 second between attempts)
+    const now = Date.now();
+    const timeSinceLastAttempt = now - lastPublishAttemptRef.current;
+    if (timeSinceLastAttempt < 1000) {
+      console.log(`[LiveKitPublisher] ⏳ Debouncing publish attempt (${timeSinceLastAttempt}ms since last)`);
+      return;
+    }
+    
+    lastPublishAttemptRef.current = now;
 
     let isMounted = true;
 
     const publish = async (attempt = 1) => {
       try {
+        publishLockRef.current = true;
         setIsPublishing(true);
 
         // Define broadcast-grade video publishing options (Instagram/TikTok quality)
@@ -150,6 +169,7 @@ export function LiveKitPublisher({
       } finally {
         if (isMounted && attempt >= 3) {
           setIsPublishing(false);
+          publishLockRef.current = false;
         }
       }
     };
@@ -158,6 +178,7 @@ export function LiveKitPublisher({
 
     return () => {
       isMounted = false;
+      publishLockRef.current = false;
     };
   }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 

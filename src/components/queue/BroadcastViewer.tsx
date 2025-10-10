@@ -132,11 +132,86 @@ export function BroadcastViewer({
   // Use distinct identity for viewer to avoid collision with publisher
   const viewerIdentity = fanUserId ? `viewer_${fanUserId}` : `viewer_${crypto.randomUUID()}`;
 
-  console.log('[BroadcastViewer] Identities:', { viewerIdentity, publisherIdentity: fanUserId, fanUserId, resolvedCreatorId });
+  console.log('[BroadcastViewer] Config:', { 
+    shouldPublishFanVideo, 
+    hasConsentStream: !!consentStream,
+    fanUserId, 
+    resolvedCreatorId 
+  });
 
+  // Fan publishing mode: Show self-preview only, publish to creator
+  if (shouldPublishFanVideo && consentStream) {
+    console.log('[BroadcastViewer] 📹 Fan publisher mode - showing self-preview only');
+    
+    return (
+      <div className="relative w-full h-full bg-gradient-to-br from-primary/20 via-background to-primary/10">
+        {/* Self-preview (large, main view) */}
+        <div className="w-full h-full flex items-center justify-center">
+          <div className="w-full h-full max-w-2xl max-h-[600px] rounded-lg overflow-hidden shadow-2xl border-2 border-primary/30">
+            <video
+              ref={(el) => {
+                if (el && consentStream) {
+                  el.srcObject = consentStream;
+                }
+              }}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover mirror"
+            />
+          </div>
+        </div>
+
+        {/* Status indicator */}
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+          <div className="bg-green-500/90 backdrop-blur-sm text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 animate-pulse">
+            <div className="w-2 h-2 bg-white rounded-full"></div>
+            <span className="text-sm font-medium">Broadcasting to creator...</span>
+          </div>
+        </div>
+
+        {/* Info card */}
+        <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-20 w-[90%] max-w-md">
+          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg p-4 shadow-xl">
+            <div className="text-center space-y-2">
+              <div className="text-2xl">👋</div>
+              <p className="text-sm font-medium">You're ready!</p>
+              <p className="text-xs text-muted-foreground">
+                The creator can see your video preview. Wait for them to start your call.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Headless publisher - establishes single LiveKit connection */}
+        {fanUserId && resolvedCreatorId && (
+          <LiveKitPublisher
+            config={{
+              role: 'publisher',
+              creatorId: resolvedCreatorId,
+              identity: fanUserId,
+            }}
+            publishAudio={true}
+            publishVideo={true}
+            mediaStream={consentStream}
+            onPublished={() => {
+              console.log('[BroadcastViewer] ✅ Fan video published successfully');
+            }}
+            onError={(error) => {
+              console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
+            }}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // Default viewer mode: Watch creator's broadcast (used before fan is "Next Up")
+  console.log('[BroadcastViewer] 👀 Viewer mode - watching creator stream');
+  
   return (
     <div className="relative w-full h-full">
-      {/* Main creator video stream - always visible */}
+      {/* Main creator video stream */}
       {resolvedCreatorId && (
         <LiveKitVideoPlayer
           config={{
@@ -179,26 +254,6 @@ export function BroadcastViewer({
           }
         />
       )}
-
-      {/* Fan video publisher (headless) */}
-        {shouldPublishFanVideo && fanUserId && resolvedCreatorId && (
-          <LiveKitPublisher
-          config={{
-            role: 'publisher',
-            creatorId: resolvedCreatorId,
-            identity: fanUserId,
-          }}
-          publishAudio={true}
-          publishVideo={true}
-          mediaStream={consentStream}
-          onPublished={() => {
-            console.log('[BroadcastViewer] ✅ Fan video published successfully with identity:', fanUserId);
-          }}
-          onError={(error) => {
-            console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
-          }}
-        />
-        )}
       
       {/* Self video PIP */}
       {showSelfVideo && (consentStream || localStream) && (
