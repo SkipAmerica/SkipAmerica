@@ -7,6 +7,7 @@ import { LiveStoreProvider } from '@/stores/live-store'
 import { AuthProvider } from './auth-provider'
 import { SearchProvider } from './search-provider'
 import { DiscoveryProvider } from './discovery-provider'
+import { MediaProvider } from '@/modules/almighty/providers/MediaProvider'
 import { config } from '@/shared/config'
 
 const queryClient = new QueryClient({
@@ -34,17 +35,19 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <LiveStoreProvider>
-          <SearchProvider>
-            <DiscoveryProvider>
-              <TooltipProvider>
-                {children}
-                <Toaster />
-                <Sonner />
-              </TooltipProvider>
-            </DiscoveryProvider>
-          </SearchProvider>
-        </LiveStoreProvider>
+        <MediaProvider>
+          <LiveStoreProvider>
+            <SearchProvider>
+              <DiscoveryProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                  <Sonner />
+                </TooltipProvider>
+              </DiscoveryProvider>
+            </SearchProvider>
+          </LiveStoreProvider>
+        </MediaProvider>
       </AuthProvider>
       {config.isDevelopment && (
         <div>
