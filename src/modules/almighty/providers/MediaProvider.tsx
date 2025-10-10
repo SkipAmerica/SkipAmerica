@@ -91,6 +91,57 @@ function ensureSubscribed(room: Room) {
   }
 }
 
+/**
+ * Get or create a hidden audio element for remote audio playback.
+ * This element is reused across all remote audio tracks.
+ */
+function getOrCreateRemoteAudioEl(): HTMLAudioElement | null {
+  if (typeof document === 'undefined') return null;
+  
+  let el = document.getElementById('almighty-remote-audio') as HTMLAudioElement | null;
+  if (!el) {
+    el = document.createElement('audio');
+    el.id = 'almighty-remote-audio';
+    el.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(el);
+  }
+  el.autoplay = true;
+  el.muted = false;
+  return el;
+}
+
+/**
+ * Attach a remote audio track to the hidden audio element and play it.
+ * If autoplay is blocked, invoke the onBlocked callback to show UI banner.
+ */
+async function attachAndPlayRemoteAudio(track: any, onBlocked?: () => void) {
+  const el = getOrCreateRemoteAudioEl();
+  if (!el || !track) return;
+  
+  try {
+    // Attach LiveKit track to the audio element
+    track.attach?.(el);
+    
+    // If LiveKit track has mediaStreamTrack, ensure srcObject is set
+    if (!el.srcObject && track.mediaStreamTrack) {
+      el.srcObject = new MediaStream([track.mediaStreamTrack]);
+    }
+    
+    // Attempt to play
+    await el.play();
+  } catch (err) {
+    // Autoplay blocked by browser; notify UI
+    onBlocked?.();
+    
+    // Set up one-shot click handler to retry playback
+    const retry = () => { 
+      el.play().catch(() => {}); 
+      document.removeEventListener('click', retry); 
+    };
+    document.addEventListener('click', retry, { once: true });
+  }
+}
+
 interface MediaContext {
   // Connection
   room?: Room
@@ -477,6 +528,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           console.log('[LK] Reconnected — resubscribe sweep')
         }
         ensureSubscribed(newRoom);
+        
+        // Rehydrate remote audio after reconnection
+        for (const p of newRoom.remoteParticipants.values()) {
+          for (const pub of p.trackPublications.values()) {
+            if (pub.kind === 'audio' && pub.track) {
+              attachAndPlayRemoteAudio(pub.track, () => setNeedsAudioUnlock(true));
+            }
+          }
+        }
+        
         setConnectionState('connected')
       })
       
@@ -488,6 +549,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         for (const pub of participant.trackPublications.values()) {
           if (!pub.isSubscribed) pub.setSubscribed(true);
         }
+        
+        // Auto-play any existing audio tracks from this participant
+        for (const pub of participant.trackPublications.values()) {
+          if (pub.kind === 'audio' && pub.track) {
+            attachAndPlayRemoteAudio(pub.track, () => setNeedsAudioUnlock(true));
+          }
+        }
+        
         refreshParticipants()
         refreshTracks()
       })
@@ -534,11 +603,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
               console.log('[AutoPromote] Switched primary to remote video')
             }
           } catch (e) {
-            console.warn('[AutoPromote] Error promoting remote video', e)
-          }
+          console.warn('[AutoPromote] Error promoting remote video', e)
         }
-        
-        refreshTracks()
+      }
+      
+      // Auto-play remote audio immediately
+      if (track.kind === 'audio' && !participant.isLocal) {
+        attachAndPlayRemoteAudio(track, () => setNeedsAudioUnlock(true));
+      }
+      
+      refreshTracks()
       })
       
       newRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
@@ -775,6 +849,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     // Remove all listeners (hard teardown)
     room.removeAllListeners()
+    
+    // Remove hidden remote audio element
+    const audioEl = document.getElementById('almighty-remote-audio');
+    if (audioEl?.parentElement) {
+      audioEl.parentElement.removeChild(audioEl);
+    }
+    
+    // Reset auto-promotion state for next session
+    hasAutoPromotedRef.current = false;
+    userPinnedRef.current = false;
     
     // Clear state
     setRoom(undefined)
