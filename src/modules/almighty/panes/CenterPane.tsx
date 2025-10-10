@@ -5,6 +5,7 @@ import { useMedia } from '../providers/MediaProvider'
 import { useChatDrawerGesture } from '../hooks/useChatDrawerGesture'
 import { canFlipCamera } from '../lib/livekitClient'
 import { PIP } from '../components/PIP'
+import PIPDock from '../components/PIPDock'
 import { ChatDrawer } from '../components/ChatDrawer'
 import VideoTile from '../components/VideoTile'
 import { MediaControls } from '../components/MediaControls'
@@ -124,13 +125,17 @@ export function CenterPane() {
         />
       </div>
       
-      {/* PIP */}
+      {/* PIP with Draggable Dock */}
       {pip ? (
-        <PIP
-          trackRef={pip}
-          mirror={pip.isLocal && facingMode === 'user'}
-          onDoubleTap={handleSwapPIP}
-        />
+        <PIPDock initialCorner="bottom-right">
+          <PIP
+            trackRef={pip}
+            mirror={pip.isLocal && facingMode === 'user'}
+            onDoubleTap={handleSwapPIP}
+            className="w-full h-full"
+            rounded
+          />
+        </PIPDock>
       ) : (
         <div className="absolute top-4 right-4 w-24 h-32 rounded-lg bg-gray-800/80 flex items-center justify-center text-white/60 text-xs">
           No video
