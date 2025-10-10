@@ -527,7 +527,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
             }
             
             // 🚀 Immediately make remote primary (no polling delay)
-            setPrimaryRemote()
+            setPrimaryRemote(participant.sid)
             hasAutoPromotedRef.current = true
             
             if (process.env.NODE_ENV !== 'production') {
