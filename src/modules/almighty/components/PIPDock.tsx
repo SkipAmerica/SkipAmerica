@@ -223,7 +223,7 @@ export default function PIPDock({
     const setSizeAndCorner = () => {
       const r = getRect();
       stateRef.current.w = 162;  // fixed width (vertical)
-      stateRef.current.h = 288;  // fixed height (vertical)
+      stateRef.current.h = 230;  // fixed height (20% shorter)
 
       const el = frameRef.current;
       if (el) {
