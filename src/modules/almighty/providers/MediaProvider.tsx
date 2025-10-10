@@ -135,6 +135,7 @@ interface MediaContext {
   unlockAudio: () => Promise<void>
   retryConnection: () => Promise<void>
   switchAudioOutput: (deviceId: string) => Promise<void>
+  markUserPinned: () => void
 }
 
 const MediaContext = createContext<MediaContext | undefined>(undefined)
@@ -199,6 +200,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const flipDebounceRef = useRef<NodeJS.Timeout>()
   const audioUnlockedRef = useRef(false)
   const shouldSampleAnalytics = useRef(Math.random() < MEDIA.ANALYTICS_SAMPLE_RATE)
+  const hasAutoPromotedRef = useRef(false)
+  const userPinnedRef = useRef(false)
   
   // Analytics helper
   const mark = useCallback((name: string) => {
@@ -501,21 +504,31 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         if (process.env.NODE_ENV !== 'production') {
           console.log('[LK] Track subscribed:', track.kind, 'from', participant.identity)
         }
-        refreshTracks()
         
-        // Auto-swap to first remote video (only if user hasn't manually chosen)
-        if (track.kind === 'video' && !participant.isLocal) {
-          const sessionId = joinParamsRef.current?.sessionId
-          if (sessionId && typeof sessionStorage !== 'undefined') {
-            const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
-            if (!stored) {
+        // --- Auto-promote remote video once (safe) ---
+        if (
+          !hasAutoPromotedRef.current &&
+          track.kind === 'video' &&
+          !userPinnedRef.current
+        ) {
+          try {
+            // Store in sessionStorage for UIProvider coordination
+            const sessionId = joinParamsRef.current?.sessionId
+            if (sessionId && typeof sessionStorage !== 'undefined') {
               sessionStorage.setItem(`almighty_focus_${sessionId}`, 'remote')
-              if (process.env.NODE_ENV !== 'production') {
-                console.log('[MediaProvider] Auto-set focus to remote (first video)')
-              }
             }
+            
+            hasAutoPromotedRef.current = true
+            
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('[AutoPromote] Switched primary to remote video')
+            }
+          } catch (e) {
+            console.warn('[AutoPromote] Error promoting remote video', e)
           }
         }
+        
+        refreshTracks()
       })
       
       newRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
@@ -836,6 +849,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setPrimaryRemoteId(participantId)
   }, [])
   
+  // Mark that user manually pinned a video (disables auto-promotion)
+  const markUserPinned = useCallback(() => {
+    userPinnedRef.current = true
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[MediaProvider] User manually pinned - auto-promotion disabled')
+    }
+  }, [])
+  
   // Retry permissions
   const retryPermissions = useCallback(async () => {
     if (!room) return
@@ -954,6 +975,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     unlockAudio,
     retryConnection,
     switchAudioOutput,
+    markUserPinned,
   }
   
   return <MediaContext.Provider value={value}>{children}</MediaContext.Provider>

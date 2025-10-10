@@ -32,6 +32,7 @@ export function CenterPane() {
     retryConnection,
     audioOutputDevices,
     switchAudioOutput,
+    markUserPinned,
   } = useMedia()
   
   const containerRef = useRef<HTMLDivElement>(null)
@@ -58,6 +59,7 @@ export function CenterPane() {
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present
     if (!primaryRemoteVideo && !localVideo) return
+    markUserPinned() // Disable auto-promotion
     setPrimaryFocus(primaryFocus === 'remote' ? 'local' : 'remote')
   }
   
