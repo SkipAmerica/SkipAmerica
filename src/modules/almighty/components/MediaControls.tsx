@@ -30,7 +30,7 @@ export function MediaControls({
   
   return (
     <div 
-      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[45] bg-[#00D1FF]/95 backdrop-blur-sm shadow-xl border border-white/20 rounded-full px-6 py-3"
+      className="flex items-center gap-4 z-[45] bg-[#00D1FF]/95 backdrop-blur-sm shadow-xl border border-white/20 rounded-full px-6 py-3"
       style={{ '--skip-cyan': '#00D1FF' } as React.CSSProperties}
     >
       {/* Mic Toggle */}

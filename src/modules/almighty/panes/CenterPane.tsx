@@ -145,7 +145,18 @@ export function CenterPane() {
       </div>
       
       {/* Media Controls */}
-      <div ref={controlsRef}>
+      <div 
+        ref={controlsRef}
+        className="pointer-events-auto"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          bottom: 'calc(max(env(safe-area-inset-bottom, 0px) + 14px, 2.2vh))',
+          translate: '-50% 0',
+          transform: 'scale(0.85)',
+          transformOrigin: 'center bottom',
+        }}
+      >
         <MediaControls
           micEnabled={micEnabled}
           camEnabled={camEnabled}

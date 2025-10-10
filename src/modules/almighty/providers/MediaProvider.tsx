@@ -362,6 +362,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setTokenError(undefined)
     joinParamsRef.current = { sessionId, identity, role }
     
+    // Reset auto-promotion for fresh session
+    hasAutoPromotedRef.current = false;
+    userPinnedRef.current = false;
+    
     mark('lk_join_start')
     
     let newRoom: Room | undefined
@@ -528,6 +532,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           console.log('[LK] Reconnected — resubscribe sweep')
         }
         ensureSubscribed(newRoom);
+        sweepForFirstRemoteVideoAndPromote(newRoom);
         
         // Rehydrate remote audio after reconnection
         for (const p of newRoom.remoteParticipants.values()) {
@@ -554,6 +559,32 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         for (const pub of participant.trackPublications.values()) {
           if (pub.kind === 'audio' && pub.track) {
             attachAndPlayRemoteAudio(pub.track, () => setNeedsAudioUnlock(true));
+          }
+        }
+        
+        // Check if participant arrived with video already published
+        if (!hasAutoPromotedRef.current && !userPinnedRef.current) {
+          for (const pub of participant.trackPublications.values()) {
+            if (pub.kind === 'video' && pub.track) {
+              try {
+                setPrimaryRemote(participant.sid);
+                hasAutoPromotedRef.current = true;
+                
+                const sessionId = joinParamsRef.current?.sessionId;
+                if (sessionId && typeof sessionStorage !== 'undefined') {
+                  sessionStorage.setItem(`almighty_focus_${sessionId}`, 'remote');
+                }
+                
+                if (process.env.NODE_ENV !== 'production') {
+                  console.log('[AutoPromote] Participant arrived with video:', participant.identity);
+                }
+                break;
+              } catch (e) {
+                if (process.env.NODE_ENV !== 'production') {
+                  console.warn('[AutoPromote] Error on participant arrival', e);
+                }
+              }
+            }
           }
         }
         
@@ -947,6 +978,38 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     setPrimaryRemoteId(participantId)
   }, [])
   
+  // Sweep for first available remote video and auto-promote (on reconnect/restore)
+  const sweepForFirstRemoteVideoAndPromote = useCallback((room: Room) => {
+    // Skip if already promoted or user manually pinned
+    if (hasAutoPromotedRef.current || userPinnedRef.current) return;
+    
+    for (const p of room.remoteParticipants.values()) {
+      for (const pub of p.trackPublications.values()) {
+        if (pub.kind === 'video' && (pub.track || pub.isSubscribed)) {
+          try {
+            setPrimaryRemote(p.sid);
+            hasAutoPromotedRef.current = true;
+            
+            // Persist to sessionStorage for UIProvider sync
+            const sessionId = joinParamsRef.current?.sessionId;
+            if (sessionId && typeof sessionStorage !== 'undefined') {
+              sessionStorage.setItem(`almighty_focus_${sessionId}`, 'remote');
+            }
+            
+            if (process.env.NODE_ENV !== 'production') {
+              console.log('[AutoPromote] Sweep found video from', p.identity);
+            }
+            return; // Stop after first video found
+          } catch (e) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.warn('[AutoPromote] Sweep error', e);
+            }
+          }
+        }
+      }
+    }
+  }, [setPrimaryRemote])
+  
   // Mark that user manually pinned a video (disables auto-promotion)
   const markUserPinned = useCallback(() => {
     userPinnedRef.current = true
@@ -1039,6 +1102,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       videoPub.setSubscribed(isPrimary)
     })
   }, [room, primaryRemoteId])
+  
+  // Restore auto-promotion on page visibility return
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && room) {
+        ensureSubscribed(room);
+        sweepForFirstRemoteVideoAndPromote(room);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [room, sweepForFirstRemoteVideoAndPromote])
   
   const value: MediaContext = {
     room,
