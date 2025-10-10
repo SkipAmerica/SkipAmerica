@@ -52,6 +52,6 @@ export class PaneErrorBoundary extends React.Component<Props, State> {
       )
     }
 
-    return <div key={this.state.errorKey}>{this.props.children}</div>
+    return <div key={this.state.errorKey} className="h-full min-h-0">{this.props.children}</div>
   }
 }
