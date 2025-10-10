@@ -37,6 +37,7 @@ export function CenterPane() {
   } = useMedia()
   
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const {
     drawerTranslateY,
     handleChatTouchStart,
@@ -66,6 +67,7 @@ export function CenterPane() {
   
   return (
     <div ref={containerRef} className="relative h-full min-h-0 bg-black overflow-hidden">
+      <div ref={stageRef} data-center-stage className="absolute inset-0">
       {/* Connection Banner */}
       <ConnectionBanner
         connectionState={connectionState}
@@ -112,8 +114,7 @@ export function CenterPane() {
         onTouchEnd={handleChatTouchEnd}
       />
       
-      {/* Primary Video */}
-      <div className="absolute inset-0">
+        {/* Primary Video */}
         <VideoTile
           key={
             primary?.track?.sid ||
@@ -123,24 +124,24 @@ export function CenterPane() {
           trackRef={primary}
           mirror={primary?.isLocal && facingMode === 'user'}
         />
+        
+        {/* PIP with Draggable Dock */}
+        {pip ? (
+          <PIPDock boundsRef={stageRef} initialCorner="bottom-right">
+            <PIP
+              trackRef={pip}
+              mirror={pip.isLocal && facingMode === 'user'}
+              onDoubleTap={handleSwapPIP}
+              className="w-full h-full"
+              rounded
+            />
+          </PIPDock>
+        ) : (
+          <div className="absolute top-4 right-4 w-24 h-32 rounded-lg bg-gray-800/80 flex items-center justify-center text-white/60 text-xs">
+            No video
+          </div>
+        )}
       </div>
-      
-      {/* PIP with Draggable Dock */}
-      {pip ? (
-        <PIPDock initialCorner="bottom-right">
-          <PIP
-            trackRef={pip}
-            mirror={pip.isLocal && facingMode === 'user'}
-            onDoubleTap={handleSwapPIP}
-            className="w-full h-full"
-            rounded
-          />
-        </PIPDock>
-      ) : (
-        <div className="absolute top-4 right-4 w-24 h-32 rounded-lg bg-gray-800/80 flex items-center justify-center text-white/60 text-xs">
-          No video
-        </div>
-      )}
       
       {/* Media Controls */}
       <MediaControls
