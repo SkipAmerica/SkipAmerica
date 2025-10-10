@@ -9,8 +9,9 @@ import { useMedia } from '@/modules/almighty/providers/MediaProvider';
 interface NextUpConsentModalProps {
   open: boolean;
   creatorName: string;
-  onConsented: () => void;
+  onConsented: () => void | Promise<void>;
   onLeaveQueue: () => void;
+  isProcessing?: boolean;
 }
 
 export function NextUpConsentModal({
@@ -18,6 +19,7 @@ export function NextUpConsentModal({
   creatorName,
   onConsented,
   onLeaveQueue,
+  isProcessing = false,
 }: NextUpConsentModalProps) {
   const { 
     localVideo, 
@@ -27,7 +29,6 @@ export function NextUpConsentModal({
     connecting 
   } = useMedia()
   
-  const [isAgreed, setIsAgreed] = useState(false)
   const previewRef = useRef<HTMLVideoElement>(null)
 
   // Auto-request camera when modal opens (only once)
@@ -71,13 +72,13 @@ export function NextUpConsentModal({
 
   const handleAgree = () => {
     if (!localVideo) {
-      console.error('[ConsentModal] Cannot agree - no video stream')
-      return
+      console.error('[ConsentModal] Cannot agree - no video stream');
+      return;
     }
     
-    setIsAgreed(true)
-    onConsented()
-  }
+    // Parent handles all state management
+    onConsented();
+  };
 
   const handleLeave = () => {
     onLeaveQueue()
@@ -163,16 +164,16 @@ export function NextUpConsentModal({
             onClick={handleLeave}
             variant="destructive"
             className="flex-1"
-            disabled={isAgreed}
+            disabled={isProcessing}
           >
             Leave Queue
           </Button>
           <Button
             onClick={handleAgree}
-            disabled={!localVideo || !!permissionError || connecting || isAgreed}
+            disabled={!localVideo || !!permissionError || connecting || isProcessing}
             className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold"
           >
-            {isAgreed ? 'Processing...' : 'I Agree & Ready'}
+            {isProcessing ? 'Processing...' : 'I Agree & Ready'}
           </Button>
         </div>
 

@@ -69,6 +69,7 @@ export default function JoinQueue() {
   const [actualPosition, setActualPosition] = useState<number | null>(null);
   const [consentStream, setConsentStream] = useState<MediaStream | undefined>(undefined);
   const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
+  const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
 
   const isUnloadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -528,13 +529,53 @@ export default function JoinQueue() {
   };
 
   const handleConsentAgree = async () => {
-    if (!user || !creatorId || !queueEntryId) return;
+    // Pre-flight validation
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to continue.",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    console.log('[JoinQueue] User consented - updating queue state');
+    if (!creatorId) {
+      toast({
+        title: "Invalid Creator",
+        description: "Creator information is missing. Please refresh the page.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!queueEntryId) {
+      toast({
+        title: "Queue Entry Not Found",
+        description: "Please rejoin the queue to continue.",
+        variant: "destructive"
+      });
+      setShowConsentModal(false);
+      return;
+    }
+
+    console.log('[JoinQueue] User consented - updating queue state', { queueEntryId });
     
+    setIsUpdatingConsent(true);
+
+    // Timeout guard (15 seconds)
+    const timeoutId = setTimeout(() => {
+      console.error('[JoinQueue] Consent update timed out');
+      toast({
+        title: "Request Timed Out",
+        description: "The update took too long. Check your connection and try again.",
+        variant: "destructive"
+      });
+      setIsUpdatingConsent(false);
+    }, 15000);
+
     try {
       // Update queue state to 'ready'
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('call_queue')
         .update({
           fan_state: 'ready',
@@ -542,34 +583,74 @@ export default function JoinQueue() {
           fan_camera_ready: true,
           fan_preview_updated_at: new Date().toISOString(),
         })
-        .eq('id', queueEntryId);
+        .eq('id', queueEntryId)
+        .select();
+
+      clearTimeout(timeoutId);
 
       if (error) {
         console.error('[JoinQueue] Failed to update readiness:', error);
-        toast({
-          title: "Error",
-          description: "Failed to activate video preview. Please try again.",
-          variant: "destructive",
-        });
+        
+        // Specific error messages based on error code
+        if (error.code === 'PGRST116' || error.code === '42501') {
+          toast({
+            title: "Unauthorized",
+            description: "You're not allowed to update queue state. Please refresh or rejoin.",
+            variant: "destructive"
+          });
+        } else if (error.code === '23503') {
+          toast({
+            title: "Queue Entry Invalid",
+            description: "Your queue entry no longer exists. Please rejoin.",
+            variant: "destructive"
+          });
+          setShowConsentModal(false);
+          setIsInQueue(false);
+        } else {
+          toast({
+            title: "Update Failed",
+            description: error.message || "Failed to activate video preview. Please try again.",
+            variant: "destructive"
+          });
+        }
         return;
       }
-      
+
+      // Check if row was actually updated
+      if (!data || data.length === 0) {
+        console.warn('[JoinQueue] No rows updated - queue entry may have changed');
+        toast({
+          title: "Queue Status Changed",
+          description: "Your spot in the queue has changed. Please rejoin.",
+          variant: "destructive"
+        });
+        setShowConsentModal(false);
+        setIsInQueue(false);
+        return;
+      }
+
+      // Success path
       setHasConsentedToBroadcast(true);
       setShowConsentModal(false);
       
-      console.log('[JoinQueue] Queue state updated to ready');
+      console.log('[JoinQueue] Queue state updated to ready', { queueEntryId, data });
       
       toast({
         title: "Video Preview Active",
         description: `Waiting for ${creator?.full_name} to start your call...`,
       });
+
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('[JoinQueue] Failed to update queue state:', err);
+      
       toast({
         title: "Error",
-        description: "Failed to update your status. Please try again.",
+        description: "We couldn't save your status. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsUpdatingConsent(false); // Always reset loading state
     }
   };
 
@@ -838,6 +919,7 @@ export default function JoinQueue() {
         onConsented={handleConsentAgree}
         onLeaveQueue={handleConsentDecline}
         creatorName={creator?.full_name || 'Creator'}
+        isProcessing={isUpdatingConsent}
       />
       </div>
     </ErrorBoundary>
