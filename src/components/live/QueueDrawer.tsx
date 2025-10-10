@@ -21,8 +21,7 @@ interface QueueEntry {
   joined_at: string
   estimated_wait_minutes: number
   discussion_topic?: string
-  fan_has_consented?: boolean
-  fan_camera_ready?: boolean
+  fan_state?: 'waiting' | 'awaiting_consent' | 'ready' | 'declined' | 'in_call'
   profiles?: {
     full_name: string
     avatar_url: string | null
@@ -103,7 +102,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       // First get queue entries, prioritizing by priority field first
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic, priority, fan_has_consented, fan_camera_ready')
+        .select('*, discussion_topic, priority, fan_state')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
         .order('priority', { ascending: false })
@@ -271,10 +270,17 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     // ===== V2 FLOW: Atomic RPC with Readiness Guard =====
     
     // Check if fan is ready (client-side validation)
-    if (!(queueEntry as any).fan_camera_ready || !(queueEntry as any).fan_has_consented) {
+    if (queueEntry.fan_state !== 'ready') {
+      const stateLabel = {
+        'waiting': 'still in queue',
+        'awaiting_consent': 'awaiting camera consent',
+        'declined': 'declined to join',
+        'in_call': 'already in a call',
+      }[queueEntry.fan_state || 'waiting'] || 'not ready'
+
       toast({
         title: "Cannot Start Session",
-        description: "Fan hasn't passed camera check yet. Please wait for them to enable their camera.",
+        description: `Fan is ${stateLabel}. Please wait for them to enable their camera.`,
         variant: "destructive",
       });
       return;

@@ -4,15 +4,20 @@
  */
 
 export type LiveState = 
-  | 'OFFLINE'           // Not discoverable
-  | 'DISCOVERABLE'      // Visible in discovery, queue can form
-  | 'SESSION_PREP'      // Lobby: creator preview + caller view
-  | 'SESSION_JOINING'   // Upgrade to two-way A/V + RTC setup
-  | 'SESSION_ACTIVE'    // Full 1-on-1 call on Call page
-  | 'TEARDOWN'          // Cleanup
+  | 'OFFLINE'                      // Not discoverable
+  | 'DISCOVERABLE'                 // Visible in discovery, queue can form
+  | 'QUEUE_FRONT_AWAITING_CONSENT' // Fan at position #1, consent modal shown
+  | 'QUEUE_FRONT_READY'            // Fan consented, camera ready
+  | 'SESSION_PREP'                 // Lobby: creator preview + caller view
+  | 'SESSION_JOINING'              // Upgrade to two-way A/V + RTC setup
+  | 'SESSION_ACTIVE'               // Full 1-on-1 call on Call page
+  | 'TEARDOWN'                     // Cleanup
 
 export type LiveEvent = 
   | { type: 'GO_LIVE' }
+  | { type: 'REACHED_QUEUE_FRONT' }    // Fan moved to position #1
+  | { type: 'FAN_CONSENTED' }          // Fan clicked "I Agree"
+  | { type: 'FAN_DECLINED_CONSENT' }   // Fan left queue
   | { type: 'ENTER_PREP' }
   | { type: 'ENTER_JOINING' }
   | { type: 'SESSION_STARTED' }
@@ -37,10 +42,28 @@ export function transition(currentState: LiveState, event: LiveEvent): LiveState
       
     case 'DISCOVERABLE':
       switch (event.type) {
+        case 'REACHED_QUEUE_FRONT': return 'QUEUE_FRONT_AWAITING_CONSENT'
         case 'ENTER_PREP': return 'SESSION_PREP'
-        case 'END_LIVE': return 'TEARDOWN' // Go offline
+        case 'END_LIVE': return 'TEARDOWN'
         case 'RESET': return 'OFFLINE'
-        default: return currentState // no-op
+        default: return currentState
+      }
+      
+    case 'QUEUE_FRONT_AWAITING_CONSENT':
+      switch (event.type) {
+        case 'FAN_CONSENTED': return 'QUEUE_FRONT_READY'
+        case 'FAN_DECLINED_CONSENT': return 'DISCOVERABLE'
+        case 'END_LIVE': return 'TEARDOWN'
+        case 'RESET': return 'OFFLINE'
+        default: return currentState
+      }
+      
+    case 'QUEUE_FRONT_READY':
+      switch (event.type) {
+        case 'ENTER_PREP': return 'SESSION_PREP'
+        case 'END_LIVE': return 'TEARDOWN'
+        case 'RESET': return 'OFFLINE'
+        default: return currentState
       }
       
     case 'SESSION_PREP':
@@ -101,5 +124,16 @@ export function isLive(state: LiveState): boolean {
 }
 
 export function canInitMedia(state: LiveState): boolean {
-  return state === 'SESSION_PREP' || state === 'SESSION_JOINING'
+  return state === 'QUEUE_FRONT_AWAITING_CONSENT' || 
+         state === 'QUEUE_FRONT_READY' ||
+         state === 'SESSION_PREP' || 
+         state === 'SESSION_JOINING'
+}
+
+export function canShowConsentModal(state: LiveState): boolean {
+  return state === 'QUEUE_FRONT_AWAITING_CONSENT'
+}
+
+export function canStartSession(state: LiveState): boolean {
+  return state === 'QUEUE_FRONT_READY'
 }

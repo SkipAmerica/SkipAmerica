@@ -4,96 +4,101 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Video, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import { useMedia } from '@/modules/almighty/providers/MediaProvider';
 
 interface NextUpConsentModalProps {
-  isOpen: boolean;
-  onAgree: () => void;
-  onLeaveQueue: () => void;
+  open: boolean;
   creatorName: string;
-  creatorTerms?: string;
+  onConsented: () => void;
+  onLeaveQueue: () => void;
 }
 
 export function NextUpConsentModal({
-  isOpen,
-  onAgree,
-  onLeaveQueue,
+  open,
   creatorName,
-  creatorTerms,
+  onConsented,
+  onLeaveQueue,
 }: NextUpConsentModalProps) {
-  const [previewStream, setPreviewStream] = useState<MediaStream | null>(null);
-  const [isRequestingCam, setIsRequestingCam] = useState(false);
-  const [cameraError, setCameraError] = useState<string | null>(null);
-  const previewRef = useRef<HTMLVideoElement>(null);
+  const { 
+    localVideo, 
+    previewOnly, 
+    permissionError, 
+    retryPermissions,
+    connecting 
+  } = useMedia()
+  
+  const [isAgreed, setIsAgreed] = useState(false)
+  const previewRef = useRef<HTMLVideoElement>(null)
 
-  // Auto-request camera on modal open
+  // Auto-request camera when modal opens (only once)
   useEffect(() => {
-    if (!isOpen) return;
+    if (!open || localVideo) return
 
-    const requestCamera = async () => {
-      setIsRequestingCam(true);
-      setCameraError(null);
+    console.log('[ConsentModal] Requesting camera preview...')
+    previewOnly().catch(err => {
+      console.error('[ConsentModal] Camera request failed:', err)
+    })
+  }, [open, localVideo, previewOnly])
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 640 },
-            height: { ideal: 480 },
-            facingMode: 'user'
-          },
-          audio: true
-        });
+  // Attach video track to preview element
+  useEffect(() => {
+    if (!localVideo?.track || !previewRef.current) return
 
-        setPreviewStream(stream);
-        if (previewRef.current) {
-          previewRef.current.srcObject = stream;
-        }
-      } catch (error: any) {
-        console.error('[ConsentModal] Camera access failed:', error);
-        setCameraError(
-          error.name === 'NotAllowedError'
-            ? 'Camera permission denied. Please allow camera access to continue.'
-            : 'Failed to access camera. Please check your device settings.'
-        );
-      } finally {
-        setIsRequestingCam(false);
-      }
-    };
+    console.log('[ConsentModal] Attaching preview track to video element')
+    const videoElement = previewRef.current
+    
+    try {
+      localVideo.track.attach?.(videoElement)
+      videoElement.muted = true
+      videoElement.playsInline = true
+      videoElement.autoplay = true
+      
+      videoElement.play().catch(err => {
+        console.warn('[ConsentModal] Video play failed:', err)
+      })
+    } catch (err) {
+      console.error('[ConsentModal] Failed to attach track:', err)
+    }
 
-    requestCamera();
-
-    // Cleanup on modal close
     return () => {
-      if (previewStream) {
-        previewStream.getTracks().forEach(track => track.stop());
+      try {
+        localVideo.track.detach?.(videoElement)
+      } catch (err) {
+        console.warn('[ConsentModal] Failed to detach track:', err)
       }
-    };
-  }, [isOpen]);
+    }
+  }, [localVideo])
 
   const handleAgree = () => {
-    // Pass stream to parent, don't stop tracks yet
-    onAgree();
-  };
+    if (!localVideo) {
+      console.error('[ConsentModal] Cannot agree - no video stream')
+      return
+    }
+    
+    setIsAgreed(true)
+    onConsented()
+  }
 
   const handleLeave = () => {
-    // Stop preview tracks
-    if (previewStream) {
-      previewStream.getTracks().forEach(track => track.stop());
-    }
-    onLeaveQueue();
-  };
+    onLeaveQueue()
+  }
+
+  const handleRetry = () => {
+    console.log('[ConsentModal] Retrying camera access...')
+    retryPermissions()
+  }
+
   return (
-    <Dialog open={isOpen} modal>
+    <Dialog open={open} modal>
       <DialogContent 
-        className="sm:max-w-lg"
+        className="sm:max-w-lg rounded-lg"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant="default" className="bg-cyan-500 text-white">
-              You're Next in Line!
-            </Badge>
-          </div>
+          <Badge variant="default" className="bg-cyan-500 text-white w-fit mb-2">
+            You're Next in Line!
+          </Badge>
           <DialogTitle className="text-2xl">
             The creator will invite you to start the call
           </DialogTitle>
@@ -101,32 +106,35 @@ export function NextUpConsentModal({
 
         {/* Camera Preview Section */}
         <div className="my-4">
-          {isRequestingCam && (
+          {connecting && (
             <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
               <div className="text-center">
-                <Video className="w-12 h-12 mx-auto mb-2 animate-pulse text-primary" />
+                <Video className="w-12 h-12 mx-auto mb-2 animate-pulse" />
                 <p className="text-sm text-muted-foreground">Requesting camera access...</p>
               </div>
             </div>
           )}
 
-          {cameraError && (
+          {permissionError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{cameraError}</AlertDescription>
-              <Button onClick={() => window.location.reload()} size="sm" className="mt-2">
+              <AlertDescription>
+                {permissionError.type === 'denied' 
+                  ? 'Camera permission denied. Please allow camera access to continue.'
+                  : permissionError.type === 'not_found'
+                  ? 'No camera found. Please connect a camera to continue.'
+                  : 'Failed to access camera. Please check your device settings.'}
+              </AlertDescription>
+              <Button onClick={handleRetry} size="sm" className="mt-2">
                 Try Again
               </Button>
             </Alert>
           )}
 
-          {previewStream && !cameraError && (
+          {localVideo && !permissionError && (
             <div className="aspect-video bg-black rounded-lg overflow-hidden border-2 border-cyan-500/50">
               <video
                 ref={previewRef}
-                autoPlay
-                playsInline
-                muted
                 className="w-full h-full object-cover"
                 style={{ transform: 'scaleX(-1)' }}
               />
@@ -134,10 +142,10 @@ export function NextUpConsentModal({
           )}
         </div>
 
-        {/* Information Sections */}
+        {/* Information */}
         <DialogDescription className="space-y-3">
           <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-            <CheckCircle2 className="w-5 h-5 mt-0.5 text-cyan-500" />
+            <CheckCircle2 className="w-5 h-5 mt-0.5 text-cyan-500 flex-shrink-0" />
             <div className="space-y-1">
               <p className="font-medium text-foreground">What happens next</p>
               <ul className="text-sm text-muted-foreground space-y-1">
@@ -147,33 +155,24 @@ export function NextUpConsentModal({
               </ul>
             </div>
           </div>
-
-          {creatorTerms && (
-            <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-              <AlertCircle className="w-5 h-5 mt-0.5 text-primary" />
-              <div className="space-y-1">
-                <p className="font-medium text-foreground">Creator's Terms</p>
-                <p className="text-sm text-muted-foreground">{creatorTerms}</p>
-              </div>
-            </div>
-          )}
         </DialogDescription>
 
         {/* Action Buttons */}
         <div className="flex gap-3 mt-4">
           <Button
             onClick={handleLeave}
-            variant="ghost"
-            className="flex-1 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+            variant="destructive"
+            className="flex-1"
+            disabled={isAgreed}
           >
             Leave Queue
           </Button>
           <Button
             onClick={handleAgree}
-            disabled={!previewStream || !!cameraError}
+            disabled={!localVideo || !!permissionError || connecting || isAgreed}
             className="flex-1 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold"
           >
-            I Agree & Ready
+            {isAgreed ? 'Processing...' : 'I Agree & Ready'}
           </Button>
         </div>
 
@@ -182,5 +181,5 @@ export function NextUpConsentModal({
         </p>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

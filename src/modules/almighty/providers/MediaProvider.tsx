@@ -187,6 +187,8 @@ interface MediaContext {
   retryConnection: () => Promise<void>
   switchAudioOutput: (deviceId: string) => Promise<void>
   markUserPinned: () => void
+  previewOnly: () => Promise<void>
+  hasPreviewStream: () => boolean
 }
 
 const MediaContext = createContext<MediaContext | undefined>(undefined)
@@ -376,74 +378,102 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         console.log('[MediaProvider] Step 1: Creating local tracks...')
       }
       
-      // Step 1: Create local tracks BEFORE connecting
-      const { tracks, usedConstraints } = await createLocalTracksWithFallback({
-        audio: MEDIA.START_AUDIO,
-        video: MEDIA.START_VIDEO,
-        facingMode: cachedFacingMode || 'user',
-        cachedDeviceIds,
-      })
-      localTracks = tracks
-      
-      // Cache device IDs
-      const videoTrack = tracks.find(t => t.kind === 'video')
-      const audioTrack = tracks.find(t => t.kind === 'audio')
-      if (videoTrack) {
-        const settings = (videoTrack as any).mediaStreamTrack?.getSettings()
-        if (settings) {
-          setCachedDeviceIds(prev => ({ ...prev, video: settings.deviceId }))
-          if (settings.facingMode) {
-            setCachedFacingMode(settings.facingMode as 'user' | 'environment')
-            setFacingMode(settings.facingMode as 'user' | 'environment')
+      // Step 1: Check if preview stream exists and reuse it
+      if (hasPreviewStream() && localVideo?.track) {
+        console.log('[MediaProvider] Reusing preview stream for session')
+        localTracks = [localVideo.track as any]
+        
+        // Add audio track
+        const { tracks: audioTracks } = await createLocalTracksWithFallback({
+          audio: MEDIA.START_AUDIO,
+          video: false,
+          cachedDeviceIds,
+        })
+        localTracks.push(...audioTracks)
+        
+        const micTrack = audioTracks.find(t => t.kind === 'audio')
+        if (micTrack) {
+          setLocalAudio({
+            participantId: 'local',
+            track: micTrack as any,
+            kind: 'audio',
+            isLocal: true,
+          })
+        }
+      } else {
+        // Create fresh tracks
+        const { tracks, usedConstraints } = await createLocalTracksWithFallback({
+          audio: MEDIA.START_AUDIO,
+          video: MEDIA.START_VIDEO,
+          facingMode: cachedFacingMode || 'user',
+          cachedDeviceIds,
+        })
+        localTracks = tracks
+        
+        // Cache device IDs
+        const videoTrack = tracks.find(t => t.kind === 'video')
+        const audioTrack = tracks.find(t => t.kind === 'audio')
+        if (videoTrack) {
+          const settings = (videoTrack as any).mediaStreamTrack?.getSettings()
+          if (settings) {
+            setCachedDeviceIds(prev => ({ ...prev, video: settings.deviceId }))
+            if (settings.facingMode) {
+              setCachedFacingMode(settings.facingMode as 'user' | 'environment')
+              setFacingMode(settings.facingMode as 'user' | 'environment')
+            }
           }
         }
-      }
-      if (audioTrack) {
-        const settings = (audioTrack as any).mediaStreamTrack?.getSettings()
-        if (settings?.deviceId) {
-          setCachedDeviceIds(prev => ({ ...prev, audio: settings.deviceId }))
+        if (audioTrack) {
+          const settings = (audioTrack as any).mediaStreamTrack?.getSettings()
+          if (settings?.deviceId) {
+            setCachedDeviceIds(prev => ({ ...prev, audio: settings.deviceId }))
+          }
+        }
+        
+        // Track quality level used
+        if (usedConstraints.video?.level !== undefined) {
+          setCurrentQualityLevel(usedConstraints.video.level)
+        }
+        
+        // Expose self-preview immediately (before connect/publish)
+        const camTrack = localTracks.find(t => t.kind === 'video') as LocalVideoTrack | undefined
+        if (camTrack) {
+          setLocalVideo({
+            participantId: 'local',
+            track: camTrack,
+            kind: 'video',
+            isLocal: true,
+          })
+        }
+        
+        const micTrack = localTracks.find(t => t.kind === 'audio')
+        if (micTrack) {
+          setLocalAudio({
+            participantId: 'local',
+            track: micTrack,
+            kind: 'audio',
+            isLocal: true,
+          })
         }
       }
       
-      // Track quality level used
-      if (usedConstraints.video?.level !== undefined) {
-        setCurrentQualityLevel(usedConstraints.video.level)
-      }
-      
-      // NEW: Expose self-preview immediately (before connect/publish)
-      const camTrack = localTracks.find(t => t.kind === 'video') as LocalVideoTrack | undefined
-      if (camTrack) {
-        setLocalVideo({
-          participantId: 'local',
-          track: camTrack,
-          kind: 'video',
-          isLocal: true,
-        })
-      }
-      
-      const micTrack = localTracks.find(t => t.kind === 'audio')
-      if (micTrack) {
-        setLocalAudio({
-          participantId: 'local',
-          track: micTrack,
-          kind: 'audio',
-          isLocal: true,
-        })
-      }
-      
-      // DEV: attach floating self preview so we can *see* the camera even if UI wiring fails
-      attachDebugPreview(camTrack);
+      // DEV: attach floating self preview
+      const previewVideoTrack = localTracks.find(t => t.kind === 'video')
+      attachDebugPreview(previewVideoTrack);
       
       // Export initial debug state (no room yet)
       exportDebug({ 
-        localVideo: camTrack, 
-        localAudio: micTrack, 
+        localVideo: previewVideoTrack, 
+        localAudio: localTracks.find(t => t.kind === 'audio'), 
         phase: 'MediaProvider:tracks-created',
         connectionState: 'tracks-created'
       });
       
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[MediaProvider] tracks created', { hasVideo: !!camTrack, hasAudio: !!micTrack })
+        console.log('[MediaProvider] tracks created', { 
+          hasVideo: !!localTracks.find(t => t.kind === 'video'), 
+          hasAudio: !!localTracks.find(t => t.kind === 'audio') 
+        })
       }
       
       if (process.env.NODE_ENV !== 'production') {
@@ -1092,6 +1122,73 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
   }, [room, toast])
   
+  // Preview-only mode (camera without LiveKit connection)
+  const previewOnly = useCallback(async () => {
+    if (localVideo && localVideo.participantId === 'preview') {
+      console.log('[MediaProvider] Preview stream already active')
+      return
+    }
+
+    mark('preview_start')
+    setConnecting(true)
+    setPermissionError(undefined)
+
+    try {
+      console.log('[MediaProvider] Creating preview-only tracks...')
+      
+      const { tracks, usedConstraints } = await createLocalTracksWithFallback({
+        audio: false,
+        video: true,
+        facingMode: cachedFacingMode || 'user',
+        cachedDeviceIds,
+      })
+
+      const videoTrack = tracks.find(t => t.kind === 'video')
+      if (!videoTrack) throw new Error('No video track created')
+
+      // Cache device settings
+      const settings = (videoTrack as any).mediaStreamTrack?.getSettings()
+      if (settings) {
+        setCachedDeviceIds(prev => ({ ...prev, video: settings.deviceId }))
+        if (settings.facingMode) {
+          setCachedFacingMode(settings.facingMode as 'user' | 'environment')
+          setFacingMode(settings.facingMode as 'user' | 'environment')
+        }
+      }
+
+      // Track quality level
+      if (usedConstraints.video?.level !== undefined) {
+        setCurrentQualityLevel(usedConstraints.video.level)
+      }
+
+      // Expose preview track
+      setLocalVideo({
+        participantId: 'preview',
+        track: videoTrack as any,
+        kind: 'video',
+        isLocal: true,
+      })
+
+      // Attach debug preview
+      attachDebugPreview(videoTrack)
+
+      mark('preview_ready')
+      console.log('[MediaProvider] Preview stream active')
+
+    } catch (error: any) {
+      console.error('[MediaProvider] Preview failed:', error)
+      const errorType = classifyMediaError(error)
+      setPermissionError({ error, type: errorType })
+      throw error
+    } finally {
+      setConnecting(false)
+    }
+  }, [localVideo, cachedFacingMode, cachedDeviceIds, mark])
+
+  const hasPreviewStream = useCallback(() => {
+    return !!localVideo && localVideo.participantId === 'preview'
+  }, [localVideo])
+  
   // Subscription control for 1:1 calls
   useEffect(() => {
     if (!room || !primaryRemoteId) return
@@ -1154,6 +1251,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     retryConnection,
     switchAudioOutput,
     markUserPinned,
+    previewOnly,
+    hasPreviewStream,
   }
   
   return <MediaContext.Provider value={value}>{children}</MediaContext.Provider>

@@ -529,34 +529,14 @@ export default function JoinQueue() {
   const handleConsentAgree = async () => {
     if (!user || !creatorId || !queueEntryId) return;
 
-    console.log('[JoinQueue] 📹 User consented - updating readiness flags');
+    console.log('[JoinQueue] User consented - updating queue state');
     
-    // Capture media stream to use for publishing
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          facingMode: 'user'
-        }, 
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        }
-      });
-      console.log('[JoinQueue] ✅ Media stream captured:', {
-        videoTracks: stream.getVideoTracks().length,
-        audioTracks: stream.getAudioTracks().length,
-        videoEnabled: stream.getVideoTracks()[0]?.enabled,
-        audioEnabled: stream.getAudioTracks()[0]?.enabled
-      });
-      setConsentStream(stream);
-      
-      // Update readiness flags in database
+      // Update queue state to 'ready'
       const { error } = await supabase
         .from('call_queue')
         .update({
+          fan_state: 'ready',
           fan_has_consented: true,
           fan_camera_ready: true,
           fan_preview_updated_at: new Date().toISOString(),
@@ -576,20 +556,19 @@ export default function JoinQueue() {
       setHasConsentedToBroadcast(true);
       setShowConsentModal(false);
       
-      console.log('[JoinQueue] ✅ Readiness flags updated successfully');
+      console.log('[JoinQueue] Queue state updated to ready');
       
       toast({
         title: "Video Preview Active",
         description: `Waiting for ${creator?.full_name} to start your call...`,
       });
     } catch (err) {
-      console.error('[JoinQueue] ❌ Failed to capture media stream:', err);
+      console.error('[JoinQueue] Failed to update queue state:', err);
       toast({
-        title: "Camera Access Required",
-        description: "Please allow camera and microphone access to broadcast your video.",
+        title: "Error",
+        description: "Failed to update your status. Please try again.",
         variant: "destructive"
       });
-      return;
     }
   };
 
@@ -614,6 +593,14 @@ export default function JoinQueue() {
 
     if (!confirmed) {
       return;
+    }
+
+    // Update queue state to 'declined' before leaving
+    if (queueEntryId) {
+      await supabase
+        .from('call_queue')
+        .update({ fan_state: 'declined' })
+        .eq('id', queueEntryId);
     }
 
     // Clean up consent stream
@@ -845,11 +832,10 @@ export default function JoinQueue() {
 
       {/* Next Up Consent Modal */}
       <NextUpConsentModal
-        isOpen={showConsentModal}
-        onAgree={handleConsentAgree}
+        open={showConsentModal}
+        onConsented={handleConsentAgree}
         onLeaveQueue={handleConsentDecline}
         creatorName={creator?.full_name || 'Creator'}
-        creatorTerms={undefined} // TODO: Add creator terms from database
       />
     </div>
   );

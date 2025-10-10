@@ -422,6 +422,7 @@ export type Database = {
           fan_has_consented: boolean
           fan_id: string
           fan_preview_updated_at: string | null
+          fan_state: Database["public"]["Enums"]["queue_fan_state"]
           id: string
           joined_at: string
           last_seen: string | null
@@ -437,6 +438,7 @@ export type Database = {
           fan_has_consented?: boolean
           fan_id: string
           fan_preview_updated_at?: string | null
+          fan_state?: Database["public"]["Enums"]["queue_fan_state"]
           id?: string
           joined_at?: string
           last_seen?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           fan_has_consented?: boolean
           fan_id?: string
           fan_preview_updated_at?: string | null
+          fan_state?: Database["public"]["Enums"]["queue_fan_state"]
           id?: string
           joined_at?: string
           last_seen?: string | null
@@ -2539,6 +2542,12 @@ export type Database = {
         | "facebook"
         | "snapchat"
         | "pinterest"
+      queue_fan_state:
+        | "waiting"
+        | "awaiting_consent"
+        | "ready"
+        | "declined"
+        | "in_call"
       social_platform:
         | "twitter"
         | "instagram"
@@ -2719,6 +2728,13 @@ export const Constants = {
         "facebook",
         "snapchat",
         "pinterest",
+      ],
+      queue_fan_state: [
+        "waiting",
+        "awaiting_consent",
+        "ready",
+        "declined",
+        "in_call",
       ],
       social_platform: [
         "twitter",
