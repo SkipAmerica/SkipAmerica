@@ -154,8 +154,8 @@ serve(async (req) => {
     }
 
     // single canonical room per creator; no colons
-    const room = `lobby_${safe(creatorId)}`;
-    const pid = safe(identity || crypto.randomUUID());
+    room = `lobby_${safe(creatorId)}`;
+    pid = safe(identity || crypto.randomUUID());
 
     console.log("[LiveKit Token] Creating token for room:", room, "identity:", pid);
 
