@@ -253,15 +253,19 @@ export default function PIPDock({
         'absolute top-0 left-0 z-[2147483000] rounded-xl overflow-hidden bg-black/80 backdrop-blur-sm',
         className
       )}
-      style={{
-        touchAction: 'none',
-        willChange: 'transform',
-        pointerEvents: stateRef.current.shelved ? 'none' : 'auto',
-      }}
+    style={{
+      touchAction: 'none',
+      willChange: 'transform',
+    }}
       onPointerDown={onPointerDown}
     >
       {/* body */}
-      <div className="w-full h-full">{children}</div>
+      <div 
+        className="w-full h-full"
+        style={{ pointerEvents: stateRef.current.shelved ? 'none' : 'auto' }}
+      >
+        {children}
+      </div>
 
       {/* shelf handle - always clickable */}
       <button
