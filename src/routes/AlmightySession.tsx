@@ -218,9 +218,10 @@ function AlmightyShell() {
     <div
       ref={containerRef}
       dir="ltr"
-      className="fixed inset-0 svh overflow-hidden bg-black z-[30]"
+      className="fixed inset-0 overflow-hidden bg-black z-[30] flex"
       style={{
         width: '300vw',
+        height: '100svh',
         transform: `translate3d(-${activePane * 100}vw, 0, 0)`,
         transition: isDragging ? 'none' : `transform ${transitionDuration} cubic-bezier(0.25, 0.1, 0.25, 1)`,
         touchAction: 'pan-x',
@@ -235,17 +236,17 @@ function AlmightyShell() {
       onClick={handleUserAction}
       onTouchStart={handleUserAction}
     >
-      <div className="inline-block w-screen svh align-top">
+      <div className="w-screen h-full flex-shrink-0">
         <PaneErrorBoundary paneName="Left Pane">
           <LeftPane />
         </PaneErrorBoundary>
       </div>
-      <div className="inline-block w-screen svh align-top">
+      <div className="w-screen h-full flex-shrink-0">
         <PaneErrorBoundary paneName="Center Pane">
           <CenterPane />
         </PaneErrorBoundary>
       </div>
-      <div className="inline-block w-screen svh align-top">
+      <div className="w-screen h-full flex-shrink-0">
         <PaneErrorBoundary paneName="Right Pane">
           <RightPane />
         </PaneErrorBoundary>
