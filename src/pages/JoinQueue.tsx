@@ -75,6 +75,8 @@ export default function JoinQueue() {
   const inputRef = useRef<HTMLInputElement>(null);
   const userEditedNameRef = useRef(false);
   const initialNameSetRef = useRef(false);
+  const consentResolvedRef = useRef(false); // Prevents modal from reopening after consent flow starts
+  const wasFrontRef = useRef(false); // Rising-edge detector for position #1
 
   // Ensure full-viewport scrolling on PQ
   useEffect(() => {
@@ -261,13 +263,24 @@ export default function JoinQueue() {
         setActualPosition(position);
         console.log('[JoinQueue] User position in queue:', position);
         
-        // Show consent modal when user becomes "Next Up" (position 1)
-        if (position === 1 && !hasConsentedToBroadcast && !forceBroadcast) {
+        const isFront = position === 1;
+        
+        // Show consent modal only when user BECOMES #1 (rising edge) and consent hasn't been resolved
+        if (
+          isFront &&
+          !wasFrontRef.current &&
+          !hasConsentedToBroadcast &&
+          !forceBroadcast &&
+          !consentResolvedRef.current
+        ) {
           console.log('[JoinQueue] 🎯 User is next up, showing consent modal');
           setShowConsentModal(true);
         }
+        
+        wasFrontRef.current = isFront;
       } else {
         setActualPosition(null);
+        wasFrontRef.current = false;
       }
   }, [creatorId, user, hasConsentedToBroadcast, forceBroadcast]);
 
@@ -560,6 +573,10 @@ export default function JoinQueue() {
 
     console.log('[JoinQueue] User consented - updating queue state', { queueEntryId });
     
+    // Optimistically resolve consent to prevent modal from reopening
+    consentResolvedRef.current = true;
+    const prevConsent = hasConsentedToBroadcast;
+    setHasConsentedToBroadcast(true);
     setIsUpdatingConsent(true);
 
     // Timeout guard (15 seconds)
@@ -591,6 +608,10 @@ export default function JoinQueue() {
       if (error) {
         console.error('[JoinQueue] Failed to update readiness:', error);
         
+        // Rollback optimistic update
+        consentResolvedRef.current = false;
+        setHasConsentedToBroadcast(prevConsent);
+        
         // Specific error messages based on error code
         if (error.code === 'PGRST116' || error.code === '42501') {
           toast({
@@ -619,6 +640,11 @@ export default function JoinQueue() {
       // Check if row was actually updated
       if (!data || data.length === 0) {
         console.warn('[JoinQueue] No rows updated - queue entry may have changed');
+        
+        // Rollback optimistic update
+        consentResolvedRef.current = false;
+        setHasConsentedToBroadcast(prevConsent);
+        
         toast({
           title: "Queue Status Changed",
           description: "Your spot in the queue has changed. Please rejoin.",
@@ -629,8 +655,7 @@ export default function JoinQueue() {
         return;
       }
 
-      // Success path
-      setHasConsentedToBroadcast(true);
+      // Success - consent already set optimistically above
       setShowConsentModal(false);
       
       console.log('[JoinQueue] Queue state updated to ready', { queueEntryId, data });
@@ -643,6 +668,10 @@ export default function JoinQueue() {
     } catch (err) {
       clearTimeout(timeoutId);
       console.error('[JoinQueue] Failed to update queue state:', err);
+      
+      // Rollback optimistic update
+      consentResolvedRef.current = false;
+      setHasConsentedToBroadcast(prevConsent);
       
       toast({
         title: "Error",
