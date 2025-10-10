@@ -8,6 +8,12 @@
   height: 100svh;
 }
 
+/* Ensure full-height chain from html → body → #root */
+html, body, #root {
+  height: 100%;
+  min-height: 100%;
+}
+
 /* Creator Economy Design System - FaceTime for Creators */
 @layer base {
   :root {

@@ -219,6 +219,7 @@ function AlmightyShell() {
       ref={containerRef}
       dir="ltr"
       className="fixed inset-0 overflow-hidden bg-black z-[30] flex"
+      data-almighty-root="true"
       style={{
         width: '300vw',
         height: '100svh',
@@ -236,17 +237,17 @@ function AlmightyShell() {
       onClick={handleUserAction}
       onTouchStart={handleUserAction}
     >
-      <div className="w-screen h-full flex-shrink-0">
+      <div className="w-screen h-full flex-shrink-0" data-pane="left">
         <PaneErrorBoundary paneName="Left Pane">
           <LeftPane />
         </PaneErrorBoundary>
       </div>
-      <div className="w-screen h-full flex-shrink-0">
+      <div className="w-screen h-full flex-shrink-0" data-pane="center">
         <PaneErrorBoundary paneName="Center Pane">
           <CenterPane />
         </PaneErrorBoundary>
       </div>
-      <div className="w-screen h-full flex-shrink-0">
+      <div className="w-screen h-full flex-shrink-0" data-pane="right">
         <PaneErrorBoundary paneName="Right Pane">
           <RightPane />
         </PaneErrorBoundary>
