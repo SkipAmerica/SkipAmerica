@@ -71,6 +71,26 @@ function attachDebugPreview(track: any, id = 'almighty-self-debug') {
   }
 }
 
+/**
+ * Ensure we are subscribed to all remote publications.
+ * Safe to call repeatedly; LiveKit will no-op when already subscribed.
+ */
+function ensureSubscribed(room: Room) {
+  try {
+    for (const p of room.remoteParticipants.values()) {
+      for (const pub of p.trackPublications.values()) {
+        if (!pub.isSubscribed) {
+          pub.setSubscribed(true);
+        }
+      }
+    }
+  } catch (e) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[LK] ensureSubscribed error', e);
+    }
+  }
+}
+
 interface MediaContext {
   // Connection
   room?: Room
@@ -443,14 +463,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       newRoom.on(RoomEvent.Reconnected, () => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Reconnected')
+          console.log('[LK] Reconnected — resubscribe sweep')
         }
+        ensureSubscribed(newRoom);
         setConnectionState('connected')
       })
       
       newRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Participant joined:', participant.identity)
+          console.log('[LK] Participant connected:', participant.identity)
+        }
+        // Double-check subscriptions to their existing pubs
+        for (const pub of participant.trackPublications.values()) {
+          if (!pub.isSubscribed) pub.setSubscribed(true);
         }
         refreshParticipants()
         refreshTracks()
@@ -462,6 +487,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         refreshParticipants()
         refreshTracks()
+      })
+      
+      newRoom.on(RoomEvent.TrackPublished, (_pub, participant) => {
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[LK] Track published by', participant.identity)
+        }
+        // A tiny defer helps if LK is still normalizing internal state
+        setTimeout(() => ensureSubscribed(newRoom), 0);
       })
       
       newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
@@ -605,6 +638,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         newRoom.on(RoomEvent.SignalConnected, onSignalConnected)
       })
+      
+      // Ensure we're subscribed to anything that existed before our listeners attached
+      ensureSubscribed(newRoom);
       
       // Step 6: Set room in state (triggers rendering)
       setRoom(newRoom)
