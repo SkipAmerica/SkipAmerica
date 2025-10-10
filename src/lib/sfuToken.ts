@@ -5,9 +5,15 @@ export async function fetchLiveKitToken(payload: {
   role: "viewer" | "publisher";
   creatorId: string;
   identity: string;
+  sessionId?: string; // NEW: optional session ID
 }) {
   const { data, error } = await supabase.functions.invoke("get_livekit_token", {
-    body: payload,
+    body: {
+      role: payload.role,
+      creatorId: payload.creatorId,
+      identity: payload.identity,
+      sessionId: payload.sessionId, // Pass session ID if provided
+    },
   });
   
   if (error) {

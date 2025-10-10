@@ -237,26 +237,99 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
     if (!user || processingInvite) return
 
+    // Feature flag check
+    const useV2Flow = import.meta.env.VITE_ALMIGHTY_V2 === 'on'
+
+    if (!useV2Flow) {
+      // LEGACY FLOW: Existing behavior
+      try {
+        setProcessingInvite(true)
+        setActiveInvite(queueEntry)
+        store.dispatch({ type: 'ENTER_PREP' })
+        
+        toast({
+          title: "Starting Pre-Call",
+          description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
+        })
+        
+        onClose()
+      } catch (error: any) {
+        console.error('Error starting pre-call:', error)
+        toast({
+          title: "Failed to Start Pre-Call", 
+          description: error.message || "Failed to start pre-call. Please try again.",
+          variant: "destructive"
+        })
+      } finally {
+        setProcessingInvite(false)
+      }
+      return
+    }
+
+    // ===== V2 FLOW: Atomic RPC =====
     try {
       setProcessingInvite(true)
-      
-      // Set active invite and transition to SESSION_PREP
-      setActiveInvite(queueEntry)
+
+      console.log('[Queue→Almighty] Starting session for queue entry:', queueEntry.id)
+
+      // Analytics breadcrumb
+      if (typeof window !== 'undefined' && (window as any).analytics) {
+        (window as any).analytics.track('queue_start_clicked', {
+          queueEntryId: queueEntry.id,
+          creatorId: user.id,
+          fanId: queueEntry.fan_id
+        })
+      }
+
+      // Call atomic RPC (type assertion until Supabase types regenerate)
+      const { data: sessionId, error } = await supabase
+        .rpc('start_almighty_session' as any, {
+          p_queue_entry: queueEntry.id
+        })
+
+      if (error) {
+        console.error('[Queue→Almighty] RPC failed:', error)
+        throw new Error(error.message || 'Failed to create session')
+      }
+
+      if (!sessionId) {
+        throw new Error('No session ID returned')
+      }
+
+      console.log('[Queue→Almighty] Session created:', sessionId)
+
+      // Analytics breadcrumb
+      if (typeof window !== 'undefined' && (window as any).analytics) {
+        (window as any).analytics.track('session_created', {
+          sessionId,
+          queueEntryId: queueEntry.id,
+          creatorId: user.id,
+          fanId: queueEntry.fan_id
+        })
+      }
+
+      // Transition FSM
       store.dispatch({ type: 'ENTER_PREP' })
-      
+
       toast({
-        title: "Starting Pre-Call",
-        description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
+        title: "Session Starting",
+        description: `Connecting with ${queueEntry.profiles?.full_name || 'user'}...`,
       })
-      
-      // Close drawer after successful transition
+
+      // Close drawer
       onClose()
-      
+
+      // Navigate creator (replace to prevent back button)
+      setTimeout(() => {
+        console.log('[Queue→Almighty] Navigating to session:', sessionId)
+        window.location.assign(`/session/${sessionId}?role=creator`)
+      }, 100)
+
     } catch (error: any) {
-      console.error('Error starting pre-call:', error)
+      console.error('[Queue→Almighty] Error:', error)
       toast({
-        title: "Failed to Start Pre-Call", 
-        description: error.message || "Failed to start pre-call. Please try again.",
+        title: "Failed to Start Session",
+        description: error.message || "Could not start session. Please try again.",
         variant: "destructive"
       })
     } finally {

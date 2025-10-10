@@ -8,6 +8,7 @@ import { IOSAppShell } from '@/components/mobile/IOSAppShell'
 import { LiveControlBar } from '@/components/live/LiveControlBar'
 import PreCallLobby from '@/components/live/PreCallLobby'
 import { useLive } from '@/hooks/live'
+import { useSessionInvites } from '@/hooks/useSessionInvites'
 
 function App() {
   React.useEffect(() => {
@@ -54,6 +55,9 @@ function App() {
 function AppContent() {
   // Always call hooks unconditionally at the top level
   const live = useLive()
+  
+  // Enable V2 session invites (fan-side)
+  useSessionInvites()
   
   // Compute derived values after hooks
   const isLive = live?.isLive || false

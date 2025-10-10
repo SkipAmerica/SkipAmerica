@@ -455,10 +455,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         console.log('[MediaProvider] Step 2: Fetching LiveKit token...', { sessionId, identity })
       }
 
+      // Extract sessionId from URL if present (for V2 validation)
+      const urlSessionId = window.location.pathname.match(/\/session\/([^\/]+)/)?.[1]
+
       const tokenData = await fetchLiveKitToken({
         role: 'publisher',
         creatorId: sessionId,
         identity,
+        sessionId: urlSessionId, // Pass session ID for V2 validation
       })
 
       // Decode and log token payload for debugging

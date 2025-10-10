@@ -40,8 +40,111 @@ serve(async (req) => {
       });
     }
 
-    const { role, creatorId, identity } = await req.json();
-    console.log("[LiveKit Token] Request:", { role, creatorId, identity });
+    const { role, creatorId, identity, sessionId } = await req.json();
+    console.log("[LiveKit Token] Request:", { role, creatorId, identity, sessionId });
+
+    let room: string;
+    let pid: string;
+
+    // Session-based room (Almighty V2)
+    if (sessionId) {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      // Validate session exists
+      const { data: session, error: sessionError } = await supabaseAdmin
+        .from('almighty_sessions')
+        .select('creator_id, fan_id, status')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError || !session) {
+        console.error("[LiveKit Token] Invalid session:", sessionId);
+        return new Response(JSON.stringify({ error: "Invalid session" }), { 
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      if (session.status === 'ended' || session.status === 'cancelled') {
+        console.error("[LiveKit Token] Session already ended:", sessionId);
+        return new Response(JSON.stringify({ error: "Session has ended" }), { 
+          status: 410,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      // Get authenticated user
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Authorization required" }), { 
+          status: 401,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+      if (userError || !user) {
+        console.error("[LiveKit Token] Auth failed:", userError);
+        return new Response(JSON.stringify({ error: "Invalid authentication" }), { 
+          status: 401,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      // Verify user is session participant
+      if (user.id !== session.creator_id && user.id !== session.fan_id) {
+        console.error("[LiveKit Token] Unauthorized user for session:", user.id);
+        return new Response(JSON.stringify({ error: "Not authorized for this session" }), { 
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      // Session-specific room
+      room = `session_${safe(sessionId)}`;
+      pid = safe(identity || user.id);
+
+      console.log("[LiveKit Token] Session room:", room, "for user:", user.id);
+
+      // Create token with metadata
+      const at = new AccessToken(API_KEY, API_SECRET, { 
+        identity: pid,
+        metadata: JSON.stringify({
+          sessionId,
+          role: user.id === session.creator_id ? 'creator' : 'user',
+          userId: user.id
+        })
+      });
+
+      at.addGrant({
+        room,
+        roomJoin: true,
+        canPublish: user.id === session.creator_id || role === "publisher",
+        canSubscribe: true,
+      });
+
+      const jwtToken = await at.toJwt();
+
+      console.log("[LiveKit Token] Token created successfully");
+      console.log("[LiveKit Token] Returning URL:", LIVEKIT_URL);
+
+      return new Response(JSON.stringify({ 
+        token: jwtToken, 
+        url: LIVEKIT_URL, 
+        room 
+      }), {
+        headers: { "content-type": "application/json", ...corsHeaders },
+        status: 200,
+      });
+    }
+
+    // Legacy lobby room (existing flow)
 
     if (!creatorId) {
       return new Response(JSON.stringify({ error: "creatorId required" }), { 
