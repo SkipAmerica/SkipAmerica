@@ -7,6 +7,7 @@ interface PIPDockProps {
   children: React.ReactNode;
   initialCorner?: Corner;
   boundsRef?: React.RefObject<HTMLElement>;
+  avoidRef?: React.RefObject<HTMLElement>;
   shelved?: boolean;
   onShelvedChange?: (val: boolean) => void;
   className?: string;
@@ -23,6 +24,7 @@ export default function PIPDock({
   children,
   initialCorner = 'bottom-right',
   boundsRef,
+  avoidRef,
   shelved: shelvedProp,
   onShelvedChange,
   className,
@@ -67,6 +69,57 @@ export default function PIPDock({
     };
   };
 
+  // Get avoid box in stage coordinates
+  const getAvoidBox = () => {
+    const avoid = avoidRef?.current?.getBoundingClientRect();
+    const bounds = boundsRef?.current?.getBoundingClientRect();
+    if (!avoid || !bounds) return null;
+    
+    return {
+      x: avoid.left - bounds.left,
+      y: avoid.top - bounds.top,
+      w: avoid.width,
+      h: avoid.height,
+    };
+  };
+
+  // Check rect overlap
+  const overlap = (
+    ax: number, ay: number, aw: number, ah: number,
+    bx: number, by: number, bw: number, bh: number
+  ) => ax < bx + bw && ax + aw > bx && ay < by + bh && ay + ah > by;
+
+  // Resolve overlap by minimal nudge (prefer vertical)
+  const resolveAvoid = (x: number, y: number) => {
+    const avoid = getAvoidBox();
+    const { w, h } = stateRef.current;
+    if (!avoid) return { x, y };
+    
+    // No overlap? Return as-is
+    if (!overlap(x, y, w, h, avoid.x, avoid.y, avoid.w, avoid.h)) {
+      return { x, y };
+    }
+    
+    // Calculate nudge distances in each direction
+    const toTop = y + h - avoid.y + padding;
+    const toBottom = avoid.y + avoid.h - y + padding;
+    const toLeft = x + w - avoid.x + padding;
+    const toRight = avoid.x + avoid.w - x + padding;
+    
+    // Pick smallest nudge (prefer vertical)
+    const candidates = [
+      { dx: 0, dy: -toTop, dist: toTop },
+      { dx: 0, dy: toBottom, dist: toBottom },
+      { dx: -toLeft, dy: 0, dist: toLeft },
+      { dx: toRight, dy: 0, dist: toRight },
+    ].filter(c => c.dist > 0).sort((a, b) => a.dist - b.dist);
+    
+    if (!candidates.length) return { x, y };
+    
+    const best = candidates[0];
+    return clampToRect(x + best.dx, y + best.dy);
+  };
+
   // Apply transform with optional shelf offset
   const apply = () => {
     const el = frameRef.current;
@@ -74,17 +127,18 @@ export default function PIPDock({
 
     const { x, y, shelved, corner } = stateRef.current;
     const clamped = clampToRect(x, y);
+    const cleared = resolveAvoid(clamped.x, clamped.y);
 
-    let tx = clamped.x;
-    let ty = clamped.y;
+    let tx = cleared.x;
+    let ty = cleared.y;
 
     // Shelf offset: keep 26px handle visible
     if (shelved) {
       const handleSize = 26;
       if (corner.includes('left')) tx = -(stateRef.current.w - handleSize);
-      if (corner.includes('right')) tx = clamped.x + (stateRef.current.w - handleSize);
+      if (corner.includes('right')) tx = cleared.x + (stateRef.current.w - handleSize);
       if (corner.includes('top')) ty = -(stateRef.current.h - handleSize);
-      if (corner.includes('bottom')) ty = clamped.y + (stateRef.current.h - handleSize);
+      if (corner.includes('bottom')) ty = cleared.y + (stateRef.current.h - handleSize);
     }
 
     el.style.transform = `translate3d(${tx}px, ${ty}px, 0)`;
@@ -208,6 +262,7 @@ export default function PIPDock({
       }
 
       placeAtCorner(nearest);
+      apply(); // Re-apply to trigger collision detection after snap
 
       setTimeout(() => {
         if (el) el.style.transition = '';

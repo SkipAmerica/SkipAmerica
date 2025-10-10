@@ -29,25 +29,28 @@ export function MediaControls({
   const [showAudioMenu, setShowAudioMenu] = useState(false)
   
   return (
-    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[45]">
+    <div 
+      className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 z-[45] bg-[#00D1FF]/95 backdrop-blur-sm shadow-xl border border-white/20 rounded-full px-6 py-3"
+      style={{ '--skip-cyan': '#00D1FF' } as React.CSSProperties}
+    >
       {/* Mic Toggle */}
       <Button 
         variant="secondary" 
         size="icon" 
-        className="w-14 h-14 rounded-full bg-black/60 hover:bg-black/70" 
+        className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200" 
         onClick={onToggleMic}
       >
-        {micEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+        {micEnabled ? <Mic className="h-5 w-5 stroke-white" /> : <MicOff className="h-5 w-5 stroke-white" />}
       </Button>
       
       {/* Camera Toggle */}
       <Button 
         variant="secondary" 
         size="icon" 
-        className="w-14 h-14 rounded-full bg-black/60 hover:bg-black/70" 
+        className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200" 
         onClick={onToggleCam}
       >
-        {camEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+        {camEnabled ? <Video className="h-5 w-5 stroke-white" /> : <VideoOff className="h-5 w-5 stroke-white" />}
       </Button>
       
       {/* Flip Camera (mobile only, with spinner) */}
@@ -55,14 +58,14 @@ export function MediaControls({
         <Button
           variant="secondary"
           size="icon"
-          className="w-14 h-14 rounded-full bg-black/60 hover:bg-black/70"
+          className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200"
           onClick={onFlipCamera}
           disabled={!camEnabled || isFlippingCamera}
         >
           {isFlippingCamera ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin stroke-white" />
           ) : (
-            <SwitchCamera className="h-5 w-5" />
+            <SwitchCamera className="h-5 w-5 stroke-white" />
           )}
         </Button>
       )}
@@ -71,8 +74,12 @@ export function MediaControls({
       {audioOutputDevices && audioOutputDevices.length > 1 && (
         <DropdownMenu open={showAudioMenu} onOpenChange={setShowAudioMenu}>
           <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="w-14 h-14 rounded-full bg-black/60 hover:bg-black/70">
-              <Speaker className="h-5 w-5" />
+            <Button 
+              variant="secondary" 
+              size="icon" 
+              className="w-14 h-14 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200"
+            >
+              <Speaker className="h-5 w-5 stroke-white" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>

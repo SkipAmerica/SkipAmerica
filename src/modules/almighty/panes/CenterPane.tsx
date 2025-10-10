@@ -38,6 +38,7 @@ export function CenterPane() {
   
   const containerRef = useRef<HTMLDivElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
+  const controlsRef = useRef<HTMLDivElement>(null)
   const {
     drawerTranslateY,
     handleChatTouchStart,
@@ -127,7 +128,7 @@ export function CenterPane() {
         
         {/* PIP with Draggable Dock */}
         {pip ? (
-          <PIPDock boundsRef={stageRef} initialCorner="bottom-right">
+          <PIPDock boundsRef={stageRef} avoidRef={controlsRef} initialCorner="bottom-right">
             <PIP
               trackRef={pip}
               mirror={pip.isLocal && facingMode === 'user'}
@@ -144,17 +145,19 @@ export function CenterPane() {
       </div>
       
       {/* Media Controls */}
-      <MediaControls
-        micEnabled={micEnabled}
-        camEnabled={camEnabled}
-        canFlipCamera={canFlip}
-        isFlippingCamera={isFlippingCamera}
-        audioOutputDevices={audioOutputDevices}
-        onToggleMic={toggleMic}
-        onToggleCam={toggleCam}
-        onFlipCamera={flipCamera}
-        onSwitchAudioOutput={switchAudioOutput}
-      />
+      <div ref={controlsRef}>
+        <MediaControls
+          micEnabled={micEnabled}
+          camEnabled={camEnabled}
+          canFlipCamera={canFlip}
+          isFlippingCamera={isFlippingCamera}
+          audioOutputDevices={audioOutputDevices}
+          onToggleMic={toggleMic}
+          onToggleCam={toggleCam}
+          onFlipCamera={flipCamera}
+          onSwitchAudioOutput={switchAudioOutput}
+        />
+      </div>
       
       {/* Chat Drawer */}
       <ChatDrawer
