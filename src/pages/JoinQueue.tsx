@@ -16,6 +16,8 @@ import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useCreatorPresence } from '@/shared/hooks';
 import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
+import { ErrorBoundary } from '@/shared/ui/error-boundary';
+import { MediaProvider } from '@/modules/almighty/providers/MediaProvider';
 import { z } from 'zod';
 
 const displayNameSchema = z.string()
@@ -646,8 +648,10 @@ export default function JoinQueue() {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-safe pb-20">
-      <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <ErrorBoundary>
+      <MediaProvider>
+        <div className="min-h-screen bg-background pb-safe pb-20">
+          <div className="container mx-auto px-4 py-6 max-w-7xl">
         {/* Creator info header */}
         <div className="mb-4">
           <div className="flex items-center justify-between gap-4 bg-card rounded-lg p-4 border">
@@ -838,5 +842,7 @@ export default function JoinQueue() {
         creatorName={creator?.full_name || 'Creator'}
       />
     </div>
+      </MediaProvider>
+    </ErrorBoundary>
   );
 }
