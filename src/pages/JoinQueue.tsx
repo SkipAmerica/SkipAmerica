@@ -67,6 +67,7 @@ export default function JoinQueue() {
   const [hasConsentedToBroadcast, setHasConsentedToBroadcast] = useState(false);
   const [actualPosition, setActualPosition] = useState<number | null>(null);
   const [consentStream, setConsentStream] = useState<MediaStream | undefined>(undefined);
+  const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
 
   const isUnloadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -237,6 +238,7 @@ export default function JoinQueue() {
 
       if (queueEntry) {
         setIsInQueue(true);
+        setQueueEntryId(queueEntry.id);
         setDiscussionTopic(queueEntry.discussion_topic || '');
       }
 
@@ -525,7 +527,9 @@ export default function JoinQueue() {
   };
 
   const handleConsentAgree = async () => {
-    console.log('[JoinQueue] 🎥 Fan consented to broadcast');
+    if (!user || !creatorId || !queueEntryId) return;
+
+    console.log('[JoinQueue] 📹 User consented - updating readiness flags');
     
     // Capture media stream to use for publishing
     try {
@@ -548,6 +552,36 @@ export default function JoinQueue() {
         audioEnabled: stream.getAudioTracks()[0]?.enabled
       });
       setConsentStream(stream);
+      
+      // Update readiness flags in database
+      const { error } = await supabase
+        .from('call_queue')
+        .update({
+          fan_has_consented: true,
+          fan_camera_ready: true,
+          fan_preview_updated_at: new Date().toISOString(),
+        })
+        .eq('id', queueEntryId);
+
+      if (error) {
+        console.error('[JoinQueue] Failed to update readiness:', error);
+        toast({
+          title: "Error",
+          description: "Failed to activate video preview. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      setHasConsentedToBroadcast(true);
+      setShowConsentModal(false);
+      
+      console.log('[JoinQueue] ✅ Readiness flags updated successfully');
+      
+      toast({
+        title: "Video Preview Active",
+        description: `Waiting for ${creator?.full_name} to start your call...`,
+      });
     } catch (err) {
       console.error('[JoinQueue] ❌ Failed to capture media stream:', err);
       toast({
@@ -557,16 +591,6 @@ export default function JoinQueue() {
       });
       return;
     }
-    
-    setHasConsentedToBroadcast(true);
-    setShowConsentModal(false);
-    
-    console.log('[JoinQueue] 🚀 Broadcasting state updated - BroadcastViewer will switch to publisher mode');
-    
-    toast({
-      title: "Broadcasting Started",
-      description: `${creator?.full_name} can now see your video preview.`,
-    });
   };
 
   // Log state changes for debugging
@@ -580,14 +604,26 @@ export default function JoinQueue() {
     });
   }, [isInQueue, hasConsentedToBroadcast, forceBroadcast, consentStream]);
 
-  const handleConsentDecline = () => {
-    console.log('[JoinQueue] Fan declined broadcast consent');
-    setShowConsentModal(false);
-    toast({
-      title: "Not Ready",
-      description: "You can agree when you're ready. You'll keep your position in line.",
-      variant: "default"
-    });
+  const handleConsentDecline = async () => {
+    console.log('[JoinQueue] User declined consent - leaving queue');
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "Are you sure you want to leave the queue? You'll lose your spot in line."
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    // Clean up consent stream
+    if (consentStream) {
+      consentStream.getTracks().forEach(track => track.stop());
+      setConsentStream(undefined);
+    }
+
+    // Leave queue (triggers existing cleanup logic)
+    await handleLeaveQueue();
   };
 
   if (authLoading || autoLoginLoading || loading) {
@@ -663,6 +699,25 @@ export default function JoinQueue() {
           </div>
         </div>
 
+        {/* Waiting Status Banner */}
+        {isInQueue && actualPosition === 1 && hasConsentedToBroadcast && (
+          <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                <div className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-cyan-600 dark:text-cyan-400">
+                  Waiting for Creator to Start Call
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  You're ready! {creator.full_name} can see your preview and will invite you shortly.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main content grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video section - takes 2/3 on large screens */}
@@ -674,6 +729,7 @@ export default function JoinQueue() {
                 isInQueue={isInQueue}
                 shouldPublishFanVideo={isInQueue && (hasConsentedToBroadcast || forceBroadcast)}
                 consentStream={consentStream}
+                creatorName={creator.full_name}
               />
             </div>
           </div>
@@ -791,7 +847,7 @@ export default function JoinQueue() {
       <NextUpConsentModal
         isOpen={showConsentModal}
         onAgree={handleConsentAgree}
-        onDecline={handleConsentDecline}
+        onLeaveQueue={handleConsentDecline}
         creatorName={creator?.full_name || 'Creator'}
         creatorTerms={undefined} // TODO: Add creator terms from database
       />

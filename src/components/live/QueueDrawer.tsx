@@ -21,6 +21,8 @@ interface QueueEntry {
   joined_at: string
   estimated_wait_minutes: number
   discussion_topic?: string
+  fan_has_consented?: boolean
+  fan_camera_ready?: boolean
   profiles?: {
     full_name: string
     avatar_url: string | null
@@ -101,7 +103,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       // First get queue entries, prioritizing by priority field first
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic, priority')
+        .select('*, discussion_topic, priority, fan_has_consented, fan_camera_ready')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
         .order('priority', { ascending: false })
@@ -266,7 +268,18 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
       return
     }
 
-    // ===== V2 FLOW: Atomic RPC =====
+    // ===== V2 FLOW: Atomic RPC with Readiness Guard =====
+    
+    // Check if fan is ready (client-side validation)
+    if (!(queueEntry as any).fan_camera_ready || !(queueEntry as any).fan_has_consented) {
+      toast({
+        title: "Cannot Start Session",
+        description: "Fan hasn't passed camera check yet. Please wait for them to enable their camera.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       setProcessingInvite(true)
 
@@ -289,6 +302,16 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
 
       if (error) {
         console.error('[Queue→Almighty] RPC failed:', error)
+        
+        if (error.message?.includes('fan_not_ready')) {
+          toast({
+            title: "Fan Not Ready",
+            description: "Fan hasn't enabled their camera yet. Please wait.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
         throw new Error(error.message || 'Failed to create session')
       }
 

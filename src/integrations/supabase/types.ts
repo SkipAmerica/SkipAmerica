@@ -418,7 +418,10 @@ export type Database = {
           creator_id: string
           discussion_topic: string | null
           estimated_wait_minutes: number | null
+          fan_camera_ready: boolean
+          fan_has_consented: boolean
           fan_id: string
+          fan_preview_updated_at: string | null
           id: string
           joined_at: string
           last_seen: string | null
@@ -430,7 +433,10 @@ export type Database = {
           creator_id: string
           discussion_topic?: string | null
           estimated_wait_minutes?: number | null
+          fan_camera_ready?: boolean
+          fan_has_consented?: boolean
           fan_id: string
+          fan_preview_updated_at?: string | null
           id?: string
           joined_at?: string
           last_seen?: string | null
@@ -442,7 +448,10 @@ export type Database = {
           creator_id?: string
           discussion_topic?: string | null
           estimated_wait_minutes?: number | null
+          fan_camera_ready?: boolean
+          fan_has_consented?: boolean
           fan_id?: string
+          fan_preview_updated_at?: string | null
           id?: string
           joined_at?: string
           last_seen?: string | null
@@ -2482,6 +2491,10 @@ export type Database = {
       mark_thread_read: {
         Args: { p_thread_id: string; p_user_id: string }
         Returns: undefined
+      }
+      start_almighty_session: {
+        Args: { p_queue_entry: string }
+        Returns: string
       }
     }
     Enums: {
