@@ -98,7 +98,7 @@ export function UIProvider({ children }: { children: React.ReactNode }) {
     
     const handleStorageChange = () => {
       const stored = sessionStorage.getItem(`almighty_focus_${sessionId}`)
-      if (stored === 'remote' && primaryFocus === 'local' && !manualPinActive) {
+      if (stored === 'remote' && primaryFocus !== 'remote') {
         _setPrimaryFocus('remote')
         if (process.env.NODE_ENV !== 'production') {
           console.log('[UIProvider] Auto-swapped to remote via sessionStorage')

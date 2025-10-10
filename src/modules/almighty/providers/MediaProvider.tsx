@@ -428,6 +428,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       // Step 3: Create room
       newRoom = createRoom()
       
+      // Clear stale focus preference on join
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.removeItem(`almighty_focus_${joinParamsRef.current?.sessionId}`)
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('[MediaProvider] Cleared stale focus preference')
+        }
+      }
+      
       // Export room state
       exportDebug({ 
         room: newRoom, 
@@ -518,6 +526,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
               sessionStorage.setItem(`almighty_focus_${sessionId}`, 'remote')
             }
             
+            // 🚀 Immediately make remote primary (no polling delay)
+            setPrimaryRemote()
             hasAutoPromotedRef.current = true
             
             if (process.env.NODE_ENV !== 'production') {
@@ -725,6 +735,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           t.stop?.()
         } catch {}
       })
+      
+      // Reset auto-promotion state for next session
+      hasAutoPromotedRef.current = false
+      userPinnedRef.current = false
       
       // Classify error
       if (err.is401Or403) {
