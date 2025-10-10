@@ -62,7 +62,7 @@ export function CenterPane() {
   }
   
   return (
-    <div ref={containerRef} className="relative h-full bg-black overflow-hidden">
+    <div ref={containerRef} className="relative h-full min-h-0 bg-black overflow-hidden">
       {/* Connection Banner */}
       <ConnectionBanner
         connectionState={connectionState}

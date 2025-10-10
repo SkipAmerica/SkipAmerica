@@ -236,17 +236,17 @@ function AlmightyShell() {
       onClick={handleUserAction}
       onTouchStart={handleUserAction}
     >
-      <div className="w-screen h-full flex-shrink-0" data-pane="left">
+      <div className="w-screen h-full min-h-0 flex-shrink-0" data-pane="left">
         <PaneErrorBoundary paneName="Left Pane">
           <LeftPane />
         </PaneErrorBoundary>
       </div>
-      <div className="w-screen h-full flex-shrink-0" data-pane="center">
+      <div className="w-screen h-full min-h-0 flex-shrink-0" data-pane="center">
         <PaneErrorBoundary paneName="Center Pane">
           <CenterPane />
         </PaneErrorBoundary>
       </div>
-      <div className="w-screen h-full flex-shrink-0" data-pane="right">
+      <div className="w-screen h-full min-h-0 flex-shrink-0" data-pane="right">
         <PaneErrorBoundary paneName="Right Pane">
           <RightPane />
         </PaneErrorBoundary>
