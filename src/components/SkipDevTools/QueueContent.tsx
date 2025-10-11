@@ -220,6 +220,26 @@ export function QueueContent() {
         },
         (payload) => {
           console.log('[QueueContent] Real-time queue change:', payload)
+          
+          // Filter out heartbeat-only updates to prevent unnecessary refetches
+          if (payload.eventType === 'UPDATE') {
+            const oldRecord = payload.old as any
+            const newRecord = payload.new as any
+            
+            if (oldRecord && newRecord) {
+              // Get keys that actually changed
+              const changedKeys = Object.keys(newRecord).filter(
+                key => newRecord[key] !== oldRecord[key]
+              )
+              
+              // If only last_seen changed, it's just a heartbeat - ignore it
+              if (changedKeys.length === 1 && changedKeys[0] === 'last_seen') {
+                console.log('[QueueContent] Ignoring heartbeat-only update')
+                return
+              }
+            }
+          }
+          
           // Debounced refetch to prevent rapid successive calls
           debouncedFetch()
         }
@@ -262,6 +282,16 @@ export function QueueContent() {
     setIsFullscreenOpen(false)
     setFullscreenUserId(null)
   }, [])
+  
+  const handleMuteToggle = useCallback(() => {
+    setFanMuted(prev => !prev)
+  }, [])
+  
+  const handleStartCall = useCallback(() => {
+    if (state.entries[0]) {
+      console.log("Starting call with:", state.entries[0].fan_id)
+    }
+  }, [state.entries])
 
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
@@ -354,17 +384,16 @@ export function QueueContent() {
                           </div>
                         </div>
                         <NextUserPreview
+                          key="lobby-preview"
                           userId={state.entries[0].fan_id}
                           creatorId={user.id}
                           userName={state.entries[0].profiles?.full_name}
                           discussionTopic={state.entries[0].discussion_topic}
                           waitTime={state.entries[0].estimated_wait_minutes}
                           muted={fanMuted}
-                          onMuteToggle={() => setFanMuted(!fanMuted)}
+                          onMuteToggle={handleMuteToggle}
                           disableMuteToggle={isLobbyBroadcasting}
-                          onStartCall={() => {
-                            console.log("Starting call with:", state.entries[0].fan_id);
-                          }}
+                          onStartCall={handleStartCall}
                           onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
                         />
                       </div>
