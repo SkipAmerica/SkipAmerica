@@ -32,7 +32,6 @@ interface QueueState {
   entries: QueueEntry[]
   loading: boolean
   error: string | null
-  retryCount: number
   isConnected: boolean
 }
 
@@ -42,12 +41,12 @@ export function QueueContent() {
   const { isLobbyBroadcasting } = useLiveStore()
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
+  const retryCountRef = useRef(0)
   
   const [state, setLocalState] = useState<QueueState>({
     entries: [],
     loading: false,
     error: null,
-    retryCount: 0,
     isConnected: true
   })
 
@@ -154,12 +153,12 @@ export function QueueContent() {
 
       // Only update state if not aborted
       if (!abortController.signal.aborted) {
+        retryCountRef.current = 0
         setLocalState(prev => ({
           ...prev,
           entries: enrichedEntries,
           loading: false,
           error: null,
-          retryCount: 0,
           isConnected: true
         }))
       }
@@ -173,17 +172,17 @@ export function QueueContent() {
       
       console.error('Error fetching queue:', error)
       
+      retryCountRef.current += 1
       setLocalState(prev => ({
         ...prev,
         loading: false,
         error: error.message || 'Failed to load queue',
-        retryCount: prev.retryCount + 1,
         isConnected: false
       }))
 
       // Auto-retry with exponential backoff (max 2 retries)
-      if (state.retryCount < 2 && !abortController.signal.aborted) {
-        const delay = Math.min(2000 * Math.pow(2, state.retryCount), 6000)
+      if (retryCountRef.current < 2 && !abortController.signal.aborted) {
+        const delay = Math.min(2000 * Math.pow(2, retryCountRef.current), 6000)
         retryTimeoutRef.current = setTimeout(() => {
           if (!abortController.signal.aborted) {
             fetchQueue(true)
@@ -191,7 +190,7 @@ export function QueueContent() {
         }, delay)
       }
     }
-  }, [user, state.retryCount])
+  }, [user])
 
   // Setup real-time subscription for queue changes with debounced fetching
   useEffect(() => {
@@ -269,7 +268,7 @@ export function QueueContent() {
   }, [state.entries[0]?.id])
 
   const handleRetry = useCallback(() => {
-    setLocalState(prev => ({ ...prev, retryCount: 0 }))
+    retryCountRef.current = 0
     fetchQueue(true)
   }, [fetchQueue])
 
