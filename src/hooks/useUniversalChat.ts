@@ -1,20 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatConfig } from '@/shared/types/chat';
-import { audioNotifications } from '@/lib/audio-notifications';
 
-export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void, playSound?: boolean) {
+export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
-
-  // Keep playSound in a ref to avoid subscription recreation
-  const playSoundRef = useRef(playSound);
-  
-  // Update ref when playSound changes
-  useEffect(() => {
-    playSoundRef.current = playSound;
-  }, [playSound]);
 
   // Extract stable primitive values to prevent unnecessary re-renders
   const tableName = config.tableName;
@@ -108,14 +99,6 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void, 
         },
         async (payload) => {
           console.log(`[useUniversalChat] Real-time INSERT received on ${channelName}:`, payload.new);
-          
-          // Play notification sound if enabled
-          console.log('[useUniversalChat] playSound value:', playSoundRef.current);
-          if (playSoundRef.current === true) {
-            console.log('[useUniversalChat] Calling audioNotifications.playNotification()');
-            audioNotifications.playNotification();
-            console.log('[useUniversalChat] audioNotifications.playNotification() returned');
-          }
           
           // Handle both user_id and sender_id for different table structures
           const senderId = (payload.new as any).user_id ?? (payload.new as any).sender_id;

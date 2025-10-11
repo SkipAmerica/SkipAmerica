@@ -213,7 +213,6 @@ export default function TabbedOverlayChat({
               }}
               className="bg-transparent"
               leftButton={leftButton}
-              playSound={true}
             />
             </div>
           </TabsContent>

@@ -21,10 +21,9 @@ interface UniversalChatProps {
   className?: string;
   leftButton?: React.ReactNode;
   onNewMessage?: () => void;
-  playSound?: boolean;
 }
 
-export function UniversalChat({ config, className = '', leftButton, onNewMessage, playSound }: UniversalChatProps) {
+export function UniversalChat({ config, className = '', leftButton, onNewMessage }: UniversalChatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showProfiles, setShowProfiles] = useState(config.appearance?.showProfiles ?? true);
@@ -39,7 +38,7 @@ export function UniversalChat({ config, className = '', leftButton, onNewMessage
     setNewMessage,
     sending,
     setSending
-  } = useUniversalChat(config, onNewMessage, playSound);
+  } = useUniversalChat(config, onNewMessage);
 
   // Auto-scroll to bottom only when new messages arrive
   useEffect(() => {
