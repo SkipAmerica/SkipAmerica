@@ -20,6 +20,7 @@ export function ChatDrawer({
         transform: `translateY(${translateY}px)`,
         touchAction: 'pan-y',
         pointerEvents: isOpen ? 'auto' : 'none',
+        visibility: isOpen ? 'visible' : 'hidden',
         paddingTop: 'calc(12px + env(safe-area-inset-top))'
       }}
       onTouchStart={onTouchStart}

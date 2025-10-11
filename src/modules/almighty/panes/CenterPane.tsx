@@ -147,7 +147,7 @@ export function CenterPane() {
       {/* Media Controls */}
       <div 
         ref={controlsRef}
-        className="pointer-events-auto"
+        className="pointer-events-auto z-[65]"
         style={{
           position: 'absolute',
           left: '50%',
