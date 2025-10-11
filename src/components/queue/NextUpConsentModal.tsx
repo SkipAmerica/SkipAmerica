@@ -9,7 +9,7 @@ import { useMedia } from '@/modules/almighty/providers/MediaProvider';
 interface NextUpConsentModalProps {
   open: boolean;
   creatorName: string;
-  onConsented: () => void | Promise<void>;
+  onConsented: (stream: MediaStream) => void | Promise<void>;
   onLeaveQueue: () => void;
   isProcessing?: boolean;
 }
@@ -82,7 +82,7 @@ export function NextUpConsentModal({
   }, [localVideo])
 
   const handleAgree = () => {
-    if (!localVideo) {
+    if (!localVideo?.track) {
       console.error('[ConsentModal] ❌ Cannot agree - no video stream');
       return;
     }
@@ -93,8 +93,20 @@ export function NextUpConsentModal({
       trackMuted: localVideo.track?.isMuted
     });
     
-    // Parent handles all state management
-    onConsented();
+    // Extract native MediaStreamTrack from LiveKit track
+    const nativeTrack = localVideo.track.mediaStreamTrack;
+    if (!nativeTrack) {
+      console.error('[ConsentModal] ❌ No native MediaStreamTrack available');
+      return;
+    }
+    
+    const stream = new MediaStream([nativeTrack]);
+    console.log('[ConsentModal] 📤 Passing stream to parent:', {
+      streamId: stream.id,
+      tracks: stream.getTracks().map(t => ({ kind: t.kind, id: t.id }))
+    });
+    
+    onConsented(stream);
   };
 
   const handleLeave = () => {

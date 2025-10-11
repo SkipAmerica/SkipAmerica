@@ -541,8 +541,14 @@ export default function JoinQueue() {
     }
   };
 
-  const handleConsentAgree = async () => {
-    console.log('[JoinQueue] 🎬 handleConsentAgree called');
+  const handleConsentAgree = async (stream: MediaStream) => {
+    console.log('[JoinQueue] 🎬 handleConsentAgree called with stream:', {
+      streamId: stream.id,
+      tracks: stream.getTracks().map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled }))
+    });
+    
+    // Store the stream immediately
+    setConsentStream(stream);
     
     // Pre-flight validation
     if (!user?.id) {
