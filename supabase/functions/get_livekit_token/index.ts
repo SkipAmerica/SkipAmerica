@@ -54,30 +54,7 @@ serve(async (req) => {
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
-      // Validate session exists
-      const { data: session, error: sessionError } = await supabaseAdmin
-        .from('almighty_sessions')
-        .select('creator_id, fan_id, status')
-        .eq('id', sessionId)
-        .single();
-
-      if (sessionError || !session) {
-        console.error("[LiveKit Token] Invalid session:", sessionId);
-        return new Response(JSON.stringify({ error: "Invalid session" }), { 
-          status: 403,
-          headers: { "content-type": "application/json", ...corsHeaders }
-        });
-      }
-
-      if (session.status === 'ended' || session.status === 'cancelled') {
-        console.error("[LiveKit Token] Session already ended:", sessionId);
-        return new Response(JSON.stringify({ error: "Session has ended" }), { 
-          status: 410,
-          headers: { "content-type": "application/json", ...corsHeaders }
-        });
-      }
-
-      // Get authenticated user
+      // AUTH FIRST (required even for dev sessions)
       const authHeader = req.headers.get('Authorization');
       if (!authHeader) {
         return new Response(JSON.stringify({ error: "Authorization required" }), { 
@@ -97,7 +74,66 @@ serve(async (req) => {
         });
       }
 
-      // Verify user is session participant
+      // NOW validate session
+      const { data: session, error: sessionError } = await supabaseAdmin
+        .from('almighty_sessions')
+        .select('creator_id, fan_id, status, is_dev')
+        .eq('id', sessionId)
+        .single();
+
+      if (sessionError || !session) {
+        console.error("[LiveKit Token] Invalid session:", sessionId, sessionError);
+        return new Response(JSON.stringify({ error: "Invalid session" }), { 
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      if (session.status === 'ended') {
+        console.error("[LiveKit Token] Session already ended:", sessionId);
+        return new Response(JSON.stringify({ error: "Session has ended" }), { 
+          status: 410,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+
+      // DEV SESSION BYPASS (skip participant verification)
+      if (session.is_dev) {
+        console.log("[LiveKit Token] ✅ Dev session bypass for:", sessionId, "user:", user.id);
+        
+        room = `session_${safe(sessionId)}`;
+        pid = safe(identity || user.id);
+
+        const at = new AccessToken(API_KEY, API_SECRET, { 
+          identity: pid,
+          metadata: JSON.stringify({
+            sessionId,
+            role: 'creator',
+            userId: user.id,
+            mode: 'dev'
+          })
+        });
+
+        at.addGrant({
+          room,
+          roomJoin: true,
+          canPublish: true,
+          canSubscribe: true,
+        });
+
+        const jwtToken = await at.toJwt();
+
+        return new Response(JSON.stringify({ 
+          token: jwtToken, 
+          url: LIVEKIT_URL, 
+          room 
+        }), {
+          headers: { "content-type": "application/json", ...corsHeaders },
+          status: 200,
+        });
+      }
+
+      // PRODUCTION: Verify user is participant
       if (user.id !== session.creator_id && user.id !== session.fan_id) {
         console.error("[LiveKit Token] Unauthorized user for session:", user.id);
         return new Response(JSON.stringify({ error: "Not authorized for this session" }), { 
@@ -132,7 +168,6 @@ serve(async (req) => {
       const jwtToken = await at.toJwt();
 
       console.log("[LiveKit Token] Token created successfully");
-      console.log("[LiveKit Token] Returning URL:", LIVEKIT_URL);
 
       return new Response(JSON.stringify({ 
         token: jwtToken, 

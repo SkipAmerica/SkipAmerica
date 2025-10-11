@@ -144,6 +144,50 @@ export type Database = {
           },
         ]
       }
+      almighty_sessions: {
+        Row: {
+          created_at: string
+          creator_id: string
+          duration_seconds: number | null
+          ended_at: string | null
+          fan_id: string
+          id: string
+          is_dev: boolean
+          queue_entry_id: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          fan_id: string
+          id?: string
+          is_dev?: boolean
+          queue_entry_id?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          duration_seconds?: number | null
+          ended_at?: string | null
+          fan_id?: string
+          id?: string
+          is_dev?: boolean
+          queue_entry_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "almighty_sessions_queue_entry_id_fkey"
+            columns: ["queue_entry_id"]
+            isOneToOne: false
+            referencedRelation: "call_queue"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_messages: {
         Row: {
           appointment_id: string
@@ -2142,6 +2186,41 @@ export type Database = {
         }
         Relationships: []
       }
+      session_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_id: string
+          responded_at: string | null
+          session_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_id: string
+          responded_at?: string | null
+          session_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_id?: string
+          responded_at?: string | null
+          session_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_invites_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "almighty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_accounts: {
         Row: {
           access_token: string | null
@@ -2481,6 +2560,10 @@ export type Database = {
       clear_all_queues: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_dev_session: {
+        Args: { _label?: string }
+        Returns: string
       }
       creator_inbox_counts: {
         Args: { p_creator_id: string }
