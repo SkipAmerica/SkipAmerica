@@ -35,17 +35,24 @@ export function NextUpConsentModal({
   useEffect(() => {
     if (!open || localVideo) return
 
-    console.log('[ConsentModal] Requesting camera preview...')
-    previewOnly().catch(err => {
-      console.error('[ConsentModal] Camera request failed:', err)
-    })
+    console.log('[ConsentModal] 📹 Requesting camera preview...')
+    previewOnly()
+      .then(() => {
+        console.log('[ConsentModal] ✅ Camera preview ready')
+      })
+      .catch(err => {
+        console.error('[ConsentModal] ❌ Camera request failed:', err)
+      })
   }, [open, localVideo, previewOnly])
 
   // Attach video track to preview element
   useEffect(() => {
     if (!localVideo?.track || !previewRef.current) return
 
-    console.log('[ConsentModal] Attaching preview track to video element')
+    console.log('[ConsentModal] 🎥 Attaching preview track to video element', {
+      trackKind: localVideo.track.kind,
+      trackMuted: localVideo.track.isMuted
+    })
     const videoElement = previewRef.current
     
     try {
@@ -54,11 +61,15 @@ export function NextUpConsentModal({
       videoElement.playsInline = true
       videoElement.autoplay = true
       
-      videoElement.play().catch(err => {
-        console.warn('[ConsentModal] Video play failed:', err)
-      })
+      videoElement.play()
+        .then(() => {
+          console.log('[ConsentModal] ✅ Video playing in preview')
+        })
+        .catch(err => {
+          console.warn('[ConsentModal] ⚠️ Video play failed:', err)
+        })
     } catch (err) {
-      console.error('[ConsentModal] Failed to attach track:', err)
+      console.error('[ConsentModal] ❌ Failed to attach track:', err)
     }
 
     return () => {
@@ -72,9 +83,15 @@ export function NextUpConsentModal({
 
   const handleAgree = () => {
     if (!localVideo) {
-      console.error('[ConsentModal] Cannot agree - no video stream');
+      console.error('[ConsentModal] ❌ Cannot agree - no video stream');
       return;
     }
+    
+    console.log('[ConsentModal] ✅ User agreed - video stream ready:', {
+      hasTrack: !!localVideo.track,
+      trackKind: localVideo.track?.kind,
+      trackMuted: localVideo.track?.isMuted
+    });
     
     // Parent handles all state management
     onConsented();

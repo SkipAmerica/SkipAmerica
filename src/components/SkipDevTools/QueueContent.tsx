@@ -357,9 +357,15 @@ export function QueueContent() {
           /* Queue Entries */
           <div className="flex flex-col h-full">
             {/* Sticky First Entry */}
-            {state.entries.length > 0 && (
-              <div className="sticky top-0 bg-background z-10 pb-3 shadow-sm">
-                <SwipeableQueueCard
+            {state.entries.length > 0 && (() => {
+              console.log('[QueueContent] 🎬 Rendering NextUserPreview for fan:', {
+                fanId: state.entries[0].fan_id,
+                creatorId: user.id,
+                fanName: state.entries[0].profiles?.full_name
+              });
+              return (
+                <div className="sticky top-0 bg-background z-10 pb-3 shadow-sm">
+                  <SwipeableQueueCard
                   nextUpPanel={
                     <div className="flex flex-col h-full">
                       {/* Row 1: Video */}
@@ -474,7 +480,8 @@ export function QueueContent() {
                   }}
                 />
               </div>
-            )}
+            );
+          })()}
           </div>
         )}
       </div>

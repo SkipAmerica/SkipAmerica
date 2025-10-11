@@ -84,9 +84,31 @@ export function BroadcastViewer({
 
   // Effect to transition to publisher mode (one-time connection)
   useEffect(() => {
+    console.log('[BroadcastViewer] 🔍 Checking publisher transition:', {
+      shouldPublishFanVideo,
+      hasConsentStream: !!consentStream,
+      consentStreamTracks: consentStream?.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        readyState: t.readyState
+      })),
+      resolvedCreatorId,
+      fanUserId,
+      publisherMode: publisherModeRef.current,
+      hasConnected: hasConnectedRef.current
+    });
+    
     if (publisherModeRef.current) return;
     
     if (consentStream && !hasConnectedRef.current) {
+      console.log('[BroadcastViewer] ✅ Activating fan publisher mode', {
+        creatorId: resolvedCreatorId,
+        fanId: fanUserId,
+        roomName: lobbyRoomName(resolvedCreatorId || ''),
+        videoTracks: consentStream.getVideoTracks().length,
+        audioTracks: consentStream.getAudioTracks().length
+      });
+      
       publisherModeRef.current = true;
       hasConnectedRef.current = true;
       console.log('[BroadcastViewer] 🎬 Starting one-time lobby publish');
@@ -158,7 +180,17 @@ export function BroadcastViewer({
 
   // Fan publishing mode: Show self-preview only, publish to creator
   if (publisherModeRef.current && consentStream) {
-    console.log('[BroadcastViewer] 📹 Fan publisher mode - showing self-preview only');
+    console.log('[BroadcastViewer] 📹 Fan publisher mode - showing self-preview only', {
+      fanUserId,
+      resolvedCreatorId,
+      roomName: lobbyRoomName(resolvedCreatorId || ''),
+      consentStreamActive: consentStream.active,
+      videoTracks: consentStream.getVideoTracks().map(t => ({
+        id: t.id,
+        enabled: t.enabled,
+        readyState: t.readyState
+      }))
+    });
     
     return (
       <div className="relative w-full h-full bg-gradient-to-br from-primary/20 via-background to-primary/10">
@@ -208,11 +240,12 @@ export function BroadcastViewer({
         {fanUserId && resolvedCreatorId && (() => {
           const publisherConfig = useMemo(() => {
             const identity = fanIdentity(fanUserId); // Use raw UUID for consistency
+            const roomName = lobbyRoomName(resolvedCreatorId);
             console.log('[BroadcastViewer] 📹 Publishing with identity:', {
               fanUserId,
               identity,
               resolvedCreatorId,
-              roomName: lobbyRoomName(resolvedCreatorId)
+              roomName
             });
             return {
               role: 'publisher' as const,
@@ -228,7 +261,7 @@ export function BroadcastViewer({
               publishVideo={true}
               mediaStream={consentStream}
             onPublished={() => {
-              console.log('[BroadcastViewer] ✅ Fan video published successfully');
+              console.log('[BroadcastViewer] ✅ Fan video published successfully to room:', lobbyRoomName(resolvedCreatorId));
             }}
             onError={(error) => {
               console.error('[BroadcastViewer] ❌ Fan publish failed:', error);

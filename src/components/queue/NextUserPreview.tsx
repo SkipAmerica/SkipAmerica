@@ -59,7 +59,12 @@ export function NextUserPreview({
         const roomName = lobbyRoomName(creatorId);
         const identity = creatorIdentity(creatorId);
 
-        console.log('[NextUserPreview] 🔌 Connecting to lobby:', roomName, 'as', identity);
+        console.log('[NextUserPreview] 🔌 Starting lobby connection', {
+          roomName,
+          identity,
+          userId,
+          creatorId
+        });
 
         const { token, url } = await fetchLiveKitToken({
           role: 'viewer',
@@ -67,6 +72,8 @@ export function NextUserPreview({
           identity,
           sessionId: undefined,
         });
+
+        console.log('[NextUserPreview] ✅ Token received', { url });
 
         const room = new Room({ adaptiveStream: true, dynacast: true });
         roomRef.current = room;
@@ -78,13 +85,22 @@ export function NextUserPreview({
           participant: RemoteParticipant
         ) => {
           if (cancelled) return;
+          
+          console.log('[NextUserPreview] 🎥 TrackSubscribed', {
+            kind: track.kind,
+            participantIdentity: participant.identity,
+            participantSid: participant.sid,
+            trackSid: track.sid,
+            isCreator: isCreator(participant.identity, creatorId)
+          });
+          
           if (track.kind !== Track.Kind.Video) return;
           if (isCreator(participant.identity, creatorId)) {
             console.log('[NextUserPreview] ⏭️ Skipping creator self-track');
             return;
           }
 
-          console.log('[NextUserPreview] 🎥 TrackSubscribed video from', participant.identity);
+          console.log('[NextUserPreview] ✅ Attaching video track from fan:', participant.identity);
           
           if (videoEl.current) {
             try {
@@ -95,8 +111,9 @@ export function NextUserPreview({
               videoTrack.attach?.(videoEl.current);
               setAttachedParticipant(participant.identity);
               setIsConnecting(false);
+              console.log('[NextUserPreview] ✅ Video track attached successfully');
             } catch (e) {
-              console.error('[NextUserPreview] Attach failed:', e);
+              console.error('[NextUserPreview] ❌ Attach failed:', e);
             }
           }
         });
@@ -104,13 +121,20 @@ export function NextUserPreview({
         // Event: Participant connected
         room.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
           if (cancelled) return;
-          console.log('[NextUserPreview] 👤 ParticipantConnected:', p.identity);
+          console.log('[NextUserPreview] 👤 ParticipantConnected:', {
+            identity: p.identity,
+            sid: p.sid,
+            trackCount: p.trackPublications.size
+          });
         });
 
         // Event: Participant disconnected
         room.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
           if (cancelled) return;
-          console.log('[NextUserPreview] 👋 ParticipantDisconnected:', p.identity);
+          console.log('[NextUserPreview] 👋 ParticipantDisconnected:', {
+            identity: p.identity,
+            wasAttached: p.identity === attachedParticipant
+          });
           
           if (p.identity === attachedParticipant) {
             if (videoEl.current) {
@@ -122,26 +146,42 @@ export function NextUserPreview({
         });
 
         await room.connect(url, token);
-        console.log('[NextUserPreview] ✅ Connected to lobby:', room.name);
+        console.log('[NextUserPreview] ✅ Connected to lobby room', {
+          roomName: room.name,
+          remoteParticipantCount: room.remoteParticipants.size,
+          localParticipant: room.localParticipant?.identity
+        });
 
         // Check if a fan is already in the room
+        console.log('[NextUserPreview] 🔍 Checking for existing participants...');
         for (const p of room.remoteParticipants.values()) {
+          console.log('[NextUserPreview] 🔍 Found participant:', {
+            identity: p.identity,
+            isCreator: isCreator(p.identity, creatorId),
+            videoTrackCount: p.videoTrackPublications.size
+          });
+          
           if (isCreator(p.identity, creatorId)) continue;
           
           const videoTracks = Array.from(p.videoTrackPublications.values());
           const videoPub = videoTracks.find((pub) => pub.isSubscribed && pub.track);
           
           if (videoPub?.track && videoEl.current) {
-            console.log('[NextUserPreview] 🔄 Attaching existing participant:', p.identity);
+            console.log('[NextUserPreview] 🔄 Attaching existing participant video:', p.identity);
             try {
               (videoPub.track as any).attach?.(videoEl.current);
               setAttachedParticipant(p.identity);
               setIsConnecting(false);
+              console.log('[NextUserPreview] ✅ Existing video track attached successfully');
             } catch (e) {
-              console.error('[NextUserPreview] Attach existing failed:', e);
+              console.error('[NextUserPreview] ❌ Attach existing failed:', e);
             }
             break;
           }
+        }
+        
+        if (room.remoteParticipants.size === 0) {
+          console.log('[NextUserPreview] ⏳ No participants yet, waiting for fan to join...');
         }
       } catch (e) {
         console.error('[NextUserPreview] ❌ Connect failed:', e);

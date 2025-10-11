@@ -542,8 +542,11 @@ export default function JoinQueue() {
   };
 
   const handleConsentAgree = async () => {
+    console.log('[JoinQueue] 🎬 handleConsentAgree called');
+    
     // Pre-flight validation
     if (!user?.id) {
+      console.error('[JoinQueue] ❌ No user ID');
       toast({
         title: "Authentication Required",
         description: "Please sign in to continue.",
@@ -553,6 +556,7 @@ export default function JoinQueue() {
     }
 
     if (!creatorId) {
+      console.error('[JoinQueue] ❌ No creatorId');
       toast({
         title: "Invalid Creator",
         description: "Creator information is missing. Please refresh the page.",
@@ -562,6 +566,7 @@ export default function JoinQueue() {
     }
 
     if (!queueEntryId) {
+      console.error('[JoinQueue] ❌ No queueEntryId');
       toast({
         title: "Queue Entry Not Found",
         description: "Please rejoin the queue to continue.",
@@ -571,7 +576,11 @@ export default function JoinQueue() {
       return;
     }
 
-    console.log('[JoinQueue] User consented - updating queue state', { queueEntryId });
+    console.log('[JoinQueue] ✅ Pre-flight checks passed', { 
+      userId: user.id, 
+      creatorId, 
+      queueEntryId 
+    });
     
     // Optimistically resolve consent to prevent modal from reopening
     consentResolvedRef.current = true;
@@ -656,8 +665,14 @@ export default function JoinQueue() {
       }
 
       // Success - consent already set optimistically above
-      console.log('[JoinQueue] ✅ Consent granted - fan will auto-publish to lobby');
-      console.log('[JoinQueue] Fan identity:', user.id, 'Creator:', creatorId);
+      console.log('[JoinQueue] ✅ Consent granted successfully');
+      console.log('[JoinQueue] 📊 Publishing details:', {
+        fanId: user.id,
+        creatorId,
+        roomName: `lobby_${creatorId}`,
+        hasConsentedToBroadcast: true,
+        consentStream: !!consentStream
+      });
       
       toast({
         title: "Ready to connect",
@@ -687,12 +702,17 @@ export default function JoinQueue() {
 
   // Log state changes for debugging
   useEffect(() => {
-    console.log('[JoinQueue] State change:', {
+    console.log('[JoinQueue] 📊 State change:', {
       shouldPublishFanVideo: isInQueue && (hasConsentedToBroadcast || forceBroadcast),
       hasConsentedToBroadcast,
       forceBroadcast,
       isInQueue,
-      hasConsentStream: !!consentStream
+      hasConsentStream: !!consentStream,
+      consentStreamTracks: consentStream?.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        readyState: t.readyState
+      }))
     });
   }, [isInQueue, hasConsentedToBroadcast, forceBroadcast, consentStream]);
 
