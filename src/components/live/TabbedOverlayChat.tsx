@@ -3,8 +3,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UniversalChat } from '@/components/chat/UniversalChat';
 import { createOverlayConfig, createPrivateConfig } from '@/lib/chatConfigs';
 import { supabase } from '@/integrations/supabase/client';
-import { audioNotifications } from '@/lib/audio-notifications';
-import notificationSound from '@/assets/notification-sound.mp3';
 
 type Props = {
   creatorId: string;
@@ -31,33 +29,6 @@ export default function TabbedOverlayChat({
 
   const lobbyConfig = createOverlayConfig(creatorId);
   const privateConfig = createPrivateConfig(creatorId, fanId);
-
-  // Initialize audio notifications with autoplay primer
-  useEffect(() => {
-    audioNotifications.initialize();
-    
-    // Primer: Enable audio on first user interaction (handles autoplay policy)
-    const enableAudio = () => {
-      console.log('[TabbedOverlayChat] User interaction detected, priming audio...');
-      const testAudio = new Audio(notificationSound);
-      testAudio.volume = 0.01; // Almost silent
-      testAudio.play().then(() => {
-        console.log('[TabbedOverlayChat] ✅ Audio primed successfully');
-        testAudio.pause();
-      }).catch(e => {
-        console.warn('[TabbedOverlayChat] ❌ Audio primer failed:', e);
-      });
-    };
-    
-    // Listen for first interaction
-    document.addEventListener('click', enableAudio, { once: true });
-    document.addEventListener('touchstart', enableAudio, { once: true });
-    
-    return () => {
-      document.removeEventListener('click', enableAudio);
-      document.removeEventListener('touchstart', enableAudio);
-    };
-  }, []);
 
   // Subscribe to private messages for unread count
   useEffect(() => {

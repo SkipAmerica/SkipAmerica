@@ -33,7 +33,6 @@ export function RichTextInput({
   const [selectedFontSize, setSelectedFontSize] = useState('text-sm');
   const [selectedColor, setSelectedColor] = useState('text-foreground');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const prevValueRef = useRef(value);
 
   // Auto-resize textarea based on content
   useEffect(() => {
@@ -41,14 +40,6 @@ export function RichTextInput({
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + 'px';
     }
-  }, [value]);
-
-  // Refocus when value becomes empty after having content (message sent)
-  useEffect(() => {
-    if (prevValueRef.current && !value) {
-      textareaRef.current?.focus();
-    }
-    prevValueRef.current = value;
   }, [value]);
 
   const isRichTextEnabled = richText?.enabled ?? false;
@@ -115,14 +106,16 @@ export function RichTextInput({
     const formattedMessage = formatMessage(value);
     onChange(formattedMessage);
     onSubmit();
-    
     // Reset formatting after sending
     setIsBold(false);
     setIsItalic(false);
     setSelectedFontSize('text-sm');
     setSelectedColor('text-foreground');
     
-    // Focus is now handled by useEffect watching value changes
+    // Refocus textarea to allow immediate follow-up messages
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   };
 
   const getInputClasses = () => {
