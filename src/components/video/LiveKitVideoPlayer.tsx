@@ -38,6 +38,14 @@ export function LiveKitVideoPlayer({
   useEffect(() => {
     if (!room || !videoRef.current) return;
 
+    console.log('[LiveKitVideoPlayer] Connecting to room', {
+      role: config.role,
+      creatorId: config.creatorId,
+      identity: config.identity,
+      targetParticipant: targetParticipantId,
+      expectedRoom: `lobby_${config.creatorId}`
+    });
+
     let mounted = true;
     let attachedVideoTrack: any = null;
     let attachedAudioTrack: any = null;

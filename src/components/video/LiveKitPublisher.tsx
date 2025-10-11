@@ -27,12 +27,14 @@ export function LiveKitPublisher({
   const [isPublishing, setIsPublishing] = useState(false);
   const publishLockRef = useRef(false);
   const lastPublishAttemptRef = useRef(0);
+  const publishAttemptRef = useRef(false);
+  const publishedTracksRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!room || !isConnected || isPublishing) return;
     
     // Connection lock: Prevent concurrent publishing attempts
-    if (publishLockRef.current) {
+    if (publishLockRef.current || publishAttemptRef.current) {
       console.log('[LiveKitPublisher] 🔒 Publish already in progress, skipping');
       return;
     }
@@ -52,6 +54,7 @@ export function LiveKitPublisher({
     const publish = async (attempt = 1) => {
       try {
         publishLockRef.current = true;
+        publishAttemptRef.current = true;
         setIsPublishing(true);
 
         // Define broadcast-grade video publishing options (Instagram/TikTok quality)
@@ -179,6 +182,7 @@ export function LiveKitPublisher({
     return () => {
       isMounted = false;
       publishLockRef.current = false;
+      publishAttemptRef.current = false;
     };
   }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 

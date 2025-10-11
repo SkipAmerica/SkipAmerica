@@ -38,6 +38,8 @@ export function BroadcastViewer({
   const [fanUserId, setFanUserId] = useState<string | null>(null);
   const [showSelfVideo, setShowSelfVideo] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+  const [isTransitioningToPublisher, setIsTransitioningToPublisher] = useState(false);
+  const publisherModeRef = useRef(false);
 
   // Set resolvedCreatorId immediately
   useEffect(() => {
@@ -77,6 +79,25 @@ export function BroadcastViewer({
       try { authListener?.subscription?.unsubscribe(); } catch {}
     };
   }, []);
+
+  // Debounce publisher mode transitions to prevent loops
+  useEffect(() => {
+    const shouldBePublisher = shouldPublishFanVideo && !!consentStream;
+    
+    // Only transition once
+    if (shouldBePublisher && !publisherModeRef.current) {
+      console.log('[BroadcastViewer] 🔄 Transitioning to publisher mode');
+      setIsTransitioningToPublisher(true);
+      publisherModeRef.current = true;
+      
+      // Clear transition flag after 3 seconds
+      const timer = setTimeout(() => {
+        setIsTransitioningToPublisher(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [shouldPublishFanVideo, consentStream]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => !prev);
@@ -142,7 +163,7 @@ export function BroadcastViewer({
   });
 
   // Fan publishing mode: Show self-preview only, publish to creator
-  if (shouldPublishFanVideo && consentStream) {
+  if (publisherModeRef.current && consentStream) {
     console.log('[BroadcastViewer] 📹 Fan publisher mode - showing self-preview only');
     
     return (
