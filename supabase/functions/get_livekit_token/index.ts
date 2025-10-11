@@ -144,13 +144,89 @@ serve(async (req) => {
       });
     }
 
-    // Legacy lobby room (existing flow)
+    // Legacy lobby room (with security gating)
 
     if (!creatorId) {
       return new Response(JSON.stringify({ error: "creatorId required" }), { 
         status: 400,
         headers: { "content-type": "application/json", ...corsHeaders }
       });
+    }
+
+    // Security: If requesting publisher role for lobby, verify queue position
+    if (role === 'publisher') {
+      console.log("[LiveKit Token] Validating lobby publisher request");
+      
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      
+      // Extract fan ID from identity (should be raw UUID)
+      const fanId = identity;
+      
+      if (!fanId) {
+        return new Response(JSON.stringify({ error: "Fan ID required for publisher token" }), {
+          status: 400,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      // Query call_queue to verify this fan is authorized
+      const { data: queueEntry, error: queueError } = await supabaseAdmin
+        .from('call_queue')
+        .select('id, fan_state, status, created_at')
+        .eq('creator_id', creatorId)
+        .eq('fan_id', fanId)
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .single();
+      
+      if (queueError || !queueEntry) {
+        console.log("[LiveKit Token] Fan not in queue:", fanId);
+        return new Response(JSON.stringify({ 
+          error: "Not authorized to publish lobby video",
+          details: "You must be in the queue to publish"
+        }), {
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      // Verify fan is in 'ready' state (has consented)
+      if (queueEntry.fan_state !== 'ready') {
+        console.log("[LiveKit Token] Fan not ready:", queueEntry.fan_state);
+        return new Response(JSON.stringify({ 
+          error: "Not authorized to publish lobby video",
+          details: "You must consent before publishing"
+        }), {
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      // Check if this fan is actually #1 in the queue
+      const { count } = await supabaseAdmin
+        .from('call_queue')
+        .select('*', { count: 'exact', head: true })
+        .eq('creator_id', creatorId)
+        .eq('status', 'waiting')
+        .lt('created_at', queueEntry.created_at);
+      
+      if (count && count > 0) {
+        console.log("[LiveKit Token] Fan is not #1 in queue (position:", count + 1, ")");
+        return new Response(JSON.stringify({ 
+          error: "Not authorized to publish lobby video",
+          details: "Only the next subscriber can publish"
+        }), {
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      console.log("[LiveKit Token] ✅ Fan authorized to publish:", fanId);
     }
 
     // single canonical room per creator; no colons

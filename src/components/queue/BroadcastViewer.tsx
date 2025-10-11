@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
+import { lobbyRoomName, fanIdentity } from '@/lib/lobbyIdentity';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -40,6 +41,7 @@ export function BroadcastViewer({
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isTransitioningToPublisher, setIsTransitioningToPublisher] = useState(false);
   const publisherModeRef = useRef(false);
+  const hasConnectedRef = useRef(false);
 
   // Set resolvedCreatorId immediately
   useEffect(() => {
@@ -80,24 +82,16 @@ export function BroadcastViewer({
     };
   }, []);
 
-  // Debounce publisher mode transitions to prevent loops
+  // Effect to transition to publisher mode (one-time connection)
   useEffect(() => {
-    const shouldBePublisher = shouldPublishFanVideo && !!consentStream;
+    if (publisherModeRef.current) return;
     
-    // Only transition once
-    if (shouldBePublisher && !publisherModeRef.current) {
-      console.log('[BroadcastViewer] 🔄 Transitioning to publisher mode');
-      setIsTransitioningToPublisher(true);
+    if (consentStream && !hasConnectedRef.current) {
       publisherModeRef.current = true;
-      
-      // Clear transition flag after 3 seconds
-      const timer = setTimeout(() => {
-        setIsTransitioningToPublisher(false);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
+      hasConnectedRef.current = true;
+      console.log('[BroadcastViewer] 🎬 Starting one-time lobby publish');
     }
-  }, [shouldPublishFanVideo, consentStream]);
+  }, [consentStream]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => !prev);
@@ -213,15 +207,17 @@ export function BroadcastViewer({
         {/* Headless publisher - establishes single LiveKit connection */}
         {fanUserId && resolvedCreatorId && (() => {
           const publisherConfig = useMemo(() => {
+            const identity = fanIdentity(fanUserId); // Use raw UUID for consistency
             console.log('[BroadcastViewer] 📹 Publishing with identity:', {
               fanUserId,
+              identity,
               resolvedCreatorId,
-              roomName: `lobby_${resolvedCreatorId}`
+              roomName: lobbyRoomName(resolvedCreatorId)
             });
             return {
               role: 'publisher' as const,
               creatorId: resolvedCreatorId,
-              identity: fanUserId,
+              identity,
             };
           }, [resolvedCreatorId, fanUserId]);
 

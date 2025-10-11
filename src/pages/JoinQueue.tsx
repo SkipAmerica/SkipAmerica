@@ -656,13 +656,12 @@ export default function JoinQueue() {
       }
 
       // Success - consent already set optimistically above
-      setShowConsentModal(false);
-      
-      console.log('[JoinQueue] Queue state updated to ready', { queueEntryId, data });
+      console.log('[JoinQueue] ✅ Consent granted - fan will auto-publish to lobby');
+      console.log('[JoinQueue] Fan identity:', user.id, 'Creator:', creatorId);
       
       toast({
-        title: "Video Preview Active",
-        description: `Waiting for ${creator?.full_name} to start your call...`,
+        title: "Ready to connect",
+        description: `${creator?.full_name || 'The creator'} will call you when ready`,
       });
 
     } catch (err) {
