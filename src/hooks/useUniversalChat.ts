@@ -159,7 +159,7 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void, 
         console.error('[useUniversalChat] Error removing channel:', error);
       }
     };
-  }, [tableName, filterField, filterValue, channelPrefix, messageFlow, onNewMessage]);
+  }, [tableName, filterField, filterValue, channelPrefix, messageFlow, onNewMessage, playSound]);
 
   return {
     messages,

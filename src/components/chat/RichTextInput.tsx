@@ -44,9 +44,8 @@ export function RichTextInput({
   }, [value]);
 
   // Refocus when value becomes empty after having content (message sent)
-  // Only refocus if textarea was already focused (preserves user intent)
   useEffect(() => {
-    if (prevValueRef.current && !value && document.activeElement === textareaRef.current) {
+    if (prevValueRef.current && !value) {
       textareaRef.current?.focus();
     }
     prevValueRef.current = value;

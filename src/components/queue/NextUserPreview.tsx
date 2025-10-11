@@ -38,6 +38,16 @@ export function NextUserPreview({
   const [attachedParticipant, setAttachedParticipant] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
 
+  // Reset state when userId changes (new fan becomes next)
+  useEffect(() => {
+    console.log('[NextUserPreview] userId changed, resetting state');
+    setAttachedParticipant(null);
+    setIsConnecting(true);
+    if (videoEl.current) {
+      videoEl.current.srcObject = null;
+    }
+  }, [userId]);
+
   useEffect(() => {
     const timer = setTimeout(() => setShowNotification(false), 8000);
     return () => clearTimeout(timer);
@@ -197,6 +207,17 @@ export function NextUserPreview({
       if (!room) return;
       
       console.log('[NextUserPreview] 🔌 Disconnecting from lobby');
+      
+      // Clean up video element
+      if (videoEl.current) {
+        videoEl.current.srcObject = null;
+        videoEl.current.load();
+      }
+      
+      // Reset state
+      setAttachedParticipant(null);
+      setIsConnecting(true);
+      
       try {
         room.disconnect();
       } catch (e) {
