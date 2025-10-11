@@ -36,8 +36,7 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           .eq(filterField, filterValue)
           .order('created_at', { 
             ascending: messageFlow === 'newest-top' ? false : true 
-          })
-          .limit(50);
+          });
 
         if (messagesError) throw messagesError;
 
@@ -73,7 +72,7 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           });
 
           setMessages(enrichedMessages);
-          console.log(`[useUniversalChat] Loaded ${enrichedMessages.length} initial messages`);
+          console.log(`[useUniversalChat] ✅ Loaded ${enrichedMessages.length} initial messages for ${channelName}`);
         } else {
           console.log(`[useUniversalChat] No initial messages found for ${channelPrefix}-${filterValue}`);
         }
@@ -98,10 +97,16 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
           filter: `${filterField}=eq.${filterValue}`
         },
         async (payload) => {
-          console.log(`[useUniversalChat] Real-time INSERT received on ${channelName}:`, payload.new);
+          const newMsg = payload.new as any;
+          const senderId = newMsg.user_id ?? newMsg.sender_id;
           
-          // Handle both user_id and sender_id for different table structures
-          const senderId = (payload.new as any).user_id ?? (payload.new as any).sender_id;
+          console.log(`[useUniversalChat] 📨 INSERT received on ${channelName}:`, {
+            messageId: newMsg.id,
+            senderId,
+            message: newMsg.message?.substring(0, 100),
+            table: tableName,
+            timestamp: newMsg.created_at
+          });
           
           // Fetch profile for the new message - handle errors gracefully
           let profileData = null;
@@ -131,17 +136,24 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
               ? [enrichedMessage, ...prev]
               : [...prev, enrichedMessage];
             
+            console.log(`[useUniversalChat] ✅ Message added to state. Total: ${newMessages.length}`, {
+              messageId: enrichedMessage.id,
+              from: enrichedMessage.profiles?.full_name || 'Unknown',
+              preview: enrichedMessage.message.substring(0, 50)
+            });
+            
             // Notify about new message for scroll handling
             onNewMessage?.();
-            
-            console.log(`[useUniversalChat] Added new message to state. Total messages: ${newMessages.length}`);
             
             return newMessages;
           });
         }
       )
       .subscribe((status) => {
-        console.log(`[useUniversalChat] Channel ${channelName} subscription status:`, status);
+        console.log(`[useUniversalChat] 📡 Channel ${channelName} status:`, status, {
+          table: tableName,
+          filter: `${filterField}=${filterValue}`
+        });
       });
 
     return () => {
