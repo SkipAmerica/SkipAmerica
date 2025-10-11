@@ -138,6 +138,7 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
     streamRef.current = null;
     originalStreamRef.current = null;
     setStream(null);
+    setIsCountdownActive(false);
     setIsStreaming(false);
   }, []);
 

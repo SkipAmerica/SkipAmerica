@@ -30,8 +30,35 @@ export function LiveKitPublisher({
   const publishAttemptRef = useRef(false);
   const publishedTracksRef = useRef<Set<string>>(new Set());
 
+  // Unpublish tracks when mediaStream becomes null (broadcast ended)
   useEffect(() => {
-    if (!room || !isConnected || isPublishing) return;
+    if (!mediaStream && room?.localParticipant) {
+      console.log('[LiveKitPublisher] MediaStream removed, unpublishing tracks');
+      
+      // Unpublish all local tracks
+      room.localParticipant.audioTrackPublications.forEach(pub => {
+        if (pub.track) {
+          room.localParticipant.unpublishTrack(pub.track);
+        }
+      });
+      room.localParticipant.videoTrackPublications.forEach(pub => {
+        if (pub.track) {
+          room.localParticipant.unpublishTrack(pub.track);
+        }
+      });
+      
+      // Reset all refs to allow fresh publish
+      publishedTracksRef.current.clear();
+      publishLockRef.current = false;
+      publishAttemptRef.current = false;
+      setIsPublishing(false);
+      
+      console.log('[LiveKitPublisher] ✅ Tracks unpublished, refs reset');
+    }
+  }, [mediaStream, room]);
+
+  useEffect(() => {
+    if (!room || !isConnected || isPublishing || !mediaStream) return;
     
     // Connection lock: Prevent concurrent publishing attempts
     if (publishLockRef.current || publishAttemptRef.current) {
@@ -193,6 +220,7 @@ export function LiveKitPublisher({
       isMounted = false;
       publishLockRef.current = false;
       publishAttemptRef.current = false;
+      publishedTracksRef.current.clear();
     };
   }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 
