@@ -663,6 +663,9 @@ export default function JoinQueue() {
         title: "Ready to connect",
         description: `${creator?.full_name || 'The creator'} will call you when ready`,
       });
+      
+      // Close the modal after successful consent
+      setShowConsentModal(false);
 
     } catch (err) {
       clearTimeout(timeoutId);
