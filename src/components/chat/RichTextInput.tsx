@@ -61,7 +61,7 @@ export function RichTextInput({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      onSubmit();
+      handleSubmit();
     }
     
     // Keyboard shortcuts for rich text
@@ -111,6 +111,11 @@ export function RichTextInput({
     setIsItalic(false);
     setSelectedFontSize('text-sm');
     setSelectedColor('text-foreground');
+    
+    // Refocus textarea to allow immediate follow-up messages
+    requestAnimationFrame(() => {
+      textareaRef.current?.focus();
+    });
   };
 
   const getInputClasses = () => {
