@@ -18,6 +18,7 @@ import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
 
 const displayNameSchema = z.string()
   .trim()
@@ -784,51 +785,76 @@ export default function JoinQueue() {
     return <Badge variant="secondary">Offline</Badge>;
   };
 
+  // Calculate estimated wait time (4 minutes per person)
+  const calculateWaitTime = (position: number | null): string => {
+    if (!position || position <= 1) return '0';
+    const minutes = position * 4;
+    return `${minutes}`;
+  };
+
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-background pb-safe pb-20">
-          <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Creator info header */}
-        <div className="mb-4">
-          <div className="flex items-center justify-between gap-4 bg-card rounded-lg p-4 border">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 border-2 border-border">
-                <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
-                <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <h2 className="font-semibold text-lg">{creator.full_name}</h2>
-                {creator.bio && (
-                  <p className="text-sm text-muted-foreground line-clamp-1">{creator.bio}</p>
+      <div className="min-h-screen bg-background pb-safe-bottom ios-safe-left ios-safe-right pb-20">
+          <div className="container mx-auto px-4 py-4 max-w-7xl">
+        {/* Creator info header - Mobile optimized */}
+        <div className="mb-3">
+          <div className={cn(
+            "flex items-center gap-3 bg-card rounded-lg border",
+            "p-3 ios-safe-left ios-safe-right"
+          )}>
+            {/* Avatar + Info */}
+            <Avatar className="h-10 w-10 border-2 border-border flex-shrink-0">
+              <AvatarImage src={creator.avatar_url} alt={creator.full_name} />
+              <AvatarFallback>{creator.full_name.charAt(0)}</AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold text-base truncate">{creator.full_name}</h2>
+              <div className="flex items-center gap-2">
+                {liveSession ? (
+                  <Badge className="bg-red-500 text-white text-xs">🔴 LIVE</Badge>
+                ) : isOnline ? (
+                  <Badge className="bg-green-500 text-white text-xs">🟢 Online</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs">Offline</Badge>
                 )}
-                <div className="flex items-center gap-2 mt-1">
-                  {liveSession ? (
-                    <Badge className="bg-red-500 text-white">🔴 LIVE</Badge>
-                  ) : isOnline ? (
-                    <Badge className="bg-green-500 text-white">🟢 Online</Badge>
-                  ) : (
-                    <Badge variant="secondary">Offline</Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Queue status */}
-            <div className="text-right">
-              <div className="text-sm">
-                <p className="font-semibold mb-1">Queue Status</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-foreground">{queueCount}</span>
-                  <span className="text-muted-foreground">people waiting</span>
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  {queueCount} waiting
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Waiting Status Banner */}
+        {/* Mobile Queue Status Banner - iOS Optimized */}
+        {isInQueue && (
+          <Card className="mb-4 ios-safe-left ios-safe-right">
+            <CardContent className="p-3">
+              <div className="flex items-center justify-between gap-3">
+                {/* Queue Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base truncate">
+                    In Queue - Position {actualPosition || '...'} • {calculateWaitTime(actualPosition)} min wait
+                  </h3>
+                </div>
+                
+                {/* Leave Button - Always Visible */}
+                <Button
+                  onClick={handleLeaveQueue}
+                  variant="outline"
+                  size="sm"
+                  className="flex-shrink-0 h-9 px-4"
+                >
+                  Leave Queue
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Waiting Status Banner - When consented and next up */}
         {isInQueue && actualPosition === 1 && hasConsentedToBroadcast && (
-          <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
+          <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg ios-safe-left ios-safe-right">
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
                 <div className="w-3 h-3 bg-cyan-500 rounded-full animate-pulse" />
@@ -846,10 +872,22 @@ export default function JoinQueue() {
         )}
 
         {/* Main content grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Video section - takes 2/3 on large screens */}
-          <div className="lg:col-span-2">
-            <div className="h-[300px] sm:h-[400px] bg-black rounded-lg overflow-hidden border">
+        <div className={cn(
+          "grid gap-6",
+          isInQueue 
+            ? "grid-cols-1" 
+            : "grid-cols-1 lg:grid-cols-3"
+        )}>
+          {/* Video section */}
+          <div className={cn(
+            isInQueue ? "" : "lg:col-span-2"
+          )}>
+            <div className={cn(
+              "bg-black rounded-lg overflow-hidden border",
+              isInQueue 
+                ? "h-[400px] sm:h-[500px]" 
+                : "h-[300px] sm:h-[400px]"
+            )}>
               <BroadcastViewer 
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
@@ -861,8 +899,9 @@ export default function JoinQueue() {
             </div>
           </div>
 
-          {/* Join/Leave queue card - takes 1/3 on large screens */}
-          <div className="lg:col-span-1">
+          {/* Join form - HIDE on mobile when in queue */}
+          {!isInQueue && (
+            <div className="lg:col-span-1">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
@@ -955,7 +994,8 @@ export default function JoinQueue() {
                 )}
               </CardContent>
             </Card>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Chat section below video */}
