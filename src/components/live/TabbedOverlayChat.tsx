@@ -3,6 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UniversalChat } from '@/components/chat/UniversalChat';
 import { createOverlayConfig, createPrivateConfig } from '@/lib/chatConfigs';
 import { supabase } from '@/integrations/supabase/client';
+import { audioNotifications } from '@/lib/audio-notifications';
 
 type Props = {
   creatorId: string;
@@ -29,6 +30,11 @@ export default function TabbedOverlayChat({
 
   const lobbyConfig = createOverlayConfig(creatorId);
   const privateConfig = createPrivateConfig(creatorId, fanId);
+
+  // Initialize audio notifications
+  useEffect(() => {
+    audioNotifications.initialize();
+  }, []);
 
   // Subscribe to private messages for unread count
   useEffect(() => {
@@ -184,6 +190,7 @@ export default function TabbedOverlayChat({
               }}
               className="bg-transparent"
               leftButton={leftButton}
+              playSound={true}
             />
             </div>
           </TabsContent>

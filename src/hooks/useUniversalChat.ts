@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { ChatMessage, ChatConfig } from '@/shared/types/chat';
+import { audioNotifications } from '@/lib/audio-notifications';
 
-export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) {
+export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void, playSound?: boolean) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -99,6 +100,11 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void) 
         },
         async (payload) => {
           console.log(`[useUniversalChat] Real-time INSERT received on ${channelName}:`, payload.new);
+          
+          // Play notification sound if enabled
+          if (playSound) {
+            audioNotifications.playNotification();
+          }
           
           // Handle both user_id and sender_id for different table structures
           const senderId = (payload.new as any).user_id ?? (payload.new as any).sender_id;
