@@ -18,6 +18,7 @@ import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
 import { z } from 'zod';
+import { useMedia } from '@/modules/almighty/providers/MediaProvider';
 
 const displayNameSchema = z.string()
   .trim()
@@ -46,6 +47,7 @@ export default function JoinQueue() {
   const { user, loading: authLoading, signInAnonymously } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { localVideo } = useMedia();
   
   // URL flag to force broadcasting for testing (bypass consent)
   const forceBroadcast = new URLSearchParams(window.location.search).get('broadcast') === '1';
@@ -659,13 +661,24 @@ export default function JoinQueue() {
       console.log('[JoinQueue] ✅ Consent granted - fan will auto-publish to lobby');
       console.log('[JoinQueue] Fan identity:', user.id, 'Creator:', creatorId);
       
+      // Prepare a MediaStream from the preview track so BroadcastViewer can publish immediately
+      if (!consentStream && localVideo?.track && (localVideo as any).track?.mediaStreamTrack) {
+        try {
+          const ms = new MediaStream([(localVideo as any).track.mediaStreamTrack]);
+          setConsentStream(ms);
+          console.log('[JoinQueue] 🎥 Consent stream prepared for publishing');
+        } catch (e) {
+          console.warn('[JoinQueue] Could not create consent stream from preview track:', e);
+        }
+      }
+      
       toast({
         title: "Ready to connect",
         description: `${creator?.full_name || 'The creator'} will call you when ready`,
       });
       
       // Close the modal after successful consent
-      setShowConsentModal(false);
+      setShowConsentModal(false)
 
     } catch (err) {
       clearTimeout(timeoutId);
