@@ -204,7 +204,7 @@ export function QueueContent() {
       clearTimeout(fetchTimeout)
       fetchTimeout = setTimeout(() => {
         fetchQueue()
-      }, 500) // Debounce multiple rapid changes
+      }, 1000) // Debounce noisy heartbeat updates
     }
     
     const channel = supabase
@@ -226,14 +226,12 @@ export function QueueContent() {
             const newRecord = payload.new as any
             
             if (oldRecord && newRecord) {
-              // Get keys that actually changed
               const changedKeys = Object.keys(newRecord).filter(
                 key => newRecord[key] !== oldRecord[key]
               )
-              
-              // If only last_seen changed, it's just a heartbeat - ignore it
-              if (changedKeys.length === 1 && changedKeys[0] === 'last_seen') {
-                console.log('[QueueContent] Ignoring heartbeat-only update')
+              const IGNORED = new Set(['last_seen','updated_at','updatedAt','heartbeat_at','presence_updated_at'])
+              if (changedKeys.length > 0 && changedKeys.every(k => IGNORED.has(k))) {
+                console.log('[QueueContent] Ignoring heartbeat-only update', changedKeys)
                 return
               }
             }
@@ -357,11 +355,6 @@ export function QueueContent() {
           <div className="flex flex-col h-full">
             {/* Sticky First Entry */}
             {state.entries.length > 0 && (() => {
-              console.log('[QueueContent] 🎬 Rendering NextUserPreview for fan:', {
-                fanId: state.entries[0].fan_id,
-                creatorId: user.id,
-                fanName: state.entries[0].profiles?.full_name
-              });
               return (
                 <div className="sticky top-0 bg-background z-10 pb-3 shadow-sm">
                   <SwipeableQueueCard
