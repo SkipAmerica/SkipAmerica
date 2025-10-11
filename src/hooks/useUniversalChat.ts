@@ -102,8 +102,11 @@ export function useUniversalChat(config: ChatConfig, onNewMessage?: () => void, 
           console.log(`[useUniversalChat] Real-time INSERT received on ${channelName}:`, payload.new);
           
           // Play notification sound if enabled
+          console.log('[useUniversalChat] playSound value:', playSound);
           if (playSound) {
+            console.log('[useUniversalChat] Calling audioNotifications.playNotification()');
             audioNotifications.playNotification();
+            console.log('[useUniversalChat] audioNotifications.playNotification() returned');
           }
           
           // Handle both user_id and sender_id for different table structures
