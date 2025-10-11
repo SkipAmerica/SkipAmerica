@@ -204,7 +204,7 @@ export function NextUserPreview({
       }
       roomRef.current = null;
     };
-  }, [creatorId]);
+  }, [creatorId, userId]);
 
   return (
     <div className="relative w-full">

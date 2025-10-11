@@ -389,7 +389,7 @@ export function QueueContent() {
                           </div>
                         </div>
                         <NextUserPreview
-                          key="lobby-preview"
+                          key={state.entries[0].fan_id}
                           userId={state.entries[0].fan_id}
                           creatorId={user.id}
                           userName={state.entries[0].profiles?.full_name}

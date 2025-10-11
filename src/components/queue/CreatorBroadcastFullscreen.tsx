@@ -129,6 +129,7 @@ export function CreatorBroadcastFullscreen({
       {/* Countdown Overlay */}
       {broadcast.isCountdownActive && (
         <GoLiveCountdown
+          key={broadcast.isCountdownActive ? 'active' : 'inactive'}
           onComplete={handleCountdownComplete}
           onCancel={() => broadcast.cancelCountdown()}
         />

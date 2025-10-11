@@ -249,8 +249,11 @@ export function BroadcastViewer({
               className="w-full h-full object-cover"
               muted={true}
               fallbackContent={
-                <div className="w-full h-full flex items-center justify-center bg-black/50 text-white text-xs">
-                  Connecting...
+                <div className="w-full h-full flex items-center justify-center bg-black/50 text-white text-xs text-center p-2">
+                  <div>
+                    <div className="mb-1">📡</div>
+                    <div>Awaiting Creator Broadcast</div>
+                  </div>
                 </div>
               }
             />
