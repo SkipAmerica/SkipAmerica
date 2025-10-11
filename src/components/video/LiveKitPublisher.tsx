@@ -111,6 +111,14 @@ export function LiveKitPublisher({
         console.log(`[LiveKitPublisher] Publishing ${tracks.length} tracks...`);
 
         for (const track of tracks) {
+          const trackId = track.id;
+          
+          // Skip if already published
+          if (publishedTracksRef.current.has(trackId)) {
+            console.log(`[LiveKitPublisher] Track ${trackId} already published, skipping`);
+            continue;
+          }
+          
           if (track.kind === 'video') {
             console.log('[LiveKitPublisher] Publishing video with:', {
               codec: 'h264',
@@ -119,6 +127,7 @@ export function LiveKitPublisher({
               simulcast: true
             });
             await room.localParticipant.publishTrack(track, videoPublishOptions);
+            publishedTracksRef.current.add(trackId);
           } else {
             // Log MediaStreamTrack properties before publishing
             console.log('[LiveKitPublisher] MediaStreamTrack properties:', {
@@ -139,6 +148,7 @@ export function LiveKitPublisher({
             });
             
             await room.localParticipant.publishTrack(track, audioPublishOptions);
+            publishedTracksRef.current.add(trackId);
             
             console.log('[LiveKitPublisher] ✅ Audio track published successfully');
             

@@ -139,7 +139,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         setRoom(null);
       }
     };
-  }, [config]);
+  }, [config?.role, config?.creatorId, config?.identity]);
 
   return {
     room,

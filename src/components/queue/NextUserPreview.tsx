@@ -70,7 +70,10 @@ export function NextUserPreview({
             creatorId: creatorId,
             identity: `viewer_${creatorId}`,
           }}
-          targetParticipantId={userId}
+          targetParticipantId={(() => {
+            console.log('[NextUserPreview] 🎯 Looking for participant:', userId);
+            return userId;
+          })()}
           className="w-full aspect-video object-cover bg-black"
           muted={muted}
           fallbackContent={

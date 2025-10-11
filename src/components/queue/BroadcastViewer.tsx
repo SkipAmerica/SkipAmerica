@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, RefreshCw, Video, VideoOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -211,24 +211,34 @@ export function BroadcastViewer({
         </div>
 
         {/* Headless publisher - establishes single LiveKit connection */}
-        {fanUserId && resolvedCreatorId && (
-          <LiveKitPublisher
-            config={{
-              role: 'publisher',
+        {fanUserId && resolvedCreatorId && (() => {
+          const publisherConfig = useMemo(() => {
+            console.log('[BroadcastViewer] 📹 Publishing with identity:', {
+              fanUserId,
+              resolvedCreatorId,
+              roomName: `lobby_${resolvedCreatorId}`
+            });
+            return {
+              role: 'publisher' as const,
               creatorId: resolvedCreatorId,
               identity: fanUserId,
-            }}
-            publishAudio={true}
-            publishVideo={true}
-            mediaStream={consentStream}
+            };
+          }, [resolvedCreatorId, fanUserId]);
+
+          return (
+            <LiveKitPublisher
+              config={publisherConfig}
+              publishAudio={true}
+              publishVideo={true}
+              mediaStream={consentStream}
             onPublished={() => {
               console.log('[BroadcastViewer] ✅ Fan video published successfully');
             }}
             onError={(error) => {
               console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
             }}
-          />
-        )}
+          />);
+        })()}
       </div>
     );
   }
@@ -236,16 +246,18 @@ export function BroadcastViewer({
   // Default viewer mode: Watch creator's broadcast (used before fan is "Next Up")
   console.log('[BroadcastViewer] 👀 Viewer mode - watching creator stream');
   
+  const viewerConfig = useMemo(() => ({
+    role: 'viewer' as const,
+    creatorId: resolvedCreatorId!,
+    identity: viewerIdentity,
+  }), [resolvedCreatorId, viewerIdentity]);
+  
   return (
     <div className="relative w-full h-full">
       {/* Main creator video stream */}
       {resolvedCreatorId && (
         <LiveKitVideoPlayer
-          config={{
-            role: 'viewer',
-            creatorId: resolvedCreatorId,
-            identity: viewerIdentity,
-          }}
+          config={viewerConfig}
           targetParticipantId={resolvedCreatorId}
           className="w-full h-full object-cover bg-black"
           muted={isMuted}

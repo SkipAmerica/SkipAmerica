@@ -77,8 +77,6 @@ export default function JoinQueue() {
   const initialNameSetRef = useRef(false);
   const consentResolvedRef = useRef(false); // Prevents modal from reopening after consent flow starts
   const wasFrontRef = useRef(false); // Rising-edge detector for position #1
-  const isPublisherModeRef = useRef(false);
-  const [stablePublisherMode, setStablePublisherMode] = useState(false);
 
   // Ensure full-viewport scrolling on PQ
   useEffect(() => {
@@ -431,27 +429,6 @@ export default function JoinQueue() {
       }
     };
   }, []); // Empty deps = runs cleanup only on unmount
-
-  // Debounce publisher mode to prevent loops
-  useEffect(() => {
-    const shouldPublish = isInQueue && (hasConsentedToBroadcast || forceBroadcast);
-    
-    if (shouldPublish && !isPublisherModeRef.current) {
-      console.log('[JoinQueue] 📢 Enabling publisher mode');
-      isPublisherModeRef.current = true;
-      
-      // Delay to ensure state is stable
-      const timer = setTimeout(() => {
-        setStablePublisherMode(true);
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    } else if (!shouldPublish && isPublisherModeRef.current) {
-      console.log('[JoinQueue] 🔇 Disabling publisher mode');
-      isPublisherModeRef.current = false;
-      setStablePublisherMode(false);
-    }
-  }, [isInQueue, hasConsentedToBroadcast, forceBroadcast]);
 
   const handleJoinQueue = async () => {
     if (!user || !creatorId || !displayName.trim()) return;
@@ -849,7 +826,7 @@ export default function JoinQueue() {
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
-                shouldPublishFanVideo={stablePublisherMode}
+                shouldPublishFanVideo={hasConsentedToBroadcast || forceBroadcast}
                 consentStream={consentStream}
                 creatorName={creator.full_name}
               />
