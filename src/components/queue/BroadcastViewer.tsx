@@ -241,29 +241,18 @@ export function BroadcastViewer({
           </div>
         </div>
 
-        {/* Creator broadcast PIP - bottom right */}
-        {resolvedCreatorId && (
-          <div className="absolute bottom-4 right-4 z-20 w-48 h-36 rounded-lg overflow-hidden border-2 border-white/20 shadow-2xl">
-            <LiveKitVideoPlayer
-              config={{
-                role: 'viewer' as const,
-                creatorId: resolvedCreatorId,
-                identity: viewerIdentity,
-              }}
-              targetParticipantId={resolvedCreatorId}
-              className="w-full h-full object-cover"
-              muted={true}
-              fallbackContent={
-                <div className="w-full h-full flex items-center justify-center bg-black/50 text-white text-xs text-center p-2">
-                  <div>
-                    <div className="mb-1">📡</div>
-                    <div>Awaiting Creator Broadcast</div>
-                  </div>
-                </div>
-              }
-            />
+        {/* Creator Status - bottom right */}
+        <div className="absolute bottom-4 right-4 z-20">
+          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <div>
+                <p className="text-xs font-medium">Creator is live</p>
+                <p className="text-xs text-muted-foreground">Will invite you soon</p>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Headless publisher - establishes single LiveKit connection */}
         {fanUserId && resolvedCreatorId && (() => {
