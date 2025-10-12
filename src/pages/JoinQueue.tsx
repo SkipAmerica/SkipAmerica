@@ -443,19 +443,21 @@ export default function JoinQueue() {
     // - Already consented
     // - Force broadcast enabled
     // - Consent already resolved
+    // - Modal is already open (prevents reopening)
     if (
       !isInQueue ||
       actualPosition !== 1 ||
       hasConsentedToBroadcast ||
       forceBroadcast ||
-      consentResolvedRef.current
+      consentResolvedRef.current ||
+      showConsentModal
     ) {
       return;
     }
 
     console.log('[JoinQueue] 🎯 Position 1 reached, showing consent modal');
     setShowConsentModal(true);
-  }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast]);
+  }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast, showConsentModal]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
