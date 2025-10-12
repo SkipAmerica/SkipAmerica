@@ -28,6 +28,10 @@ export function LiveKitVideoPlayer({
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
   const { room, connectionState, isConnected } = useLiveKitRoom(config);
+  
+  // Track which tracks are currently attached to prevent unnecessary re-attachments
+  const attachedVideoSidRef = useRef<string | null>(null);
+  const attachedAudioSidRef = useRef<string | null>(null);
 
   // Notify parent of connection state changes
   useEffect(() => {
@@ -62,6 +66,12 @@ export function LiveKitVideoPlayer({
           subscribed: pub.isSubscribed
         }))
       })));
+      
+      // Skip re-attachment if tracks are already attached (prevents jerking)
+      if (attachedVideoSidRef.current && attachedAudioSidRef.current) {
+        console.log('[LiveKitVideoPlayer] Tracks already attached, skipping re-attach');
+        return;
+      }
 
       // Detach any existing tracks first
       if (attachedVideoTrack && videoRef.current) {
@@ -115,6 +125,7 @@ export function LiveKitVideoPlayer({
             const videoTrack = videoPublication.track;
             videoTrack.attach(videoRef.current);
             attachedVideoTrack = videoTrack;
+            attachedVideoSidRef.current = videoPublication.trackSid;
             
             if (mounted) {
               setHasVideo(true);
@@ -150,6 +161,7 @@ export function LiveKitVideoPlayer({
             
             audioTrack.attach(audioElement);
             attachedAudioTrack = audioTrack;
+            attachedAudioSidRef.current = audioPublication.trackSid;
             
             // Log HTMLAudioElement state after attachment
             console.log('[LiveKitVideoPlayer] HTMLAudioElement state after attach:', {
@@ -204,15 +216,24 @@ export function LiveKitVideoPlayer({
     // Listen for track, participant, and publishing changes
     const handleTrackSubscribed = () => {
       console.log('[LiveKitVideoPlayer] Track subscribed event');
-      attachTracks();
+      // Only re-attach if no tracks are currently attached
+      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
+        attachTracks();
+      }
     };
     const handleTrackPublished = () => {
       console.log('[LiveKitVideoPlayer] Track published event');
-      attachTracks();
+      // Only re-attach if no tracks are currently attached
+      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
+        attachTracks();
+      }
     };
     const handleParticipantConnected = () => {
       console.log('[LiveKitVideoPlayer] Participant connected event');
-      attachTracks();
+      // Only re-attach if no tracks are currently attached
+      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
+        attachTracks();
+      }
     };
     const handleTrackUnsubscribed = (track: any) => {
       console.log('[LiveKitVideoPlayer] Track unsubscribed');
@@ -223,6 +244,7 @@ export function LiveKitVideoPlayer({
           console.warn('[LiveKitVideoPlayer] Failed to detach video on unsubscribe:', e);
         }
         attachedVideoTrack = null;
+        attachedVideoSidRef.current = null;
         videoRef.current.srcObject = null;
       }
       if (track === attachedAudioTrack && audioRef.current) {
@@ -232,6 +254,7 @@ export function LiveKitVideoPlayer({
           console.warn('[LiveKitVideoPlayer] Failed to detach audio on unsubscribe:', e);
         }
         attachedAudioTrack = null;
+        attachedAudioSidRef.current = null;
         audioRef.current.srcObject = null;
       }
       if (mounted) {
@@ -248,6 +271,8 @@ export function LiveKitVideoPlayer({
       }
       attachedVideoTrack = null;
       attachedAudioTrack = null;
+      attachedVideoSidRef.current = null;
+      attachedAudioSidRef.current = null;
       if (mounted) {
         setHasVideo(false);
       }

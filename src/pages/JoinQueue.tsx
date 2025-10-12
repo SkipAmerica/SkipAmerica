@@ -286,11 +286,6 @@ export default function JoinQueue() {
           setHasConsentedToBroadcast(false);
           consentResolvedRef.current = false;
           setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
-          
-          // Close any stale modal from previous session
-          if (isConsentRisingEdgeFixEnabled()) {
-            setShowConsentModal(false);
-          }
         } else if (queueStatus.in_queue && queueStatus.entry) {
           // Same session - restore consent from database if already consented
           setQueueEntryId(queueStatus.entry.id);

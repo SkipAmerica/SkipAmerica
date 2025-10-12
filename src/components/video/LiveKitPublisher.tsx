@@ -60,6 +60,17 @@ export function LiveKitPublisher({
   useEffect(() => {
     if (!room || !isConnected || isPublishing || !mediaStream) return;
     
+    // Skip publishing if tracks are already published (prevents flutter on reconnect)
+    if (room.localParticipant) {
+      const hasVideo = room.localParticipant.videoTrackPublications.size > 0;
+      const hasAudio = room.localParticipant.audioTrackPublications.size > 0;
+      
+      if (hasVideo && hasAudio) {
+        console.log('[LiveKitPublisher] ✅ Tracks already published, skipping');
+        return;
+      }
+    }
+    
     // Connection lock: Prevent concurrent publishing attempts
     if (publishLockRef.current || publishAttemptRef.current) {
       console.log('[LiveKitPublisher] 🔒 Publish already in progress, skipping');

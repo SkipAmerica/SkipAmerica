@@ -122,7 +122,7 @@ export function QueueChat({
           <TabsTrigger value="lobby" className="flex-1 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
             Lobby Chat
           </TabsTrigger>
-          {isInQueue && hasConsented && actualPosition === 1 && (
+          {isInQueue && actualPosition === 1 && (
             <TabsTrigger value="private" className="flex-1 relative data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
               Private Messages
               {unreadPrivateCount > 0 && activeTab === 'lobby' && (
