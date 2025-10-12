@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -277,39 +278,42 @@ export default function JoinQueue() {
       // Detect new queue session and reset consent
       const isNewQueueSession = queueStatus.in_queue && queueStatus.entry && queueStatus.entry.id !== queueEntryId;
       
-      if (isNewQueueSession) {
-        console.log('[JoinQueue] New queue session detected, resetting consent state');
-        setQueueEntryId(queueStatus.entry!.id); // ← SET THIS FIRST before actualPosition
-        setHasConsentedToBroadcast(false);
-        consentResolvedRef.current = false;
-        setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
-        
-        // Close any stale modal from previous session
-        if (isConsentRisingEdgeFixEnabled()) {
-          setShowConsentModal(false);
-        }
-      } else if (queueStatus.in_queue && queueStatus.entry) {
-        // Same session - restore consent from database if already consented
-        setQueueEntryId(queueStatus.entry.id);
-        setDiscussionTopic(queueStatus.entry.discussion_topic || '');
-        
-        // Only update consent state from DB if user hasn't made a local decision
-        if (!consentResolvedRef.current) {
-          if (queueStatus.entry.fan_has_consented && !hasConsentedToBroadcast) {
-            console.log('[JoinQueue] Restoring consent state from database');
-            setHasConsentedToBroadcast(true);
-            consentResolvedRef.current = true;
+      // Force synchronous batching of ALL state updates to prevent flutter
+      flushSync(() => {
+        if (isNewQueueSession) {
+          console.log('[JoinQueue] New queue session detected, resetting consent state');
+          setQueueEntryId(queueStatus.entry!.id);
+          setHasConsentedToBroadcast(false);
+          consentResolvedRef.current = false;
+          setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
+          
+          // Close any stale modal from previous session
+          if (isConsentRisingEdgeFixEnabled()) {
+            setShowConsentModal(false);
           }
+        } else if (queueStatus.in_queue && queueStatus.entry) {
+          // Same session - restore consent from database if already consented
+          setQueueEntryId(queueStatus.entry.id);
+          setDiscussionTopic(queueStatus.entry.discussion_topic || '');
+          
+          // Only update consent state from DB if user hasn't made a local decision
+          if (!consentResolvedRef.current) {
+            if (queueStatus.entry.fan_has_consented && !hasConsentedToBroadcast) {
+              console.log('[JoinQueue] Restoring consent state from database');
+              setHasConsentedToBroadcast(true);
+              consentResolvedRef.current = true;
+            }
+          }
+        } else {
+          setQueueEntryId(null);
+          setDiscussionTopic('');
         }
-      } else {
-        setQueueEntryId(null);
-        setDiscussionTopic('');
-      }
 
-      // Update queue state AFTER queueEntryId is set
-      setIsInQueue(queueStatus.in_queue);
-      setQueueCount(queueStatus.total);
-      setActualPosition(queueStatus.position); // ← This triggers the consent effect
+        // Update queue state in same flush
+        setIsInQueue(queueStatus.in_queue);
+        setQueueCount(queueStatus.total);
+        setActualPosition(queueStatus.position);
+      });
 
       const isFront = queueStatus.is_front;
       console.log('[JoinQueue] Queue status:', {
