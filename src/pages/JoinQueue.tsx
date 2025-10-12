@@ -254,6 +254,7 @@ export default function JoinQueue() {
         .select('*')
         .eq('creator_id', creatorId)
         .eq('status', 'waiting')
+        .order('priority', { ascending: false })
         .order('joined_at', { ascending: true });
 
       const count = allQueueEntries?.length || 0;
