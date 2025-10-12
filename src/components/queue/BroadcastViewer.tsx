@@ -358,16 +358,8 @@ export function BroadcastViewer({
         </div>
       )}
 
-      {/* Control buttons */}
-      <div className="absolute bottom-4 right-4 z-30 flex gap-2">
-        <Button
-          onClick={toggleSelfVideo}
-          variant="outline"
-          size="sm"
-          className="w-10 h-10 rounded-full"
-        >
-          {showSelfVideo ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
-        </Button>
+      {/* Control button - Volume only */}
+      <div className="absolute bottom-4 right-4 z-30">
         <Button
           onClick={toggleMute}
           variant="outline"

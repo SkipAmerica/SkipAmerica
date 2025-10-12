@@ -191,18 +191,30 @@ serve(async (req) => {
     // Determine room (default to lobby if not provided)
     room = roomName || `lobby_${safe(creatorId)}`;
 
-    // ROUTE A: Hard-lock publishers to preview room
+    // ROUTE A: Publisher role routing
     if (role === 'publisher') {
-      const preview = `fanviewer_${safe(creatorId)}`;
-      if (room !== preview) {
-        console.error("[LiveKit Token] Publisher restricted to preview room:", { requested: room, required: preview });
-        return new Response(JSON.stringify({ 
-          error: "Publishers restricted to preview room",
-          details: "Fan publishers must use the preview room"
-        }), {
-          status: 403,
-          headers: { "content-type": "application/json", ...corsHeaders }
-        });
+      // Sub-route A1: Creator broadcasting to lobby
+      if (identity === creatorId) {
+        // Creator publishes to lobby room (NOT preview)
+        room = `lobby_${safe(creatorId)}`;
+        console.log("[LiveKit Token] Creator publisher token for lobby:", room);
+        // No queue validation needed - creator owns the lobby
+        // Skip to token generation below
+      } 
+      // Sub-route A2: Fan publishing to preview room
+      else {
+        const preview = `fanviewer_${safe(creatorId)}`;
+        if (room !== preview) {
+          console.error("[LiveKit Token] Fan publisher restricted to preview room:", { requested: room, required: preview });
+          return new Response(JSON.stringify({ 
+            error: "Publishers restricted to preview room",
+            details: "Fan publishers must use the preview room"
+          }), {
+            status: 403,
+            headers: { "content-type": "application/json", ...corsHeaders }
+          });
+        }
+        // Continue to existing fan queue validation below
       }
     }
 
