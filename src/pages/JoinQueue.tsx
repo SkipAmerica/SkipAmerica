@@ -273,6 +273,12 @@ export default function JoinQueue() {
       setQueueCount(queueStatus.total);
       setActualPosition(queueStatus.position);
 
+      // Reset consent ref when entering queue for first time or re-entering
+      if (queueStatus.entry && queueStatus.entry.id !== queueEntryId) {
+        console.log('[JoinQueue] 🔄 New queue entry detected, resetting consentResolvedRef');
+        consentResolvedRef.current = false;
+      }
+
       // Detect new queue session and reset consent
       const isNewQueueSession = queueStatus.in_queue && queueStatus.entry && queueStatus.entry.id !== queueEntryId;
       
@@ -479,6 +485,21 @@ export default function JoinQueue() {
       showConsentModal ||
       (RISING_EDGE_FIX && !risingToOne)
     ) {
+      // Log WHY we're not showing the modal (only when at position 1 for debugging)
+      if (actualPosition === 1 && isInQueue) {
+        console.log('[JoinQueue] ❌ NOT showing consent modal:', {
+          isInQueue,
+          actualPosition,
+          queueEntryId: !!queueEntryId,
+          hasConsentedToBroadcast,
+          forceBroadcast,
+          consentResolved: consentResolvedRef.current,
+          showConsentModal,
+          RISING_EDGE_FIX,
+          risingToOne,
+          prev
+        });
+      }
       return;
     }
 
