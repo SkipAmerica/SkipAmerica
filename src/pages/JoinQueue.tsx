@@ -450,10 +450,17 @@ export default function JoinQueue() {
     return () => clearInterval(heartbeatInterval);
   }, [creatorId, user, isInQueue, actualPosition, checkLiveStatus]);
 
-  // Log position changes for debugging
+  // Log position changes for debugging + cleanup when leaving position 1
   useEffect(() => {
     if (actualPosition !== null) {
       console.log('[JoinQueue] Position changed to:', actualPosition);
+      
+      // When user left position 1, reset consent modal state for next time
+      if (prevPositionRef.current === 1 && actualPosition !== 1) {
+        console.log('[JoinQueue] ⬇️ Left position 1, resetting consent modal state');
+        setShowConsentModal(false);
+        prevPositionRef.current = actualPosition;
+      }
     }
   }, [actualPosition]);
 
@@ -511,7 +518,7 @@ export default function JoinQueue() {
       showModal: showConsentModal
     });
     setShowConsentModal(true);
-    prevPositionRef.current = actualPosition;
+    // Don't update prevPositionRef yet - wait for modal to be dismissed
   }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast, showConsentModal, queueEntryId]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
@@ -887,6 +894,7 @@ export default function JoinQueue() {
       
       // Close the modal after successful consent
       setShowConsentModal(false);
+      prevPositionRef.current = actualPosition; // Update ref after modal closes
 
     } catch (err) {
       clearTimeout(timeoutId);
@@ -947,6 +955,9 @@ export default function JoinQueue() {
       consentStream.getTracks().forEach(track => track.stop());
       setConsentStream(undefined);
     }
+
+    // Update ref before leaving since consent is resolved
+    prevPositionRef.current = actualPosition;
 
     // Leave queue (triggers existing cleanup logic)
     await handleLeaveQueue();
