@@ -234,25 +234,13 @@ export function BroadcastViewer({
             <div className="flex items-center gap-2">
               <div className="text-xl">👋</div>
               <div>
-                <p className="text-sm font-medium">You're ready!</p>
-                <p className="text-xs text-muted-foreground">Creator can see your video</p>
+                <p className="text-sm font-medium">You're Next In Line</p>
+                <p className="text-xs text-muted-foreground">Waiting for creator's invite</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Creator Status - bottom right */}
-        <div className="absolute bottom-4 right-4 z-20">
-          <div className="bg-card/95 backdrop-blur-sm border border-border rounded-lg p-3 shadow-xl">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <div>
-                <p className="text-xs font-medium">Creator is live</p>
-                <p className="text-xs text-muted-foreground">Will invite you soon</p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Headless publisher - establishes single LiveKit connection */}
         {fanUserId && resolvedCreatorId && (() => {
