@@ -2574,6 +2574,10 @@ export type Database = {
           standard_unread: number
         }[]
       }
+      get_queue_position: {
+        Args: { p_creator_id: string; p_fan_id: string }
+        Returns: Json
+      }
       mark_thread_read: {
         Args: { p_thread_id: string; p_user_id: string }
         Returns: undefined

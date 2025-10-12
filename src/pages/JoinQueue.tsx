@@ -42,6 +42,21 @@ interface LiveSession {
   started_at: string;
 }
 
+interface QueueStatusResponse {
+  in_queue: boolean;
+  position: number | null;
+  is_front: boolean;
+  total: number;
+  needs_consent: boolean;
+  entry?: {
+    id: string;
+    fan_state: string;
+    fan_has_consented: boolean;
+    discussion_topic: string | null;
+    joined_at: string;
+  };
+}
+
 export default function JoinQueue() {
   const { creatorId } = useParams<{ creatorId: string }>();
   const navigate = useNavigate();
@@ -223,6 +238,8 @@ export default function JoinQueue() {
   // Check if creator is live and get queue status
   const checkLiveStatus = useCallback(async () => {
     if (!creatorId || !user) return;
+    
+    try {
       // Check if creator is currently live
       const { data: session } = await supabase
         .from('live_sessions')
@@ -233,59 +250,60 @@ export default function JoinQueue() {
 
       setLiveSession(session);
 
-      // Check if user is already in queue
-      const { data: queueEntry } = await supabase
-        .from('call_queue')
-        .select('*')
-        .eq('creator_id', creatorId)
-        .eq('fan_id', user.id)
-        .eq('status', 'waiting')
-        .single();
+      // Get atomic queue position from database (single source of truth)
+      const { data: queueStatus, error } = await supabase.rpc('get_queue_position', {
+        p_creator_id: creatorId,
+        p_fan_id: user.id
+      }) as { data: QueueStatusResponse | null; error: any };
 
-      if (queueEntry) {
-        setIsInQueue(true);
-        setQueueEntryId(queueEntry.id);
-        setDiscussionTopic(queueEntry.discussion_topic || '');
+      if (error) {
+        console.error('[JoinQueue] Error fetching queue position:', error);
+        return;
       }
 
-      // Get total queue count and calculate this user's position
-      const { data: allQueueEntries } = await supabase
-        .from('call_queue')
-        .select('*')
-        .eq('creator_id', creatorId)
-        .eq('status', 'waiting')
-        .order('priority', { ascending: false })
-        .order('joined_at', { ascending: true });
+      if (!queueStatus) {
+        console.warn('[JoinQueue] No queue status returned');
+        return;
+      }
 
-      const count = allQueueEntries?.length || 0;
-      setQueueCount(count);
+      // Update all queue-related state from atomic RPC response
+      setIsInQueue(queueStatus.in_queue);
+      setQueueCount(queueStatus.total);
+      setActualPosition(queueStatus.position);
 
-      // Calculate user's position (1-indexed)
-      if (queueEntry && allQueueEntries) {
-        const position = allQueueEntries.findIndex(entry => entry.id === queueEntry.id) + 1;
-        setActualPosition(position);
-        console.log('[JoinQueue] User position in queue:', position);
-        
-        const isFront = position === 1;
-        
-        // Show consent modal only when user BECOMES #1 (rising edge) and consent hasn't been resolved
-        if (
-          isFront &&
-          !wasFrontRef.current &&
-          !hasConsentedToBroadcast &&
-          !forceBroadcast &&
-          !consentResolvedRef.current
-        ) {
-          console.log('[JoinQueue] 🎯 User is next up, showing consent modal');
-          setShowConsentModal(true);
-        }
-        
-        wasFrontRef.current = isFront;
+      if (queueStatus.in_queue && queueStatus.entry) {
+        setQueueEntryId(queueStatus.entry.id);
+        setDiscussionTopic(queueStatus.entry.discussion_topic || '');
       } else {
-        setActualPosition(null);
-        wasFrontRef.current = false;
+        setQueueEntryId(null);
+        setDiscussionTopic('');
       }
-  }, [creatorId, user, hasConsentedToBroadcast, forceBroadcast]);
+
+      const isFront = queueStatus.is_front;
+      console.log('[JoinQueue] Queue status:', {
+        position: queueStatus.position,
+        isFront,
+        needsConsent: queueStatus.needs_consent,
+        total: queueStatus.total
+      });
+
+      // Show consent modal only when user BECOMES #1 (rising edge) and server confirms consent needed
+      if (
+        isFront &&
+        !wasFrontRef.current &&
+        queueStatus.needs_consent &&
+        !forceBroadcast &&
+        !consentResolvedRef.current
+      ) {
+        console.log('[JoinQueue] 🎯 User is next up, showing consent modal');
+        setShowConsentModal(true);
+      }
+
+      wasFrontRef.current = isFront;
+    } catch (error) {
+      console.error('[JoinQueue] Error in checkLiveStatus:', error);
+    }
+  }, [creatorId, user, forceBroadcast]);
 
   // Subscribe to live status and queue changes
   useEffect(() => {
@@ -503,10 +521,13 @@ export default function JoinQueue() {
         console.log('[JoinQueue] Successfully joined queue');
         setIsInQueue(true);
         checkLiveStatus();
-        toast({
-          title: "Joined queue!",
-          description: "You're now first in line with priority access.",
-        });
+      // Refresh queue status to get accurate position
+      await checkLiveStatus();
+      
+      toast({
+        title: "Joined queue!",
+        description: actualPosition === 1 ? "You're next up." : `You're in queue at position ${actualPosition || 'calculating...'}.`,
+      });
       }
     } catch (error) {
       console.error('Error joining queue:', error);
