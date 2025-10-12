@@ -169,7 +169,12 @@ export function BroadcastViewer({
   }, [localStream]);
 
   // Use distinct identity for viewer to avoid collision with publisher
-  const viewerIdentity = fanUserId ? `viewer_${fanUserId}` : `viewer_${crypto.randomUUID()}`;
+  const viewerIdentity = useMemo(() => {
+    if (fanUserId) {
+      return `viewer_${fanUserId}`;
+    }
+    return `viewer_${crypto.randomUUID()}`;
+  }, [fanUserId]);
 
   console.log('[BroadcastViewer] Config:', { 
     shouldPublishFanVideo, 

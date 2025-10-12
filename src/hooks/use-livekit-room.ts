@@ -27,13 +27,16 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
     let isMounted = true;
     let currentRoom: Room | null = null;
+    let tokenRefreshTimer: NodeJS.Timeout | null = null;
 
-    const connect = async () => {
+    const connect = async (isReconnect = false) => {
       try {
-        setConnectionState('connecting');
-        setError(null);
+        if (!isReconnect) {
+          setConnectionState('connecting');
+          setError(null);
+        }
 
-        console.log('[useLiveKitRoom] Connecting...', config);
+        console.log('[useLiveKitRoom] Connecting...', { isReconnect, config });
 
         // Fetch token
         const { token, url, room: roomName } = await fetchLiveKitToken({
@@ -43,6 +46,12 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         });
 
         if (!isMounted) return;
+
+        // If reconnecting, disconnect existing room first
+        if (isReconnect && currentRoom) {
+          console.log('[useLiveKitRoom] Disconnecting for token refresh');
+          await currentRoom.disconnect();
+        }
 
         // Create room with broadcast-grade quality settings
         const newRoom = new Room({
@@ -86,10 +95,18 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           }
           
           if (isMounted) setConnectionState('connected');
+          
+          // Schedule token refresh at 8 minutes (before 10-min expiry)
+          if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
+          tokenRefreshTimer = setTimeout(() => {
+            console.log('[useLiveKitRoom] Token refresh scheduled');
+            connect(true);
+          }, 8 * 60 * 1000);
         });
 
-        newRoom.on(RoomEvent.Disconnected, () => {
-          console.log('[useLiveKitRoom] Disconnected from room');
+        newRoom.on(RoomEvent.Disconnected, (reason) => {
+          console.log('[useLiveKitRoom] Disconnected from room, reason:', reason);
+          if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
           if (isMounted) setConnectionState('disconnected');
         });
 
@@ -125,6 +142,14 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         if (isMounted) {
           setError(err instanceof Error ? err : new Error('Connection failed'));
           setConnectionState('failed');
+          
+          // Retry connection after 3 seconds on failure
+          setTimeout(() => {
+            if (isMounted) {
+              console.log('[useLiveKitRoom] Retrying connection...');
+              connect(true);
+            }
+          }, 3000);
         }
       }
     };
@@ -133,6 +158,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
     return () => {
       isMounted = false;
+      if (tokenRefreshTimer) clearTimeout(tokenRefreshTimer);
       if (currentRoom) {
         console.log('[useLiveKitRoom] Cleaning up room connection');
         currentRoom.disconnect();
