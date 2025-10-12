@@ -304,10 +304,9 @@ export default function JoinQueue() {
         entryId: queueStatus.entry?.id
       });
 
-      // Show consent modal only when user BECOMES #1 (rising edge) and server confirms consent needed
+      // Show consent modal when user is #1 and server confirms consent needed (persistent check)
       if (
         isFront &&
-        !wasFrontRef.current &&
         queueStatus.needs_consent &&
         !forceBroadcast &&
         !consentResolvedRef.current
@@ -320,7 +319,7 @@ export default function JoinQueue() {
     } catch (error) {
       console.error('[JoinQueue] Error in checkLiveStatus:', error);
     }
-  }, [creatorId, user, forceBroadcast, queueEntryId, hasConsentedToBroadcast]);
+  }, [creatorId, user, forceBroadcast]);
 
   // Subscribe to live status and queue changes with debounce
   useEffect(() => {
@@ -356,6 +355,7 @@ export default function JoinQueue() {
           setHasConsentedToBroadcast(false);
           consentResolvedRef.current = false;
           wasFrontRef.current = false;
+          setShowConsentModal(false);
           
           checkLiveStatus();
         }
@@ -425,6 +425,26 @@ export default function JoinQueue() {
     window.addEventListener('queue:front-changed', onFrontChanged as EventListener);
     return () => window.removeEventListener('queue:front-changed', onFrontChanged as EventListener);
   }, [creatorId, checkLiveStatus]);
+
+  // Heartbeat for positions 1-2: Poll every 10 seconds as fallback for missed realtime events
+  useEffect(() => {
+    if (!creatorId || !user || !isInQueue || actualPosition === null || actualPosition > 2) return;
+    
+    console.log('[JoinQueue] Setting up heartbeat for position', actualPosition);
+    const heartbeatInterval = setInterval(() => {
+      console.log('[JoinQueue] Heartbeat poll for positions 1-2');
+      checkLiveStatus();
+    }, 10000); // 10 seconds
+    
+    return () => clearInterval(heartbeatInterval);
+  }, [creatorId, user, isInQueue, actualPosition, checkLiveStatus]);
+
+  // Log position changes for debugging
+  useEffect(() => {
+    if (actualPosition !== null) {
+      console.log('[JoinQueue] Position changed to:', actualPosition);
+    }
+  }, [actualPosition]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
