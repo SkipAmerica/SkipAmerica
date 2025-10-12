@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import { isConsentRisingEdgeFixEnabled } from '@/lib/env';
 import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
@@ -94,6 +95,7 @@ export default function JoinQueue() {
   const initialNameSetRef = useRef(false);
   const consentResolvedRef = useRef(false); // Prevents modal from reopening after consent flow starts
   const wasFrontRef = useRef(false); // Rising-edge detector for position #1
+  const prevPositionRef = useRef<number | null>(null); // Track prev position for rising-edge
 
   // Ensure full-viewport scrolling on PQ
   useEffect(() => {
@@ -280,6 +282,11 @@ export default function JoinQueue() {
         setHasConsentedToBroadcast(false);
         consentResolvedRef.current = false;
         setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
+        
+        // Close any stale modal from previous session
+        if (isConsentRisingEdgeFixEnabled()) {
+          setShowConsentModal(false);
+        }
       } else if (queueStatus.in_queue && queueStatus.entry) {
         // Same session - restore consent from database if already consented
         setQueueEntryId(queueStatus.entry.id);
@@ -308,6 +315,12 @@ export default function JoinQueue() {
       });
 
       wasFrontRef.current = isFront;
+
+      // Close modal if user drops from position 1
+      if (isConsentRisingEdgeFixEnabled() && prevPositionRef.current === 1 && actualPosition !== 1) {
+        console.log('[JoinQueue] ⬇ Left position 1, closing consent modal');
+        setShowConsentModal(false);
+      }
     } catch (error) {
       console.error('[JoinQueue] Error in checkLiveStatus:', error);
     }
@@ -440,27 +453,45 @@ export default function JoinQueue() {
 
   // Consent modal trigger: Show when user reaches position 1 and hasn't consented
   useEffect(() => {
+    const RISING_EDGE_FIX = isConsentRisingEdgeFixEnabled();
+    
+    // Rising-edge detection (only if flag enabled)
+    const prev = prevPositionRef.current;
+    const risingToOne = prev !== 1 && actualPosition === 1;
+    prevPositionRef.current = actualPosition;
+    
     // Don't show modal if:
     // - Not in queue
     // - Not at position 1
+    // - No queue entry ID (mid-fetch state)
     // - Already consented
     // - Force broadcast enabled
     // - Consent already resolved
     // - Modal is already open (prevents reopening)
+    // - (NEW) Not a rising edge to position 1 (when flag enabled)
     if (
       !isInQueue ||
       actualPosition !== 1 ||
+      !queueEntryId ||
       hasConsentedToBroadcast ||
       forceBroadcast ||
       consentResolvedRef.current ||
-      showConsentModal
+      showConsentModal ||
+      (RISING_EDGE_FIX && !risingToOne)
     ) {
       return;
     }
 
-    console.log('[JoinQueue] 🎯 Position 1 reached, showing consent modal');
+    console.log('[JoinQueue] 🎯 Consent modal open:', {
+      prev,
+      pos: actualPosition,
+      queueEntryId,
+      localConsent: hasConsentedToBroadcast,
+      consentResolved: consentResolvedRef.current,
+      showModal: showConsentModal
+    });
     setShowConsentModal(true);
-  }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast, showConsentModal]);
+  }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast, showConsentModal, queueEntryId]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
@@ -723,6 +754,17 @@ export default function JoinQueue() {
     consentResolvedRef.current = true;
     const prevConsent = hasConsentedToBroadcast;
     setHasConsentedToBroadcast(true);
+
+    // Optimistically close modal to prevent reopen flicker
+    if (isConsentRisingEdgeFixEnabled()) {
+      console.log('[JoinQueue] ✓ Consent modal close (optimistic):', {
+        queueEntryId,
+        localConsent: true,
+        consentResolved: true
+      });
+      setShowConsentModal(false);
+    }
+
     setIsUpdatingConsent(true);
 
     // Timeout guard (15 seconds)
@@ -757,6 +799,9 @@ export default function JoinQueue() {
         // Rollback optimistic update
         consentResolvedRef.current = false;
         setHasConsentedToBroadcast(prevConsent);
+        if (isConsentRisingEdgeFixEnabled()) {
+          setShowConsentModal(true); // Reopen on failure
+        }
         
         // Specific error messages based on error code
         if (error.code === 'PGRST116' || error.code === '42501') {
@@ -790,6 +835,9 @@ export default function JoinQueue() {
         // Rollback optimistic update
         consentResolvedRef.current = false;
         setHasConsentedToBroadcast(prevConsent);
+        if (isConsentRisingEdgeFixEnabled()) {
+          setShowConsentModal(true); // Reopen on failure
+        }
         
         toast({
           title: "Queue Status Changed",

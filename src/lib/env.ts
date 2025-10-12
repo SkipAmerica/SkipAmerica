@@ -11,3 +11,7 @@ export const getEnvironmentFlag = (key: string, defaultValue: boolean = false): 
   }
   return defaultValue;
 };
+
+export const isConsentRisingEdgeFixEnabled = (): boolean => {
+  return getEnvironmentFlag('VITE_CONSENT_RISING_EDGE_FIX', true);
+};
