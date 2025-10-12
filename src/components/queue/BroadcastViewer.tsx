@@ -257,8 +257,8 @@ export function BroadcastViewer({
         {fanUserId && resolvedCreatorId && (() => {
           const publisherConfig = useMemo(() => {
             const identity = fanIdentity(fanUserId); // Use raw UUID for consistency
-            const roomName = lobbyRoomName(resolvedCreatorId); // FIXED: Publish to lobby room
-            console.log('[BroadcastViewer] 📹 Publishing to lobby room:', {
+            const roomName = previewRoomName(resolvedCreatorId); // Position 1 fan publishes to preview room
+            console.log('[BroadcastViewer] 📹 Publishing to preview room:', {
               fanUserId,
               identity,
               resolvedCreatorId,
@@ -279,7 +279,7 @@ export function BroadcastViewer({
               publishVideo={true}
               mediaStream={consentStream}
             onPublished={() => {
-              console.log('[BroadcastViewer] ✅ Fan video published successfully to lobby room:', lobbyRoomName(resolvedCreatorId));
+              console.log('[BroadcastViewer] ✅ Fan video published successfully to preview room:', previewRoomName(resolvedCreatorId));
             }}
             onError={(error) => {
               console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
