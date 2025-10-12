@@ -33,7 +33,7 @@ export function BroadcastViewer({
   }
 
   const selfVideoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(false); // Start UNMUTED for broadcasts
+  const [isMuted, setIsMuted] = useState(true); // Start MUTED to comply with autoplay policies
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
@@ -358,17 +358,19 @@ export function BroadcastViewer({
         </div>
       )}
 
-      {/* Control button - Volume only */}
-      <div className="absolute bottom-4 right-4 z-30">
-        <Button
-          onClick={toggleMute}
-          variant="outline"
-          size="sm"
-          className="w-10 h-10 rounded-full"
-        >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        </Button>
-      </div>
+      {/* Control button - Volume only - ONLY show in viewer mode */}
+      {!publisherModeRef.current && (
+        <div className="absolute bottom-4 right-4 z-30">
+          <Button
+            onClick={toggleMute}
+            variant="outline"
+            size="sm"
+            className="w-10 h-10 rounded-full"
+          >
+            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

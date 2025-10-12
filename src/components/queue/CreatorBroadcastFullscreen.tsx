@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useDoubleTap } from "@/hooks/use-double-tap";
 import { GoLiveCountdown } from "./GoLiveCountdown";
 import { useLobbyBroadcast } from "@/hooks/broadcast/useLobbyBroadcast";
+import { lobbyRoomName } from "@/lib/lobbyIdentity";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
   isVisible?: boolean;
@@ -91,7 +92,8 @@ export function CreatorBroadcastFullscreen({
       {isLobbyBroadcasting && broadcast.stream && <LiveKitPublisher config={{
       role: 'publisher',
       creatorId,
-      identity: creatorId
+      identity: creatorId,
+      roomName: lobbyRoomName(creatorId) // Explicit: publish to lobby room
     }} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
       console.log('[CreatorBroadcast] Stream published');
     }} onError={error => {

@@ -38,6 +38,16 @@ export function LiveKitVideoPlayer({
     onConnectionStateChange?.(isConnected);
   }, [isConnected, onConnectionStateChange]);
 
+  // Enhanced unmute behavior - ensure audio plays when user unmutes
+  useEffect(() => {
+    if (!muted && audioRef.current && isConnected) {
+      console.log('[LiveKitVideoPlayer] User unmuted, ensuring audio plays');
+      audioRef.current.play().catch(err => {
+        console.warn('[LiveKitVideoPlayer] Audio play after unmute failed:', err);
+      });
+    }
+  }, [muted, isConnected]);
+
   // Handle video track attachment
   useEffect(() => {
     if (!room || !videoRef.current) return;
