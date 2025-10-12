@@ -2578,6 +2578,10 @@ export type Database = {
         Args: { p_thread_id: string; p_user_id: string }
         Returns: undefined
       }
+      remove_from_queue_v1: {
+        Args: { p_creator_id: string; p_fan_id: string; p_reason: string }
+        Returns: Json
+      }
       start_almighty_session: {
         Args: { p_queue_entry: string }
         Returns: string

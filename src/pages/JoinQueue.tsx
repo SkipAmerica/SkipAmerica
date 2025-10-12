@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/app/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
+import { QueueService } from '@/services/queue-service';
 import { BroadcastViewer } from '@/components/queue/BroadcastViewer';
 import { LoadingSpinner } from '@/shared/ui/loading-spinner';
 import { useCreatorPresence } from '@/shared/hooks';
@@ -337,6 +338,22 @@ export default function JoinQueue() {
     };
   }, [creatorId, user, checkLiveStatus]);
 
+  // Listen for queue front changes to trigger consent check
+  useEffect(() => {
+    if (!creatorId) return;
+
+    const onFrontChanged = (e: Event) => {
+      const ev = e as CustomEvent;
+      if (ev.detail?.creatorId !== creatorId) return;
+      
+      console.log('[JoinQueue] Queue front changed, refetching status');
+      checkLiveStatus();
+    };
+    
+    window.addEventListener('queue:front-changed', onFrontChanged as EventListener);
+    return () => window.removeEventListener('queue:front-changed', onFrontChanged as EventListener);
+  }, [creatorId, checkLiveStatus]);
+
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
     if (initialNameSetRef.current || userEditedNameRef.current || !profile) return;
@@ -466,7 +483,7 @@ export default function JoinQueue() {
           creator_id: creatorId,
           fan_id: user.id,
           discussion_topic: discussionTopic || null,
-          priority: 1, // Friends get priority
+          priority: 0, // FCFS - no priority jumps
           status: 'waiting'
         });
 
@@ -508,17 +525,15 @@ export default function JoinQueue() {
     console.log('[JoinQueue] User manually leaving queue');
     
     try {
-      const { error } = await supabase
-        .from('call_queue')
-        .delete()
-        .eq('creator_id', creatorId)
-        .eq('fan_id', user.id);
-
-      if (error) throw error;
+      await QueueService.removeFromQueue({
+        creatorId,
+        fanId: user.id,
+        reason: 'manual_leave',
+      });
 
       setIsInQueue(false);
       setDiscussionTopic('');
-      setHasConsentedToBroadcast(false); // Reset consent
+      setHasConsentedToBroadcast(false);
       setActualPosition(null);
       
       // Clean up consent stream
@@ -533,10 +548,10 @@ export default function JoinQueue() {
         description: "You've been removed from the queue.",
       });
     } catch (error) {
-      console.error('Error leaving queue:', error);
+      console.error('[JoinQueue] Error leaving queue:', error);
       toast({
         title: "Error",
-        description: "Failed to leave queue.",
+        description: "Failed to leave queue. Please try again.",
         variant: "destructive"
       });
     }
