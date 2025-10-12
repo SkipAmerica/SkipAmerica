@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, Track } from 'livekit-client';
-import { fetchLiveKitToken } from '@/lib/sfuToken';
-import { lobbyRoomName, creatorIdentity, isCreator } from '@/lib/lobbyIdentity';
+import React, { useEffect, useState } from 'react';
+import { creatorIdentity } from '@/lib/lobbyIdentity';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Volume2, VolumeX } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 
 interface NextUserPreviewProps {
   userId: string;
@@ -33,12 +32,7 @@ export function NextUserPreview({
   disableMuteToggle = false
 }: NextUserPreviewProps) {
   const [showNotification, setShowNotification] = useState(true);
-  const videoEl = useRef<HTMLVideoElement | null>(null);
-  const roomRef = useRef<Room | null>(null);
-  const [attachedParticipant, setAttachedParticipant] = useState<string | null>(null);
-  const [isConnecting, setIsConnecting] = useState(true);
-  const connectionStableRef = useRef(false);
-  const prevPropsRef = useRef({ creatorId, userId });
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowNotification(false), 8000);
@@ -52,175 +46,10 @@ export function NextUserPreview({
     return `${hours}h ${remainingMinutes}m`;
   };
 
-  // Event-driven connection to lobby
-  useEffect(() => {
-    // Skip if props haven't actually changed (stability check)
-    if (
-      connectionStableRef.current &&
-      prevPropsRef.current.creatorId === creatorId &&
-      prevPropsRef.current.userId === userId
-    ) {
-      console.log('[NextUserPreview] ⏭️ Skipping reconnect - props unchanged');
-      return;
-    }
-    
-    prevPropsRef.current = { creatorId, userId };
-    let cancelled = false;
-
-    async function connect() {
-      try {
-        const roomName = lobbyRoomName(creatorId);
-        const identity = creatorIdentity(creatorId);
-
-        console.log('[NextUserPreview] 🔌 Starting lobby connection', {
-          roomName,
-          identity,
-          userId,
-          creatorId
-        });
-
-        const { token, url } = await fetchLiveKitToken({
-          role: 'viewer',
-          creatorId,
-          identity,
-          sessionId: undefined,
-        });
-
-        console.log('[NextUserPreview] ✅ Token received', { url });
-
-        const room = new Room({ adaptiveStream: true, dynacast: true });
-        roomRef.current = room;
-
-        // Event: Track subscribed (primary mechanism)
-        room.on(RoomEvent.TrackSubscribed, (
-          track: Track,
-          pub: RemoteTrackPublication,
-          participant: RemoteParticipant
-        ) => {
-          if (cancelled) return;
-          
-          console.log('[NextUserPreview] 🎥 TrackSubscribed', {
-            kind: track.kind,
-            participantIdentity: participant.identity,
-            participantSid: participant.sid,
-            trackSid: track.sid,
-            isCreator: isCreator(participant.identity, creatorId)
-          });
-          
-          if (track.kind !== Track.Kind.Video) return;
-          if (isCreator(participant.identity, creatorId)) {
-            console.log('[NextUserPreview] ⏭️ Skipping creator self-track');
-            return;
-          }
-
-          console.log('[NextUserPreview] ✅ Attaching video track from fan:', participant.identity);
-          
-          if (videoEl.current) {
-            try {
-              const videoTrack = track as any;
-              if (videoEl.current.srcObject) {
-                videoEl.current.srcObject = null;
-              }
-              videoTrack.attach?.(videoEl.current);
-              setAttachedParticipant(participant.identity);
-              setIsConnecting(false);
-              connectionStableRef.current = true;
-              console.log('[NextUserPreview] ✅ Video track attached successfully');
-            } catch (e) {
-              console.error('[NextUserPreview] ❌ Attach failed:', e);
-            }
-          }
-        });
-
-        // Event: Participant connected
-        room.on(RoomEvent.ParticipantConnected, (p: RemoteParticipant) => {
-          if (cancelled) return;
-          console.log('[NextUserPreview] 👤 ParticipantConnected:', {
-            identity: p.identity,
-            sid: p.sid,
-            trackCount: p.trackPublications.size
-          });
-        });
-
-        // Event: Participant disconnected
-        room.on(RoomEvent.ParticipantDisconnected, (p: RemoteParticipant) => {
-          if (cancelled) return;
-          console.log('[NextUserPreview] 👋 ParticipantDisconnected:', {
-            identity: p.identity,
-            wasAttached: p.identity === attachedParticipant
-          });
-          
-          if (p.identity === attachedParticipant) {
-            if (videoEl.current) {
-              videoEl.current.srcObject = null;
-            }
-            setAttachedParticipant(null);
-            setIsConnecting(true);
-          }
-        });
-
-        await room.connect(url, token);
-        console.log('[NextUserPreview] ✅ Connected to lobby room', {
-          roomName: room.name,
-          remoteParticipantCount: room.remoteParticipants.size,
-          localParticipant: room.localParticipant?.identity
-        });
-
-        // Check if a fan is already in the room
-        console.log('[NextUserPreview] 🔍 Checking for existing participants...');
-        for (const p of room.remoteParticipants.values()) {
-          console.log('[NextUserPreview] 🔍 Found participant:', {
-            identity: p.identity,
-            isCreator: isCreator(p.identity, creatorId),
-            videoTrackCount: p.videoTrackPublications.size
-          });
-          
-          if (isCreator(p.identity, creatorId)) continue;
-          
-          const videoTracks = Array.from(p.videoTrackPublications.values());
-          const videoPub = videoTracks.find((pub) => pub.isSubscribed && pub.track);
-          
-          if (videoPub?.track && videoEl.current) {
-            console.log('[NextUserPreview] 🔄 Attaching existing participant video:', p.identity);
-            try {
-              (videoPub.track as any).attach?.(videoEl.current);
-              setAttachedParticipant(p.identity);
-              setIsConnecting(false);
-              connectionStableRef.current = true;
-              console.log('[NextUserPreview] ✅ Existing video track attached successfully');
-            } catch (e) {
-              console.error('[NextUserPreview] ❌ Attach existing failed:', e);
-            }
-            break;
-          }
-        }
-        
-        if (room.remoteParticipants.size === 0) {
-          console.log('[NextUserPreview] ⏳ No participants yet, waiting for fan to join...');
-        }
-      } catch (e) {
-        console.error('[NextUserPreview] ❌ Connect failed:', e);
-        setIsConnecting(false);
-      }
-    }
-
-    connect();
-
-    return () => {
-      cancelled = true;
-      connectionStableRef.current = false;
-      const room = roomRef.current;
-      if (!room) return;
-      
-      console.log('[NextUserPreview] 🔌 Disconnecting from lobby');
-      try {
-        room.disconnect();
-      } catch (e) {
-        console.warn('[NextUserPreview] Disconnect error:', e);
-      }
-      roomRef.current = null;
-    };
-  }, [creatorId, userId]);
+  const handleConnectionStateChange = (connected: boolean) => {
+    setIsConnected(connected);
+    console.log('[NextUserPreview] Connection state changed:', connected);
+  };
 
   return (
     <div className="relative w-full">
@@ -236,24 +65,26 @@ export function NextUserPreview({
       </div>
       
       {/* Fan's Camera Feed */}
-      <div className="border border-primary/20 rounded-lg overflow-hidden bg-black">
-        <video
-          ref={videoEl}
-          autoPlay
-          playsInline
+      <div className="border border-primary/20 rounded-lg overflow-hidden bg-black relative">
+        <LiveKitVideoPlayer
+          config={{
+            role: 'viewer',
+            creatorId,
+            identity: creatorIdentity(creatorId)
+          }}
+          targetParticipantId={userId}
           muted={muted}
           className="w-full aspect-video object-cover"
-        />
-        
-        {/* Loading state */}
-        {isConnecting && !attachedParticipant && (
-          <div className="absolute inset-0 flex items-center justify-center text-white">
-            <div className="text-center">
-              <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
-              <p className="text-sm">Waiting for {userName}'s video...</p>
+          onConnectionStateChange={handleConnectionStateChange}
+          fallbackContent={
+            <div className="absolute inset-0 flex items-center justify-center text-white bg-black">
+              <div className="text-center">
+                <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin mb-4 mx-auto"></div>
+                <p className="text-sm">Waiting for {userName}'s video...</p>
+              </div>
             </div>
-          </div>
-        )}
+          }
+        />
       </div>
       
       {/* Bottom Overlay with Controls */}
