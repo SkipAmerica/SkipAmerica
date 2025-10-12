@@ -139,7 +139,7 @@ export function QueueChat({
         </TabsContent>
 
         {/* Always render private chat but hide when not ready */}
-        <TabsContent value="private" className={`mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden ${!isInQueue || !hasConsented || actualPosition !== 1 ? 'hidden' : ''}`}>
+        <TabsContent value="private" className={`mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden ${!isInQueue || actualPosition !== 1 ? 'hidden' : ''}`}>
           <UniversalChat config={privateConfig} />
         </TabsContent>
       </Tabs>
