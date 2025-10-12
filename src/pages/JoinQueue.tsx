@@ -304,22 +304,11 @@ export default function JoinQueue() {
         entryId: queueStatus.entry?.id
       });
 
-      // Show consent modal when user is #1 and server confirms consent needed (persistent check)
-      if (
-        isFront &&
-        queueStatus.needs_consent &&
-        !forceBroadcast &&
-        !consentResolvedRef.current
-      ) {
-        console.log('[JoinQueue] 🎯 User is next up, showing consent modal');
-        setShowConsentModal(true);
-      }
-
       wasFrontRef.current = isFront;
     } catch (error) {
       console.error('[JoinQueue] Error in checkLiveStatus:', error);
     }
-  }, [creatorId, user, forceBroadcast]);
+  }, [creatorId, user]);
 
   // Subscribe to live status and queue changes with debounce
   useEffect(() => {
@@ -445,6 +434,28 @@ export default function JoinQueue() {
       console.log('[JoinQueue] Position changed to:', actualPosition);
     }
   }, [actualPosition]);
+
+  // Consent modal trigger: Show when user reaches position 1 and hasn't consented
+  useEffect(() => {
+    // Don't show modal if:
+    // - Not in queue
+    // - Not at position 1
+    // - Already consented
+    // - Force broadcast enabled
+    // - Consent already resolved
+    if (
+      !isInQueue ||
+      actualPosition !== 1 ||
+      hasConsentedToBroadcast ||
+      forceBroadcast ||
+      consentResolvedRef.current
+    ) {
+      return;
+    }
+
+    console.log('[JoinQueue] 🎯 Position 1 reached, showing consent modal');
+    setShowConsentModal(true);
+  }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
   useEffect(() => {
