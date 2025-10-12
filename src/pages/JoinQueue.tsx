@@ -268,11 +268,6 @@ export default function JoinQueue() {
         return;
       }
 
-      // Update all queue-related state from atomic RPC response
-      setIsInQueue(queueStatus.in_queue);
-      setQueueCount(queueStatus.total);
-      setActualPosition(queueStatus.position);
-
       // Reset consent ref when entering queue for first time or re-entering
       if (queueStatus.entry && queueStatus.entry.id !== queueEntryId) {
         console.log('[JoinQueue] 🔄 New queue entry detected, resetting consentResolvedRef');
@@ -284,7 +279,7 @@ export default function JoinQueue() {
       
       if (isNewQueueSession) {
         console.log('[JoinQueue] New queue session detected, resetting consent state');
-        setQueueEntryId(queueStatus.entry!.id);
+        setQueueEntryId(queueStatus.entry!.id); // ← SET THIS FIRST before actualPosition
         setHasConsentedToBroadcast(false);
         consentResolvedRef.current = false;
         setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
@@ -310,6 +305,11 @@ export default function JoinQueue() {
         setQueueEntryId(null);
         setDiscussionTopic('');
       }
+
+      // Update queue state AFTER queueEntryId is set
+      setIsInQueue(queueStatus.in_queue);
+      setQueueCount(queueStatus.total);
+      setActualPosition(queueStatus.position); // ← This triggers the consent effect
 
       const isFront = queueStatus.is_front;
       console.log('[JoinQueue] Queue status:', {
@@ -1198,17 +1198,30 @@ export default function JoinQueue() {
         </div>
 
         {/* Chat section below video */}
-        {user && (
-          <div className="mt-6">
-            <QueueChat 
-              creatorId={creatorId!}
-              fanId={user.id}
-              isInQueue={isInQueue}
-              actualPosition={actualPosition}
-              hasConsented={hasConsentedToBroadcast || consentResolvedRef.current}
-            />
-          </div>
-        )}
+        {(() => {
+          // Compute effective consent OUTSIDE the JSX so React tracks it properly
+          const effectiveHasConsented = hasConsentedToBroadcast || consentResolvedRef.current;
+
+          console.log('[JoinQueue] Consent states for chat:', {
+            hasConsentedToBroadcast,
+            consentResolved: consentResolvedRef.current,
+            effectiveHasConsented,
+            actualPosition,
+            queueEntryId
+          });
+
+          return user && (
+            <div className="mt-6">
+              <QueueChat 
+                creatorId={creatorId!}
+                fanId={user.id}
+                isInQueue={isInQueue}
+                actualPosition={actualPosition}
+                hasConsented={effectiveHasConsented}
+              />
+            </div>
+          );
+        })()}
       </div>
 
       {/* Next Up Consent Modal */}
