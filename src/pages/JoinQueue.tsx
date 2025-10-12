@@ -1031,7 +1031,7 @@ export default function JoinQueue() {
         )}
 
         {/* Waiting Status Banner - When consented and next up */}
-        {isInQueue && actualPosition === 1 && hasConsentedToBroadcast && (
+        {isInQueue && actualPosition === 1 && (hasConsentedToBroadcast || consentResolvedRef.current) && (
           <div className="mb-4 p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg ios-safe-left ios-safe-right">
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0">
@@ -1070,7 +1070,7 @@ export default function JoinQueue() {
                 creatorId={creatorId!} 
                 sessionId={liveSession?.id || 'connecting'}
                 isInQueue={isInQueue}
-                shouldPublishFanVideo={hasConsentedToBroadcast || forceBroadcast}
+                shouldPublishFanVideo={(hasConsentedToBroadcast || consentResolvedRef.current) || forceBroadcast}
                 consentStream={consentStream}
                 creatorName={creator.full_name}
               />
@@ -1148,7 +1148,7 @@ export default function JoinQueue() {
                       )}
                       <p className="text-muted-foreground text-xs">
                         {actualPosition === 1 
-                          ? hasConsentedToBroadcast 
+                          ? (hasConsentedToBroadcast || consentResolvedRef.current)
                             ? "Broadcasting to creator - wait for them to start your call"
                             : "Click 'I Agree' when ready to start broadcasting"
                           : "The creator will connect with you soon"
@@ -1177,17 +1177,30 @@ export default function JoinQueue() {
         </div>
 
         {/* Chat section below video */}
-        {user && (
-          <div className="mt-6">
-            <QueueChat 
-              creatorId={creatorId!}
-              fanId={user.id}
-              isInQueue={isInQueue}
-              actualPosition={actualPosition}
-              hasConsented={hasConsentedToBroadcast}
-            />
-          </div>
-        )}
+        {user && (() => {
+          // Compute effective consent: true if state is true OR ref is resolved
+          const effectiveHasConsented = hasConsentedToBroadcast || consentResolvedRef.current;
+          
+          console.log('[JoinQueue] Consent states:', {
+            hasConsentedToBroadcast,
+            consentResolved: consentResolvedRef.current,
+            effectiveHasConsented,
+            actualPosition,
+            queueEntryId
+          });
+
+          return (
+            <div className="mt-6">
+              <QueueChat 
+                creatorId={creatorId!}
+                fanId={user.id}
+                isInQueue={isInQueue}
+                actualPosition={actualPosition}
+                hasConsented={effectiveHasConsented}
+              />
+            </div>
+          );
+        })()}
       </div>
 
       {/* Next Up Consent Modal */}
