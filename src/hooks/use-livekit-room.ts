@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Room, RoomEvent, Track, RemoteTrack, VideoPresets } from 'livekit-client';
 import { fetchLiveKitToken } from '@/lib/sfuToken';
+import { lobbyRoomName } from '@/lib/lobbyIdentity';
 
 export type LiveKitRoomConfig = {
   role: 'viewer' | 'publisher';
   creatorId: string;
   identity: string;
+  roomName?: string; // Explicit room override for preview room
 };
 
 export type LiveKitConnectionState = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'failed';
@@ -36,13 +38,15 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           setError(null);
         }
 
-        console.log('[useLiveKitRoom] Connecting...', { isReconnect, config });
+        const resolvedRoom = config.roomName ?? lobbyRoomName(config.creatorId);
+        console.log('[useLiveKitRoom] Connecting...', { isReconnect, config, resolvedRoom });
 
         // Fetch token
         const { token, url, room: roomName } = await fetchLiveKitToken({
           role: config.role,
           creatorId: config.creatorId,
           identity: config.identity,
+          roomName: config.roomName,
         });
 
         if (!isMounted) return;

@@ -6,6 +6,7 @@ export async function fetchLiveKitToken(payload: {
   creatorId: string;
   identity: string;
   sessionId?: string; // NEW: optional session ID
+  roomName?: string; // NEW: explicit room name for preview room
 }) {
   const { data, error } = await supabase.functions.invoke("get_livekit_token", {
     body: {
@@ -13,6 +14,7 @@ export async function fetchLiveKitToken(payload: {
       creatorId: payload.creatorId,
       identity: payload.identity,
       sessionId: payload.sessionId, // Pass session ID if provided
+      roomName: payload.roomName, // Pass room name if provided
     },
   });
   

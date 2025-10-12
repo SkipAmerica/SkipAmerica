@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
-import { lobbyRoomName, fanIdentity } from '@/lib/lobbyIdentity';
+import { lobbyRoomName, fanIdentity, previewRoomName } from '@/lib/lobbyIdentity';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -111,9 +111,20 @@ export function BroadcastViewer({
       
       publisherModeRef.current = true;
       hasConnectedRef.current = true;
-      console.log('[BroadcastViewer] 🎬 Starting one-time lobby publish');
+      console.log('[BroadcastViewer] 🎬 Starting one-time preview publish');
+      
+      // Analytics: track preview publish start
+      try {
+        (window as any)?.analytics?.track?.('preview_publish_started', {
+          creatorId: resolvedCreatorId,
+          fanId: fanUserId,
+          category: 'queue_preview'
+        });
+      } catch (e) {
+        console.warn('[BroadcastViewer] Analytics error:', e);
+      }
     }
-  }, [consentStream]);
+  }, [consentStream, resolvedCreatorId, fanUserId]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => !prev);
@@ -246,8 +257,8 @@ export function BroadcastViewer({
         {fanUserId && resolvedCreatorId && (() => {
           const publisherConfig = useMemo(() => {
             const identity = fanIdentity(fanUserId); // Use raw UUID for consistency
-            const roomName = lobbyRoomName(resolvedCreatorId);
-            console.log('[BroadcastViewer] 📹 Publishing with identity:', {
+            const roomName = previewRoomName(resolvedCreatorId); // CHANGED: Publish to preview room
+            console.log('[BroadcastViewer] 📹 Publishing to preview room:', {
               fanUserId,
               identity,
               resolvedCreatorId,
@@ -257,6 +268,7 @@ export function BroadcastViewer({
               role: 'publisher' as const,
               creatorId: resolvedCreatorId,
               identity,
+              roomName, // Explicit preview room
             };
           }, [resolvedCreatorId, fanUserId]);
 
@@ -267,7 +279,7 @@ export function BroadcastViewer({
               publishVideo={true}
               mediaStream={consentStream}
             onPublished={() => {
-              console.log('[BroadcastViewer] ✅ Fan video published successfully to room:', lobbyRoomName(resolvedCreatorId));
+              console.log('[BroadcastViewer] ✅ Fan video published successfully to preview room:', previewRoomName(resolvedCreatorId));
             }}
             onError={(error) => {
               console.error('[BroadcastViewer] ❌ Fan publish failed:', error);

@@ -40,8 +40,8 @@ serve(async (req) => {
       });
     }
 
-    const { role, creatorId, identity, sessionId } = await req.json();
-    console.log("[LiveKit Token] Request:", { role, creatorId, identity, sessionId });
+    const { role, creatorId, identity, sessionId, roomName } = await req.json();
+    console.log("[LiveKit Token] Request:", { role, creatorId, identity, sessionId, roomName });
 
     let room: string;
     let pid: string;
@@ -188,7 +188,69 @@ serve(async (req) => {
       });
     }
 
-    // Security: If requesting publisher role for lobby, verify queue position
+    // Determine room (default to lobby if not provided)
+    room = roomName || `lobby_${safe(creatorId)}`;
+
+    // ROUTE A: Hard-lock publishers to preview room
+    if (role === 'publisher') {
+      const preview = `fanviewer_${safe(creatorId)}`;
+      if (room !== preview) {
+        console.error("[LiveKit Token] Publisher restricted to preview room:", { requested: room, required: preview });
+        return new Response(JSON.stringify({ 
+          error: "Publishers restricted to preview room",
+          details: "Fan publishers must use the preview room"
+        }), {
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // BLOCK non-creator viewer access to preview room
+    if (role === 'viewer' && room?.startsWith('fanviewer_')) {
+      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        console.error("[LiveKit Token] Preview room viewer requires auth");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+      
+      if (authError || !user) {
+        console.error("[LiveKit Token] Auth failed for preview room viewer:", authError);
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+      
+      if (user.id !== creatorId) {
+        console.error("[LiveKit Token] Non-creator attempted preview room access:", {
+          userId: user.id,
+          creatorId,
+          roomName: room
+        });
+        return new Response(JSON.stringify({ 
+          error: "Forbidden: preview is creator-only",
+          details: "Only the creator can view the preview room"
+        }), {
+          status: 403,
+          headers: { "content-type": "application/json", ...corsHeaders }
+        });
+      }
+    }
+
+    // Security: If requesting publisher role, verify queue position
     if (role === 'publisher') {
       console.log("[LiveKit Token] Validating lobby publisher request");
       
@@ -264,8 +326,7 @@ serve(async (req) => {
       console.log("[LiveKit Token] ✅ Fan authorized to publish:", fanId);
     }
 
-    // single canonical room per creator; no colons
-    room = `lobby_${safe(creatorId)}`;
+    // Room already determined above; use identity
     pid = safe(identity || crypto.randomUUID());
 
     console.log("[LiveKit Token] Creating token for room:", room, "identity:", pid);

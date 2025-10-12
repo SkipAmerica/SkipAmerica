@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { creatorIdentity } from '@/lib/lobbyIdentity';
+import { creatorIdentity, previewRoomName } from '@/lib/lobbyIdentity';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Volume2, VolumeX } from 'lucide-react';
@@ -49,6 +49,18 @@ export function NextUserPreview({
   const handleConnectionStateChange = (connected: boolean) => {
     setIsConnected(connected);
     console.log('[NextUserPreview] Connection state changed:', connected);
+    
+    // Analytics: track preview room connection
+    if (connected) {
+      try {
+        (window as any)?.analytics?.track?.('preview_room_connected', {
+          creatorId,
+          category: 'queue_preview'
+        });
+      } catch (e) {
+        console.warn('[NextUserPreview] Analytics error:', e);
+      }
+    }
   };
 
   return (
@@ -70,7 +82,8 @@ export function NextUserPreview({
           config={{
             role: 'viewer',
             creatorId,
-            identity: creatorIdentity(creatorId)
+            identity: creatorIdentity(creatorId),
+            roomName: previewRoomName(creatorId) // Connect to preview room
           }}
           targetParticipantId={userId}
           muted={muted}

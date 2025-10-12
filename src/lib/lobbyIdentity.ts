@@ -6,6 +6,9 @@
 // Consistent room naming for lobby
 export const lobbyRoomName = (creatorId: string) => `lobby_${creatorId}`;
 
+// Single persistent preview room per creator
+export const previewRoomName = (creatorId: string) => `fanviewer_${creatorId}`;
+
 // Identity schemes - use raw UUID for fans to ensure exact matching
 export const fanIdentity = (fanId: string) => fanId;
 
