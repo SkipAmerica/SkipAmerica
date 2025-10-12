@@ -271,9 +271,25 @@ export default function JoinQueue() {
       setQueueCount(queueStatus.total);
       setActualPosition(queueStatus.position);
 
-      if (queueStatus.in_queue && queueStatus.entry) {
+      // Detect new queue session and reset consent
+      const isNewQueueSession = queueStatus.in_queue && queueStatus.entry && queueStatus.entry.id !== queueEntryId;
+      
+      if (isNewQueueSession) {
+        console.log('[JoinQueue] New queue session detected, resetting consent state');
+        setQueueEntryId(queueStatus.entry!.id);
+        setHasConsentedToBroadcast(false);
+        consentResolvedRef.current = false;
+        setDiscussionTopic(queueStatus.entry!.discussion_topic || '');
+      } else if (queueStatus.in_queue && queueStatus.entry) {
+        // Same session - restore consent from database if already consented
         setQueueEntryId(queueStatus.entry.id);
         setDiscussionTopic(queueStatus.entry.discussion_topic || '');
+        
+        if (queueStatus.entry.fan_has_consented && !hasConsentedToBroadcast) {
+          console.log('[JoinQueue] Restoring consent state from database');
+          setHasConsentedToBroadcast(true);
+          consentResolvedRef.current = true;
+        }
       } else {
         setQueueEntryId(null);
         setDiscussionTopic('');
@@ -284,7 +300,8 @@ export default function JoinQueue() {
         position: queueStatus.position,
         isFront,
         needsConsent: queueStatus.needs_consent,
-        total: queueStatus.total
+        total: queueStatus.total,
+        entryId: queueStatus.entry?.id
       });
 
       // Show consent modal only when user BECOMES #1 (rising edge) and server confirms consent needed
@@ -303,28 +320,65 @@ export default function JoinQueue() {
     } catch (error) {
       console.error('[JoinQueue] Error in checkLiveStatus:', error);
     }
-  }, [creatorId, user, forceBroadcast]);
+  }, [creatorId, user, forceBroadcast, queueEntryId, hasConsentedToBroadcast]);
 
-  // Subscribe to live status and queue changes
+  // Subscribe to live status and queue changes with debounce
   useEffect(() => {
     if (!creatorId || !user) return;
 
     checkLiveStatus();
 
-    // Subscribe to queue changes
+    // Debounce checkLiveStatus to reduce database load
+    let debounceTimer: NodeJS.Timeout;
+    const debouncedCheck = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(checkLiveStatus, 300);
+    };
+
+    // Subscribe to queue changes with DELETE handler for state reset
     const queueChannel = supabase
       .channel(`queue-${creatorId}`)
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'DELETE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `fan_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[JoinQueue] Queue entry deleted', payload);
+          
+          // Reset ALL queue-related state
+          setIsInQueue(false);
+          setActualPosition(null);
+          setQueueEntryId(null);
+          setHasConsentedToBroadcast(false);
+          consentResolvedRef.current = false;
+          wasFrontRef.current = false;
+          
+          checkLiveStatus();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
           schema: 'public',
           table: 'call_queue',
           filter: `creator_id=eq.${creatorId}`
         },
-        () => {
-          checkLiveStatus();
-        }
+        debouncedCheck
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `creator_id=eq.${creatorId}`
+        },
+        debouncedCheck
       )
       .subscribe();
 
@@ -339,15 +393,14 @@ export default function JoinQueue() {
           table: 'live_sessions',
           filter: `creator_id=eq.${creatorId}`
         },
-        () => {
-          checkLiveStatus();
-        }
+        debouncedCheck
       )
       .subscribe();
 
     // Note: Presence subscription now handled by useCreatorPresence hook
 
     return () => {
+      clearTimeout(debounceTimer);
       if ((window as any).__allow_ch_teardown) {
         try { supabase.removeChannel(queueChannel); } catch {}
         try { supabase.removeChannel(liveChannel); } catch {}
@@ -553,10 +606,14 @@ export default function JoinQueue() {
         reason: 'manual_leave',
       });
 
+      // Reset ALL queue state atomically
       setIsInQueue(false);
       setDiscussionTopic('');
+      setQueueEntryId(null);
       setHasConsentedToBroadcast(false);
       setActualPosition(null);
+      consentResolvedRef.current = false;
+      wasFrontRef.current = false;
       
       // Clean up consent stream
       if (consentStream) {
@@ -1042,6 +1099,8 @@ export default function JoinQueue() {
               creatorId={creatorId!}
               fanId={user.id}
               isInQueue={isInQueue}
+              actualPosition={actualPosition}
+              hasConsented={hasConsentedToBroadcast}
             />
           </div>
         )}

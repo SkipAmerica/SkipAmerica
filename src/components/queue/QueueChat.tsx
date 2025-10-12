@@ -9,12 +9,16 @@ type Props = {
   creatorId: string;
   fanId: string;
   isInQueue?: boolean;
+  actualPosition?: number | null;
+  hasConsented?: boolean;
 };
 
 export function QueueChat({ 
   creatorId, 
   fanId,
-  isInQueue = false
+  isInQueue = false,
+  actualPosition = null,
+  hasConsented = false
 }: Props) {
   const [activeTab, setActiveTab] = useState<'lobby' | 'private'>('lobby');
   const [unreadPrivateCount, setUnreadPrivateCount] = useState(0);
@@ -118,7 +122,7 @@ export function QueueChat({
           <TabsTrigger value="lobby" className="flex-1 data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
             Lobby Chat
           </TabsTrigger>
-          {isInQueue && (
+          {isInQueue && hasConsented && actualPosition === 1 && (
             <TabsTrigger value="private" className="flex-1 relative data-[state=active]:bg-cyan-500 data-[state=active]:text-white text-muted-foreground">
               Private Messages
               {unreadPrivateCount > 0 && activeTab === 'lobby' && (
@@ -134,8 +138,8 @@ export function QueueChat({
           <UniversalChat config={lobbyConfig} />
         </TabsContent>
 
-        {/* Always render private chat but hide when not in queue or inactive */}
-        <TabsContent value="private" className={`mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden ${!isInQueue ? 'hidden' : ''}`}>
+        {/* Always render private chat but hide when not ready */}
+        <TabsContent value="private" className={`mt-0 flex flex-col flex-1 min-h-0 p-0 data-[state=inactive]:hidden ${!isInQueue || !hasConsented || actualPosition !== 1 ? 'hidden' : ''}`}>
           <UniversalChat config={privateConfig} />
         </TabsContent>
       </Tabs>
