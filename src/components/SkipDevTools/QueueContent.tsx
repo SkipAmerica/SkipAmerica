@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -54,6 +54,11 @@ export function QueueContent() {
   const [fullscreenUserId, setFullscreenUserId] = useState<string | null>(null)
   const [showNotification, setShowNotification] = useState(false)
   const [fanMuted, setFanMuted] = useState(true)
+
+  // Stabilize next user to prevent NextUserPreview remounts
+  const nextUser = useMemo(() => {
+    return state.entries[0] || null;
+  }, [state.entries[0]?.id])
 
   // Auto-mute fan when creator starts broadcasting
   useEffect(() => {
@@ -230,14 +235,29 @@ export function QueueContent() {
                 key => newRecord[key] !== oldRecord[key]
               )
               const IGNORED = new Set(['last_seen','updated_at','updatedAt','heartbeat_at','presence_updated_at'])
+              
               if (changedKeys.length > 0 && changedKeys.every(k => IGNORED.has(k))) {
-                console.log('[QueueContent] Ignoring heartbeat-only update', changedKeys)
+                console.log('[QueueContent] ✅ Ignoring heartbeat-only update', changedKeys)
                 return
+              }
+              
+              // For meaningful updates to the first entry, update state in place
+              if (newRecord.id === state.entries[0]?.id) {
+                console.log('[QueueContent] 🔄 Updating first entry in place')
+                setLocalState(prev => ({
+                  ...prev,
+                  entries: [
+                    { ...prev.entries[0], ...newRecord },
+                    ...prev.entries.slice(1)
+                  ]
+                }))
+                return // Skip refetch since we updated in place
               }
             }
           }
           
-          // Debounced refetch to prevent rapid successive calls
+          // Only refetch for INSERTs, DELETEs, or updates to non-first entries
+          console.log('[QueueContent] 🔄 Triggering debounced fetch')
           debouncedFetch()
         }
       )
@@ -381,19 +401,21 @@ export function QueueContent() {
                             </p>
                           </div>
                         </div>
-                        <NextUserPreview
-                          key={state.entries[0].fan_id}
-                          userId={state.entries[0].fan_id}
-                          creatorId={user.id}
-                          userName={state.entries[0].profiles?.full_name}
-                          discussionTopic={state.entries[0].discussion_topic}
-                          waitTime={state.entries[0].estimated_wait_minutes}
-                          muted={fanMuted}
-                          onMuteToggle={handleMuteToggle}
-                          disableMuteToggle={isLobbyBroadcasting}
-                          onStartCall={handleStartCall}
-                          onFullscreen={() => handleFullscreen(state.entries[0].fan_id)}
-                        />
+                        {nextUser && (
+                          <NextUserPreview
+                            key={nextUser.id}
+                            userId={nextUser.fan_id}
+                            creatorId={user.id}
+                            userName={nextUser.profiles?.full_name}
+                            discussionTopic={nextUser.discussion_topic}
+                            waitTime={nextUser.estimated_wait_minutes}
+                            muted={fanMuted}
+                            onMuteToggle={handleMuteToggle}
+                            disableMuteToggle={isLobbyBroadcasting}
+                            onStartCall={handleStartCall}
+                            onFullscreen={() => handleFullscreen(nextUser.fan_id)}
+                          />
+                        )}
                       </div>
 
                       {/* Row 2: Collapsible Chat */}

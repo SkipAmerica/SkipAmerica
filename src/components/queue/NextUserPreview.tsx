@@ -37,6 +37,8 @@ export function NextUserPreview({
   const roomRef = useRef<Room | null>(null);
   const [attachedParticipant, setAttachedParticipant] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
+  const connectionStableRef = useRef(false);
+  const prevPropsRef = useRef({ creatorId, userId });
 
   useEffect(() => {
     const timer = setTimeout(() => setShowNotification(false), 8000);
@@ -52,6 +54,17 @@ export function NextUserPreview({
 
   // Event-driven connection to lobby
   useEffect(() => {
+    // Skip if props haven't actually changed (stability check)
+    if (
+      connectionStableRef.current &&
+      prevPropsRef.current.creatorId === creatorId &&
+      prevPropsRef.current.userId === userId
+    ) {
+      console.log('[NextUserPreview] ⏭️ Skipping reconnect - props unchanged');
+      return;
+    }
+    
+    prevPropsRef.current = { creatorId, userId };
     let cancelled = false;
 
     async function connect() {
@@ -111,6 +124,7 @@ export function NextUserPreview({
               videoTrack.attach?.(videoEl.current);
               setAttachedParticipant(participant.identity);
               setIsConnecting(false);
+              connectionStableRef.current = true;
               console.log('[NextUserPreview] ✅ Video track attached successfully');
             } catch (e) {
               console.error('[NextUserPreview] ❌ Attach failed:', e);
@@ -172,6 +186,7 @@ export function NextUserPreview({
               (videoPub.track as any).attach?.(videoEl.current);
               setAttachedParticipant(p.identity);
               setIsConnecting(false);
+              connectionStableRef.current = true;
               console.log('[NextUserPreview] ✅ Existing video track attached successfully');
             } catch (e) {
               console.error('[NextUserPreview] ❌ Attach existing failed:', e);
@@ -193,6 +208,7 @@ export function NextUserPreview({
 
     return () => {
       cancelled = true;
+      connectionStableRef.current = false;
       const room = roomRef.current;
       if (!room) return;
       
