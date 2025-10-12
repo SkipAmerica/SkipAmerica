@@ -285,10 +285,13 @@ export default function JoinQueue() {
         setQueueEntryId(queueStatus.entry.id);
         setDiscussionTopic(queueStatus.entry.discussion_topic || '');
         
-        if (queueStatus.entry.fan_has_consented && !hasConsentedToBroadcast) {
-          console.log('[JoinQueue] Restoring consent state from database');
-          setHasConsentedToBroadcast(true);
-          consentResolvedRef.current = true;
+        // Only update consent state from DB if user hasn't made a local decision
+        if (!consentResolvedRef.current) {
+          if (queueStatus.entry.fan_has_consented && !hasConsentedToBroadcast) {
+            console.log('[JoinQueue] Restoring consent state from database');
+            setHasConsentedToBroadcast(true);
+            consentResolvedRef.current = true;
+          }
         }
       } else {
         setQueueEntryId(null);
