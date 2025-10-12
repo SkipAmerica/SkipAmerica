@@ -464,7 +464,6 @@ export default function JoinQueue() {
     // Rising-edge detection (only if flag enabled)
     const prev = prevPositionRef.current;
     const risingToOne = prev !== 1 && actualPosition === 1;
-    prevPositionRef.current = actualPosition;
     
     // Don't show modal if:
     // - Not in queue
@@ -512,6 +511,7 @@ export default function JoinQueue() {
       showModal: showConsentModal
     });
     setShowConsentModal(true);
+    prevPositionRef.current = actualPosition;
   }, [actualPosition, isInQueue, hasConsentedToBroadcast, forceBroadcast, showConsentModal, queueEntryId]);
 
   // Set initial display name from profile (only once, and never overwrite user edits)
@@ -1198,30 +1198,17 @@ export default function JoinQueue() {
         </div>
 
         {/* Chat section below video */}
-        {user && (() => {
-          // Compute effective consent: true if state is true OR ref is resolved
-          const effectiveHasConsented = hasConsentedToBroadcast || consentResolvedRef.current;
-          
-          console.log('[JoinQueue] Consent states:', {
-            hasConsentedToBroadcast,
-            consentResolved: consentResolvedRef.current,
-            effectiveHasConsented,
-            actualPosition,
-            queueEntryId
-          });
-
-          return (
-            <div className="mt-6">
-              <QueueChat 
-                creatorId={creatorId!}
-                fanId={user.id}
-                isInQueue={isInQueue}
-                actualPosition={actualPosition}
-                hasConsented={effectiveHasConsented}
-              />
-            </div>
-          );
-        })()}
+        {user && (
+          <div className="mt-6">
+            <QueueChat 
+              creatorId={creatorId!}
+              fanId={user.id}
+              isInQueue={isInQueue}
+              actualPosition={actualPosition}
+              hasConsented={hasConsentedToBroadcast || consentResolvedRef.current}
+            />
+          </div>
+        )}
       </div>
 
       {/* Next Up Consent Modal */}
