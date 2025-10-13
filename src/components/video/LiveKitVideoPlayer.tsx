@@ -198,6 +198,7 @@ export function LiveKitVideoPlayer({
             attachedVideoSidRef.current = videoPublication.trackSid;
             
             if (mounted) {
+              console.log('[LiveKitVideoPlayer] 📢 Setting hasVideo to TRUE (track attached)');
               setHasVideo(true);
             }
           }
@@ -284,29 +285,54 @@ export function LiveKitVideoPlayer({
     attachTracks();
 
     // Listen for track, participant, and publishing changes
-    const handleTrackSubscribed = () => {
-      console.log('[LiveKitVideoPlayer] Track subscribed event');
+    const handleTrackSubscribed = (track: any, pub: any, participant: any) => {
+      console.log('[LiveKitVideoPlayer] 🔔 TRACK SUBSCRIBED:', {
+        trackKind: track.kind,
+        participantIdentity: participant.identity,
+        trackSid: pub.trackSid,
+        timestamp: new Date().toISOString()
+      });
       // Only re-attach if no tracks are currently attached
       if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
         attachTracks();
       }
     };
-    const handleTrackPublished = () => {
-      console.log('[LiveKitVideoPlayer] Track published event');
+    const handleTrackPublished = (pub: any, participant: any) => {
+      console.log('[LiveKitVideoPlayer] 📢 TRACK PUBLISHED:', {
+        trackKind: pub.kind,
+        participantIdentity: participant.identity,
+        trackSid: pub.trackSid,
+        timestamp: new Date().toISOString()
+      });
       // Only re-attach if no tracks are currently attached
       if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
         attachTracks();
       }
     };
-    const handleParticipantConnected = () => {
-      console.log('[LiveKitVideoPlayer] Participant connected event');
+    const handleTrackUnpublished = (pub: any, participant: any) => {
+      console.log('[LiveKitVideoPlayer] 🔕 TRACK UNPUBLISHED:', {
+        trackKind: pub.kind,
+        participantIdentity: participant.identity,
+        trackSid: pub.trackSid,
+        timestamp: new Date().toISOString()
+      });
+    };
+    const handleParticipantConnected = (participant: any) => {
+      console.log('[LiveKitVideoPlayer] 👤 PARTICIPANT CONNECTED:', {
+        identity: participant.identity,
+        sid: participant.sid,
+        timestamp: new Date().toISOString()
+      });
       // Only re-attach if no tracks are currently attached
       if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
         attachTracks();
       }
     };
     const handleTrackUnsubscribed = (track: any) => {
-      console.log('[LiveKitVideoPlayer] Track unsubscribed');
+      console.log('[LiveKitVideoPlayer] 🔕 TRACK UNSUBSCRIBED:', {
+        trackKind: track.kind,
+        timestamp: new Date().toISOString()
+      });
       if (track === attachedVideoTrack && videoRef.current) {
         try {
           track.detach(videoRef.current);
@@ -328,11 +354,15 @@ export function LiveKitVideoPlayer({
         audioRef.current.srcObject = null;
       }
       if (mounted) {
+        console.log('[LiveKitVideoPlayer] 📢 Setting hasVideo to FALSE (track unsubscribed)');
         setHasVideo(false);
       }
     };
-    const handleParticipantDisconnected = () => {
-      console.log('[LiveKitVideoPlayer] Participant disconnected');
+    const handleParticipantDisconnected = (participant: any) => {
+      console.log('[LiveKitVideoPlayer] 👤 PARTICIPANT DISCONNECTED:', {
+        identity: participant.identity,
+        timestamp: new Date().toISOString()
+      });
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
@@ -344,23 +374,48 @@ export function LiveKitVideoPlayer({
       attachedVideoSidRef.current = null;
       attachedAudioSidRef.current = null;
       if (mounted) {
+        console.log('[LiveKitVideoPlayer] 📢 Setting hasVideo to FALSE (participant disconnected)');
         setHasVideo(false);
       }
+    };
+    const handleReconnecting = () => {
+      console.log('[LiveKitVideoPlayer] 🔄 RECONNECTING to room...', {
+        timestamp: new Date().toISOString()
+      });
+    };
+    const handleReconnected = () => {
+      console.log('[LiveKitVideoPlayer] ✅ RECONNECTED to room', {
+        timestamp: new Date().toISOString()
+      });
+      attachTracks(); // Re-attach tracks after reconnection
+    };
+    const handleDisconnected = () => {
+      console.log('[LiveKitVideoPlayer] ❌ DISCONNECTED from room', {
+        timestamp: new Date().toISOString()
+      });
     };
 
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed);
     room.on(RoomEvent.TrackPublished, handleTrackPublished);
+    room.on(RoomEvent.TrackUnpublished, handleTrackUnpublished);
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected);
     room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
     room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+    room.on(RoomEvent.Reconnecting, handleReconnecting);
+    room.on(RoomEvent.Reconnected, handleReconnected);
+    room.on(RoomEvent.Disconnected, handleDisconnected);
 
     return () => {
       mounted = false;
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed);
       room.off(RoomEvent.TrackPublished, handleTrackPublished);
+      room.off(RoomEvent.TrackUnpublished, handleTrackUnpublished);
       room.off(RoomEvent.ParticipantConnected, handleParticipantConnected);
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed);
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected);
+      room.off(RoomEvent.Reconnecting, handleReconnecting);
+      room.off(RoomEvent.Reconnected, handleReconnected);
+      room.off(RoomEvent.Disconnected, handleDisconnected);
       
       // Detach tracks on cleanup
       if (attachedVideoTrack && videoRef.current) {
@@ -390,6 +445,41 @@ export function LiveKitVideoPlayer({
   }, [room, targetParticipantId]);
 
   const showFallback = !isConnected || !hasVideo;
+
+  // Monitor video element events
+  useEffect(() => {
+    const videoEl = videoRef.current;
+    if (!videoEl) return;
+
+    const handlers = {
+      loadedmetadata: () => console.log('[LiveKitVideoPlayer] 📺 Video: loadedmetadata', {
+        readyState: videoEl.readyState,
+        videoWidth: videoEl.videoWidth,
+        videoHeight: videoEl.videoHeight
+      }),
+      play: () => console.log('[LiveKitVideoPlayer] 📺 Video: play event'),
+      playing: () => console.log('[LiveKitVideoPlayer] 📺 Video: PLAYING'),
+      pause: () => console.log('[LiveKitVideoPlayer] 📺 Video: PAUSE'),
+      error: (e: Event) => {
+        const error = (e.target as HTMLVideoElement).error;
+        console.error('[LiveKitVideoPlayer] ❌ Video ERROR:', {
+          code: error?.code,
+          message: error?.message,
+          readyState: videoEl.readyState
+        });
+      }
+    };
+
+    Object.entries(handlers).forEach(([event, handler]) => {
+      videoEl.addEventListener(event, handler as EventListener);
+    });
+
+    return () => {
+      Object.entries(handlers).forEach(([event, handler]) => {
+        videoEl.removeEventListener(event, handler as EventListener);
+      });
+    };
+  }, []);
 
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden">

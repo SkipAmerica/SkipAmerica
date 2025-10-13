@@ -50,6 +50,33 @@ export function BroadcastViewer({
   const [needsUserGesture, setNeedsUserGesture] = useState(true);
   const previousHasVideoRef = useRef(false);
 
+  // Component mount logging
+  useEffect(() => {
+    console.log('[BroadcastViewer] 🎬 Component MOUNTED', {
+      creatorId,
+      sessionId,
+      isInQueue,
+      shouldPublishFanVideo,
+      hasConsentStream: !!consentStream,
+      creatorName,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      isIOS: /iPad|iPhone|iPod/.test(navigator.userAgent),
+      isAndroid: /Android/i.test(navigator.userAgent),
+      isSafari: /^((?!chrome|android).)*safari/i.test(navigator.userAgent),
+      autoplayPolicy: (navigator as any).getAutoplayPolicy?.('mediaelement')
+    });
+
+    return () => {
+      console.log('[BroadcastViewer] 🔚 Component UNMOUNTED', {
+        finalStreamState: streamStateRef.current,
+        hadVideo: previousHasVideoRef.current,
+        timestamp: new Date().toISOString()
+      });
+    };
+  }, []);
+
   // Set resolvedCreatorId immediately
   useEffect(() => {
     setResolvedCreatorId(queueId);
@@ -143,7 +170,12 @@ export function BroadcastViewer({
   }, []);
 
   const handleTapToWatch = useCallback(() => {
-    console.log('[BroadcastViewer] 🎬 User tapped to watch - transitioning to PLAYING');
+    console.log('[BroadcastViewer] 👆 USER TAP TO WATCH', {
+      currentState: streamStateRef.current,
+      hadVideo: previousHasVideoRef.current,
+      timestamp: new Date().toISOString()
+    });
+    console.log('[BroadcastViewer] ▶️ STATE TRANSITION: ready → playing (user gesture)');
     setStreamState('playing');
     streamStateRef.current = 'playing';
     setNeedsUserGesture(false);
@@ -151,28 +183,43 @@ export function BroadcastViewer({
     // Trigger video play after user gesture
     setTimeout(() => {
       const videoElement = document.querySelector('video');
+      console.log('[BroadcastViewer] 🎬 Attempting play after user gesture', {
+        videoElementFound: !!videoElement,
+        muted: videoElement?.muted,
+        paused: videoElement?.paused
+      });
+      
       if (videoElement) {
-        videoElement.play().catch(err => {
-          console.warn('[BroadcastViewer] Video play after gesture failed:', err);
-        });
+        videoElement.play()
+          .then(() => {
+            console.log('[BroadcastViewer] ✅ Play after user gesture SUCCEEDED');
+          })
+          .catch(err => {
+            console.error('[BroadcastViewer] ❌ Play after user gesture FAILED:', {
+              errorName: err.name,
+              errorMessage: err.message
+            });
+          });
       }
     }, 100);
   }, []);
 
   const handleVideoAvailable = useCallback((hasVideo: boolean) => {
+    const hadVideo = previousHasVideoRef.current;
     console.log('[BroadcastViewer] 🎥 Video availability changed:', {
       hasVideo,
-      hadVideo: previousHasVideoRef.current,
+      hadVideo,
+      transition: `${hadVideo} → ${hasVideo}`,
       needsUserGesture,
-      currentStreamState: streamState
+      currentStreamState: streamStateRef.current,
+      timestamp: new Date().toISOString()
     });
     
-    const hadVideo = previousHasVideoRef.current;
     previousHasVideoRef.current = hasVideo;
     
     if (hasVideo && !hadVideo) {
       // Stream just started - try seamless autoplay (muted)
-      console.log('[BroadcastViewer] ▶️ Transitioning to PLAYING state (seamless)');
+      console.log('[BroadcastViewer] ▶️ STATE TRANSITION: waiting → playing (attempting autoplay)');
       setStreamState('playing');
       streamStateRef.current = 'playing';
       setNeedsUserGesture(false);
@@ -180,23 +227,58 @@ export function BroadcastViewer({
       // Attempt autoplay with muted video (mobile-safe)
       setTimeout(() => {
         const videoElement = document.querySelector('video');
+        
+        console.log('[BroadcastViewer] 🎬 AUTOPLAY ATTEMPT:', {
+          videoElementFound: !!videoElement,
+          videoElementTag: videoElement?.tagName,
+          prePlayState: {
+            muted: videoElement?.muted,
+            paused: videoElement?.paused,
+            readyState: videoElement?.readyState,
+            networkState: videoElement?.networkState,
+            currentTime: videoElement?.currentTime,
+            src: videoElement?.src ? 'present' : 'none',
+            srcObject: videoElement?.srcObject ? 'present' : 'none'
+          },
+          timestamp: new Date().toISOString()
+        });
+        
         if (videoElement) {
           videoElement.muted = true; // Ensure muted for autoplay
-          videoElement.play().catch(err => {
-            console.warn('[BroadcastViewer] Autoplay blocked, showing Tap to Watch:', err);
-            // Fallback to showing tap button if autoplay fails
-            setStreamState('ready');
-            streamStateRef.current = 'ready';
-            setNeedsUserGesture(true);
-          });
+          
+          videoElement.play()
+            .then(() => {
+              console.log('[BroadcastViewer] ✅ AUTOPLAY SUCCEEDED', {
+                currentState: streamStateRef.current,
+                videoPlaying: !videoElement.paused,
+                timestamp: new Date().toISOString()
+              });
+            })
+            .catch(err => {
+              console.warn('[BroadcastViewer] ⚠️ AUTOPLAY BLOCKED - Showing Tap to Watch', {
+                errorName: err.name,
+                errorMessage: err.message,
+                isNotAllowedError: err.name === 'NotAllowedError',
+                timestamp: new Date().toISOString()
+              });
+              // Fallback to showing tap button if autoplay fails
+              console.log('[BroadcastViewer] ▶️ STATE TRANSITION: playing → ready (autoplay blocked)');
+              setStreamState('ready');
+              streamStateRef.current = 'ready';
+              setNeedsUserGesture(true);
+            });
+        } else {
+          console.error('[BroadcastViewer] ❌ Video element not found for autoplay!');
         }
       }, 100);
     } else if (!hasVideo && hadVideo && streamStateRef.current === 'playing') {
       // Stream ended
-      console.log('[BroadcastViewer] ⏹️ Transitioning to ENDED state');
+      console.log('[BroadcastViewer] ⏹️ STATE TRANSITION: playing → ended (stream stopped)');
       setStreamState('ended');
       streamStateRef.current = 'ended';
       setNeedsUserGesture(true);
+    } else if (!hasVideo && !hadVideo) {
+      console.log('[BroadcastViewer] ⏳ Still waiting for video...', { currentState: streamStateRef.current });
     }
   }, []);
 
@@ -243,6 +325,84 @@ export function BroadcastViewer({
       }
     };
   }, [localStream]);
+
+  // Monitor video element lifecycle
+  useEffect(() => {
+    const videoElement = document.querySelector('video');
+    if (!videoElement) return;
+
+    console.log('[BroadcastViewer] 📺 Attaching video element listeners');
+
+    const handlers = {
+      loadedmetadata: () => console.log('[BroadcastViewer] 📺 Video: loadedmetadata', {
+        duration: videoElement.duration,
+        videoWidth: videoElement.videoWidth,
+        videoHeight: videoElement.videoHeight,
+        readyState: videoElement.readyState
+      }),
+      loadeddata: () => console.log('[BroadcastViewer] 📺 Video: loadeddata', { readyState: videoElement.readyState }),
+      canplay: () => console.log('[BroadcastViewer] 📺 Video: canplay', { readyState: videoElement.readyState }),
+      canplaythrough: () => console.log('[BroadcastViewer] 📺 Video: canplaythrough'),
+      play: () => console.log('[BroadcastViewer] 📺 Video: play event'),
+      playing: () => console.log('[BroadcastViewer] 📺 Video: PLAYING', { currentTime: videoElement.currentTime }),
+      pause: () => console.log('[BroadcastViewer] 📺 Video: PAUSE', { currentTime: videoElement.currentTime }),
+      ended: () => console.log('[BroadcastViewer] 📺 Video: ENDED'),
+      waiting: () => console.log('[BroadcastViewer] 📺 Video: waiting for data'),
+      stalled: () => console.log('[BroadcastViewer] 📺 Video: stalled'),
+      suspend: () => console.log('[BroadcastViewer] 📺 Video: suspend'),
+      error: (e: Event) => {
+        const error = (e.target as HTMLVideoElement).error;
+        console.error('[BroadcastViewer] ❌ Video ERROR:', {
+          code: error?.code,
+          message: error?.message,
+          readyState: videoElement.readyState,
+          networkState: videoElement.networkState
+        });
+      }
+    };
+
+    Object.entries(handlers).forEach(([event, handler]) => {
+      videoElement.addEventListener(event, handler as EventListener);
+    });
+
+    return () => {
+      console.log('[BroadcastViewer] 📺 Removing video element listeners');
+      Object.entries(handlers).forEach(([event, handler]) => {
+        videoElement.removeEventListener(event, handler as EventListener);
+      });
+    };
+  }, [resolvedCreatorId]); // Re-attach when video player changes
+
+  // Monitor page visibility
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      console.log('[BroadcastViewer] 👁️ VISIBILITY CHANGE:', {
+        hidden: document.hidden,
+        visibilityState: document.visibilityState,
+        streamState: streamStateRef.current,
+        timestamp: new Date().toISOString()
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // Monitor network state
+  useEffect(() => {
+    const handleOnline = () => console.log('[BroadcastViewer] 🌐 Network: ONLINE');
+    const handleOffline = () => console.log('[BroadcastViewer] 🌐 Network: OFFLINE');
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    console.log('[BroadcastViewer] 🌐 Initial network state:', navigator.onLine ? 'ONLINE' : 'OFFLINE');
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Use distinct identity for viewer to avoid collision with publisher
   const viewerIdentity = useMemo(() => {
@@ -410,9 +570,11 @@ export function BroadcastViewer({
           )}
           muted={isMuted}
           onConnectionStateChange={(connected) => {
-            console.log('[BroadcastViewer] 📡 Connection state changed:', {
+            console.log('[BroadcastViewer] 📡 CONNECTION STATE CHANGE:', {
               connected,
-              previousState: connectionState
+              previousState: connectionState,
+              transition: `${connectionState} → ${connected ? 'connected' : 'connecting'}`,
+              timestamp: new Date().toISOString()
             });
             setConnectionState(connected ? 'connected' : 'connecting');
           }}
