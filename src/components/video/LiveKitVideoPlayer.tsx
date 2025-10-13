@@ -35,16 +35,38 @@ export function LiveKitVideoPlayer({
   const attachedVideoSidRef = useRef<string | null>(null);
   const attachedAudioSidRef = useRef<string | null>(null);
 
-  // Notify parent of connection state changes
-  useEffect(() => {
-    onConnectionStateChange?.(isConnected);
-  }, [isConnected, onConnectionStateChange]);
+  // Cache latest callbacks to avoid re-running effects when parent re-renders
+  const onConnectionStateChangeRef = useRef(onConnectionStateChange);
+  const onVideoAvailableRef = useRef(onVideoAvailable);
 
-  // Notify parent when video becomes available/unavailable
+  // Keep callback refs up to date
   useEffect(() => {
-    console.log('[LiveKitVideoPlayer] 📢 Notifying parent of video availability:', hasVideo);
-    onVideoAvailable?.(hasVideo);
-  }, [hasVideo, onVideoAvailable]);
+    onConnectionStateChangeRef.current = onConnectionStateChange;
+  }, [onConnectionStateChange]);
+
+  useEffect(() => {
+    onVideoAvailableRef.current = onVideoAvailable;
+  }, [onVideoAvailable]);
+
+  // Notify parent of connection state changes (only when value actually changes)
+  const lastConnectedRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastConnectedRef.current !== isConnected) {
+      console.log('[LiveKitVideoPlayer] Connection state changed:', isConnected);
+      lastConnectedRef.current = isConnected;
+      onConnectionStateChangeRef.current?.(isConnected);
+    }
+  }, [isConnected]); // Only depends on the boolean value
+
+  // Notify parent when video becomes available/unavailable (only when value actually changes)
+  const lastHasVideoRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (lastHasVideoRef.current !== hasVideo) {
+      console.log('[LiveKitVideoPlayer] 📢 Video availability changed:', hasVideo);
+      lastHasVideoRef.current = hasVideo;
+      onVideoAvailableRef.current?.(hasVideo);
+    }
+  }, [hasVideo]); // Only depends on the boolean value
 
   // Enhanced unmute behavior - ensure audio plays when user unmutes
   useEffect(() => {
