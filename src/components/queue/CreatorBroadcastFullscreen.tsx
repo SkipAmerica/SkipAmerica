@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
@@ -33,17 +33,29 @@ export function CreatorBroadcastFullscreen({
   
   // Use new broadcast hook - handles all media lifecycle
   const broadcast = useLobbyBroadcast({ isVisible });
+  
+  // Stable publisher config
+  const publisherConfig = useRef({
+    role: 'publisher' as const,
+    creatorId,
+    identity: creatorId,
+    roomName: lobbyRoomName(creatorId)
+  }).current;
 
-  // Listen to LiveKit events for debug HUD
+  // Listen to LiveKit events for debug HUD (filter for publisher role only)
   useEffect(() => {
     const handleTokenEvent = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      setDebugState(prev => ({
-        ...prev,
-        tokenStatus: 'OK',
-        tokenUrl: detail.url || '',
-        tokenRoom: detail.room || '',
-      }));
+      
+      // Only update HUD for publisher tokens (ignore viewer tokens from NextUserPreview)
+      if (detail.role === 'publisher' || detail.room?.startsWith('lobby_')) {
+        setDebugState(prev => ({
+          ...prev,
+          tokenStatus: 'OK',
+          tokenUrl: detail.url || '',
+          tokenRoom: detail.room || '',
+        }));
+      }
     };
 
     const handleStateEvent = (e: Event) => {
@@ -175,25 +187,20 @@ export function CreatorBroadcastFullscreen({
       )}
 
       {/* Publisher (headless - only when broadcasting) */}
-      {isLobbyBroadcasting && broadcast.stream && (() => {
-        const publisherConfig = {
-          role: 'publisher' as const,
-          creatorId,
-          identity: creatorId,
-          roomName: lobbyRoomName(creatorId)
-        };
-        console.log('[CreatorBroadcast] 🎙️ PUBLISHER CONFIG:', {
-          ...publisherConfig,
-          hasStream: !!broadcast.stream,
-          streamTracks: broadcast.stream.getTracks().length,
-          timestamp: new Date().toISOString()
-        });
-        return <LiveKitPublisher config={publisherConfig} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
-          console.log('[CreatorBroadcast] Stream published');
-        }} onError={error => {
-          console.error('[CreatorBroadcast] Publishing error:', error);
-        }} />;
-      })()}
+      {isLobbyBroadcasting && broadcast.stream && (
+        <LiveKitPublisher 
+          config={publisherConfig}
+          mediaStream={broadcast.stream} 
+          publishAudio={true} 
+          publishVideo={true} 
+          onPublished={() => {
+            console.log('[CreatorBroadcast] Stream published');
+          }} 
+          onError={error => {
+            console.error('[CreatorBroadcast] Publishing error:', error);
+          }} 
+        />
+      )}
 
       {/* Local camera preview with filters */}
       <div 

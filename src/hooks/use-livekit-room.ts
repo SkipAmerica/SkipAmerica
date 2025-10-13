@@ -88,12 +88,14 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           room: tokenResponse.room
         });
 
-        // Emit token event for debug HUD
+        // Emit token event for debug HUD with role and instanceId
         window.dispatchEvent(new CustomEvent('lk:token', { 
           detail: { 
             url: tokenResponse.url, 
             room: tokenResponse.room,
-            tokenLength: tokenResponse.token?.length 
+            tokenLength: tokenResponse.token?.length,
+            role: config.role,
+            instanceId
           } 
         }));
 

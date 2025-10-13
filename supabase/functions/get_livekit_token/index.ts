@@ -191,21 +191,44 @@ serve(async (req) => {
     // Determine room (default to lobby if not provided)
     room = roomName || `lobby_${safe(creatorId)}`;
 
-    // ROUTE A: Publisher role routing
+    // Check if this is a creator publishing to their own lobby (bypass queue validation)
+    const isCreatorPublisher = role === 'publisher' && identity === creatorId;
+    
+    if (isCreatorPublisher) {
+      // Creator broadcasting to their lobby - no queue validation needed
+      room = `lobby_${safe(creatorId)}`;
+      console.log("[LiveKit Token] 👑 Creator publisher bypass — skipping queue validation");
+      console.log("[LiveKit Token] Room:", room, "Identity:", identity);
+      
+      // Skip to token generation (jump past queue validation block)
+      pid = safe(identity);
+      
+      const at = new AccessToken(API_KEY, API_SECRET, { identity: pid });
+      at.addGrant({
+        room,
+        roomJoin: true,
+        canPublish: true,
+        canSubscribe: true,
+      });
+
+      const token = await at.toJwt();
+      
+      console.log("[LiveKit Token] Token created successfully");
+      console.log("[LiveKit Token] Returning URL:", LIVEKIT_URL);
+
+      return new Response(JSON.stringify({ 
+        token, 
+        url: LIVEKIT_URL, 
+        room 
+      }), {
+        headers: { "content-type": "application/json", ...corsHeaders },
+        status: 200,
+      });
+    }
+    
+    // Fan publisher - continue with queue validation
     if (role === 'publisher') {
-      // Sub-route A1: Creator broadcasting to lobby
-      if (identity === creatorId) {
-        // Creator publishes to lobby room (NOT preview)
-        room = `lobby_${safe(creatorId)}`;
-        console.log("[LiveKit Token] Creator publisher token for lobby:", room);
-        // No queue validation needed - creator owns the lobby
-        // Skip to token generation below
-      } 
-      // Sub-route A2: Fan publishing to preview room (queue validation below enforces position 1)
-      else {
-        console.log("[LiveKit Token] Fan publisher token for room:", room);
-        // Continue to existing fan queue validation below
-      }
+      console.log("[LiveKit Token] Fan publisher - will validate queue position");
     }
 
     // BLOCK non-creator viewer access to preview room
