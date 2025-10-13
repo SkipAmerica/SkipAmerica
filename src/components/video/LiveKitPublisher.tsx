@@ -23,6 +23,13 @@ export function LiveKitPublisher({
   onPublished,
   onError,
 }: LiveKitPublisherProps) {
+  console.info('[LiveKitPublisher] 🎬 Component config:', {
+    role: config?.role,
+    identity: config?.identity,
+    roomName: config?.roomName,
+    creatorId: config?.creatorId
+  });
+  
   const { room, isConnected } = useLiveKitRoom(config);
   const [isPublishing, setIsPublishing] = useState(false);
   const publishLockRef = useRef(false);

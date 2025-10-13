@@ -22,6 +22,10 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
   const [error, setError] = useState<Error | null>(null);
   const logLevelSetRef = useRef(false);
   const retryCountRef = useRef(0);
+  
+  // Generate unique instance ID for tracking
+  const instanceIdRef = useRef(`lk-${Math.random().toString(36).substr(2, 9)}`);
+  const instanceId = instanceIdRef.current;
 
   useEffect(() => {
     if (!config) {
@@ -50,7 +54,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         }
 
         const resolvedRoom = config.roomName ?? lobbyRoomName(config.creatorId);
-        console.log('[useLiveKitRoom] 🏠 ROOM RESOLUTION:', {
+        console.log(`[useLiveKitRoom:${instanceId}] 🏠 ROOM RESOLUTION:`, {
           configRole: config.role,
           configIdentity: config.identity,
           configCreatorId: config.creatorId,
@@ -93,16 +97,32 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           } 
         }));
 
-        const { token, url, room: roomName } = tokenResponse;
+        const { token, url, room: tokenRoom } = tokenResponse;
+        
+        // Validate room name matches
+        console.info(`[useLiveKitRoom:${instanceId}] ✅ Token received`, {
+          requestedRoom: resolvedRoom,
+          tokenRoom: tokenRoom || 'not specified',
+          role: config.role
+        });
+        
+        if (tokenRoom && tokenRoom !== resolvedRoom) {
+          console.error(`[useLiveKitRoom:${instanceId}] ❌ ROOM MISMATCH!`, {
+            requestedRoom: resolvedRoom,
+            tokenRoom: tokenRoom,
+            role: config.role
+          });
+          throw new Error(`Room mismatch: requested ${resolvedRoom} but got token for ${tokenRoom}`);
+        }
 
         if (!isMounted) {
-          console.log('[useLiveKitRoom] ⚠️ Component unmounted during token fetch');
+          console.log(`[useLiveKitRoom:${instanceId}] ⚠️ Component unmounted during token fetch`);
           return;
         }
 
         // If reconnecting, disconnect existing room first
         if (isReconnect && currentRoom) {
-          console.log('[useLiveKitRoom] Disconnecting for token refresh');
+          console.log(`[useLiveKitRoom:${instanceId}] Disconnecting for token refresh`);
           await currentRoom.disconnect();
         }
 
@@ -133,7 +153,7 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
         // Setup handlers before connecting
         newRoom.on(RoomEvent.Connected, () => {
-          console.log('[useLiveKitRoom] 🔗 CONNECTED TO ROOM:', {
+          console.log(`[useLiveKitRoom:${instanceId}] 🔗 CONNECTED TO ROOM:`, {
             actualRoomName: newRoom.name,
             myIdentity: newRoom.localParticipant.identity,
             remoteParticipantCount: newRoom.remoteParticipants.size,
@@ -185,9 +205,9 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         const connectOptions = { autoSubscribe: true };
         
         // Log before connect
-        console.log('[useLiveKitRoom] 🔌 Attempting to connect to LiveKit...', {
+        console.log(`[useLiveKitRoom:${instanceId}] 🔌 Attempting to connect to room: ${resolvedRoom}`, {
           url,
-          roomName,
+          tokenRoom,
           identity: config.identity,
           options: connectOptions
         });
@@ -210,10 +230,10 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         }
 
         setRoom(newRoom);
-        console.log('[useLiveKitRoom] ✅ Connection established', {
+        console.log(`[useLiveKitRoom:${instanceId}] ✅ Connection established`, {
           role: config.role,
           identity: config.identity,
-          roomName: roomName
+          roomName: resolvedRoom
         });
       } catch (err) {
         const errorObj = err instanceof Error ? err : new Error(String(err));

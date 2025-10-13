@@ -26,6 +26,13 @@ export function LiveKitVideoPlayer({
   fallbackContent,
   targetParticipantId,
 }: LiveKitVideoPlayerProps) {
+  console.info('[LiveKitVideoPlayer] 🎬 Component config:', {
+    role: config?.role,
+    identity: config?.identity,
+    roomName: config?.roomName,
+    targetParticipant: targetParticipantId
+  });
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
