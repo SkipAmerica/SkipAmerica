@@ -170,29 +170,35 @@ export function BroadcastViewer({
     const hadVideo = previousHasVideoRef.current;
     previousHasVideoRef.current = hasVideo;
     
-    if (hasVideo && !hadVideo && needsUserGesture) {
-      // Stream just started - show "Tap to Watch"
-      console.log('[BroadcastViewer] ✨ Transitioning to READY state - showing Tap to Watch');
-      setStreamState('ready');
-      streamStateRef.current = 'ready';
-    } else if (hasVideo && !needsUserGesture) {
-      // Video available and user already gave gesture
-      console.log('[BroadcastViewer] ▶️ Transitioning to PLAYING state');
+    if (hasVideo && !hadVideo) {
+      // Stream just started - try seamless autoplay (muted)
+      console.log('[BroadcastViewer] ▶️ Transitioning to PLAYING state (seamless)');
       setStreamState('playing');
       streamStateRef.current = 'playing';
+      setNeedsUserGesture(false);
+      
+      // Attempt autoplay with muted video (mobile-safe)
+      setTimeout(() => {
+        const videoElement = document.querySelector('video');
+        if (videoElement) {
+          videoElement.muted = true; // Ensure muted for autoplay
+          videoElement.play().catch(err => {
+            console.warn('[BroadcastViewer] Autoplay blocked, showing Tap to Watch:', err);
+            // Fallback to showing tap button if autoplay fails
+            setStreamState('ready');
+            streamStateRef.current = 'ready';
+            setNeedsUserGesture(true);
+          });
+        }
+      }, 100);
     } else if (!hasVideo && hadVideo && streamStateRef.current === 'playing') {
-      // Stream ended (use ref to avoid stale closure)
+      // Stream ended
       console.log('[BroadcastViewer] ⏹️ Transitioning to ENDED state');
       setStreamState('ended');
       streamStateRef.current = 'ended';
-      setNeedsUserGesture(true); // Reset for next stream
-    } else if (!hasVideo) {
-      // No stream available
-      console.log('[BroadcastViewer] ⏳ Transitioning to WAITING state');
-      setStreamState('waiting');
-      streamStateRef.current = 'waiting';
+      setNeedsUserGesture(true);
     }
-  }, [needsUserGesture]);
+  }, []);
 
   const toggleSelfVideo = useCallback(async () => {
     if (showSelfVideo) {
@@ -386,8 +392,8 @@ export function BroadcastViewer({
           <div 
             className="absolute inset-0 rounded-lg animate-pulse"
             style={{
-              boxShadow: '0 0 0 8px rgba(34, 197, 94, 0.6), inset 0 0 0 8px rgba(34, 197, 94, 0.6)',
-              border: '8px solid rgb(34, 197, 94)',
+              boxShadow: '0 0 0 1px rgba(34, 197, 94, 0.6)',
+              border: '1px solid rgb(34, 197, 94)',
             }}
           />
         </div>
@@ -452,7 +458,7 @@ export function BroadcastViewer({
               <p className="text-white text-xl font-medium leading-relaxed">
                 {creatorName} has begun streaming in the Lobby
               </p>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold py-4 px-8 rounded-lg transition-colors">
+              <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-white text-lg font-semibold py-4 px-8 rounded-2xl transition-colors">
                 TAP TO WATCH
               </button>
             </div>
