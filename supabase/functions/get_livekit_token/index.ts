@@ -41,7 +41,14 @@ serve(async (req) => {
     }
 
     const { role, creatorId, identity, sessionId, roomName } = await req.json();
-    console.log("[LiveKit Token] Request:", { role, creatorId, identity, sessionId, roomName });
+    console.log("[LiveKit Token] 📥 REQUEST RECEIVED:", { 
+      role, 
+      creatorId, 
+      identity, 
+      sessionId, 
+      roomName,
+      timestamp: new Date().toISOString()
+    });
 
     let room: string;
     let pid: string;
@@ -190,6 +197,46 @@ serve(async (req) => {
 
     // Determine room (default to lobby if not provided)
     room = roomName || `lobby_${safe(creatorId)}`;
+
+    console.log("[LiveKit Token] 🎯 ROLE CLASSIFICATION:", {
+      role,
+      identity,
+      creatorId,
+      isCreator: identity === creatorId,
+      requestedRoom: roomName,
+      resolvedRoom: room
+    });
+
+    // VIEWER BYPASS - Viewers don't need queue validation
+    if (role === 'viewer') {
+      console.log("[LiveKit Token] 👁️ VIEWER REQUEST — bypassing all queue validation");
+      console.log("[LiveKit Token] Viewer will connect to:", room);
+      console.log("[LiveKit Token] Viewer identity:", identity);
+      
+      pid = safe(identity);
+      
+      const at = new AccessToken(API_KEY, API_SECRET, { identity: pid });
+      at.addGrant({
+        room,
+        roomJoin: true,
+        canPublish: false,
+        canSubscribe: true,
+      });
+
+      const token = await at.toJwt();
+      
+      console.log("[LiveKit Token] ✅ Viewer token created successfully");
+      console.log("[LiveKit Token] Returning URL:", LIVEKIT_URL);
+
+      return new Response(JSON.stringify({ 
+        token, 
+        url: LIVEKIT_URL, 
+        room 
+      }), {
+        headers: { "content-type": "application/json", ...corsHeaders },
+        status: 200,
+      });
+    }
 
     // Check if this is a creator publishing to their own lobby (bypass queue validation)
     const isCreatorPublisher = role === 'publisher' && identity === creatorId;

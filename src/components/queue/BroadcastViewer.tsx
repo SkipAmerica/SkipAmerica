@@ -350,18 +350,29 @@ export function BroadcastViewer({
   }
 
   // Default viewer mode: Watch creator's broadcast (used before fan is "Next Up")
-  console.log('[BroadcastViewer] 👀 Viewer mode - watching creator stream');
+  console.log('[BroadcastViewer] 🎬 VIEWER MODE ACTIVATED', {
+    isInQueue,
+    resolvedCreatorId,
+    fanUserId,
+    viewerIdentity,
+    shouldPublishFanVideo,
+    hasConsentStream: !!consentStream,
+    timestamp: new Date().toISOString()
+  });
   
   const viewerConfig = useMemo(() => {
+    const expectedRoom = `lobby_${resolvedCreatorId}`;
     const config = {
       role: 'viewer' as const,
       creatorId: resolvedCreatorId!,
       identity: viewerIdentity,
+      roomName: expectedRoom, // Explicitly include room name
     };
-    console.log('[BroadcastViewer] 👁️ VIEWER CONFIG:', {
+    console.log('[BroadcastViewer] 👁️ VIEWER CONFIG CREATED:', {
       ...config,
       targetParticipantId: resolvedCreatorId,
-      expectedRoom: `lobby_${resolvedCreatorId}`,
+      expectedCreatorIdentity: resolvedCreatorId,
+      viewerWillSubscribeTo: resolvedCreatorId,
       timestamp: new Date().toISOString()
     });
     return config;
