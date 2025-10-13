@@ -159,14 +159,9 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               onClick={() => onCreatorSelect?.(creator.id)}
             >
               <div className="relative">
-                {/* Story indicator ring or gradient ring */}
-                <div className={cn(
-                  "p-0.5 rounded-full",
-                  creator.isOnline && creator.hasStory
-                    ? "ring-2 ring-green-500 animate-pulse"
-                    : "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500"
-                )}>
-                  <Avatar className="h-16 w-16 ring-2 ring-background">
+                {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
+                <div className="p-0.5 rounded-full">
+                  <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
                     <AvatarImage src={creator.avatar} alt={creator.name} />
                     <AvatarFallback className="text-sm font-medium">
                       {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
