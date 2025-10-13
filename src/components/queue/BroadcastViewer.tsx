@@ -432,34 +432,6 @@ export function BroadcastViewer({
     return `viewer_${crypto.randomUUID()}`;
   }, [fanUserId]);
 
-  // Stable publisher config - moved out of JSX IIFE
-  const publisherConfig = useMemo(() => {
-    if (!resolvedCreatorId || !fanUserId) return null;
-    const identity = fanIdentity(fanUserId);
-    const roomName = previewRoomName(resolvedCreatorId);
-    console.log('[BroadcastViewer] 📹 Publishing to preview room:', {
-      fanUserId,
-      identity,
-      resolvedCreatorId,
-      roomName
-    });
-    return {
-      role: 'publisher' as const,
-      creatorId: resolvedCreatorId,
-      identity,
-      roomName,
-    };
-  }, [resolvedCreatorId, fanUserId]);
-  
-  // Stable callbacks
-  const handlePublisherPublished = useCallback(() => {
-    console.log('[BroadcastViewer] ✅ Fan video published successfully to preview room:', previewRoomName(resolvedCreatorId || ''));
-  }, [resolvedCreatorId]);
-  
-  const handlePublisherError = useCallback((error: Error) => {
-    console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
-  }, []);
-
   console.log('[BroadcastViewer] Config:', { 
     shouldPublishFanVideo, 
     hasConsentStream: !!consentStream,
@@ -527,16 +499,38 @@ export function BroadcastViewer({
 
 
         {/* Headless publisher - establishes single LiveKit connection */}
-        {publisherConfig && (
-          <LiveKitPublisher
-            config={publisherConfig}
-            publishAudio={true}
-            publishVideo={true}
-            mediaStream={consentStream}
-            onPublished={handlePublisherPublished}
-            onError={handlePublisherError}
-          />
-        )}
+        {fanUserId && resolvedCreatorId && (() => {
+          const publisherConfig = useMemo(() => {
+            const identity = fanIdentity(fanUserId); // Use raw UUID for consistency
+            const roomName = previewRoomName(resolvedCreatorId); // Position 1 fan publishes to preview room
+            console.log('[BroadcastViewer] 📹 Publishing to preview room:', {
+              fanUserId,
+              identity,
+              resolvedCreatorId,
+              roomName
+            });
+            return {
+              role: 'publisher' as const,
+              creatorId: resolvedCreatorId,
+              identity,
+              roomName, // Explicit preview room
+            };
+          }, [resolvedCreatorId, fanUserId]);
+
+          return (
+            <LiveKitPublisher
+              config={publisherConfig}
+              publishAudio={true}
+              publishVideo={true}
+              mediaStream={consentStream}
+            onPublished={() => {
+              console.log('[BroadcastViewer] ✅ Fan video published successfully to preview room:', previewRoomName(resolvedCreatorId));
+            }}
+            onError={(error) => {
+              console.error('[BroadcastViewer] ❌ Fan publish failed:', error);
+            }}
+          />);
+        })()}
       </div>
     );
   }

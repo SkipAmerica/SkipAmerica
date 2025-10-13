@@ -31,18 +31,6 @@ export function LiveKitPublisher({
   const publishedTracksRef = useRef<Set<string>>(new Set());
   const lastLogTimeRef = useRef(0);
   const lastRoomStateRef = useRef({ hasRoom: false, isConnected: false });
-  
-  // Stabilize callbacks with refs to prevent effect re-runs
-  const onPublishedRef = useRef(onPublished);
-  const onErrorRef = useRef(onError);
-  
-  useEffect(() => {
-    onPublishedRef.current = onPublished;
-  }, [onPublished]);
-  
-  useEffect(() => {
-    onErrorRef.current = onError;
-  }, [onError]);
 
   // Log config once per connection change
   useEffect(() => {
@@ -290,11 +278,7 @@ export function LiveKitPublisher({
           })),
           roomParticipants: Array.from(room.remoteParticipants.values()).map(p => p.identity)
         });
-        
-        // Reset publishing state on success
-        onPublishedRef.current?.();
-        setIsPublishing(false);
-        publishLockRef.current = false;
+        onPublished?.();
       } catch (err) {
         console.error(`[LiveKitPublisher] Failed to publish tracks (attempt ${attempt}):`, err);
         
@@ -306,7 +290,7 @@ export function LiveKitPublisher({
           }, 300);
         } else {
           const error = err instanceof Error ? err : new Error('Failed to publish');
-          onErrorRef.current?.(error);
+          onError?.(error);
         }
       } finally {
         if (isMounted && attempt >= 3) {
@@ -324,7 +308,7 @@ export function LiveKitPublisher({
       publishAttemptRef.current = false;
       publishedTracksRef.current.clear();
     };
-  }, [room, isConnected, publishAudio, publishVideo, mediaStream, isPublishing]);
+  }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
 
   return null; // This is a headless component
 }

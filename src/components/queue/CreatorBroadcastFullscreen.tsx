@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useRef, useEffect, useState, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { LiveKitPublisher } from "@/components/video/LiveKitPublisher";
 import { useLiveStore } from "@/stores/live-store";
@@ -159,15 +159,6 @@ export function CreatorBroadcastFullscreen({
     console.log('[CreatorBroadcast] ✅ Lobby broadcasting state set to TRUE')
     toast.success('Now broadcasting to your lobby');
   };
-  
-  // Stable callbacks for LiveKitPublisher
-  const handleCreatorPublished = useCallback(() => {
-    console.log('[CreatorBroadcast] Stream published');
-  }, []);
-  
-  const handleCreatorPublishError = useCallback((error: Error) => {
-    console.error('[CreatorBroadcast] Publishing error:', error);
-  }, []);
 
   // const handleEyeEnhanceToggle = (enabled: boolean) => {
   //   setEyeEnhanceEnabled(enabled);
@@ -202,8 +193,12 @@ export function CreatorBroadcastFullscreen({
           mediaStream={broadcast.stream} 
           publishAudio={true} 
           publishVideo={true} 
-          onPublished={handleCreatorPublished}
-          onError={handleCreatorPublishError}
+          onPublished={() => {
+            console.log('[CreatorBroadcast] Stream published');
+          }} 
+          onError={error => {
+            console.error('[CreatorBroadcast] Publishing error:', error);
+          }} 
         />
       )}
 
