@@ -158,7 +158,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               className="flex-shrink-0 cursor-pointer ios-story-item"
               onClick={() => onCreatorSelect?.(creator.id)}
             >
-              <div className="relative">
+              <div className="relative p-[3px]">
                 {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
                 <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
                   <AvatarImage src={creator.avatar} alt={creator.name} />
@@ -169,7 +169,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
                 
                 {/* Online indicator */}
                 {creator.isOnline && (
-                  <div className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-[hsl(var(--online))] border-2 border-background flex items-center justify-center">
+                  <div className="absolute bottom-[2.5px] right-[2.5px] h-4 w-4 rounded-full bg-[hsl(var(--online))] border-2 border-background flex items-center justify-center">
                     <div className="h-2 w-2 rounded-full bg-[hsl(var(--background))] animate-pulse" />
                   </div>
                 )}
