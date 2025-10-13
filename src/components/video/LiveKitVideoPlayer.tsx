@@ -8,6 +8,7 @@ interface LiveKitVideoPlayerProps {
   className?: string;
   muted?: boolean;
   onConnectionStateChange?: (connected: boolean) => void;
+  onVideoAvailable?: (hasVideo: boolean) => void;
   fallbackContent?: React.ReactNode;
   targetParticipantId?: string;
 }
@@ -21,6 +22,7 @@ export function LiveKitVideoPlayer({
   className = "w-full h-full object-cover rounded-2xl",
   muted = true,
   onConnectionStateChange,
+  onVideoAvailable,
   fallbackContent,
   targetParticipantId,
 }: LiveKitVideoPlayerProps) {
@@ -37,6 +39,11 @@ export function LiveKitVideoPlayer({
   useEffect(() => {
     onConnectionStateChange?.(isConnected);
   }, [isConnected, onConnectionStateChange]);
+
+  // Notify parent when video becomes available/unavailable
+  useEffect(() => {
+    onVideoAvailable?.(hasVideo);
+  }, [hasVideo, onVideoAvailable]);
 
   // Enhanced unmute behavior - ensure audio plays when user unmutes
   useEffect(() => {

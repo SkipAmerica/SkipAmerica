@@ -6,6 +6,7 @@ import { resolveCreatorUserId } from '@/lib/queueResolver';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
 import { lobbyRoomName, fanIdentity, previewRoomName } from '@/lib/lobbyIdentity';
+import { cn } from '@/lib/utils';
 
 interface BroadcastViewerProps {
   creatorId: string;
@@ -42,6 +43,11 @@ export function BroadcastViewer({
   const [isTransitioningToPublisher, setIsTransitioningToPublisher] = useState(false);
   const publisherModeRef = useRef(false);
   const hasConnectedRef = useRef(false);
+  
+  // Stream state management
+  const [streamState, setStreamState] = useState<'waiting' | 'ready' | 'playing' | 'ended'>('waiting');
+  const [needsUserGesture, setNeedsUserGesture] = useState(true);
+  const previousHasVideoRef = useRef(false);
 
   // Set resolvedCreatorId immediately
   useEffect(() => {
@@ -134,6 +140,44 @@ export function BroadcastViewer({
     setConnectionState('connecting');
     window.location.reload();
   }, []);
+
+  const handleTapToWatch = useCallback(() => {
+    console.log('[BroadcastViewer] User tapped to watch');
+    setStreamState('playing');
+    setNeedsUserGesture(false);
+    
+    // Trigger video play after user gesture
+    setTimeout(() => {
+      const videoElement = document.querySelector('video');
+      if (videoElement) {
+        videoElement.play().catch(err => {
+          console.warn('[BroadcastViewer] Video play after gesture failed:', err);
+        });
+      }
+    }, 100);
+  }, []);
+
+  const handleVideoAvailable = useCallback((hasVideo: boolean) => {
+    console.log('[BroadcastViewer] Video availability changed:', hasVideo);
+    
+    const hadVideo = previousHasVideoRef.current;
+    previousHasVideoRef.current = hasVideo;
+    
+    if (hasVideo && !hadVideo && needsUserGesture) {
+      // Stream just started - show "Tap to Watch"
+      setStreamState('ready');
+    } else if (hasVideo && !needsUserGesture) {
+      // Video available and user already gave gesture
+      setStreamState('playing');
+    } else if (!hasVideo && hadVideo && streamState === 'playing') {
+      // Stream ended
+      setStreamState('ended');
+      setNeedsUserGesture(true); // Reset for next stream
+    } else if (!hasVideo) {
+      // No stream available
+      setStreamState('waiting');
+    }
+  }, [needsUserGesture, streamState]);
 
   const toggleSelfVideo = useCallback(async () => {
     if (showSelfVideo) {
@@ -310,16 +354,33 @@ export function BroadcastViewer({
   
   return (
     <div className="relative w-full h-full">
+      {/* Green glowing border when stream is playing */}
+      {streamState === 'playing' && (
+        <div className="absolute inset-0 pointer-events-none z-50">
+          <div 
+            className="absolute inset-0 rounded-lg animate-pulse"
+            style={{
+              boxShadow: '0 0 0 8px rgba(34, 197, 94, 0.6), inset 0 0 0 8px rgba(34, 197, 94, 0.6)',
+              border: '8px solid rgb(34, 197, 94)',
+            }}
+          />
+        </div>
+      )}
+
       {/* Main creator video stream */}
       {resolvedCreatorId && (
         <LiveKitVideoPlayer
           config={viewerConfig}
           targetParticipantId={resolvedCreatorId}
-          className="w-full h-full object-cover bg-black"
+          className={cn(
+            "w-full h-full object-cover bg-black",
+            streamState === 'playing' && "rounded-lg"
+          )}
           muted={isMuted}
           onConnectionStateChange={(connected) => {
             setConnectionState(connected ? 'connected' : 'connecting');
           }}
+          onVideoAvailable={handleVideoAvailable}
           fallbackContent={
             <div className="text-center text-white px-4">
               {connectionState === 'checking' && (
@@ -349,6 +410,40 @@ export function BroadcastViewer({
           }
         />
       )}
+
+      {/* "Tap to Watch" Overlay - Only when stream is ready */}
+      {streamState === 'ready' && (
+        <div 
+          className="absolute inset-0 bg-black/90 z-40 flex items-center justify-center cursor-pointer"
+          onClick={handleTapToWatch}
+        >
+          <div className="text-center space-y-6 max-w-sm px-6">
+            <div className="space-y-3">
+              <p className="text-white text-xl font-medium leading-relaxed">
+                {creatorName} has begun streaming in the Lobby
+              </p>
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg font-semibold py-4 px-8 rounded-lg transition-colors">
+                TAP TO WATCH
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* "Stream has ended" Overlay */}
+      {streamState === 'ended' && (
+        <div className="absolute inset-0 bg-black/90 z-40 flex items-center justify-center">
+          <div className="text-center space-y-4 px-6">
+            <div className="text-6xl mb-4">📺</div>
+            <p className="text-white text-2xl font-medium">
+              Stream has ended
+            </p>
+            <p className="text-white/60 text-sm">
+              Waiting for creator to go live again...
+            </p>
+          </div>
+        </div>
+      )}
       
       {/* Self video PIP */}
       {showSelfVideo && (consentStream || localStream) && (
@@ -367,8 +462,8 @@ export function BroadcastViewer({
         </div>
       )}
 
-      {/* Control button - Volume only - ONLY show in viewer mode */}
-      {!publisherModeRef.current && (
+      {/* Control button - Volume only - ONLY show when playing */}
+      {streamState === 'playing' && (
         <div className="absolute bottom-4 right-4 z-30">
           <Button
             onClick={toggleMute}
