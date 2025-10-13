@@ -142,7 +142,7 @@ export function BroadcastViewer({
   }, []);
 
   const handleTapToWatch = useCallback(() => {
-    console.log('[BroadcastViewer] User tapped to watch');
+    console.log('[BroadcastViewer] 🎬 User tapped to watch - transitioning to PLAYING');
     setStreamState('playing');
     setNeedsUserGesture(false);
     
@@ -158,23 +158,32 @@ export function BroadcastViewer({
   }, []);
 
   const handleVideoAvailable = useCallback((hasVideo: boolean) => {
-    console.log('[BroadcastViewer] Video availability changed:', hasVideo);
+    console.log('[BroadcastViewer] 🎥 Video availability changed:', {
+      hasVideo,
+      hadVideo: previousHasVideoRef.current,
+      needsUserGesture,
+      currentStreamState: streamState
+    });
     
     const hadVideo = previousHasVideoRef.current;
     previousHasVideoRef.current = hasVideo;
     
     if (hasVideo && !hadVideo && needsUserGesture) {
       // Stream just started - show "Tap to Watch"
+      console.log('[BroadcastViewer] ✨ Transitioning to READY state - showing Tap to Watch');
       setStreamState('ready');
     } else if (hasVideo && !needsUserGesture) {
       // Video available and user already gave gesture
+      console.log('[BroadcastViewer] ▶️ Transitioning to PLAYING state');
       setStreamState('playing');
     } else if (!hasVideo && hadVideo && streamState === 'playing') {
       // Stream ended
+      console.log('[BroadcastViewer] ⏹️ Transitioning to ENDED state');
       setStreamState('ended');
       setNeedsUserGesture(true); // Reset for next stream
     } else if (!hasVideo) {
       // No stream available
+      console.log('[BroadcastViewer] ⏳ Transitioning to WAITING state');
       setStreamState('waiting');
     }
   }, [needsUserGesture, streamState]);

@@ -42,6 +42,7 @@ export function LiveKitVideoPlayer({
 
   // Notify parent when video becomes available/unavailable
   useEffect(() => {
+    console.log('[LiveKitVideoPlayer] 📢 Notifying parent of video availability:', hasVideo);
     onVideoAvailable?.(hasVideo);
   }, [hasVideo, onVideoAvailable]);
 
