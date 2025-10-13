@@ -160,14 +160,12 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
             >
               <div className="relative">
                 {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
-                <div className="p-0.5 rounded-full">
-                  <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
-                    <AvatarImage src={creator.avatar} alt={creator.name} />
-                    <AvatarFallback className="text-sm font-medium">
-                      {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
+                <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
+                  <AvatarImage src={creator.avatar} alt={creator.name} />
+                  <AvatarFallback className="text-sm font-medium">
+                    {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 
                 {/* Online indicator */}
                 {creator.isOnline && (
