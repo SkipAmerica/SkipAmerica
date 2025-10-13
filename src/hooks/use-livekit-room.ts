@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Room, RoomEvent, Track, RemoteTrack, VideoPresets } from 'livekit-client';
+import { useEffect, useState, useRef } from 'react';
+import { Room, RoomEvent, Track, RemoteTrack, VideoPresets, ConnectionState, setLogLevel } from 'livekit-client';
 import { fetchLiveKitToken } from '@/lib/sfuToken';
 import { lobbyRoomName } from '@/lib/lobbyIdentity';
 
@@ -20,6 +20,8 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
   const [room, setRoom] = useState<Room | null>(null);
   const [connectionState, setConnectionState] = useState<LiveKitConnectionState>('idle');
   const [error, setError] = useState<Error | null>(null);
+  const logLevelSetRef = useRef(false);
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     if (!config) {
@@ -31,7 +33,16 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
     let currentRoom: Room | null = null;
     let tokenRefreshTimer: NodeJS.Timeout | null = null;
 
+    // Enable LiveKit debug logging once
+    if (!logLevelSetRef.current) {
+      setLogLevel('debug');
+      logLevelSetRef.current = true;
+      console.log('[useLiveKitRoom] 🐛 LiveKit debug logging enabled');
+    }
+
     const connect = async (isReconnect = false) => {
+      const retryAttempt = retryCountRef.current;
+      
       try {
         if (!isReconnect) {
           setConnectionState('connecting');
@@ -45,10 +56,11 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           configCreatorId: config.creatorId,
           explicitRoomName: config.roomName,
           resolvedRoomName: resolvedRoom,
-          isReconnect
+          isReconnect,
+          retryAttempt
         });
 
-        // ADD: Log before token fetch
+        // Log before token fetch
         console.log('[useLiveKitRoom] 🎫 Fetching LiveKit token...', {
           role: config.role,
           creatorId: config.creatorId,
@@ -64,13 +76,22 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           roomName: config.roomName,
         });
 
-        // ADD: Log token fetch success
+        // Log token fetch success
         console.log('[useLiveKitRoom] ✅ Token fetched successfully', {
           hasToken: !!tokenResponse.token,
           tokenLength: tokenResponse.token?.length,
           url: tokenResponse.url,
           room: tokenResponse.room
         });
+
+        // Emit token event for debug HUD
+        window.dispatchEvent(new CustomEvent('lk:token', { 
+          detail: { 
+            url: tokenResponse.url, 
+            room: tokenResponse.room,
+            tokenLength: tokenResponse.token?.length 
+          } 
+        }));
 
         const { token, url, room: roomName } = tokenResponse;
 
@@ -152,10 +173,18 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           if (isMounted) setConnectionState('connected');
         });
 
+        // Add connection state change listener
+        newRoom.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+          console.log('[useLiveKitRoom] 📡 ConnectionStateChanged:', state);
+          window.dispatchEvent(new CustomEvent('lk:state', { 
+            detail: { connectionState: state, error: null } 
+          }));
+        });
+
         // Connect to room with auto-subscribe enabled
         const connectOptions = { autoSubscribe: true };
         
-        // ADD: Log before connect
+        // Log before connect
         console.log('[useLiveKitRoom] 🔌 Attempting to connect to LiveKit...', {
           url,
           roomName,
@@ -163,9 +192,15 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           options: connectOptions
         });
         
-        await newRoom.connect(url, token, connectOptions);
+        // Race connect against 10s timeout
+        const connectPromise = newRoom.connect(url, token, connectOptions);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Connection timeout after 10s')), 10000)
+        );
 
-        // ADD: Log after connect promise resolves
+        await Promise.race([connectPromise, timeoutPromise]);
+
+        // Log after connect promise resolves
         console.log('[useLiveKitRoom] 📡 connect() promise resolved');
 
         if (!isMounted) {
@@ -181,12 +216,15 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           roomName: roomName
         });
       } catch (err) {
-        // ENHANCE: Better error logging
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        
+        // Enhanced error logging
         console.error('[useLiveKitRoom] ❌ Connection failed:', {
           error: err,
-          errorMessage: err instanceof Error ? err.message : String(err),
-          errorStack: err instanceof Error ? err.stack : undefined,
-          errorType: err instanceof Error ? err.constructor.name : typeof err,
+          errorMessage: errorObj.message,
+          errorStack: errorObj.stack,
+          errorType: errorObj.constructor.name,
+          retryAttempt,
           config: {
             role: config.role,
             creatorId: config.creatorId,
@@ -195,20 +233,31 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           }
         });
 
+        // Emit error event for debug HUD
+        window.dispatchEvent(new CustomEvent('lk:state', { 
+          detail: { connectionState: 'failed', error: errorObj.message } 
+        }));
+
         if (isMounted) {
           setConnectionState('failed');
-          setError(err instanceof Error ? err : new Error(String(err)));
+          setError(errorObj);
+        }
+
+        // Retry with exponential backoff (max 3 attempts)
+        if (retryCountRef.current < 3 && isMounted) {
+          const delays = [2000, 4000, 8000];
+          const delay = delays[retryCountRef.current] + Math.random() * 1000; // Add jitter
           
-          // ADD: Retry logic for transient failures
-          if (!isReconnect) {
-            console.log('[useLiveKitRoom] 🔄 Scheduling retry in 2 seconds...');
-            setTimeout(() => {
-              if (isMounted) {
-                console.log('[useLiveKitRoom] 🔄 Retrying connection...');
-                connect(true);
-              }
-            }, 2000);
-          }
+          console.log(`[useLiveKitRoom] 🔄 Retry ${retryCountRef.current + 1}/3 in ${(delay/1000).toFixed(1)}s (reason: ${errorObj.message})`);
+          
+          setTimeout(() => {
+            if (isMounted) {
+              retryCountRef.current++;
+              connect(true);
+            }
+          }, delay);
+        } else if (retryCountRef.current >= 3) {
+          console.error('[useLiveKitRoom] ❌ Max retries (3) exceeded, giving up');
         }
       }
     };

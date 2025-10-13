@@ -29,17 +29,25 @@ export function LiveKitPublisher({
   const lastPublishAttemptRef = useRef(0);
   const publishAttemptRef = useRef(false);
   const publishedTracksRef = useRef<Set<string>>(new Set());
+  const lastLogTimeRef = useRef(0);
+  const lastRoomStateRef = useRef({ hasRoom: false, isConnected: false });
 
-  // Log component render
-  console.log('[LiveKitPublisher] 🎬 Component rendered', {
-    hasRoom: !!room,
-    isConnected,
-    publishVideo,
-    publishAudio,
-    hasMediaStream: !!mediaStream,
-    mediaStreamTracks: mediaStream?.getTracks().length || 0,
-    config
-  });
+  // Log component render only when room state changes
+  const currentHasRoom = !!room;
+  const currentIsConnected = isConnected;
+  if (lastRoomStateRef.current.hasRoom !== currentHasRoom || 
+      lastRoomStateRef.current.isConnected !== currentIsConnected) {
+    console.log('[LiveKitPublisher] 🎬 Component rendered', {
+      hasRoom: currentHasRoom,
+      isConnected: currentIsConnected,
+      publishVideo,
+      publishAudio,
+      hasMediaStream: !!mediaStream,
+      mediaStreamTracks: mediaStream?.getTracks().length || 0,
+      config
+    });
+    lastRoomStateRef.current = { hasRoom: currentHasRoom, isConnected: currentIsConnected };
+  }
 
   // Unpublish tracks when mediaStream becomes null (broadcast ended)
   useEffect(() => {
@@ -80,7 +88,12 @@ export function LiveKitPublisher({
     });
 
     if (!room || !isConnected) {
-      console.log('[LiveKitPublisher] ⏸️ Not ready - no room or not connected');
+      // Gate log to once per second
+      const now = Date.now();
+      if (now - lastLogTimeRef.current > 1000) {
+        console.log('[LiveKitPublisher] ⏸️ Not ready - no room or not connected');
+        lastLogTimeRef.current = now;
+      }
       return;
     }
     

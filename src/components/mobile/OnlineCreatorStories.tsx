@@ -29,30 +29,48 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
   const { user } = useAuth();
 
   useEffect(() => {
+    let debounceTimer: NodeJS.Timeout;
+    
     const loadCreators = async () => {
       setLoading(true);
       try {
         console.log('[OnlineCreatorStories] Loading real creators with presence tracking');
 
-        // Query real creators with online status from creator_presence
+        // First, get online creator IDs from creator_presence
+        const { data: presenceData, error: presenceError } = await supabase
+          .from('creator_presence')
+          .select('creator_id')
+          .eq('is_online', true)
+          .limit(50);
+
+        if (presenceError) {
+          console.error('Error fetching presence:', presenceError);
+          setOnlineCreators([]);
+          setLoading(false);
+          return;
+        }
+
+        if (!presenceData || presenceData.length === 0) {
+          console.log('[OnlineCreatorStories] No online creators found');
+          setOnlineCreators([]);
+          setLoading(false);
+          return;
+        }
+
+        const onlineIds = presenceData.map(p => p.creator_id);
+
+        // Then query creators with those IDs
         const { data: onlineCreatorsData, error } = await supabase
           .from('creators')
-          .select(`
-            id,
-            full_name,
-            avatar_url,
-            categories,
-            creator_presence!inner (
-              is_online
-            )
-          `)
-          .eq('creator_presence.is_online', true)
+          .select('id, full_name, avatar_url, categories')
+          .in('id', onlineIds)
           .eq('is_suppressed', false)
           .limit(20);
 
         if (error) {
           console.error('Error fetching online creators:', error);
           setOnlineCreators([]);
+          setLoading(false);
           return;
         }
 
@@ -85,9 +103,14 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
       }
     };
 
+    const debouncedLoad = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(loadCreators, 500);
+    };
+
     loadCreators();
 
-    // Subscribe to real-time presence updates
+    // Subscribe to real-time presence updates with debounce
     const presenceChannel = supabase
       .channel('creator-presence-stories')
       .on(
@@ -99,12 +122,13 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
         },
         () => {
           console.log('[OnlineCreatorStories] Presence changed, reloading');
-          loadCreators();
+          debouncedLoad();
         }
       )
       .subscribe();
 
     return () => {
+      clearTimeout(debounceTimer);
       supabase.removeChannel(presenceChannel);
     };
   }, [user]);

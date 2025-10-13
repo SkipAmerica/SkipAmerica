@@ -10,6 +10,7 @@ import { useDoubleTap } from "@/hooks/use-double-tap";
 import { GoLiveCountdown } from "./GoLiveCountdown";
 import { useLobbyBroadcast } from "@/hooks/broadcast/useLobbyBroadcast";
 import { lobbyRoomName } from "@/lib/lobbyIdentity";
+import DebugHUD from "@/components/dev/DebugHUD";
 interface CreatorBroadcastFullscreenProps {
   creatorId: string;
   isVisible?: boolean;
@@ -20,11 +21,48 @@ export function CreatorBroadcastFullscreen({
 }: CreatorBroadcastFullscreenProps) {
   const { isLobbyBroadcasting, setLobbyBroadcasting } = useLiveStore();
   const videoRef = useRef<HTMLVideoElement>(null);
-  // const [eyeEnhanceEnabled, setEyeEnhanceEnabled] = useState(true);
-  // const [teethWhitenEnabled, setTeethWhitenEnabled] = useState(true);
+  
+  // Debug HUD state
+  const [debugState, setDebugState] = useState({
+    connectionState: 'idle',
+    tokenStatus: 'pending',
+    tokenUrl: '',
+    tokenRoom: '',
+    error: null as string | null,
+  });
   
   // Use new broadcast hook - handles all media lifecycle
   const broadcast = useLobbyBroadcast({ isVisible });
+
+  // Listen to LiveKit events for debug HUD
+  useEffect(() => {
+    const handleTokenEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setDebugState(prev => ({
+        ...prev,
+        tokenStatus: 'OK',
+        tokenUrl: detail.url || '',
+        tokenRoom: detail.room || '',
+      }));
+    };
+
+    const handleStateEvent = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setDebugState(prev => ({
+        ...prev,
+        connectionState: detail.connectionState || 'unknown',
+        error: detail.error,
+      }));
+    };
+
+    window.addEventListener('lk:token', handleTokenEvent);
+    window.addEventListener('lk:state', handleStateEvent);
+
+    return () => {
+      window.removeEventListener('lk:token', handleTokenEvent);
+      window.removeEventListener('lk:state', handleStateEvent);
+    };
+  }, []);
 
   // Log broadcast state changes
   useEffect(() => {
@@ -120,6 +158,22 @@ export function CreatorBroadcastFullscreen({
   //   broadcast.setTeethWhiten(enabled);
   // };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
+      {/* Debug HUD (dev mode only) */}
+      {import.meta.env.DEV && (
+        <DebugHUD
+          title="LiveKit Connection"
+          rows={[
+            ['State', debugState.connectionState],
+            ['Token', debugState.tokenStatus],
+            ['URL', debugState.tokenUrl ? debugState.tokenUrl.substring(0, 30) + '...' : 'N/A'],
+            ['Room', debugState.tokenRoom || 'N/A'],
+            ['Role', 'publisher'],
+            ['Identity', creatorId.substring(0, 8) + '...'],
+            ['Error', debugState.error || 'None'],
+          ]}
+        />
+      )}
+
       {/* Publisher (headless - only when broadcasting) */}
       {isLobbyBroadcasting && broadcast.stream && (() => {
         const publisherConfig = {
