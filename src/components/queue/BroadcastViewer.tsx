@@ -46,6 +46,7 @@ export function BroadcastViewer({
   
   // Stream state management
   const [streamState, setStreamState] = useState<'waiting' | 'ready' | 'playing' | 'ended'>('waiting');
+  const streamStateRef = useRef<'waiting' | 'ready' | 'playing' | 'ended'>('waiting');
   const [needsUserGesture, setNeedsUserGesture] = useState(true);
   const previousHasVideoRef = useRef(false);
 
@@ -144,6 +145,7 @@ export function BroadcastViewer({
   const handleTapToWatch = useCallback(() => {
     console.log('[BroadcastViewer] 🎬 User tapped to watch - transitioning to PLAYING');
     setStreamState('playing');
+    streamStateRef.current = 'playing';
     setNeedsUserGesture(false);
     
     // Trigger video play after user gesture
@@ -172,21 +174,25 @@ export function BroadcastViewer({
       // Stream just started - show "Tap to Watch"
       console.log('[BroadcastViewer] ✨ Transitioning to READY state - showing Tap to Watch');
       setStreamState('ready');
+      streamStateRef.current = 'ready';
     } else if (hasVideo && !needsUserGesture) {
       // Video available and user already gave gesture
       console.log('[BroadcastViewer] ▶️ Transitioning to PLAYING state');
       setStreamState('playing');
-    } else if (!hasVideo && hadVideo && streamState === 'playing') {
-      // Stream ended
+      streamStateRef.current = 'playing';
+    } else if (!hasVideo && hadVideo && streamStateRef.current === 'playing') {
+      // Stream ended (use ref to avoid stale closure)
       console.log('[BroadcastViewer] ⏹️ Transitioning to ENDED state');
       setStreamState('ended');
+      streamStateRef.current = 'ended';
       setNeedsUserGesture(true); // Reset for next stream
     } else if (!hasVideo) {
       // No stream available
       console.log('[BroadcastViewer] ⏳ Transitioning to WAITING state');
       setStreamState('waiting');
+      streamStateRef.current = 'waiting';
     }
-  }, [needsUserGesture, streamState]);
+  }, [needsUserGesture]);
 
   const toggleSelfVideo = useCallback(async () => {
     if (showSelfVideo) {
