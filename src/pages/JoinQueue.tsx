@@ -308,8 +308,8 @@ export default function JoinQueue() {
         consentResolvedRef.current = false;
       }
 
-      // Detect new queue session and reset consent
-      const isNewQueueSession = queueStatus.in_queue && queueStatus.entry && queueStatus.entry.id !== queueEntryId;
+      // Detect new queue session using ref-based comparison (prevents stale closure)
+      const isNewQueueSession = queueStatus.in_queue && hasNewEntry;
       
       // Force synchronous batching of ALL state updates to prevent flutter
       flushSync(() => {

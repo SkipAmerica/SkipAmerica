@@ -23,13 +23,6 @@ export function LiveKitPublisher({
   onPublished,
   onError,
 }: LiveKitPublisherProps) {
-  console.info('[LiveKitPublisher] 🎬 Component config:', {
-    role: config?.role,
-    identity: config?.identity,
-    roomName: config?.roomName,
-    creatorId: config?.creatorId
-  });
-  
   const { room, isConnected } = useLiveKitRoom(config);
   const [isPublishing, setIsPublishing] = useState(false);
   const publishLockRef = useRef(false);
@@ -38,6 +31,16 @@ export function LiveKitPublisher({
   const publishedTracksRef = useRef<Set<string>>(new Set());
   const lastLogTimeRef = useRef(0);
   const lastRoomStateRef = useRef({ hasRoom: false, isConnected: false });
+
+  // Log config once per connection change
+  useEffect(() => {
+    console.info('[LiveKitPublisher] 🎬 Component config:', {
+      role: config?.role,
+      identity: config?.identity,
+      roomName: config?.roomName,
+      creatorId: config?.creatorId
+    });
+  }, [config?.role, config?.identity, config?.roomName, config?.creatorId]);
 
   // Log component render only when room state changes
   const currentHasRoom = !!room;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import OverlayChat from "@/components/live/OverlayChat";
 import { createOverlayConfig } from "@/lib/chatConfigs";
 import { useExternalChatInput } from "@/hooks/useExternalChatInput";
@@ -41,27 +41,32 @@ export default function CreatorPreviewWithChat({ creatorId }: Props) {
     }
   }
 
+  // Stabilize config objects to prevent unnecessary re-renders
+  const publisherConfig = useMemo(() => ({
+    role: 'publisher' as const,
+    creatorId: creatorId,
+    identity: creatorId,
+  }), [creatorId]);
+
+  const viewerConfig = useMemo(() => ({
+    role: 'viewer' as const,
+    creatorId: creatorId,
+    identity: `${creatorId}_preview`,
+  }), [creatorId]);
+
   return (
     <div className="w-full min-w-0 flex-1 flex flex-col">
       <div className="relative w-full flex-1 bg-black overflow-hidden rounded-xl">
         {/* Publish creator's camera */}
         <LiveKitPublisher
-          config={{
-            role: 'publisher',
-            creatorId: creatorId,
-            identity: creatorId,
-          }}
+          config={publisherConfig}
           publishAudio={true}
           publishVideo={true}
         />
 
         {/* Display creator's own video */}
         <LiveKitVideoPlayer
-          config={{
-            role: 'viewer',
-            creatorId: creatorId,
-            identity: `${creatorId}_preview`,
-          }}
+          config={viewerConfig}
           className="w-full h-full object-cover"
           muted={true}
           fallbackContent={

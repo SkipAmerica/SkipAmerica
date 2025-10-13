@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
@@ -35,6 +35,19 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
     };
   }, []);
 
+  // Stabilize config objects to prevent unnecessary re-renders
+  const publisherConfig = useMemo(() => ({
+    role: 'publisher' as const,
+    creatorId: userId,
+    identity: userId,
+  }), [userId]);
+
+  const viewerConfig = useMemo(() => ({
+    role: 'viewer' as const,
+    creatorId: userId,
+    identity: `${userId}_preview`,
+  }), [userId]);
+
   if (!userId) {
     return (
       <div className={className} style={{ background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -47,22 +60,14 @@ export function MediaPreview({ className, muted = true, autoPlay = true }: Media
     <div className="relative w-full h-full">
       {/* Publish to own room */}
       <LiveKitPublisher
-        config={{
-          role: 'publisher',
-          creatorId: userId,
-          identity: userId,
-        }}
+        config={publisherConfig}
         publishAudio={false}
         publishVideo={true}
       />
 
       {/* Display own video */}
       <LiveKitVideoPlayer
-        config={{
-          role: 'viewer',
-          creatorId: userId,
-          identity: `${userId}_preview`,
-        }}
+        config={viewerConfig}
         className={className}
         muted={muted}
         fallbackContent={

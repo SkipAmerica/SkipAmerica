@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
@@ -122,16 +122,25 @@ export function UserVideoSFU({
     ? userId 
     : (identityOverride || `${userId}-viewer-${Date.now()}`);
 
+  // Stabilize config objects to prevent unnecessary re-renders
+  const publisherConfig = useMemo(() => ({
+    role: 'publisher' as const,
+    creatorId: roomCreatorId || '',
+    identity: identity,
+  }), [roomCreatorId, identity]);
+
+  const viewerConfig = useMemo(() => ({
+    role: role,
+    creatorId: roomCreatorId || '',
+    identity: identity,
+  }), [role, roomCreatorId, identity]);
+
   return (
     <div className={cn("relative overflow-hidden rounded-lg bg-black", dimensions, className)}>
       {/* Publisher: publish local tracks */}
       {role === 'publisher' && roomCreatorId && (
         <LiveKitPublisher
-          config={{
-            role: 'publisher',
-            creatorId: roomCreatorId,
-            identity: identity,
-          }}
+          config={publisherConfig}
           publishAudio={true}
           publishVideo={true}
         />
@@ -140,11 +149,7 @@ export function UserVideoSFU({
       {/* Video player */}
       {roomCreatorId && (
         <LiveKitVideoPlayer
-          config={{
-            role: role,
-            creatorId: roomCreatorId,
-            identity: identity,
-          }}
+          config={viewerConfig}
           className="w-full h-full object-cover"
           muted={isMuted}
           onConnectionStateChange={handleConnectionChange}
