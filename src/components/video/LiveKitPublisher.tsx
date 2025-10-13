@@ -30,6 +30,17 @@ export function LiveKitPublisher({
   const publishAttemptRef = useRef(false);
   const publishedTracksRef = useRef<Set<string>>(new Set());
 
+  // Log component render
+  console.log('[LiveKitPublisher] 🎬 Component rendered', {
+    hasRoom: !!room,
+    isConnected,
+    publishVideo,
+    publishAudio,
+    hasMediaStream: !!mediaStream,
+    mediaStreamTracks: mediaStream?.getTracks().length || 0,
+    config
+  });
+
   // Unpublish tracks when mediaStream becomes null (broadcast ended)
   useEffect(() => {
     if (!mediaStream && room?.localParticipant) {
@@ -58,7 +69,30 @@ export function LiveKitPublisher({
   }, [mediaStream, room]);
 
   useEffect(() => {
-    if (!room || !isConnected || isPublishing || !mediaStream) return;
+    console.log('[LiveKitPublisher] 🔄 Publishing effect triggered', {
+      isConnected,
+      publishVideo,
+      publishAudio,
+      hasMediaStream: !!mediaStream,
+      hasRoom: !!room,
+      isPublishing,
+      lockHeld: publishLockRef.current
+    });
+
+    if (!room || !isConnected) {
+      console.log('[LiveKitPublisher] ⏸️ Not ready - no room or not connected');
+      return;
+    }
+    
+    if (!publishVideo && !publishAudio) {
+      console.log('[LiveKitPublisher] ⏸️ Not publishing - both audio and video disabled');
+      return;
+    }
+
+    if (isPublishing || !mediaStream) {
+      console.log('[LiveKitPublisher] ⏸️ Skipping - already publishing or no media stream');
+      return;
+    }
     
     // Skip publishing if tracks are already published (prevents flutter on reconnect)
     if (room.localParticipant) {

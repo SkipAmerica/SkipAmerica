@@ -26,15 +26,37 @@ export function CreatorBroadcastFullscreen({
   // Use new broadcast hook - handles all media lifecycle
   const broadcast = useLobbyBroadcast({ isVisible });
 
+  // Log broadcast state changes
+  useEffect(() => {
+    console.log('[CreatorBroadcast] 📊 Broadcast state changed:', {
+      hasStream: !!broadcast.stream,
+      streamTracks: broadcast.stream?.getTracks().length || 0,
+      isStreaming: broadcast.isStreaming,
+      isCountdownActive: broadcast.isCountdownActive,
+      isFilterReady: broadcast.isFilterReady,
+      currentFilter: broadcast.currentFilter,
+      isLobbyBroadcasting
+    })
+  }, [broadcast.stream, broadcast.isStreaming, broadcast.isCountdownActive, isLobbyBroadcasting])
+
   // Double-tap handler for go-live
   const { onTapStart } = useDoubleTap({
     onDoubleTap: () => {
+      console.log('[CreatorBroadcast] 🖐️ Double-tap detected', {
+        isCountdownActive: broadcast.isCountdownActive,
+        isLobbyBroadcasting,
+        hasStream: !!broadcast.stream
+      })
+      
       if (broadcast.isCountdownActive) {
+        console.log('[CreatorBroadcast] ❌ Canceling countdown')
         broadcast.cancelCountdown();
         toast.info('Go live cancelled');
       } else if (!isLobbyBroadcasting) {
+        console.log('[CreatorBroadcast] ▶️ Starting countdown')
         broadcast.startCountdown();
       } else {
+        console.log('[CreatorBroadcast] ⏹️ Ending broadcast')
         setLobbyBroadcasting(false);
         broadcast.stopStream();
         toast.success('Broadcast ended');
@@ -73,8 +95,18 @@ export function CreatorBroadcastFullscreen({
   };
 
   const handleCountdownComplete = () => {
+    console.log('[CreatorBroadcast] 🎉 Countdown completed - going live!', {
+      hasStream: !!broadcast.stream,
+      streamTracks: broadcast.stream?.getTracks().map(t => ({
+        kind: t.kind,
+        enabled: t.enabled,
+        readyState: t.readyState
+      }))
+    })
+    
     broadcast.completeCountdown();
     setLobbyBroadcasting(true);
+    console.log('[CreatorBroadcast] ✅ Lobby broadcasting state set to TRUE')
     toast.success('Now broadcasting to your lobby');
   };
 

@@ -393,6 +393,10 @@ export function BroadcastViewer({
           )}
           muted={isMuted}
           onConnectionStateChange={(connected) => {
+            console.log('[BroadcastViewer] 📡 Connection state changed:', {
+              connected,
+              previousState: connectionState
+            });
             setConnectionState(connected ? 'connected' : 'connecting');
           }}
           onVideoAvailable={handleVideoAvailable}

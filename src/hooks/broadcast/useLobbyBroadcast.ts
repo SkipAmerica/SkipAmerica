@@ -59,14 +59,18 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
 
   const startStream = useCallback(async () => {
     if (startingRef.current || streamRef.current) {
-      console.log('[LobbyBroadcast] Stream already starting or active');
+      console.log('[LobbyBroadcast] ⏸️ Stream already starting or active', {
+        starting: startingRef.current,
+        hasStream: !!streamRef.current
+      });
       return;
     }
 
     startingRef.current = true;
+    console.log('[LobbyBroadcast] 🎥 Starting camera acquisition...');
     
     try {
-      console.log('[LobbyBroadcast] Starting camera...');
+      console.log('[LobbyBroadcast] 📹 Requesting getUserMedia...');
       
       // Get base media stream
       const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -86,9 +90,15 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
           }
       });
       
+      console.log('[LobbyBroadcast] ✅ Camera acquired', {
+        videoTracks: mediaStream.getVideoTracks().length,
+        audioTracks: mediaStream.getAudioTracks().length,
+        videoTrack: mediaStream.getVideoTracks()[0]?.getSettings()
+      });
+
       const videoTrack = mediaStream.getVideoTracks()[0];
       const settings = videoTrack.getSettings();
-      console.log('[LobbyBroadcast] Camera started:', {
+      console.log('[LobbyBroadcast] 📊 Camera settings:', {
         resolution: `${settings.width}x${settings.height}`,
         frameRate: settings.frameRate
       });
@@ -99,17 +109,20 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
       // Apply filter if selected
       let finalStream = mediaStream;
       if (filters.currentFilter !== 'none') {
+        console.log('[LobbyBroadcast] 🎨 Applying filter:', filters.currentFilter);
         finalStream = await filters.applyFilter(filters.currentFilter, mediaStream);
+        console.log('[LobbyBroadcast] ✅ Filter applied');
       }
 
       streamRef.current = finalStream;
       setStream(finalStream);
-      console.log('[LobbyBroadcast] Stream ready');
+      console.log('[LobbyBroadcast] ✅ Stream ready and set to state');
     } catch (error) {
-      console.error('[LobbyBroadcast] Failed to start camera:', error);
+      console.error('[LobbyBroadcast] ❌ Failed to start camera:', error);
       throw error;
     } finally {
       startingRef.current = false;
+      console.log('[LobbyBroadcast] 🏁 startStream finally block - startingRef reset');
     }
   }, [filters]);
 
@@ -143,17 +156,23 @@ export function useLobbyBroadcast(config: LobbyBroadcastConfig = {}): LobbyBroad
   }, []);
 
   const startCountdown = useCallback(() => {
+    console.log('[LobbyBroadcast] ▶️ Starting countdown')
     setIsCountdownActive(true);
   }, []);
 
   const cancelCountdown = useCallback(() => {
+    console.log('[LobbyBroadcast] ❌ Canceling countdown')
     setIsCountdownActive(false);
   }, []);
 
   const completeCountdown = useCallback(() => {
+    console.log('[LobbyBroadcast] ✅ Countdown completed - setting isStreaming=true', {
+      hasStream: !!streamRef.current,
+      streamTracks: streamRef.current?.getTracks().length || 0
+    })
     setIsCountdownActive(false);
     setIsStreaming(true);
-    console.log('[LobbyBroadcast] Broadcasting started');
+    console.log('[LobbyBroadcast] 🎬 Broadcasting started');
   }, []);
 
   const changeFilter = useCallback(async (filter: FilterPreset) => {

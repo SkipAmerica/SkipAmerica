@@ -10,19 +10,43 @@ export function GoLiveCountdown({ onComplete, onCancel }: GoLiveCountdownProps) 
   const [count, setCount] = useState(3)
   const [isAnimating, setIsAnimating] = useState(false)
 
+  // Log component mount/unmount
   useEffect(() => {
+    console.log('[GoLiveCountdown] 🎬 Countdown mounted with initial count:', count)
+    return () => {
+      console.log('[GoLiveCountdown] 🎬 Countdown unmounting at count:', count)
+    }
+  }, [])
+
+  useEffect(() => {
+    console.log('[GoLiveCountdown] ⏱️ Timer effect triggered', {
+      count,
+      isAnimating,
+      willCallComplete: count === 0
+    })
+    
     if (count === 0) {
+      console.log('[GoLiveCountdown] ✅ Countdown complete - calling onComplete')
       onComplete()
       return
     }
 
     setIsAnimating(true)
+    console.log('[GoLiveCountdown] 🎭 Animation started for count:', count)
+    
     const timer = setTimeout(() => {
+      console.log('[GoLiveCountdown] 🎭 Animation finished for count:', count)
       setIsAnimating(false)
-      setTimeout(() => setCount(c => c - 1), 100)
+      setTimeout(() => {
+        console.log('[GoLiveCountdown] ⏬ Decrementing count from', count, 'to', count - 1)
+        setCount(c => c - 1)
+      }, 100)
     }, 900)
 
-    return () => clearTimeout(timer)
+    return () => {
+      console.log('[GoLiveCountdown] 🧹 Cleaning up timer for count:', count)
+      clearTimeout(timer)
+    }
   }, [count, onComplete])
 
   return (

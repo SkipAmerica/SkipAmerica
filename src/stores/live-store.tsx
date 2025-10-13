@@ -249,6 +249,10 @@ function reducer(state: LiveStoreState, action: Action): LiveStoreState {
       }
     
     case 'SET_LOBBY_BROADCASTING':
+      console.log('[LiveStore] 🎙️ setLobbyBroadcasting reducer called', {
+        from: state.isLobbyBroadcasting,
+        to: action.broadcasting
+      })
       return {
         ...state,
         isLobbyBroadcasting: action.broadcasting
@@ -575,8 +579,13 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
   }, [])
 
   const setLobbyBroadcasting = useCallback((broadcasting: boolean) => {
+    console.log('[LiveStore] 🎙️ setLobbyBroadcasting called', {
+      from: state.isLobbyBroadcasting,
+      to: broadcasting,
+      stack: new Error().stack?.split('\n').slice(0, 5).join('\n') // Show first 5 stack frames
+    })
     dispatch({ type: 'SET_LOBBY_BROADCASTING', broadcasting })
-  }, [])
+  }, [state.isLobbyBroadcasting])
 
   const addLobbyChatMessage = useCallback((text: string) => {
     dispatch({ type: 'ADD_LOBBY_CHAT_MESSAGE', text })
