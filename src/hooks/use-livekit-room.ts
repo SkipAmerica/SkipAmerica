@@ -48,15 +48,36 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           isReconnect
         });
 
+        // ADD: Log before token fetch
+        console.log('[useLiveKitRoom] 🎫 Fetching LiveKit token...', {
+          role: config.role,
+          creatorId: config.creatorId,
+          identity: config.identity,
+          roomName: config.roomName
+        });
+
         // Fetch token
-        const { token, url, room: roomName } = await fetchLiveKitToken({
+        const tokenResponse = await fetchLiveKitToken({
           role: config.role,
           creatorId: config.creatorId,
           identity: config.identity,
           roomName: config.roomName,
         });
 
-        if (!isMounted) return;
+        // ADD: Log token fetch success
+        console.log('[useLiveKitRoom] ✅ Token fetched successfully', {
+          hasToken: !!tokenResponse.token,
+          tokenLength: tokenResponse.token?.length,
+          url: tokenResponse.url,
+          room: tokenResponse.room
+        });
+
+        const { token, url, room: roomName } = tokenResponse;
+
+        if (!isMounted) {
+          console.log('[useLiveKitRoom] ⚠️ Component unmounted during token fetch');
+          return;
+        }
 
         // If reconnecting, disconnect existing room first
         if (isReconnect && currentRoom) {
@@ -133,11 +154,22 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
         // Connect to room with auto-subscribe enabled
         const connectOptions = { autoSubscribe: true };
-        console.log('[useLiveKitRoom] Connecting with options:', connectOptions);
+        
+        // ADD: Log before connect
+        console.log('[useLiveKitRoom] 🔌 Attempting to connect to LiveKit...', {
+          url,
+          roomName,
+          identity: config.identity,
+          options: connectOptions
+        });
         
         await newRoom.connect(url, token, connectOptions);
 
+        // ADD: Log after connect promise resolves
+        console.log('[useLiveKitRoom] 📡 connect() promise resolved');
+
         if (!isMounted) {
+          console.log('[useLiveKitRoom] ⚠️ Component unmounted after connection');
           await newRoom.disconnect();
           return;
         }
@@ -149,18 +181,34 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
           roomName: roomName
         });
       } catch (err) {
-        console.error('[useLiveKitRoom] Connection error:', err);
+        // ENHANCE: Better error logging
+        console.error('[useLiveKitRoom] ❌ Connection failed:', {
+          error: err,
+          errorMessage: err instanceof Error ? err.message : String(err),
+          errorStack: err instanceof Error ? err.stack : undefined,
+          errorType: err instanceof Error ? err.constructor.name : typeof err,
+          config: {
+            role: config.role,
+            creatorId: config.creatorId,
+            identity: config.identity,
+            roomName: config.roomName
+          }
+        });
+
         if (isMounted) {
-          setError(err instanceof Error ? err : new Error('Connection failed'));
           setConnectionState('failed');
+          setError(err instanceof Error ? err : new Error(String(err)));
           
-          // Retry connection after 3 seconds on failure
-          setTimeout(() => {
-            if (isMounted) {
-              console.log('[useLiveKitRoom] Retrying connection...');
-              connect(true);
-            }
-          }, 3000);
+          // ADD: Retry logic for transient failures
+          if (!isReconnect) {
+            console.log('[useLiveKitRoom] 🔄 Scheduling retry in 2 seconds...');
+            setTimeout(() => {
+              if (isMounted) {
+                console.log('[useLiveKitRoom] 🔄 Retrying connection...');
+                connect(true);
+              }
+            }, 2000);
+          }
         }
       }
     };

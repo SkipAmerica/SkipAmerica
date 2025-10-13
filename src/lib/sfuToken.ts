@@ -8,6 +8,8 @@ export async function fetchLiveKitToken(payload: {
   sessionId?: string; // NEW: optional session ID
   roomName?: string; // NEW: explicit room name for preview room
 }) {
+  console.log('[sfuToken] 📤 Fetching token with payload:', payload);
+  
   const { data, error } = await supabase.functions.invoke("get_livekit_token", {
     body: {
       role: payload.role,
@@ -19,6 +21,12 @@ export async function fetchLiveKitToken(payload: {
   });
   
   if (error) {
+    console.error('[sfuToken] ❌ Token fetch error:', {
+      error,
+      status: (error as any).status,
+      message: error.message,
+      details: (error as any).details
+    });
     // Enhanced logging in dev
     if (process.env.NODE_ENV !== 'production') {
       console.error('[Token] Fetch failed:', {
@@ -39,8 +47,22 @@ export async function fetchLiveKitToken(payload: {
     throw error
   }
   
+  console.log('[sfuToken] ✅ Token response received:', {
+    hasToken: !!data?.token,
+    hasUrl: !!data?.url,
+    hasRoom: !!data?.room,
+    tokenPreview: data?.token?.substring(0, 20) + '...',
+    url: data?.url,
+    room: data?.room
+  });
+  
   // data is { token, url, room }
-  if (!data?.token || !data?.url) throw new Error("Bad token response");
+  if (!data?.token || !data?.url) {
+    const err = new Error("Bad token response");
+    console.error('[sfuToken] ❌ Invalid token response:', data);
+    throw err;
+  }
+  
   return data as { token: string; url: string; room?: string };
 }
 
