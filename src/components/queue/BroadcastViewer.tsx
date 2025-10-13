@@ -49,6 +49,26 @@ export function BroadcastViewer({
   const streamStateRef = useRef<'waiting' | 'ready' | 'playing' | 'ended'>('waiting');
   const [needsUserGesture, setNeedsUserGesture] = useState(true);
   const previousHasVideoRef = useRef(false);
+  
+  // Circuit breaker for infinite loops (REEISSN: Non-Myopic)
+  const renderCountRef = useRef(0);
+  const renderTimestampRef = useRef(Date.now());
+
+  // Circuit breaker: Track renders to detect infinite loops
+  const now = Date.now();
+  if (now - renderTimestampRef.current > 5000) {
+    // Reset counter every 5 seconds
+    renderCountRef.current = 0;
+    renderTimestampRef.current = now;
+  }
+  renderCountRef.current++;
+  
+  if (renderCountRef.current > 50) {
+    console.error('[BroadcastViewer] 🚨 INFINITE LOOP DETECTED: >50 renders in 5 seconds!', {
+      renderCount: renderCountRef.current,
+      props: { creatorId, sessionId, isInQueue, shouldPublishFanVideo, hasConsentStream: !!consentStream }
+    });
+  }
 
   // Component mount logging
   useEffect(() => {

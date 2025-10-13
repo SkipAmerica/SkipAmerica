@@ -26,13 +26,6 @@ export function LiveKitVideoPlayer({
   fallbackContent,
   targetParticipantId,
 }: LiveKitVideoPlayerProps) {
-  console.info('[LiveKitVideoPlayer] 🎬 Component config:', {
-    role: config?.role,
-    identity: config?.identity,
-    roomName: config?.roomName,
-    targetParticipant: targetParticipantId
-  });
-  
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const [hasVideo, setHasVideo] = useState(false);
@@ -45,6 +38,16 @@ export function LiveKitVideoPlayer({
   // Cache latest callbacks to avoid re-running effects when parent re-renders
   const onConnectionStateChangeRef = useRef(onConnectionStateChange);
   const onVideoAvailableRef = useRef(onVideoAvailable);
+  
+  // Log config once per connection (moved from component body)
+  useEffect(() => {
+    console.info('[LiveKitVideoPlayer] 🎬 Component config:', {
+      role: config?.role,
+      identity: config?.identity,
+      roomName: config?.roomName,
+      targetParticipant: targetParticipantId
+    });
+  }, [config?.role, config?.identity, config?.roomName, targetParticipantId]);
 
   // Keep callback refs up to date
   useEffect(() => {

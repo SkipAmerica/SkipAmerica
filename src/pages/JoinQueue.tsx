@@ -97,6 +97,8 @@ export default function JoinQueue() {
   const consentResolvedRef = useRef(false); // Prevents modal from reopening after consent flow starts
   const wasFrontRef = useRef(false); // Rising-edge detector for position #1
   const prevPositionRef = useRef<number | null>(null); // Track prev position for rising-edge
+  const checkingLiveStatusRef = useRef(false); // Prevent concurrent checkLiveStatus calls
+  const prevEntryIdRef = useRef<string | null>(null); // Track previous entry ID for comparison
 
   // Ensure full-viewport scrolling on PQ
   useEffect(() => {
@@ -212,11 +214,26 @@ export default function JoinQueue() {
           return;
         }
 
+        // Handle avatar 406 errors gracefully - use fallback avatar immediately
+        let avatarUrl = creatorData.avatar_url;
+        if (avatarUrl) {
+          try {
+            const response = await fetch(avatarUrl, { method: 'HEAD' });
+            if (response.status === 406 || !response.ok) {
+              console.warn('[JoinQueue] Avatar fetch failed (406 or other error), using fallback');
+              avatarUrl = undefined;
+            }
+          } catch (error) {
+            console.warn('[JoinQueue] Avatar fetch error, using fallback:', error);
+            avatarUrl = undefined;
+          }
+        }
+
         setCreator({
           id: creatorData.id,
           full_name: creatorData.full_name,
           bio: creatorData.bio || 'Creator Profile',
-          avatar_url: creatorData.avatar_url,
+          avatar_url: avatarUrl,
           category: creatorData.categories?.[0] || 'General',
           rating: undefined // Will be calculated from appointments/reviews later
         });
@@ -241,6 +258,14 @@ export default function JoinQueue() {
   // Check if creator is live and get queue status
   const checkLiveStatus = useCallback(async () => {
     if (!creatorId || !user) return;
+    
+    // Prevent concurrent calls (circuit breaker)
+    if (checkingLiveStatusRef.current) {
+      console.log('[JoinQueue] ⚠️ checkLiveStatus already in progress, skipping');
+      return;
+    }
+    
+    checkingLiveStatusRef.current = true;
     
     try {
       // Check if creator is currently live
@@ -270,8 +295,16 @@ export default function JoinQueue() {
       }
 
       // Reset consent ref when entering queue for first time or re-entering
-      if (queueStatus.entry && queueStatus.entry.id !== queueEntryId) {
-        console.log('[JoinQueue] 🔄 New queue entry detected, resetting consentResolvedRef');
+      const currentEntryId = queueStatus.entry?.id;
+      const hasNewEntry = currentEntryId && currentEntryId !== prevEntryIdRef.current;
+      
+      if (hasNewEntry) {
+        console.log('[JoinQueue] 🔄 New queue entry detected', {
+          previousEntryId: prevEntryIdRef.current,
+          newEntryId: currentEntryId,
+          changed: prevEntryIdRef.current !== currentEntryId
+        });
+        prevEntryIdRef.current = currentEntryId;
         consentResolvedRef.current = false;
       }
 
@@ -328,6 +361,8 @@ export default function JoinQueue() {
       }
     } catch (error) {
       console.error('[JoinQueue] Error in checkLiveStatus:', error);
+    } finally {
+      checkingLiveStatusRef.current = false;
     }
   }, [creatorId, user]);
 
