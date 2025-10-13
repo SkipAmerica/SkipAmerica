@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { cn } from '@/lib/utils'
 
 interface GoLiveCountdownProps {
@@ -9,6 +9,12 @@ interface GoLiveCountdownProps {
 export function GoLiveCountdown({ onComplete, onCancel }: GoLiveCountdownProps) {
   const [count, setCount] = useState(3)
   const [isAnimating, setIsAnimating] = useState(false)
+
+  // Cache onComplete to prevent effect restarts
+  const onCompleteRef = useRef(onComplete)
+  useEffect(() => {
+    onCompleteRef.current = onComplete
+  }, [onComplete])
 
   // Log component mount/unmount
   useEffect(() => {
@@ -27,7 +33,7 @@ export function GoLiveCountdown({ onComplete, onCancel }: GoLiveCountdownProps) 
     
     if (count === 0) {
       console.log('[GoLiveCountdown] ✅ Countdown complete - calling onComplete')
-      onComplete()
+      onCompleteRef.current?.()
       return
     }
 
@@ -47,7 +53,7 @@ export function GoLiveCountdown({ onComplete, onCancel }: GoLiveCountdownProps) 
       console.log('[GoLiveCountdown] 🧹 Cleaning up timer for count:', count)
       clearTimeout(timer)
     }
-  }, [count, onComplete])
+  }, [count])
 
   return (
     <div 
