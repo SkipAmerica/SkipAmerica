@@ -89,16 +89,25 @@ export function CreatorBroadcastFullscreen({
   // };
   return <div className="relative h-full w-full bg-black rounded-2xl overflow-hidden">
       {/* Publisher (headless - only when broadcasting) */}
-      {isLobbyBroadcasting && broadcast.stream && <LiveKitPublisher config={{
-      role: 'publisher',
-      creatorId,
-      identity: creatorId,
-      roomName: lobbyRoomName(creatorId) // Explicit: publish to lobby room
-    }} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
-      console.log('[CreatorBroadcast] Stream published');
-    }} onError={error => {
-      console.error('[CreatorBroadcast] Publishing error:', error);
-    }} />}
+      {isLobbyBroadcasting && broadcast.stream && (() => {
+        const publisherConfig = {
+          role: 'publisher' as const,
+          creatorId,
+          identity: creatorId,
+          roomName: lobbyRoomName(creatorId)
+        };
+        console.log('[CreatorBroadcast] 🎙️ PUBLISHER CONFIG:', {
+          ...publisherConfig,
+          hasStream: !!broadcast.stream,
+          streamTracks: broadcast.stream.getTracks().length,
+          timestamp: new Date().toISOString()
+        });
+        return <LiveKitPublisher config={publisherConfig} mediaStream={broadcast.stream} publishAudio={true} publishVideo={true} onPublished={() => {
+          console.log('[CreatorBroadcast] Stream published');
+        }} onError={error => {
+          console.error('[CreatorBroadcast] Publishing error:', error);
+        }} />;
+      })()}
 
       {/* Local camera preview with filters */}
       <div 

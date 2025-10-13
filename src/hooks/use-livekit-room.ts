@@ -39,7 +39,14 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
         }
 
         const resolvedRoom = config.roomName ?? lobbyRoomName(config.creatorId);
-        console.log('[useLiveKitRoom] Connecting...', { isReconnect, config, resolvedRoom });
+        console.log('[useLiveKitRoom] 🏠 ROOM RESOLUTION:', {
+          configRole: config.role,
+          configIdentity: config.identity,
+          configCreatorId: config.creatorId,
+          explicitRoomName: config.roomName,
+          resolvedRoomName: resolvedRoom,
+          isReconnect
+        });
 
         // Fetch token
         const { token, url, room: roomName } = await fetchLiveKitToken({
@@ -84,11 +91,11 @@ export function useLiveKitRoom(config: LiveKitRoomConfig | null) {
 
         // Setup handlers before connecting
         newRoom.on(RoomEvent.Connected, () => {
-          console.log('[useLiveKitRoom] Connected to room:', roomName);
-          console.log('[useLiveKitRoom] Room participants:', {
-            localParticipant: newRoom.localParticipant.identity,
-            remoteParticipantsCount: newRoom.remoteParticipants.size,
-            remoteParticipants: Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
+          console.log('[useLiveKitRoom] 🔗 CONNECTED TO ROOM:', {
+            actualRoomName: newRoom.name,
+            myIdentity: newRoom.localParticipant.identity,
+            remoteParticipantCount: newRoom.remoteParticipants.size,
+            remoteIdentities: Array.from(newRoom.remoteParticipants.values()).map(p => p.identity)
           });
           
           // Log audio context state

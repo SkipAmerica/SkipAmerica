@@ -67,7 +67,16 @@ export function LiveKitVideoPlayer({
     const attachTracks = () => {
       const remoteParticipants = Array.from(room.remoteParticipants.values());
       
-      console.log('[LiveKitVideoPlayer] Remote participants:', remoteParticipants.map(p => ({
+      console.log('[LiveKitVideoPlayer] 🔍 SEARCHING FOR TRACKS:', {
+        roomName: room.name,
+        myIdentity: room.localParticipant.identity,
+        targetParticipantId: targetParticipantId,
+        remoteParticipantCount: room.remoteParticipants.size,
+        remoteIdentities: remoteParticipants.map(p => p.identity),
+        targetFound: targetParticipantId ? room.remoteParticipants.has(targetParticipantId) : 'no target specified'
+      });
+      
+      console.log('[LiveKitVideoPlayer] Remote participants details:', remoteParticipants.map(p => ({
         identity: p.identity,
         sid: p.sid,
         tracks: Array.from(p.trackPublications.values()).map((pub: any) => ({
@@ -114,7 +123,21 @@ export function LiveKitVideoPlayer({
           }
           return; // Don't show any video
         }
-        console.log('[LiveKitVideoPlayer] Found target participant:', targetParticipantId);
+        console.log('[LiveKitVideoPlayer] 🎯 TARGET PARTICIPANT FOUND:', {
+          targetIdentity: targetParticipantId,
+          participantSid: targetParticipant.sid,
+          videoTracks: Array.from(targetParticipant.videoTrackPublications.values()).map(pub => ({
+            trackSid: pub.trackSid,
+            subscribed: pub.isSubscribed,
+            enabled: pub.isEnabled,
+            dimensions: pub.dimensions
+          })),
+          audioTracks: Array.from(targetParticipant.audioTrackPublications.values()).map(pub => ({
+            trackSid: pub.trackSid,
+            subscribed: pub.isSubscribed,
+            enabled: pub.isEnabled
+          }))
+        });
         // Only try the target participant's tracks
         participantsToTry = [targetParticipant];
       }

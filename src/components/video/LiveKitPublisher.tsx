@@ -146,7 +146,12 @@ export function LiveKitPublisher({
           return;
         }
 
-        console.log(`[LiveKitPublisher] Publishing ${tracks.length} tracks...`);
+        console.log('[LiveKitPublisher] 📡 ABOUT TO PUBLISH:', {
+          roomName: room.name,
+          localIdentity: room.localParticipant.identity,
+          tracks: tracks.map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled, readyState: t.readyState })),
+          currentParticipants: Array.from(room.remoteParticipants.values()).map(p => p.identity)
+        });
 
         for (const track of tracks) {
           const trackId = track.id;
@@ -202,7 +207,20 @@ export function LiveKitPublisher({
           }
         }
 
-        console.log('[LiveKitPublisher] ✅ Tracks published successfully');
+        console.log('[LiveKitPublisher] ✅ PUBLISH COMPLETE:', {
+          roomName: room.name,
+          localIdentity: room.localParticipant.identity,
+          publishedVideoTracks: room.localParticipant.videoTrackPublications.size,
+          publishedAudioTracks: room.localParticipant.audioTrackPublications.size,
+          videoTrackDetails: Array.from(room.localParticipant.videoTrackPublications.values()).map(pub => ({
+            sid: pub.trackSid,
+            name: pub.trackName,
+            source: pub.source,
+            dimensions: pub.dimensions,
+            simulcasted: pub.simulcasted
+          })),
+          roomParticipants: Array.from(room.remoteParticipants.values()).map(p => p.identity)
+        });
         onPublished?.();
       } catch (err) {
         console.error(`[LiveKitPublisher] Failed to publish tracks (attempt ${attempt}):`, err);

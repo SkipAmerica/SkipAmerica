@@ -293,11 +293,20 @@ export function BroadcastViewer({
   // Default viewer mode: Watch creator's broadcast (used before fan is "Next Up")
   console.log('[BroadcastViewer] 👀 Viewer mode - watching creator stream');
   
-  const viewerConfig = useMemo(() => ({
-    role: 'viewer' as const,
-    creatorId: resolvedCreatorId!,
-    identity: viewerIdentity,
-  }), [resolvedCreatorId, viewerIdentity]);
+  const viewerConfig = useMemo(() => {
+    const config = {
+      role: 'viewer' as const,
+      creatorId: resolvedCreatorId!,
+      identity: viewerIdentity,
+    };
+    console.log('[BroadcastViewer] 👁️ VIEWER CONFIG:', {
+      ...config,
+      targetParticipantId: resolvedCreatorId,
+      expectedRoom: `lobby_${resolvedCreatorId}`,
+      timestamp: new Date().toISOString()
+    });
+    return config;
+  }, [resolvedCreatorId, viewerIdentity]);
   
   return (
     <div className="relative w-full h-full">
