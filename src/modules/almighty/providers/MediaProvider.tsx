@@ -481,9 +481,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 2: Fetch token
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[MediaProvider] Step 2: Fetching LiveKit token...', { sessionId, identity })
-      }
+      console.log('[MediaProvider:TOKEN_FETCH_START]', {
+        sessionId,
+        identity,
+        role,
+        timestamp: new Date().toISOString()
+      })
 
       // Extract sessionId from URL if present (for V2 validation)
       const urlSessionId = window.location.pathname.match(/\/session\/([^\/]+)/)?.[1]
@@ -493,6 +496,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         creatorId: sessionId,
         identity,
         sessionId: urlSessionId, // Pass session ID for V2 validation
+      })
+      
+      console.log('[MediaProvider:TOKEN_RECEIVED]', {
+        roomName: tokenData.room,
+        wsUrl: tokenData.url
       })
 
       // Decode and log token payload for debugging
@@ -712,8 +720,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         console.log('[MediaProvider] Step 4: Connecting to room...')
       }
       
+      console.log('[MediaProvider:ROOM_CONNECT_START]', {
+        roomName: tokenData.room,
+        wsUrl: tokenData.url,
+        timestamp: new Date().toISOString()
+      })
+      
       // Step 4: Connect to room with autoSubscribe disabled
       await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: true })
+      
+      console.log('[MediaProvider:ROOM_CONNECTED]', {
+        roomName: newRoom.name,
+        participantCount: newRoom.remoteParticipants.size,
+        connectionState: newRoom.state,
+        timestamp: new Date().toISOString()
+      })
       
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 5: Waiting for Connected event...')
@@ -815,7 +836,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 7: Publish tracks (only after Connected)
+      console.log('[MediaProvider:PUBLISHING_TRACKS]', {
+        trackCount: localTracks.length,
+        hasVideo: localTracks.some(t => t.kind === 'video'),
+        hasAudio: localTracks.some(t => t.kind === 'audio')
+      })
+      
       await publishTracks(newRoom, localTracks)
+      
+      console.log('[MediaProvider:TRACKS_PUBLISHED]', {
+        localParticipant: newRoom.localParticipant.identity,
+        publishedTracks: newRoom.localParticipant.trackPublications.size
+      })
       
       // Set initial mute states via LiveKit APIs
       await newRoom.localParticipant.setMicrophoneEnabled(MEDIA.START_AUDIO)

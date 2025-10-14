@@ -59,7 +59,12 @@ function AlmightyShell() {
       (window as any).__almightyDebug || {},
       { phase: 'AlmightySession:mounted' }
     )
-    console.log('[AlmightySession] mounted')
+    
+    console.log('[AlmightySession:MOUNT]', { 
+      sessionId, 
+      role,
+      timestamp: new Date().toISOString() 
+    })
     
     if (joinedRef.current) {
       if (process.env.NODE_ENV !== 'production') {
@@ -71,11 +76,40 @@ function AlmightyShell() {
     joinedRef.current = true
     
     const identity = getIdentityForRole(sessionId, role)
-    console.log('[AlmightySession] Joining with identity:', identity, 'role:', role)
-    join(sessionId, identity, role).catch(err => console.error('[Media] Join failed:', err))
+    
+    console.log('[AlmightySession:IDENTITY]', { 
+      sessionId, 
+      identity,
+      role
+    })
+    
+    console.log('[AlmightySession:JOIN_START]', { 
+      sessionId, 
+      identity,
+      timestamp: new Date().toISOString()
+    })
+    
+    join(sessionId, identity, role)
+      .then(() => {
+        console.log('[AlmightySession:JOIN_SUCCESS]', { 
+          sessionId,
+          timestamp: new Date().toISOString()
+        })
+      })
+      .catch(err => {
+        console.error('[AlmightySession:JOIN_ERROR]', { 
+          sessionId, 
+          error: err,
+          message: err.message,
+          timestamp: new Date().toISOString()
+        })
+      })
     
     return () => {
-      console.log('[AlmightySession] unmount → leave()')
+      console.log('[AlmightySession:UNMOUNT]', { 
+        sessionId,
+        timestamp: new Date().toISOString()
+      })
       leave()
     }
   }, [sessionId, role, join, leave])

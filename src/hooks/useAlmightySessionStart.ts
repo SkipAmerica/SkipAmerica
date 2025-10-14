@@ -72,7 +72,12 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
     try {
       setIsProcessing(true)
 
-      console.log('[AlmightySessionStart] Starting session for queue entry:', queueEntry.id)
+      console.log('[AlmightySessionStart:START]', {
+        queueEntryId: queueEntry.id,
+        fanId: queueEntry.fan_id,
+        fanState: queueEntry.fan_state,
+        timestamp: new Date().toISOString()
+      })
 
       // Analytics: session start attempt
       if (typeof window !== 'undefined' && (window as any).analytics) {
@@ -83,6 +88,8 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
         })
       }
 
+      console.log('[AlmightySessionStart:RPC_CALL]', { queueEntryId: queueEntry.id })
+      
       // Call atomic RPC to create session
       const { data: sessionId, error: rpcError } = await supabase
         .rpc('start_almighty_session' as any, {
@@ -90,7 +97,12 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
         })
 
       if (rpcError) {
-        console.error('[AlmightySessionStart] RPC failed:', rpcError)
+        console.error('[AlmightySessionStart:RPC_ERROR]', {
+          error: rpcError,
+          code: rpcError.code,
+          message: rpcError.message,
+          details: rpcError.details
+        })
         
         // Handle fan not ready error specifically
         if (rpcError.message?.includes('fan_not_ready')) {
@@ -104,7 +116,7 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
         throw new Error('No session ID returned')
       }
 
-      console.log('[AlmightySessionStart] Session created:', sessionId)
+      console.log('[AlmightySessionStart:SESSION_CREATED]', { sessionId })
 
       // Analytics: session created
       if (typeof window !== 'undefined' && (window as any).analytics) {
@@ -130,12 +142,21 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
 
       // Navigate creator to session (replace to prevent back button)
       setTimeout(() => {
-        console.log('[AlmightySessionStart] Navigating to session:', sessionId)
+        console.log('[AlmightySessionStart:NAVIGATING]', { 
+          sessionId, 
+          path: `/session/${sessionId}?role=creator`,
+          timestamp: new Date().toISOString()
+        })
         window.location.assign(`/session/${sessionId}?role=creator`)
       }, 100)
 
     } catch (err: any) {
-      console.error('[AlmightySessionStart] Error:', err)
+      console.error('[AlmightySessionStart:ERROR]', { 
+        error: err,
+        message: err.message,
+        stack: err.stack,
+        timestamp: new Date().toISOString()
+      })
       
       const error = err instanceof Error ? err : new Error(err.message || 'Unknown error')
       setError(error)
