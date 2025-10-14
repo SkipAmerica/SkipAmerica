@@ -10,6 +10,14 @@ export interface EndSessionResult {
   success: boolean
   navigationPath: string
   error?: string
+  shouldShowRating?: boolean
+  sessionMetadata?: {
+    sessionId: string
+    creatorId: string
+    creatorName: string
+    creatorBio: string
+    creatorAvatarUrl: string
+  }
 }
 
 /**
@@ -81,14 +89,36 @@ export async function endAlmightySession(
       // Non-fatal - database trigger will clean up as safety net
     }
 
-    // 4. Return navigation path based on role
+    // 4. Fetch creator profile for rating modal
+    let sessionMetadata: EndSessionResult['sessionMetadata']
+    try {
+      const { data: creatorData } = await supabase
+        .from('creators')
+        .select('full_name, bio, avatar_url')
+        .eq('id', creator_id)
+        .single()
+
+      sessionMetadata = {
+        sessionId,
+        creatorId: creator_id,
+        creatorName: creatorData?.full_name || 'Creator',
+        creatorBio: creatorData?.bio || '',
+        creatorAvatarUrl: creatorData?.avatar_url || ''
+      }
+    } catch (err) {
+      console.warn('[endAlmightySession] Failed to fetch creator profile:', err)
+    }
+
+    // 5. Return navigation path based on role
     const navigationPath = role === 'creator' ? '/' : `/join-queue/${creator_id}`
     
-    console.log('[endAlmightySession] Session end complete', { navigationPath })
+    console.log('[endAlmightySession] Session end complete', { navigationPath, hasMetadata: !!sessionMetadata })
     
     return {
       success: true,
-      navigationPath
+      navigationPath,
+      shouldShowRating: !!sessionMetadata,
+      sessionMetadata
     }
 
   } catch (error) {
