@@ -150,7 +150,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return { error }
   }
 
-  const signInAnonymously = async () => {
+  const signInAnonymously = async (isRetry = false): Promise<{ error: any }> => {
+    const requestId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
     try {
       // Generate unique anonymous credentials
       const timestamp = Date.now()
@@ -158,7 +160,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const email = `guest-${timestamp}-${random}@temp.local`
       const password = `temp-${timestamp}-${random}`
 
-      const { error } = await supabase.auth.signUp({
+      console.log(`[AuthProvider:ANON_SIGNUP:${requestId}]`, { email, isRetry })
+
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -170,13 +174,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         },
       })
 
-      if (error) {
+      if (signUpError) {
+        console.error(`[AuthProvider:ANON_SIGNUP_ERROR:${requestId}]`, {
+          code: signUpError.code,
+          message: signUpError.message,
+          status: (signUpError as any).status
+        })
+        
         // If email already exists (rare), try again with new timestamp
-        if (error.message.includes('already registered')) {
-          return await signInAnonymously()
+        if (signUpError.message.includes('already registered')) {
+          console.log(`[AuthProvider:ANON_RETRY:${requestId}] Email collision, retrying`)
+          return await signInAnonymously(true)
         }
-        return { error }
+        
+        // On first failure, retry once with backoff
+        if (!isRetry) {
+          console.log(`[AuthProvider:ANON_RETRY:${requestId}] Retrying after delay`)
+          await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500))
+          return await signInAnonymously(true)
+        }
+        
+        return { error: signUpError }
       }
+
+      console.log(`[AuthProvider:ANON_SIGNIN:${requestId}]`, { email })
 
       // Auto sign in the anonymous user
       const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -184,8 +205,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         password,
       })
 
+      if (signInError) {
+        console.error(`[AuthProvider:ANON_SIGNIN_ERROR:${requestId}]`, {
+          code: signInError.code,
+          message: signInError.message
+        })
+      } else {
+        console.log(`[AuthProvider:ANON_SUCCESS:${requestId}]`)
+      }
+
       return { error: signInError }
-    } catch (error) {
+    } catch (error: any) {
+      console.error(`[AuthProvider:ANON_EXCEPTION:${requestId}]`, error)
       return { error }
     }
   }

@@ -36,50 +36,69 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Orphaned in_call cleanup: Remove entries stuck in in_call without active session
-    console.log('[QUEUE_CLEANUP] Checking for orphaned in_call entries...')
+    // Orphaned in_call cleanup: Remove entries stuck in in_call without active session (older than 10 minutes)
+    console.log('[QUEUE_CLEANUP] Checking for orphaned in_call entries (>10min old)...')
     
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
     
     const { data: orphanedEntries, error: orphanError } = await supabase
       .from('call_queue')
-      .select('id, creator_id, fan_id, fan_state, created_at')
+      .select('id, creator_id, fan_id, fan_state, joined_at')
       .eq('fan_state', 'in_call')
-      .lt('created_at', tenMinutesAgo)
+      .lt('joined_at', tenMinutesAgo)
     
     if (orphanError) {
       console.error('[QUEUE_CLEANUP] Failed to check orphaned entries:', orphanError)
     } else if (orphanedEntries && orphanedEntries.length > 0) {
-      console.warn('[QUEUE_CLEANUP] Found orphaned in_call entries', {
+      console.warn('[QUEUE_CLEANUP] Found potential orphaned in_call entries', {
         count: orphanedEntries.length
       })
+      
+      const entriesToDelete = []
       
       // Check each entry for active session
       for (const entry of orphanedEntries) {
         const { data: session } = await supabase
           .from('almighty_sessions')
-          .select('id, status')
+          .select('id, status, ended_at')
           .eq('creator_id', entry.creator_id)
           .eq('fan_id', entry.fan_id)
           .eq('status', 'active')
+          .is('ended_at', null)
           .maybeSingle()
         
         if (!session) {
-          // No active session - delete the entry
-          await supabase
-            .from('call_queue')
-            .delete()
-            .eq('id', entry.id)
-          
-          console.log('[QUEUE_CLEANUP] Deleted orphaned entry', { 
+          // No active session - mark for deletion
+          console.log('[QUEUE_CLEANUP:ORPHAN] Entry lacks active session', {
             entryId: entry.id,
+            creatorId: entry.creator_id,
+            fanId: entry.fan_id,
             fanState: entry.fan_state,
-            age: Date.now() - new Date(entry.created_at).getTime()
+            joinedAt: entry.joined_at,
+            ageMinutes: Math.round((Date.now() - new Date(entry.joined_at).getTime()) / 60000)
           })
+          entriesToDelete.push(entry.id)
         }
       }
+      
+      if (entriesToDelete.length > 0) {
+        console.log(`[QUEUE_CLEANUP] Deleting ${entriesToDelete.length} orphaned entries:`, entriesToDelete)
+        
+        const { error: deleteError } = await supabase
+          .from('call_queue')
+          .delete()
+          .in('id', entriesToDelete)
+        
+        if (deleteError) {
+          console.error('[QUEUE_CLEANUP] Failed to delete orphaned entries:', deleteError)
+        } else {
+          console.log(`[QUEUE_CLEANUP] ✅ Removed ${entriesToDelete.length} orphaned entries`)
+        }
+      } else {
+        console.log('[QUEUE_CLEANUP] All in_call entries have active sessions')
+      }
     } else {
-      console.log('[QUEUE_CLEANUP] No orphaned in_call entries found')
+      console.log('[QUEUE_CLEANUP] No orphaned in_call entries found (>10min old)')
     }
 
     // Get remaining queue count for monitoring

@@ -89,8 +89,9 @@ export default function JoinQueue() {
 
     const isSessionActive = async (sessionId: string): Promise<boolean> => {
       const { data: { user: authUser } } = await supabase.auth.getUser()
+      const requestId = `session_check_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      console.log('[JoinQueue:SESSION_CHECK] Validating session:', {
+      console.log(`[JoinQueue:SESSION_CHECK:${requestId}]`, {
         sessionId,
         userId: authUser?.id,
         timestamp: new Date().toISOString()
@@ -102,7 +103,7 @@ export default function JoinQueue() {
         .eq('id', sessionId)
         .maybeSingle()
       
-      console.log('[JoinQueue:SESSION_CHECK] Response:', {
+      console.log(`[JoinQueue:SESSION_CHECK:${requestId}] Response:`, {
         hasData: !!data,
         hasError: !!error,
         status: data?.status,
@@ -112,17 +113,17 @@ export default function JoinQueue() {
       })
       
       if (error) {
-        console.error('[JoinQueue:SESSION_CHECK] Network error:', error)
+        console.error(`[JoinQueue:SESSION_CHECK:${requestId}] Network error:`, error)
         return false
       }
       
       if (!data) {
-        console.warn('[JoinQueue:SESSION_CHECK] Session unavailable (RLS or deleted)')
+        console.warn(`[JoinQueue:SESSION_CHECK:${requestId}] Session unavailable (RLS or deleted)`)
         return false
       }
       
       const isActive = data.status === 'active' && !data.ended_at
-      console.log('[JoinQueue:SESSION_CHECK]', { 
+      console.log(`[JoinQueue:SESSION_CHECK:${requestId}]`, { 
         sessionId, 
         status: data.status, 
         ended_at: data.ended_at,
@@ -344,6 +345,10 @@ export default function JoinQueue() {
     const cleanupStaleEntries = async () => {
       if (!user || !creatorId) return
       
+      // Reset skip flag on mount
+      ;(window as any).__skipQueueCleanupOnSessionNav = false
+      console.log('[JoinQueue:MOUNT_CLEANUP] Reset __skipQueueCleanupOnSessionNav to false')
+      
       console.log('[JoinQueue:MOUNT_CLEANUP] Checking for stale queue entries', {
         userId: user.id,
         creatorId
@@ -353,7 +358,7 @@ export default function JoinQueue() {
         // Check for entries with fan_state='in_call' but no active session
         const { data: staleEntries } = await supabase
           .from('call_queue')
-          .select('id, fan_state, created_at')
+          .select('id, fan_state, status, created_at')
           .eq('creator_id', creatorId)
           .eq('fan_id', user.id)
           .eq('fan_state', 'in_call')
@@ -364,10 +369,10 @@ export default function JoinQueue() {
             entries: staleEntries
           })
           
-          // Delete all stale entries
-          const { error: deleteError } = await supabase
+          // Delete all stale entries with count
+          const { count, error: deleteError } = await supabase
             .from('call_queue')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('creator_id', creatorId)
             .eq('fan_id', user.id)
             .eq('fan_state', 'in_call')
@@ -375,14 +380,11 @@ export default function JoinQueue() {
           if (deleteError) {
             console.error('[JoinQueue:MOUNT_CLEANUP] Failed to delete:', deleteError)
           } else {
-            console.log('[JoinQueue:MOUNT_CLEANUP] ✅ Removed stale entries')
+            console.log(`[JoinQueue:MOUNT_CLEANUP] Removed ${count} stale entries`)
           }
         } else {
           console.log('[JoinQueue:MOUNT_CLEANUP] No stale entries found')
         }
-        
-        // Clear skip flag
-        ;(window as any).__skipQueueCleanupOnSessionNav = false
       } catch (error) {
         console.error('[JoinQueue:MOUNT_CLEANUP] Error during cleanup:', error)
       }

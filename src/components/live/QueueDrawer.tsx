@@ -77,6 +77,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const fetchQueue = useCallback(async (isRetry = false) => {
     if (!user) return
 
+    const creatorId = user.id
+    console.log('[QueueDrawer:FETCH_START] creatorId:', creatorId)
+
     // Clean abort of previous request if it exists
     if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
       abortControllerRef.current.abort()
@@ -94,26 +97,57 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }))
 
     try {
-      console.log('[QueueDrawer] Fetching queue entries for creator:', user.id)
-      
       // Check if we've been aborted before making request
       if (abortController.signal.aborted) return
       
-      // First get queue entries, prioritizing by priority field first
+      // First get queue entries (standard filtered view)
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
         .select('*, discussion_topic, priority, fan_state')
-        .eq('creator_id', user.id)
+        .eq('creator_id', creatorId)
         .eq('status', 'waiting')
         .neq('fan_state', 'in_call') // Exclude fans currently in Almighty sessions
         .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 
+      // Diagnostic fetch: all entries for this creator (no status/state filter)
+      const { data: allData } = await supabase
+        .from('call_queue')
+        .select('id, fan_id, status, fan_state')
+        .eq('creator_id', creatorId)
+        .abortSignal(abortController.signal)
+
+      const waitingCount = queueData?.length || 0
+      const anyCount = allData?.length || 0
+
+      console.log('[QueueDrawer] Raw queue data:', {
+        waitingCount,
+        anyCount,
+        queueData
+      })
+
+      // Check for diagnostic fan_id if present (dev debugging)
+      const debugFanId = new URLSearchParams(window.location.search).get('fan_id') || (window as any).__queueDebug?.userId
+      if (debugFanId && allData) {
+        const debugEntry = allData.find(e => e.fan_id === debugFanId)
+        console.log(`[QueueDrawer:DEBUG_FAN] fan_id=${debugFanId}`, debugEntry || 'NOT FOUND')
+      }
+
+      // Log visibility mismatch if any
+      if (waitingCount === 0 && anyCount > 0) {
+        const firstRow = allData?.[0]
+        console.warn('[QueueDrawer:VISIBILITY_MISMATCH]', {
+          waitingCount,
+          anyCount,
+          firstRowStatus: firstRow?.status,
+          firstRowFanState: firstRow?.fan_state,
+          firstRowId: firstRow?.id
+        })
+      }
+
       // Check abort again after database call
       if (abortController.signal.aborted) return
-
-      console.log('[QueueDrawer] Raw queue data:', queueData)
 
       if (queueError && queueError.code !== 'PGRST116') { // Ignore empty result errors
         const wrappedError = new Error(`Failed to fetch queue entries: ${queueError.message}`)
