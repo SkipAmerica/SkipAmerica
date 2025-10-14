@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, memo } from "react";
+import { useEffect, useState, useCallback, useMemo, memo, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,6 @@ import VideoCallInterface from "@/components/VideoCallInterface";
 import CreatorProfile from "@/components/CreatorProfile";
 import { CallFlow } from "@/components/call/CallFlow";
 import OnlineCreators from "@/components/OnlineCreators";
-import ActivityFeed from "@/components/ActivityFeed";
 import RatingSystem from "@/components/RatingSystem";
 import { cn } from "@/shared/lib/utils";
 import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
@@ -31,9 +30,6 @@ import { AdBanner } from "@/components/ads/AdBanner";
 import { ThreadsFeed } from "@/components/discovery/ThreadsFeed";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
-import { OnlineCreatorsGrid } from "@/components/OnlineCreatorsGrid";
-import { ScheduleCreatorsGrid } from "@/components/ScheduleCreatorsGrid";
-import { SwipeableCreatorCards } from "@/components/discovery/SwipeableCreatorCards";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
 import { CreatorSearch } from "@/components/discovery/CreatorSearch";
 import { CreatorSearchHeader } from "@/components/discovery/CreatorSearchHeader";
@@ -43,14 +39,21 @@ import { MatchSearchBar } from "@/components/match/MatchSearchBar";
 import { ProfileCompletionBanner } from "@/components/creator/ProfileCompletionBanner";
 import { NotificationZone } from "@/components/discovery/NotificationZone";
 import { useNotificationRegistry } from "@/hooks/useNotificationRegistry";
+import { LoadingSpinner } from "@/shared/ui/loading-spinner";
 
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
 
 import { SmartTrendingEngine } from "@/components/discovery/SmartTrendingEngine";
-import { FanLoyaltyProgram } from "@/components/loyalty/FanLoyaltyProgram";
-import { AdvancedCreatorSearch } from "@/components/discovery/AdvancedCreatorSearch";
-import { CreatorProfileManagement } from "./CreatorProfileManagement";
+
+// Lazy load heavy components for better initial load performance
+const OnlineCreatorsGrid = lazy(() => import("@/components/OnlineCreatorsGrid").then(m => ({ default: m.OnlineCreatorsGrid })));
+const ScheduleCreatorsGrid = lazy(() => import("@/components/ScheduleCreatorsGrid").then(m => ({ default: m.ScheduleCreatorsGrid })));
+const SwipeableCreatorCards = lazy(() => import("@/components/discovery/SwipeableCreatorCards").then(m => ({ default: m.SwipeableCreatorCards })));
+const AdvancedCreatorSearch = lazy(() => import("@/components/discovery/AdvancedCreatorSearch").then(m => ({ default: m.AdvancedCreatorSearch })));
+const CreatorProfileManagement = lazy(() => import("./CreatorProfileManagement").then(m => ({ default: m.CreatorProfileManagement })));
+const FanLoyaltyProgram = lazy(() => import("@/components/loyalty/FanLoyaltyProgram").then(m => ({ default: m.FanLoyaltyProgram })));
+const ActivityFeed = lazy(() => import("@/components/ActivityFeed").then(m => ({ default: m.default })));
 
 
 // iOS Components
@@ -107,9 +110,9 @@ const Index = () => {
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
   
-  // Diagnostic logging to track re-render causes (dev only)
-  useEffect(() => {
-    if (import.meta.env.DEV) {
+  // Diagnostic logging to track re-render causes (dev only) - moved inside conditionals
+  if (import.meta.env.DEV) {
+    useEffect(() => {
       console.log('[Index] Re-render cause:', {
         user: user?.id,
         profileId: profile?.id,
@@ -120,8 +123,8 @@ const Index = () => {
         showMenu,
         timestamp: performance.now()
       });
-    }
-  });
+    });
+  }
   
   // Safely access live store values after hooks
   const isLive = live?.isLive || false;
@@ -272,35 +275,39 @@ const Index = () => {
                 </>
               )}
 
-             {discoveryMode === 'browse' && (
+              {discoveryMode === 'browse' && (
                <div className="px-4 pt-2">
-                 {browseMode === 'live' ? (
-                   <OnlineCreatorsGrid 
-                     selectedCategory={filters.selectedCategory}
-                     onCreatorSelect={handleCreatorSelect}
-                     hideHeader={true}
-                   />
-                 ) : (
-                   <ScheduleCreatorsGrid 
-                     selectedCategory={filters.selectedCategory}
-                     onCreatorSelect={handleCreatorSelect}
-                     hideHeader={true}
-                   />
-                 )}
+                 <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+                   {browseMode === 'live' ? (
+                     <OnlineCreatorsGrid 
+                       selectedCategory={filters.selectedCategory}
+                       onCreatorSelect={handleCreatorSelect}
+                       hideHeader={true}
+                     />
+                   ) : (
+                     <ScheduleCreatorsGrid 
+                       selectedCategory={filters.selectedCategory}
+                       onCreatorSelect={handleCreatorSelect}
+                       hideHeader={true}
+                     />
+                   )}
+                 </Suspense>
                </div>
              )}
 
              {discoveryMode === 'match' && (
                <div className="px-4 pt-3 min-h-screen">
-                 <SwipeableCreatorCards
-                   selectedCategory={filters.selectedCategory}
-                   onCreatorLike={handleCreatorLike}
-                   onCreatorPass={handleCreatorPass}
-                   onCreatorSuperLike={handleCreatorSuperLike}
-                   onCreatorMessage={handleCreatorMessage}
-                   onCreatorShare={handleCreatorShare}
-                   onCreatorBookmark={handleCreatorBookmark}
-                 />
+                 <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+                   <SwipeableCreatorCards
+                     selectedCategory={filters.selectedCategory}
+                     onCreatorLike={handleCreatorLike}
+                     onCreatorPass={handleCreatorPass}
+                     onCreatorSuperLike={handleCreatorSuperLike}
+                     onCreatorMessage={handleCreatorMessage}
+                     onCreatorShare={handleCreatorShare}
+                     onCreatorBookmark={handleCreatorBookmark}
+                   />
+                 </Suspense>
                </div>
              )}
            </div>
@@ -309,11 +316,13 @@ const Index = () => {
       case "live":
         return (
           <div className="pb-20 px-4 pt-4 bg-background">
-            <OnlineCreatorsGrid 
-              selectedCategory={filters.selectedCategory}
-              onCreatorSelect={handleCreatorSelect}
-              hideHeader={false}
-            />
+            <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+              <OnlineCreatorsGrid 
+                selectedCategory={filters.selectedCategory}
+                onCreatorSelect={handleCreatorSelect}
+                hideHeader={false}
+              />
+            </Suspense>
           </div>
         );
 
@@ -340,19 +349,29 @@ const Index = () => {
 
       case "advanced":
         return (
-          <AdvancedCreatorSearch onBack={() => setActiveTab("search")} />
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+            <AdvancedCreatorSearch onBack={() => setActiveTab("search")} />
+          </Suspense>
         );
 
       case "creator-profile-management":
-        return <CreatorProfileManagement />;
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+            <CreatorProfileManagement />
+          </Suspense>
+        );
 
       case "following":
         return profile?.account_type === 'creator' ? (
-          <CreatorProfileManagement />
+          <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+            <CreatorProfileManagement />
+          </Suspense>
         ) : (
           <div className="pb-20 px-4 pt-4 space-y-6 bg-background">
-            <FanLoyaltyProgram />
-            <ActivityFeed />
+            <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
+              <FanLoyaltyProgram />
+              <ActivityFeed />
+            </Suspense>
           </div>
         );
 
@@ -386,15 +405,17 @@ const Index = () => {
         }}
       >
         {/* iOS Navigation Bar - Hide when in advanced tab */}
-        {activeTab !== "advanced" && (
-          <IOSInstagramHeader 
-            onMenuClick={() => setShowMenu(true)}
-            onCreatorSelect={(id) => setActiveTab("creator-profile")}
-            hideBottomRow={
-              (activeTab === "following" && profile?.account_type === 'creator') ||
-              activeTab === "creator-profile-management"
-            }
-          />
+        {useMemo(() => 
+          activeTab !== "advanced" && (
+            <IOSInstagramHeader 
+              onMenuClick={() => setShowMenu(true)}
+              onCreatorSelect={(id) => setActiveTab("creator-profile")}
+              hideBottomRow={
+                (activeTab === "following" && profile?.account_type === 'creator') ||
+                activeTab === "creator-profile-management"
+              }
+            />
+          ), [activeTab, profile?.account_type]
         )}
 
         {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}

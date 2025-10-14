@@ -166,13 +166,9 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
-      setPosts(mockThreadsPosts)
-      setLoading(false)
-    }, 500)
-
-    return () => clearTimeout(timer)
+    // Load immediately without artificial delay
+    setPosts(mockThreadsPosts)
+    setLoading(false)
   }, [])
 
   if (loading) {

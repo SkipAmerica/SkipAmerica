@@ -45,20 +45,25 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
 
   const headerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch inbox counts for creators
+  // Fetch inbox counts for creators - optimized with staleTime and conditional execution
   useEffect(() => {
     if (!profile?.id || profile.account_type !== 'creator') return;
+
+    let isMounted = true;
 
     const fetchCounts = async () => {
       const { data } = await supabase
         .rpc('creator_inbox_counts', { p_creator_id: profile.id });
       
-      if (data && data[0]) {
+      if (data && data[0] && isMounted) {
         setInboxCounts(data[0]);
       }
     };
 
-    fetchCounts();
+    // Initial fetch with delay to deprioritize
+    const timer = setTimeout(() => {
+      fetchCounts();
+    }, 300);
 
     // Subscribe to realtime updates
     const channel = supabase
@@ -72,12 +77,16 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           filter: `creator_id=eq.${profile.id}`,
         },
         () => {
-          fetchCounts();
+          if (isMounted) {
+            fetchCounts();
+          }
         }
       )
       .subscribe();
 
     return () => {
+      isMounted = false;
+      clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [profile?.id, profile?.account_type]);

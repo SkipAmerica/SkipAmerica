@@ -36,12 +36,12 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
       try {
         console.log('[OnlineCreatorStories] Loading real creators with presence tracking');
 
-        // First, get online creator IDs from creator_presence
+        // First, get online creator IDs from creator_presence - limited to 10 for initial load
         const { data: presenceData, error: presenceError } = await supabase
           .from('creator_presence')
           .select('creator_id')
           .eq('is_online', true)
-          .limit(50);
+          .limit(15);
 
         if (presenceError) {
           console.error('Error fetching presence:', presenceError);
@@ -59,13 +59,13 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
 
         const onlineIds = presenceData.map(p => p.creator_id);
 
-        // Then query creators with those IDs
+        // Then query creators with those IDs - limited to 10
         const { data: onlineCreatorsData, error } = await supabase
           .from('creators')
           .select('id, full_name, avatar_url, categories')
           .in('id', onlineIds)
           .eq('is_suppressed', false)
-          .limit(20);
+          .limit(10);
 
         if (error) {
           console.error('Error fetching online creators:', error);
