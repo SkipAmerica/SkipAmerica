@@ -24,7 +24,7 @@ import { useSessionInvites } from '@/hooks/useSessionInvites';
 import { queueJoinSchema, phoneSchema } from '@/shared/types/validation';
 import { cn } from '@/lib/utils';
 import { IOSTabBar } from '@/components/mobile/IOSTabBar';
-import { useLiveStore } from '@/stores/live-store';
+import { useLive } from '@/hooks/live';
 import { MessageSquare, X } from 'lucide-react';
 import { z } from 'zod';
 
@@ -278,7 +278,12 @@ export default function JoinQueue() {
   const [showSmsNotification, setShowSmsNotification] = useState(false);
   const [activeTab, setActiveTab] = useState('discover');
 
-  const { isDiscoverable } = useLiveStore();
+  const live = useLive();
+  const isLive = live?.isLive || false;
+  const isDiscoverable = live?.isDiscoverable || false;
+  const isTransitioning = live?.isTransitioning || false;
+  const toggleDiscoverable = live?.toggleDiscoverable || (() => {});
+  const endLive = live?.endLive || (() => {});
   const isCurrentUserCreator = profile?.account_type === 'creator';
 
   const isUnloadingRef = useRef(false);
@@ -1763,16 +1768,23 @@ export default function JoinQueue() {
 
       {/* IOSTabBar */}
       <IOSTabBar
+        profile={profile}
         activeTab={activeTab}
         onTabChange={(tab) => {
-          setActiveTab(tab);
-          if (tab !== 'discover') {
+          if (tab === 'discover') {
+            navigate('/');
+          } else {
+            setActiveTab(tab);
             navigate(`/${tab}`);
           }
         }}
         showFollowing={!!user}
         isCreator={profile?.account_type === 'creator'}
-        profile={profile}
+        isLive={isLive}
+        isDiscoverable={isDiscoverable}
+        isTransitioning={isTransitioning}
+        onToggleDiscoverable={toggleDiscoverable}
+        onEndCall={endLive}
       />
       </div>
     </ErrorBoundary>
