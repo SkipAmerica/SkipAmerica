@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase'
 import { QueueService } from '@/services/queue-service'
+import { buildRatingSearch } from '@/lib/navigation'
 
 export interface EndSessionParams {
   sessionId: string
@@ -213,20 +214,7 @@ export async function endAlmightySession(
     const navigationPath = role === 'creator' ? '/' : `/join-queue/${creator_id}`
     
     if (sessionMetadata) {
-      const params = new URLSearchParams({
-        sr: '1',
-        sid: sessionMetadata.sessionId,
-        tuid: sessionMetadata.targetUserId,
-        tuname: encodeURIComponent(sessionMetadata.targetUserName),
-        tubio: encodeURIComponent(sessionMetadata.targetUserBio),
-        tuavatar: encodeURIComponent(sessionMetadata.targetUserAvatarUrl),
-        raterRole: sessionMetadata.raterRole,
-        showTip: sessionMetadata.showTipSection ? '1' : '0',
-        showAppt: sessionMetadata.showAppointmentLink ? '1' : '0',
-        hasAppt: sessionMetadata.creatorHasAppointments ? '1' : '0'
-      })
-      
-      const finalPath = `${navigationPath}?${params.toString()}`
+      const finalPath = `${navigationPath}${buildRatingSearch(sessionMetadata)}`
       console.log('[endAlmightySession:COMPLETE] Session end complete with rating modal', {
         navigationPath: finalPath,
         totalElapsed: performance.now() - startTime
