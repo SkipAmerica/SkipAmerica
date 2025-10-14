@@ -100,6 +100,9 @@ html, body, #root {
     --turquoise-dark: 180 100% 25%;
     --turquoise-light: 174 72% 85%;
     --turquoise-extra-light: 174 20% 95%;
+    
+    /* Feed background */
+    --feed-background: 174 72% 97%;
   }
 
   .dark {

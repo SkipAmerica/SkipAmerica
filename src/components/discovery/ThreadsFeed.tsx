@@ -184,14 +184,16 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   }
 
   return (
-    <div className={`w-full pb-0 ${hasNotificationZone ? 'pt-0' : 'pt-24 md:pt-36'}`}>
-      {posts.map((post, index) => (
-        <PostCard 
-          key={post.id} 
-          post={post} 
-          isLast={index === posts.length - 1}
-        />
-      ))}
+    <div className={`w-full pb-0 bg-feed-bg px-3 ${hasNotificationZone ? 'pt-0' : 'pt-24 md:pt-36'}`}>
+      <div className="space-y-3">
+        {posts.map((post, index) => (
+          <PostCard 
+            key={post.id} 
+            post={post} 
+            isLast={index === posts.length - 1}
+          />
+        ))}
+      </div>
     </div>
   )
 }

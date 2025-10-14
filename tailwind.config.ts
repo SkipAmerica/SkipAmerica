@@ -64,6 +64,7 @@ export default {
           light: "hsl(var(--turquoise-light))",
           "extra-light": "hsl(var(--turquoise-extra-light))",
         },
+        'feed-bg': "hsl(var(--feed-background))",
         skip: {
           orange: "hsl(var(--skip-orange))",
           black: "hsl(var(--skip-black))",
