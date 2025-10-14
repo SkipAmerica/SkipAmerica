@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useLive } from '@/hooks/live'
+import { useAlmightySessionStart } from '@/hooks/useAlmightySessionStart'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import CreatorPreviewWithChat from '@/components/creator/CreatorPreviewWithChat'
@@ -45,6 +46,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
   const { user } = useAuth()
   const { toast } = useToast()
   const { store } = useLive()
+  const { startSession, isProcessing } = useAlmightySessionStart({ onSuccess: onClose })
   
   // QueueDrawer.tsx – ensure CreatorPreviewWithChat uses the SAME id PQ uses
   // Use the authenticated user ID as the lobby creator ID (creator's own panel)
@@ -59,8 +61,6 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     retryCount: 0,
     isConnected: true
   })
-  const [processingInvite, setProcessingInvite] = useState(false)
-  const [activeInvite, setActiveInvite] = useState<QueueEntry | null>(null)
 
   // Cleanup on unmount
   useEffect(() => {
@@ -235,136 +235,9 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
     }
   }, [isOpen, user, fetchQueue])
 
-  const handleStartCall = useCallback(async (queueEntry: QueueEntry) => {
-    if (!user || processingInvite) return
-
-    // Feature flag check
-    const useV2Flow = import.meta.env.VITE_ALMIGHTY_V2 === 'on'
-
-    if (!useV2Flow) {
-      // LEGACY FLOW: Existing behavior
-      try {
-        setProcessingInvite(true)
-        setActiveInvite(queueEntry)
-        store.dispatch({ type: 'ENTER_PREP' })
-        
-        toast({
-          title: "Starting Pre-Call",
-          description: `Preparing session with ${queueEntry.profiles?.full_name || 'user'}`,
-        })
-        
-        onClose()
-      } catch (error: any) {
-        console.error('Error starting pre-call:', error)
-        toast({
-          title: "Failed to Start Pre-Call", 
-          description: error.message || "Failed to start pre-call. Please try again.",
-          variant: "destructive"
-        })
-      } finally {
-        setProcessingInvite(false)
-      }
-      return
-    }
-
-    // ===== V2 FLOW: Atomic RPC with Readiness Guard =====
-    
-    // Check if fan is ready (client-side validation)
-    if (queueEntry.fan_state !== 'ready') {
-      const stateLabel = {
-        'waiting': 'still in queue',
-        'awaiting_consent': 'awaiting camera consent',
-        'declined': 'declined to join',
-        'in_call': 'already in a call',
-      }[queueEntry.fan_state || 'waiting'] || 'not ready'
-
-      toast({
-        title: "Cannot Start Session",
-        description: `Fan is ${stateLabel}. Please wait for them to enable their camera.`,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    try {
-      setProcessingInvite(true)
-
-      console.log('[Queue→Almighty] Starting session for queue entry:', queueEntry.id)
-
-      // Analytics breadcrumb
-      if (typeof window !== 'undefined' && (window as any).analytics) {
-        (window as any).analytics.track('queue_start_clicked', {
-          queueEntryId: queueEntry.id,
-          creatorId: user.id,
-          fanId: queueEntry.fan_id
-        })
-      }
-
-      // Call atomic RPC (type assertion until Supabase types regenerate)
-      const { data: sessionId, error } = await supabase
-        .rpc('start_almighty_session' as any, {
-          p_queue_entry: queueEntry.id
-        })
-
-      if (error) {
-        console.error('[Queue→Almighty] RPC failed:', error)
-        
-        if (error.message?.includes('fan_not_ready')) {
-          toast({
-            title: "Fan Not Ready",
-            description: "Fan hasn't enabled their camera yet. Please wait.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        throw new Error(error.message || 'Failed to create session')
-      }
-
-      if (!sessionId) {
-        throw new Error('No session ID returned')
-      }
-
-      console.log('[Queue→Almighty] Session created:', sessionId)
-
-      // Analytics breadcrumb
-      if (typeof window !== 'undefined' && (window as any).analytics) {
-        (window as any).analytics.track('session_created', {
-          sessionId,
-          queueEntryId: queueEntry.id,
-          creatorId: user.id,
-          fanId: queueEntry.fan_id
-        })
-      }
-
-      // Transition FSM
-      store.dispatch({ type: 'ENTER_PREP' })
-
-      toast({
-        title: "Session Starting",
-        description: `Connecting with ${queueEntry.profiles?.full_name || 'user'}...`,
-      })
-
-      // Close drawer
-      onClose()
-
-      // Navigate creator (replace to prevent back button)
-      setTimeout(() => {
-        console.log('[Queue→Almighty] Navigating to session:', sessionId)
-        window.location.assign(`/session/${sessionId}?role=creator`)
-      }, 100)
-
-    } catch (error: any) {
-      console.error('[Queue→Almighty] Error:', error)
-      toast({
-        title: "Failed to Start Session",
-        description: error.message || "Could not start session. Please try again.",
-        variant: "destructive"
-      })
-    } finally {
-      setProcessingInvite(false)
-    }
-  }, [user, processingInvite, store, toast, onClose])
+  const handleStartCall = useCallback((queueEntry: QueueEntry) => {
+    startSession(queueEntry)
+  }, [startSession])
 
   const handleRetry = useCallback(() => {
     setLocalState(prev => ({ ...prev, retryCount: 0 }))

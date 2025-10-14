@@ -15,6 +15,7 @@ import { SwipeableQueueCard } from '@/components/queue/SwipeableQueueCard'
 import { CreatorBroadcastFullscreen } from '@/components/queue/CreatorBroadcastFullscreen'
 import { isMobile } from '@/shared/lib/platform'
 import { useLiveStore } from '@/stores/live-store'
+import { useAlmightySessionStart } from '@/hooks/useAlmightySessionStart'
 
 interface QueueEntry {
   id: string
@@ -22,6 +23,7 @@ interface QueueEntry {
   joined_at: string
   estimated_wait_minutes: number
   discussion_topic?: string
+  fan_state?: 'waiting' | 'awaiting_consent' | 'ready' | 'declined' | 'in_call'
   profiles?: {
     full_name: string
     avatar_url: string | null
@@ -39,6 +41,7 @@ export function QueueContent() {
   const { user } = useAuth()
   const { toast } = useToast()
   const { isLobbyBroadcasting } = useLiveStore()
+  const { startSession, isProcessing } = useAlmightySessionStart()
   const abortControllerRef = useRef<AbortController>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   const retryCountRef = useRef(0)
@@ -112,7 +115,7 @@ export function QueueContent() {
       // Get queue entries in pure FCFS order (first come, first served)
       const { data: queueData, error: queueError } = await supabase
         .from('call_queue')
-        .select('*, discussion_topic')
+        .select('*, discussion_topic, fan_state')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
         .order('joined_at', { ascending: true })
@@ -306,9 +309,9 @@ export function QueueContent() {
   
   const handleStartCall = useCallback(() => {
     if (state.entries[0]) {
-      console.log("Starting call with:", state.entries[0].fan_id)
+      startSession(state.entries[0])
     }
-  }, [state.entries])
+  }, [state.entries, startSession])
 
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`
@@ -414,6 +417,8 @@ export function QueueContent() {
                             disableMuteToggle={isLobbyBroadcasting}
                             onStartCall={handleStartCall}
                             onFullscreen={() => handleFullscreen(nextUser.fan_id)}
+                            disabled={isProcessing || nextUser.fan_state !== 'ready'}
+                            fanState={nextUser.fan_state}
                           />
                         )}
                       </div>

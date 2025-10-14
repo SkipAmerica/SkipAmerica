@@ -17,6 +17,8 @@ interface NextUserPreviewProps {
   onStartCall?: () => void;
   onFullscreen?: () => void;
   disableMuteToggle?: boolean;
+  disabled?: boolean;
+  fanState?: 'waiting' | 'awaiting_consent' | 'ready' | 'declined' | 'in_call';
 }
 
 export function NextUserPreview({
@@ -29,7 +31,9 @@ export function NextUserPreview({
   onMuteToggle,
   onStartCall,
   onFullscreen,
-  disableMuteToggle = false
+  disableMuteToggle = false,
+  disabled = false,
+  fanState = 'waiting'
 }: NextUserPreviewProps) {
   const [showNotification, setShowNotification] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -149,13 +153,30 @@ export function NextUserPreview({
               </TooltipProvider>
             )}
             {onStartCall && (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 px-4 shrink-0"
-                onClick={onStartCall}
-              >
-                Start
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      className="bg-primary hover:bg-primary/90 px-4 shrink-0"
+                      onClick={onStartCall}
+                      disabled={disabled}
+                    >
+                      Start
+                    </Button>
+                  </TooltipTrigger>
+                  {disabled && (
+                    <TooltipContent>
+                      {fanState === 'awaiting_consent' 
+                        ? 'Waiting for fan to enable camera'
+                        : fanState === 'declined'
+                        ? 'Fan declined to join'
+                        : 'Fan is not ready yet'
+                      }
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
