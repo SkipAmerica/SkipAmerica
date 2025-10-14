@@ -18,6 +18,7 @@ interface VideoTileProps {
 
 export default function VideoTile({ trackRef, mirror, rounded, className }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const watchdogFiredRef = useRef(false)
   
   // Stable trackId to prevent attach churn on trackRef rewrap
   const track = trackRef?.track as LocalVideoTrack | RemoteVideoTrack | undefined
@@ -86,9 +87,9 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       attachOnce()
     })
 
-    // Watchdog: if not painting after 400ms, detach/reattach once
+    // Watchdog: if not painting after 400ms, detach/reattach once with cooldown
     watchdogTimer = window.setTimeout(() => {
-      if (cancelled) return
+      if (cancelled || watchdogFiredRef.current) return
       const notPainting = !el.videoWidth || !el.videoHeight || el.readyState < 2
       if (notPainting) {
         console.warn('[VideoTile:NOT_PAINTING]', {
@@ -97,10 +98,12 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
           readyState: el.readyState,
           trackSid: track.sid
         })
+        watchdogFiredRef.current = true // Prevent loop
         try {
           track.detach(el)
         } catch {}
         attachOnce()
+        setTimeout(() => { watchdogFiredRef.current = false }, 2000) // 2s cooldown
       } else {
         console.log('[VideoTile:PAINTING_OK]', {
           videoWidth: el.videoWidth,

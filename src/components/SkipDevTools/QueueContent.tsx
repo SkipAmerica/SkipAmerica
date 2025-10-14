@@ -59,9 +59,10 @@ export function QueueContent() {
   const [fanMuted, setFanMuted] = useState(true)
 
   // Stabilize next user to prevent NextUserPreview remounts
+  // Track entire object to capture fan_state changes
   const nextUser = useMemo(() => {
     return state.entries[0] || null;
-  }, [state.entries[0]?.id])
+  }, [state.entries[0]])
 
   // Auto-mute fan when creator starts broadcasting
   useEffect(() => {

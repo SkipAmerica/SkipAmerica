@@ -145,6 +145,38 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       })
       .subscribe((status) => {
         log('SUBSCRIBE:STATUS', { status, timestamp: performance.now() })
+        
+        // Handle terminal states (CLOSED, TIMED_OUT)
+        if (status === 'CLOSED' || status === 'TIMED_OUT') {
+          log('CHANNEL_CLOSED:RESUBSCRIBE', { status })
+          isConnectedRef.current = false
+          setState(prev => ({ ...prev, error: 'Reconnecting...', isConnected: false }))
+          
+          // Clean up dead channel
+          if (channelRef.current) {
+            try { supabase.removeChannel(channelRef.current) } catch {}
+            channelRef.current = null
+          }
+          subscriptionRef.current = null
+          
+          // Retry with exponential backoff
+          if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
+          
+          const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
+          retryCountRef.current++
+          
+          retryTimeoutRef.current = setTimeout(() => {
+            log('CHANNEL_CLOSED:RETRY_EXECUTE', { attempt: retryCountRef.current })
+            // Force re-render to trigger useEffect (creates fresh channel)
+            setState(prev => ({ ...prev }))
+          }, delay)
+        }
+        
+        if (status === 'SUBSCRIBED') {
+          isConnectedRef.current = true
+          retryCountRef.current = 0 // Reset on successful connect
+          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+        }
       })
 
     channelRef.current = channel

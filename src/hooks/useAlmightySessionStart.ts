@@ -32,8 +32,8 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
 
     setError(null)
     
-    // Feature flag check
-    const useV2Flow = import.meta.env.VITE_ALMIGHTY_V2 === 'on'
+    // Feature flag check (default ON, can be disabled with 'off')
+    const useV2Flow = import.meta.env.VITE_ALMIGHTY_V2 !== 'off'
 
     if (!useV2Flow) {
       // Legacy flow fallback
