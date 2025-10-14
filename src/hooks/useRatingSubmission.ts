@@ -45,32 +45,22 @@ export function useRatingSubmission() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    // Insert tip record first
-    const { error: tipError } = await (supabase as any)
-      .from('tips')
-      .insert({
-        session_id: data.sessionId,
-        sender_id: user.id,
-        recipient_id: data.recipientId,
-        amount_skips: data.amountSkips
-      })
+    const idempotencyKey = crypto.randomUUID()
 
-    if (tipError) throw tipError
-
-    // Use atomic transfer_skips function
-    const { data: transferResult, error: transferError } = await supabase.rpc('transfer_skips', {
-      p_from_user_id: user.id,
-      p_to_user_id: data.recipientId,
+    const { data: result, error } = await (supabase as any).rpc('transfer_skips_atomic', {
+      p_sender_id: user.id,
+      p_recipient_id: data.recipientId,
       p_amount_skips: data.amountSkips,
-      p_transaction_type: 'tip',
-      p_reference_id: data.sessionId,
-      p_metadata: {}
-    }) as { data: any; error: any }
+      p_session_id: data.sessionId,
+      p_idempotency_key: idempotencyKey
+    })
 
-    if (transferError) throw transferError
-    if (!transferResult?.success) {
-      throw new Error('Failed to transfer Skips')
+    if (error) throw error
+    if (!result || !result[0]?.tip_id) {
+      throw new Error('Failed to process tip')
     }
+
+    return result[0]
   }
 
   const submitAll = async (ratingData?: RatingData, tipData?: TipData) => {

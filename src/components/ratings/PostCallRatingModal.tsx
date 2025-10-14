@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { HalfStarRating } from './HalfStarRating'
 import { useRatingSubmission } from '@/hooks/useRatingSubmission'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Loader2, Coins } from 'lucide-react'
+import { Loader2, Coins, Calendar } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client'
 
 interface PostCallRatingModalProps {
@@ -16,6 +17,8 @@ interface PostCallRatingModalProps {
   creatorName: string
   creatorBio: string
   creatorAvatarUrl: string
+  showAppointmentLink?: boolean
+  creatorHasAppointments?: boolean
 }
 
 export function PostCallRatingModal({
@@ -25,8 +28,11 @@ export function PostCallRatingModal({
   creatorId,
   creatorName,
   creatorBio,
-  creatorAvatarUrl
+  creatorAvatarUrl,
+  showAppointmentLink = false,
+  creatorHasAppointments = false,
 }: PostCallRatingModalProps) {
+  const navigate = useNavigate()
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [tipSkips, setTipSkips] = useState<number | ''>('')
@@ -153,6 +159,25 @@ export function PostCallRatingModal({
             rows={3}
           />
         </div>
+
+        {/* Appointment CTA */}
+        {showAppointmentLink && creatorHasAppointments && (
+          <div className="mb-4 p-3 bg-muted rounded-lg border border-border">
+            <div className="text-sm font-medium mb-2">Want to schedule a follow-up?</div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                onClose()
+                navigate(`/appointments/${creatorId}`)
+              }}
+              className="w-full"
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule Appointment
+            </Button>
+          </div>
+        )}
 
         {/* Tip Section */}
         <div className="mb-6">

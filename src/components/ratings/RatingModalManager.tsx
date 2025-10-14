@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { PostCallRatingModal } from './PostCallRatingModal'
+import { CreatorRatesUserModal } from './CreatorRatesUserModal'
 
 export function RatingModalManager() {
   const location = useLocation()
@@ -8,31 +9,42 @@ export function RatingModalManager() {
   const [modalOpen, setModalOpen] = useState(false)
   const [modalData, setModalData] = useState<{
     sessionId: string
-    creatorId: string
-    creatorName: string
-    creatorBio: string
-    creatorAvatarUrl: string
+    targetUserId: string
+    targetUserName: string
+    targetUserBio?: string
+    targetUserAvatarUrl: string
+    raterRole: 'creator' | 'user'
+    showTipSection?: boolean
+    showAppointmentLink?: boolean
+    creatorHasAppointments?: boolean
   } | null>(null)
 
-  // Check for rating modal query params
   useEffect(() => {
     const params = new URLSearchParams(location.search)
-    const shouldShow = params.get('sc') === '1'
+    const shouldShow = params.get('sr') === '1'
 
     if (shouldShow) {
       const sessionId = params.get('sid') || ''
-      const creatorId = params.get('cid') || ''
-      const creatorName = decodeURIComponent(params.get('cname') || '')
-      const creatorBio = decodeURIComponent(params.get('cbio') || '')
-      const creatorAvatarUrl = decodeURIComponent(params.get('cavatar') || '')
+      const targetUserId = params.get('tuid') || ''
+      const targetUserName = decodeURIComponent(params.get('tuname') || '')
+      const targetUserBio = decodeURIComponent(params.get('tubio') || '')
+      const targetUserAvatarUrl = decodeURIComponent(params.get('tuavatar') || '')
+      const raterRole = (params.get('raterRole') as 'creator' | 'user') || 'user'
+      const showTipSection = params.get('showTip') === '1'
+      const showAppointmentLink = params.get('showAppt') === '1'
+      const creatorHasAppointments = params.get('hasAppt') === '1'
 
-      if (sessionId && creatorId) {
+      if (sessionId && targetUserId) {
         setModalData({
           sessionId,
-          creatorId,
-          creatorName,
-          creatorBio,
-          creatorAvatarUrl
+          targetUserId,
+          targetUserName,
+          targetUserBio,
+          targetUserAvatarUrl,
+          raterRole,
+          showTipSection,
+          showAppointmentLink,
+          creatorHasAppointments
         })
         setModalOpen(true)
       }
@@ -42,28 +54,39 @@ export function RatingModalManager() {
   const handleModalClose = () => {
     setModalOpen(false)
     setModalData(null)
-    // Clean query params
     const url = new URL(window.location.href)
-    url.searchParams.delete('sc')
-    url.searchParams.delete('sid')
-    url.searchParams.delete('cid')
-    url.searchParams.delete('cname')
-    url.searchParams.delete('cbio')
-    url.searchParams.delete('cavatar')
+    ;['sr', 'sid', 'tuid', 'tuname', 'tubio', 'tuavatar', 'raterRole', 'showTip', 'showAppt', 'hasAppt'].forEach(k =>
+      url.searchParams.delete(k)
+    )
     navigate({ pathname: url.pathname }, { replace: true })
   }
 
   if (!modalOpen || !modalData) return null
+
+  if (modalData.raterRole === 'creator') {
+    return (
+      <CreatorRatesUserModal
+        open={modalOpen}
+        onClose={handleModalClose}
+        sessionId={modalData.sessionId}
+        userId={modalData.targetUserId}
+        userName={modalData.targetUserName}
+        userAvatarUrl={modalData.targetUserAvatarUrl}
+      />
+    )
+  }
 
   return (
     <PostCallRatingModal
       open={modalOpen}
       onClose={handleModalClose}
       sessionId={modalData.sessionId}
-      creatorId={modalData.creatorId}
-      creatorName={modalData.creatorName}
-      creatorBio={modalData.creatorBio}
-      creatorAvatarUrl={modalData.creatorAvatarUrl}
+      creatorId={modalData.targetUserId}
+      creatorName={modalData.targetUserName}
+      creatorBio={modalData.targetUserBio || ''}
+      creatorAvatarUrl={modalData.targetUserAvatarUrl}
+      showAppointmentLink={modalData.showAppointmentLink}
+      creatorHasAppointments={modalData.creatorHasAppointments}
     />
   )
 }

@@ -93,23 +93,13 @@ export function CenterPane() {
       // Disconnect media
       await leave()
       
-      // Check if should show rating modal
-      if (result.shouldShowRating && result.sessionMetadata) {
-        // Navigate with query params to trigger rating modal
-        const params = new URLSearchParams({
-          sc: '1',
-          sid: result.sessionMetadata.sessionId,
-          cid: result.sessionMetadata.creatorId,
-          cname: encodeURIComponent(result.sessionMetadata.creatorName),
-          cbio: encodeURIComponent(result.sessionMetadata.creatorBio),
-          cavatar: encodeURIComponent(result.sessionMetadata.creatorAvatarUrl)
-        })
-        console.log('[CenterPane] Navigating with rating modal params:', result.navigationPath)
-        navigate(`${result.navigationPath}?${params.toString()}`, { replace: true })
-      } else {
-        // Direct navigation (fallback)
-        console.log('[CenterPane] Navigating without rating modal:', result.navigationPath)
+      // Navigation is handled by endAlmightySession with query params
+      if (result.navigationPath) {
+        console.log('[CenterPane] Navigating to:', result.navigationPath)
         navigate(result.navigationPath, { replace: true })
+      } else {
+        console.log('[CenterPane] No navigation path, going home')
+        navigate('/', { replace: true })
       }
       
     } catch (error) {

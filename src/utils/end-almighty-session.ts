@@ -13,10 +13,14 @@ export interface EndSessionResult {
   shouldShowRating?: boolean
   sessionMetadata?: {
     sessionId: string
-    creatorId: string
-    creatorName: string
-    creatorBio: string
-    creatorAvatarUrl: string
+    targetUserId: string
+    targetUserName: string
+    targetUserBio: string
+    targetUserAvatarUrl: string
+    raterRole: 'creator' | 'user'
+    showTipSection: boolean
+    showAppointmentLink: boolean
+    creatorHasAppointments: boolean
   }
 }
 
@@ -89,36 +93,92 @@ export async function endAlmightySession(
       // Non-fatal - database trigger will clean up as safety net
     }
 
-    // 4. Fetch creator profile for rating modal
+    // 4. Fetch target user profile for rating modal
     let sessionMetadata: EndSessionResult['sessionMetadata']
     try {
-      const { data: creatorData } = await supabase
-        .from('creators')
-        .select('full_name, bio, avatar_url')
-        .eq('id', creator_id)
-        .single()
+      if (role === 'creator') {
+        // Creator is rating the fan
+        const { data: userData } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', fan_id)
+          .single()
 
-      sessionMetadata = {
-        sessionId,
-        creatorId: creator_id,
-        creatorName: creatorData?.full_name || 'Creator',
-        creatorBio: creatorData?.bio || '',
-        creatorAvatarUrl: creatorData?.avatar_url || ''
+        sessionMetadata = {
+          sessionId,
+          targetUserId: fan_id,
+          targetUserName: userData?.full_name || 'User',
+          targetUserBio: '',
+          targetUserAvatarUrl: userData?.avatar_url || '',
+          raterRole: 'creator',
+          showTipSection: false,
+          showAppointmentLink: false,
+          creatorHasAppointments: false
+        }
+      } else {
+        // User is rating the creator
+        const { data: creatorData } = await supabase
+          .from('creators')
+          .select('full_name, bio, avatar_url')
+          .eq('id', creator_id)
+          .single()
+
+        // Check if creator has appointments
+        const { count } = await supabase
+          .from('creator_availability')
+          .select('*', { count: 'exact', head: true })
+          .eq('creator_id', creator_id)
+          .eq('is_active', true)
+
+        sessionMetadata = {
+          sessionId,
+          targetUserId: creator_id,
+          targetUserName: creatorData?.full_name || 'Creator',
+          targetUserBio: creatorData?.bio || '',
+          targetUserAvatarUrl: creatorData?.avatar_url || '',
+          raterRole: 'user',
+          showTipSection: true,
+          showAppointmentLink: true,
+          creatorHasAppointments: (count ?? 0) > 0
+        }
       }
     } catch (err) {
-      console.warn('[endAlmightySession] Failed to fetch creator profile:', err)
+      console.warn('[endAlmightySession] Failed to fetch target profile:', err)
     }
 
-    // 5. Return navigation path based on role
+    // 5. Return navigation path based on role with query params for rating modal
     const navigationPath = role === 'creator' ? '/' : `/join-queue/${creator_id}`
     
-    console.log('[endAlmightySession] Session end complete', { navigationPath, hasMetadata: !!sessionMetadata })
+    if (sessionMetadata) {
+      const params = new URLSearchParams({
+        sr: '1',
+        sid: sessionMetadata.sessionId,
+        tuid: sessionMetadata.targetUserId,
+        tuname: encodeURIComponent(sessionMetadata.targetUserName),
+        tubio: encodeURIComponent(sessionMetadata.targetUserBio),
+        tuavatar: encodeURIComponent(sessionMetadata.targetUserAvatarUrl),
+        raterRole: sessionMetadata.raterRole,
+        showTip: sessionMetadata.showTipSection ? '1' : '0',
+        showAppt: sessionMetadata.showAppointmentLink ? '1' : '0',
+        hasAppt: sessionMetadata.creatorHasAppointments ? '1' : '0'
+      })
+      
+      console.log('[endAlmightySession] Session end complete with rating modal')
+      
+      return {
+        success: true,
+        navigationPath: `${navigationPath}?${params.toString()}`,
+        shouldShowRating: true,
+        sessionMetadata
+      }
+    }
+    
+    console.log('[endAlmightySession] Session end complete', { navigationPath })
     
     return {
       success: true,
       navigationPath,
-      shouldShowRating: !!sessionMetadata,
-      sessionMetadata
+      shouldShowRating: false
     }
 
   } catch (error) {
