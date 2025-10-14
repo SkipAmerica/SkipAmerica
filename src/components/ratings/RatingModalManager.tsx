@@ -7,6 +7,7 @@ export function RatingModalManager() {
   const location = useLocation()
   const navigate = useNavigate()
   const [modalOpen, setModalOpen] = useState(false)
+  const [pageReady, setPageReady] = useState(false)
   const [modalData, setModalData] = useState<{
     sessionId: string
     targetUserId: string
@@ -19,7 +20,15 @@ export function RatingModalManager() {
     creatorHasAppointments?: boolean
   } | null>(null)
 
+  // Wait for initial page render to stabilize
   useEffect(() => {
+    const timer = setTimeout(() => setPageReady(true), 100)
+    return () => clearTimeout(timer)
+  }, [])
+
+  useEffect(() => {
+    if (!pageReady) return
+    
     const params = new URLSearchParams(location.search)
     const shouldShow = params.get('sr') === '1'
 
@@ -33,6 +42,13 @@ export function RatingModalManager() {
       const showTipSection = params.get('showTip') === '1'
       const showAppointmentLink = params.get('showAppt') === '1'
       const creatorHasAppointments = params.get('hasAppt') === '1'
+
+      // Immediately clean URL before setting state
+      const cleanUrl = new URL(window.location.href)
+      ;['sr', 'sid', 'tuid', 'tuname', 'tubio', 'tuavatar', 'raterRole', 'showTip', 'showAppt', 'hasAppt'].forEach(k =>
+        cleanUrl.searchParams.delete(k)
+      )
+      window.history.replaceState({}, '', cleanUrl.pathname)
 
       if (sessionId && targetUserId) {
         setModalData({
@@ -49,7 +65,7 @@ export function RatingModalManager() {
         setModalOpen(true)
       }
     }
-  }, [location.search])
+  }, [location.search, pageReady])
 
   const handleModalClose = () => {
     setModalOpen(false)

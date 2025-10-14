@@ -1,6 +1,6 @@
 // Centralized routing configuration
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { lazy, Suspense, useState, useEffect } from 'react'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { AuthGuard } from './guards/auth-guard'
@@ -32,6 +32,20 @@ function RouteWrapper({ children }: { children: React.ReactNode }) {
       </Suspense>
     </ErrorBoundary>
   )
+}
+
+// Rating modal guard to prevent interference with route transitions
+function RatingModalWithLoadingGuard() {
+  const [isReady, setIsReady] = useState(false)
+  const location = useLocation()
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 200)
+    return () => clearTimeout(timer)
+  }, [location.pathname])
+
+  if (!isReady) return null
+  return <RatingModalManager />
 }
 
 export function AppRouter() {
@@ -153,7 +167,7 @@ export function AppRouter() {
       </Routes>
       
       {/* Global Rating Modal Manager - renders inside router context */}
-      <RatingModalManager />
+      <RatingModalWithLoadingGuard />
     </BrowserRouter>
   )
 }

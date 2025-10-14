@@ -141,6 +141,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   }, [user, toast, store])
 
   // Fetch initial queue count with enhanced error recovery and proper abort handling
+  const abortControllerRef = useRef<AbortController | null>(null)
+  
   useEffect(() => {
     if (!user) return
 
@@ -153,11 +155,16 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       return
     }
 
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    abortControllerRef.current = new AbortController()
     let mounted = true
-    let currentController: AbortController | null = new AbortController()
 
     const fetchCount = async (attempt: number = 0) => {
-      if (!mounted || !currentController) return
+      if (!mounted || !abortControllerRef.current) return
 
       const maxRetries = 3
       const baseDelay = 2000
@@ -173,9 +180,9 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           .eq('status', 'waiting')
           .order('priority', { ascending: false })
           .order('joined_at', { ascending: true })
-          .abortSignal(currentController.signal)
+          .abortSignal(abortControllerRef.current.signal)
 
-        if (!mounted || !currentController) return
+        if (!mounted || !abortControllerRef.current) return
 
         if (error && error.code !== 'PGRST116') { // Ignore empty result errors
           throw new Error(`Database error: ${error.message}`)
@@ -200,7 +207,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         
       } catch (error: any) {
         // Ignore AbortError - this is normal cleanup
-        if (!mounted || !currentController || error.name === 'AbortError') {
+        if (!mounted || !abortControllerRef.current || error.name === 'AbortError') {
           console.log('[QueueManager] Request aborted (normal cleanup)')
           return
         }
@@ -226,7 +233,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           }))
           
           setTimeout(() => {
-            if (mounted && currentController) fetchCount(attempt + 1)
+            if (mounted && abortControllerRef.current) fetchCount(attempt + 1)
           }, totalDelay)
         } else {
           // Max retries reached or non-recoverable error
@@ -244,12 +251,12 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     return () => {
       mounted = false
-      if (currentController) {
-        currentController.abort()
-        currentController = null
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
       }
     }
-  }, [user?.id, store])
+  }, [user?.id, state.lastFetchTime, store])
 
   const updateQueueCount = useCallback((count: number) => {
     store.updateQueueCount(count)
