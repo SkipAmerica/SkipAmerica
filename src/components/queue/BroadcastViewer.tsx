@@ -264,8 +264,6 @@ export function BroadcastViewer({
         });
         
         if (videoElement) {
-          videoElement.muted = true; // Ensure muted for autoplay
-          
           videoElement.play()
             .then(() => {
               console.log('[BroadcastViewer] ✅ AUTOPLAY SUCCEEDED', {
@@ -273,8 +271,6 @@ export function BroadcastViewer({
                 videoPlaying: !videoElement.paused,
                 timestamp: new Date().toISOString()
               });
-              // Restore actual audio state after autoplay succeeds
-              videoElement.muted = isMuted;
             })
             .catch(err => {
               console.warn('[BroadcastViewer] ⚠️ AUTOPLAY BLOCKED - Showing Tap to Watch', {
