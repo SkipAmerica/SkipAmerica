@@ -1116,36 +1116,26 @@ export default function JoinQueue() {
         )}
 
         {/* Main content grid */}
-        <div className={cn(
-          "grid gap-6",
-          isInQueue 
-            ? "grid-cols-1" 
-            : "grid-cols-1 lg:grid-cols-3"
-        )}>
-          {/* Video section */}
-          <div className={cn(
-            isInQueue ? "" : "lg:col-span-2"
-          )}>
-            <div className={cn(
-              "bg-black rounded-lg overflow-hidden border",
-              isInQueue 
-                ? "h-[400px] sm:h-[500px]" 
-                : "h-[300px] sm:h-[400px]"
-            )}>
-              <BroadcastViewer 
-                creatorId={creatorId!} 
-                sessionId={liveSession?.id || 'connecting'}
-                isInQueue={isInQueue}
-                shouldPublishFanVideo={(hasConsentedToBroadcast || consentResolvedRef.current) || forceBroadcast}
-                consentStream={consentStream}
-                creatorName={creator.full_name}
-              />
+        <div className="grid gap-6 grid-cols-1">
+          {/* Video section - Only visible when in queue */}
+          {isInQueue && (
+            <div>
+              <div className="bg-black rounded-lg overflow-hidden border h-[400px] sm:h-[500px]">
+                <BroadcastViewer 
+                  creatorId={creatorId!} 
+                  sessionId={liveSession?.id || 'connecting'}
+                  isInQueue={isInQueue}
+                  shouldPublishFanVideo={(hasConsentedToBroadcast || consentResolvedRef.current) || forceBroadcast}
+                  consentStream={consentStream}
+                  creatorName={creator.full_name}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Join form - HIDE on mobile when in queue */}
+          {/* Join form - Only shown when not in queue */}
           {!isInQueue && (
-            <div className="lg:col-span-1">
+            <div>
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
