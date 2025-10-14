@@ -103,6 +103,9 @@ html, body, #root {
     
     /* Feed background */
     --feed-background: 174 72% 92%;
+    
+    /* Feed spacing */
+    --feed-top-spacing: 1rem; /* 16px breathing room between ad panel and first entry */
   }
 
   .dark {
