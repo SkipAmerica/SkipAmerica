@@ -61,6 +61,7 @@ interface QueueStatusResponse {
     fan_has_consented: boolean;
     discussion_topic: string | null;
     joined_at: string;
+    created_at: string;
   };
 }
 
@@ -557,9 +558,34 @@ export default function JoinQueue() {
       
       // Handle stale in_session state
       if ((queueStatus as any)?.in_session) {
+        // Check if we're navigating to a session (prevent cleanup during legitimate transitions)
+        if ((window as any).__skipQueueCleanupOnSessionNav) {
+          console.log('[JoinQueue:SESSION_NAV] Skipping cleanup - navigating to active session');
+          return;
+        }
+        
+        // Check how long the session has been in this state
+        const entryCreatedAt = queueStatus.entry?.created_at;
+        const now = Date.now();
+        const createdTimestamp = entryCreatedAt ? new Date(entryCreatedAt).getTime() : now;
+        const ageSeconds = (now - createdTimestamp) / 1000;
+        
+        // Only clean up if session has been stuck for more than 30 seconds
+        const STALE_THRESHOLD_SECONDS = 30;
+        
+        if (ageSeconds < STALE_THRESHOLD_SECONDS) {
+          console.log('[JoinQueue:SESSION_FRESH] Session recently created, not cleaning up', {
+            ageSeconds,
+            threshold: STALE_THRESHOLD_SECONDS,
+            entryId: queueStatus?.entry?.id
+          });
+          return;
+        }
+        
         console.warn('[JoinQueue:STALE_SESSION] Fan appears stuck in session state', {
           entryId: queueStatus?.entry?.id,
           fanState: queueStatus?.entry?.fan_state,
+          ageSeconds,
           creatorId,
           fanId: user.id
         })

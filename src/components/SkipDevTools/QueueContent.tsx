@@ -247,7 +247,12 @@ export function QueueContent() {
               
               // For meaningful updates to the first entry, update state in place
               if (newRecord.id === state.entries[0]?.id) {
-                console.log('[QueueContent] 🔄 Updating first entry in place')
+                console.log('[QueueContent] 🔄 Updating first entry in place', {
+                  entryId: newRecord.id,
+                  oldFanState: state.entries[0]?.fan_state,
+                  newFanState: newRecord.fan_state,
+                  changedFields: changedKeys
+                })
                 setLocalState(prev => ({
                   ...prev,
                   entries: [

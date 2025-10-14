@@ -138,7 +138,12 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
       })
 
       // Call success callback (e.g., close drawer)
-      options?.onSuccess?.()
+      if (options?.onSuccess) {
+        options.onSuccess()
+      }
+
+      // Set flag to prevent queue cleanup during legitimate session transition
+      (window as any).__skipQueueCleanupOnSessionNav = true;
 
       // Navigate creator to session (replace to prevent back button)
       setTimeout(() => {
