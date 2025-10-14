@@ -11,9 +11,6 @@ import { useLiveStore } from '@/stores/live-store'
 
 interface QueueManagerState {
   error?: string
-  isConnected: boolean
-  retryCount: number
-  lastFetchTime: number
 }
 
 export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false) {
@@ -23,11 +20,13 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   const channelRef = useRef<any>()
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
-  const [state, setState] = useState<QueueManagerState>({
-    isConnected: false,
-    retryCount: 0,
-    lastFetchTime: 0
-  })
+  // Use refs to avoid triggering effect re-runs
+  const retryCountRef = useRef(0)
+  const lastFetchTimeRef = useRef(0)
+  const isConnectedRef = useRef(false)
+  const fetchInProgressRef = useRef(false)
+  
+  const [state, setState] = useState<QueueManagerState>({})
 
   // Real-time subscription for queue changes
   useEffect(() => {
@@ -74,7 +73,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           
           store.triggerHaptic()
           
-          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+          setState(prev => ({ ...prev, error: undefined }))
+          isConnectedRef.current = true
           
           // Check for overload (>3 joins in 10s) - simplified version
           if (currentCount > 2) {
@@ -117,7 +117,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             detail: { count: currentCount, type: 'leave' }
           }))
           
-          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+          setState(prev => ({ ...prev, error: undefined }))
+          isConnectedRef.current = true
         }
       )
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
@@ -125,12 +126,14 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           error, 
           timestamp: performance.now() 
         })
-        setState(prev => ({ ...prev, error: 'Connection lost', isConnected: false }))
+        setState(prev => ({ ...prev, error: 'Connection lost' }))
+        isConnectedRef.current = false
         
         // Retry subscription after delay
         if (retryTimeoutRef.current) {
           clearTimeout(retryTimeoutRef.current)
         }
+        retryCountRef.current++
         console.log('[useQueueManager:CHANNEL_ERROR] Retrying subscription in 5s')
         retryTimeoutRef.current = setTimeout(() => {
           console.log('[useQueueManager:CHANNEL_ERROR] Retry timeout fired, resubscribing')
@@ -145,7 +148,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       })
 
     channelRef.current = channel
-    setState(prev => ({ ...prev, isConnected: true }))
+    isConnectedRef.current = true
     console.log('[useQueueManager:SUBSCRIBE] Subscription setup complete')
 
     return () => {
@@ -165,9 +168,9 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         clearTimeout(retryTimeoutRef.current)
         retryTimeoutRef.current = undefined
       }
-      setState(prev => ({ ...prev, isConnected: false }))
+      isConnectedRef.current = false
     }
-  }, [user, toast, store])
+  }, [user?.id]) // ONLY depend on stable user ID
 
   // Fetch initial queue count with enhanced error recovery and proper abort handling
   const abortControllerRef = useRef<AbortController | null>(null)
@@ -176,18 +179,22 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     if (!user) return
 
     const now = Date.now()
-    const timeSinceLastFetch = now - state.lastFetchTime
+    const timeSinceLastFetch = now - lastFetchTimeRef.current
     
     console.log('[useQueueManager:FETCH] Effect triggered', {
       userId: user.id,
       timeSinceLastFetch,
-      lastFetchTime: state.lastFetchTime,
+      lastFetchTime: lastFetchTimeRef.current,
+      fetchInProgress: fetchInProgressRef.current,
       timestamp: performance.now()
     })
     
-    // Debounce rapid successive calls (prevent spam from render loops)
-    if (timeSinceLastFetch < 2000) {
-      console.log('[useQueueManager:FETCH] Debouncing fetch request', { timeSinceLastFetch })
+    // Prevent overlapping fetches and debounce rapid calls
+    if (fetchInProgressRef.current || timeSinceLastFetch < 2000) {
+      console.log('[useQueueManager:FETCH] Skipping fetch', { 
+        fetchInProgress: fetchInProgressRef.current,
+        timeSinceLastFetch 
+      })
       return
     }
 
@@ -199,6 +206,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     console.log('[useQueueManager:FETCH] Creating new AbortController')
     abortControllerRef.current = new AbortController()
+    fetchInProgressRef.current = true
     let mounted = true
 
     const fetchCount = async (attempt: number = 0) => {
@@ -218,8 +226,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       const maxDelay = 10000
 
       try {
-        console.log('[useQueueManager:FETCH] Updating lastFetchTime')
-        setState(prev => ({ ...prev, lastFetchTime: now }))
+        lastFetchTimeRef.current = now
+        console.log('[useQueueManager:FETCH] Updated lastFetchTime:', now)
         
         console.log('[useQueueManager:FETCH] Executing Supabase query')
         const { count, error } = await supabase
@@ -258,12 +266,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           detail: { count: currentCount, type: 'initial' }
         }))
         
-        setState(prev => ({ 
-          ...prev, 
-          error: undefined, 
-          isConnected: true,
-          retryCount: 0
-        }))
+        setState(prev => ({ ...prev, error: undefined }))
+        isConnectedRef.current = true
+        retryCountRef.current = 0
+        fetchInProgressRef.current = false
         
       } catch (error: any) {
         // Ignore AbortError - this is normal cleanup
@@ -273,6 +279,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             hasController: !!abortControllerRef.current,
             timestamp: performance.now()
           })
+          fetchInProgressRef.current = false
           return
         }
         
@@ -293,10 +300,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           
           setState(prev => ({ 
             ...prev, 
-            error: `Connection issue, retrying in ${Math.round(totalDelay/1000)}s...`,
-            isConnected: false,
-            retryCount: attempt + 1
+            error: `Connection issue, retrying in ${Math.round(totalDelay/1000)}s...`
           }))
+          isConnectedRef.current = false
+          retryCountRef.current = attempt + 1
           
           setTimeout(() => {
             if (mounted && abortControllerRef.current) fetchCount(attempt + 1)
@@ -305,10 +312,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           // Max retries reached or non-recoverable error
           setState(prev => ({ 
             ...prev, 
-            error: attempt >= maxRetries ? 'Connection failed. Check your network.' : error.message,
-            isConnected: false,
-            retryCount: attempt + 1
+            error: attempt >= maxRetries ? 'Connection failed. Check your network.' : error.message
           }))
+          isConnectedRef.current = false
+          retryCountRef.current = attempt + 1
+          fetchInProgressRef.current = false
         }
       }
     }
@@ -321,13 +329,14 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         timestamp: performance.now() 
       })
       mounted = false
+      fetchInProgressRef.current = false
       if (abortControllerRef.current) {
         console.log('[useQueueManager:FETCH] Aborting controller on cleanup')
         abortControllerRef.current.abort()
         abortControllerRef.current = null
       }
     }
-  }, [user?.id, store])
+  }, [user?.id]) // ONLY depend on stable user ID
 
   const updateQueueCount = useCallback((count: number) => {
     store.updateQueueCount(count)
@@ -345,10 +354,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   }, [toast, store])
 
   return {
-    queueCount: store.queueCount, // Remove debouncing for real-time updates
+    queueCount: store.queueCount,
     updateQueueCount,
     incrementQueue,
     error: state.error,
-    isConnected: state.isConnected
+    isConnected: isConnectedRef.current
   }
 }
