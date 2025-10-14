@@ -147,9 +147,6 @@ export function PostCard({ post, isLast }: PostCardProps) {
       onTouchEnd={handleTouchEnd}
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
-      {post.creator.isLive && (
-        <div className="absolute inset-0 bg-green-500/5 animate-pulse pointer-events-none rounded-2xl" />
-      )}
       <div className="flex relative z-10">
         {/* Profile Column */}
         <div className="p-2 md:p-3 flex-shrink-0">

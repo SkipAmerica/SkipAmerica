@@ -144,11 +144,11 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
       {/* Top Row - Skip Logo */}
       <div className="flex items-center justify-between h-[56px] mb-2">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold tracking-tight text-turquoise">
+          <h1 className="text-2xl font-bold tracking-tight text-cyan-500">
             <span>Sk</span>
             <span className="relative">
               <span>i</span>
-              <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-turquoise rounded-full"></span>
+              <span className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-cyan-500 rounded-full"></span>
             </span>
             <span>p</span>
           </h1>
