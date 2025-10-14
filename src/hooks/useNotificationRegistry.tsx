@@ -167,7 +167,12 @@ export function useNotificationRegistry() {
     }
 
     return items;
-  }, [isProfileCompletionVisible, onboardingState]);
+  }, [
+    isProfileCompletionVisible, 
+    onboardingState?.percentComplete,
+    onboardingState?.onboardingSkipped,
+    onboardingState?.searchUnlocked
+  ]);
 
   return {
     visibleNotifications: notifications,

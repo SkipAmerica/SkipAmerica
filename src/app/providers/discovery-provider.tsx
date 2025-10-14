@@ -1,5 +1,5 @@
 // Discovery state management provider
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react'
 
 type DiscoveryMode = 'discover' | 'browse' | 'match'
 type BrowseMode = 'live' | 'schedule'
@@ -24,9 +24,9 @@ export function DiscoveryProvider({ children }: DiscoveryProviderProps) {
   const [browseMode, setBrowseMode] = useState<BrowseMode>('live')
 
   const handleDiscoveryModeChange = useCallback((mode: DiscoveryMode) => {
-    console.log('DiscoveryProvider - changing from', discoveryMode, 'to', mode)
+    console.log('DiscoveryProvider - changing to', mode)
     setDiscoveryMode(mode)
-  }, [discoveryMode])
+  }, [])
 
   const resetToInitialState = useCallback(() => {
     console.log('DiscoveryProvider - resetting to initial state')
@@ -34,14 +34,14 @@ export function DiscoveryProvider({ children }: DiscoveryProviderProps) {
     setBrowseMode('live')
   }, [])
 
-  const value: DiscoveryContextType = {
+  const value: DiscoveryContextType = useMemo(() => ({
     discoveryMode,
     browseMode,
     setDiscoveryMode,
     setBrowseMode,
     handleDiscoveryModeChange,
     resetToInitialState,
-  }
+  }), [discoveryMode, browseMode, handleDiscoveryModeChange, resetToInitialState])
 
   return (
     <DiscoveryContext.Provider value={value}>
