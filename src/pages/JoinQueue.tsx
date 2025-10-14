@@ -1492,11 +1492,21 @@ export default function JoinQueue() {
     return <Badge variant="secondary">Offline</Badge>;
   };
 
-  // Calculate estimated wait time (4 minutes per person)
+  // Helper to display queue count with "Available Now" for empty queues
+  const getQueueCountText = (count: number): string => {
+    if (count === 0) return 'Available Now';
+    return `${count} waiting`;
+  };
+
+  // Calculate estimated wait time with realistic estimates for positions 1-9
   const calculateWaitTime = (position: number | null): string => {
-    if (!position || position <= 1) return '0';
-    const minutes = position * 4;
-    return `${minutes}`;
+    if (!position || position <= 1) return 'Available Now';
+    
+    // For positions 2+, estimate 4 minutes per person ahead
+    const minutesPerPerson = 4;
+    const peopleAhead = position - 1; // Subtract current position
+    const estimatedMinutes = peopleAhead * minutesPerPerson;
+    return `~${estimatedMinutes} min`;
   };
 
   return (
@@ -1512,7 +1522,7 @@ export default function JoinQueue() {
         <div className="mb-3">
           <div className={cn(
             "flex items-center gap-3 bg-card rounded-lg border",
-            "p-3 ios-safe-left ios-safe-right"
+            "p-4 ios-safe-left ios-safe-right"
           )}>
             {/* Avatar + Info */}
             <Avatar className="h-10 w-10 border-2 border-border flex-shrink-0">
@@ -1531,7 +1541,7 @@ export default function JoinQueue() {
                   <Badge variant="secondary" className="text-xs">Offline</Badge>
                 )}
                 <span className="text-xs text-muted-foreground">
-                  {queueCount} waiting
+                  {getQueueCountText(queueCount)}
                 </span>
               </div>
             </div>
@@ -1540,7 +1550,7 @@ export default function JoinQueue() {
 
         {/* SMS Notification Banner */}
         {showSmsNotification && phoneNumber && (
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg ios-safe-left ios-safe-right">
+          <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg ios-safe-left ios-safe-right">
             <div className="flex items-start gap-2">
               <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
@@ -1565,12 +1575,18 @@ export default function JoinQueue() {
         {/* Mobile Queue Status Banner - iOS Optimized */}
         {isInQueue && (
           <Card className="mb-4 ios-safe-left ios-safe-right">
-            <CardContent className="p-3">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between gap-3">
                 {/* Queue Info */}
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-base truncate">
-                    In Queue - Position {actualPosition || '...'} • {calculateWaitTime(actualPosition)} min wait
+                    In Queue - Position {actualPosition || '...'}
+                    {actualPosition && actualPosition > 1 && (
+                      <> • {calculateWaitTime(actualPosition)} wait</>
+                    )}
+                    {actualPosition === 1 && (
+                      <> • {calculateWaitTime(actualPosition)}</>
+                    )}
                   </h3>
                 </div>
                 
