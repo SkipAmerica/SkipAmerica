@@ -103,6 +103,10 @@ html, body, #root {
     
     /* Feed background */
     --feed-background: 174 72% 92%;
+    --gradient-feed: linear-gradient(180deg, hsl(174 72% 92%) 0%, hsl(0 0% 100%) 100%);
+    
+    /* Avatar strokes */
+    --avatar-offline-stroke: 174 60% 75%; /* Softer blue for offline creators */
     
     /* Feed spacing */
     --feed-top-spacing: 1rem; /* 16px breathing room between ad panel and first entry */

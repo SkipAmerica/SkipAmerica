@@ -25,7 +25,7 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
           <div className="absolute -inset-0.5 rounded-full border-2 border-green-500 animate-ping" />
         </>
       ) : (
-        <div className="absolute -inset-0.5 rounded-full border-2 border-turquoise" />
+        <div className="absolute -inset-0.5 rounded-full border-2" style={{ borderColor: 'hsl(var(--avatar-offline-stroke))' }} />
       )}
       {onFollowToggle && (
         <button

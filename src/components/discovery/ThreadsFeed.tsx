@@ -185,8 +185,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
 
   return (
       <div 
-        className={`w-full pb-0 bg-feed-bg px-3 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
-        style={hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : undefined}
+        className={`w-full pb-0 px-3 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
+        style={{
+          background: 'var(--gradient-feed)',
+          ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {})
+        }}
       >
       <div className="space-y-3">
         {posts.map((post, index) => (
