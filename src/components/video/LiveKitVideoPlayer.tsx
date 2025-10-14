@@ -125,32 +125,7 @@ export function LiveKitVideoPlayer({
           subscribed: pub.isSubscribed
         }))
       })));
-      
-      // Skip re-attachment if tracks are already attached (prevents jerking)
-      if (attachedVideoSidRef.current && attachedAudioSidRef.current) {
-        console.log('[LiveKitVideoPlayer] Tracks already attached, skipping re-attach');
-        return;
-      }
 
-      // Detach any existing tracks first
-      if (attachedVideoTrack && videoRef.current) {
-        try {
-          attachedVideoTrack.detach(videoRef.current);
-        } catch (e) {
-          console.warn('[LiveKitVideoPlayer] Failed to detach previous video track:', e);
-        }
-        attachedVideoTrack = null;
-      }
-      
-      if (attachedAudioTrack && audioRef.current) {
-        try {
-          attachedAudioTrack.detach(audioRef.current);
-        } catch (e) {
-          console.warn('[LiveKitVideoPlayer] Failed to detach previous audio track:', e);
-        }
-        attachedAudioTrack = null;
-      }
-      
       // If targetParticipantId is specified, ONLY show that participant
       let participantsToTry = remoteParticipants;
       
@@ -180,6 +155,51 @@ export function LiveKitVideoPlayer({
         });
         // Only try the target participant's tracks
         participantsToTry = [targetParticipant];
+      }
+
+      // Check if we need to do anything - skip if exact same tracks are already attached
+      const currentlyAttachedVideo = attachedVideoSidRef.current;
+      const currentlyAttachedAudio = attachedAudioSidRef.current;
+      
+      let foundVideoSid: string | null = null;
+      let foundAudioSid: string | null = null;
+      
+      // First pass: check what tracks are available
+      for (const participant of participantsToTry) {
+        const videoTracks = Array.from(participant.videoTrackPublications.values());
+        if (videoTracks.length > 0 && videoTracks[0].track) {
+          foundVideoSid = videoTracks[0].trackSid;
+        }
+        const audioTracks = Array.from(participant.audioTrackPublications.values());
+        if (audioTracks.length > 0 && audioTracks[0].track) {
+          foundAudioSid = audioTracks[0].trackSid;
+        }
+      }
+      
+      // Skip if already attached to the exact same tracks
+      if (foundVideoSid && foundVideoSid === currentlyAttachedVideo &&
+          foundAudioSid && foundAudioSid === currentlyAttachedAudio) {
+        console.log('[LiveKitVideoPlayer] Exact same tracks already attached, skipping');
+        return;
+      }
+      
+      // Detach any existing tracks before attaching new ones
+      if (attachedVideoTrack && videoRef.current) {
+        try {
+          attachedVideoTrack.detach(videoRef.current);
+        } catch (e) {
+          console.warn('[LiveKitVideoPlayer] Failed to detach previous video track:', e);
+        }
+        attachedVideoTrack = null;
+      }
+      
+      if (attachedAudioTrack && audioRef.current) {
+        try {
+          attachedAudioTrack.detach(audioRef.current);
+        } catch (e) {
+          console.warn('[LiveKitVideoPlayer] Failed to detach previous audio track:', e);
+        }
+        attachedAudioTrack = null;
       }
       
       for (const participant of participantsToTry) {
@@ -295,10 +315,7 @@ export function LiveKitVideoPlayer({
         trackSid: pub.trackSid,
         timestamp: new Date().toISOString()
       });
-      // Only re-attach if no tracks are currently attached
-      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
-        attachTracks();
-      }
+      attachTracks();
     };
     const handleTrackPublished = (pub: any, participant: any) => {
       console.log('[LiveKitVideoPlayer] 📢 TRACK PUBLISHED:', {
@@ -307,10 +324,7 @@ export function LiveKitVideoPlayer({
         trackSid: pub.trackSid,
         timestamp: new Date().toISOString()
       });
-      // Only re-attach if no tracks are currently attached
-      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
-        attachTracks();
-      }
+      attachTracks();
     };
     const handleTrackUnpublished = (pub: any, participant: any) => {
       console.log('[LiveKitVideoPlayer] 🔕 TRACK UNPUBLISHED:', {
@@ -326,10 +340,7 @@ export function LiveKitVideoPlayer({
         sid: participant.sid,
         timestamp: new Date().toISOString()
       });
-      // Only re-attach if no tracks are currently attached
-      if (!attachedVideoSidRef.current && !attachedAudioSidRef.current) {
-        attachTracks();
-      }
+      attachTracks();
     };
     const handleTrackUnsubscribed = (track: any) => {
       console.log('[LiveKitVideoPlayer] 🔕 TRACK UNSUBSCRIBED:', {
