@@ -12,9 +12,14 @@ import VideoTile from '../components/VideoTile'
 import { MediaControls } from '../components/MediaControls'
 import { ConnectionBanner } from '../components/ConnectionBanner'
 import { PermissionPrompt } from '../components/PermissionPrompt'
+import { useSession } from '../providers/SessionProvider'
+import { endAlmightySession } from '@/utils/end-almighty-session'
+import { useToast } from '@/hooks/use-toast'
 
 export function CenterPane() {
   const navigate = useNavigate()
+  const { toast } = useToast()
+  const { sessionId, role } = useSession()
   const { primaryFocus, setPrimaryFocus, chatOpen } = useUIContext()
   const {
     localVideo,
@@ -70,8 +75,40 @@ export function CenterPane() {
   }
   
   const handleEndCall = async () => {
-    await leave()
-    navigate('/', { replace: true })
+    try {
+      console.log('[CenterPane] Ending session', { sessionId, role })
+      
+      // End session in database (V2 process)
+      const result = await endAlmightySession({ sessionId, role })
+      
+      if (!result.success) {
+        console.error('[CenterPane] Session end failed:', result.error)
+        toast({
+          title: 'Error ending session',
+          description: result.error || 'Could not end session properly',
+          variant: 'destructive'
+        })
+      }
+      
+      // Disconnect media
+      await leave()
+      
+      // Navigate based on role (creator → home, fan → join-queue page)
+      console.log('[CenterPane] Navigating to:', result.navigationPath)
+      navigate(result.navigationPath, { replace: true })
+      
+    } catch (error) {
+      console.error('[CenterPane] Unexpected error ending call:', error)
+      toast({
+        title: 'Error ending call',
+        description: 'An unexpected error occurred',
+        variant: 'destructive'
+      })
+      
+      // Fallback: still disconnect media and go home
+      await leave()
+      navigate('/', { replace: true })
+    }
   }
   
   return (
