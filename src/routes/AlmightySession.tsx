@@ -33,25 +33,51 @@ export default function AlmightySession() {
     const validateSession = async () => {
       if (!sessionId) return
       
-      console.log('[AlmightySession:VALIDATE] Checking session status:', sessionId)
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      console.log('[AlmightySession:VALIDATE] Checking session status:', {
+        sessionId,
+        userId: user?.id,
+        timestamp: new Date().toISOString()
+      })
       
       const { data, error } = await supabase
         .from('almighty_sessions')
-        .select('id, status, ended_at')
+        .select('id, status, ended_at, creator_id, fan_id')
         .eq('id', sessionId)
         .maybeSingle()
       
+      console.log('[AlmightySession:VALIDATE] Response:', {
+        hasData: !!data,
+        hasError: !!error,
+        status: data?.status,
+        ended_at: data?.ended_at,
+        userIsCreator: data && user ? data.creator_id === user.id : null,
+        userIsFan: data && user ? data.fan_id === user.id : null,
+        errorCode: error?.code,
+        errorMessage: error?.message
+      })
+      
       if (error) {
-        console.error('[AlmightySession:VALIDATE] Error:', error)
+        console.error('[AlmightySession:VALIDATE] Network/auth error:', error)
+        toast({
+          title: "Connection Error",
+          description: "Unable to validate session. Please check your connection.",
+          variant: "destructive"
+        })
         navigate('/', { replace: true })
         return
       }
       
       if (!data) {
-        console.warn('[AlmightySession:VALIDATE] Session not found')
+        console.warn('[AlmightySession:VALIDATE] Session not found (RLS or deleted)', {
+          cause: 'rls_or_not_found',
+          sessionId,
+          userId: user?.id
+        })
         toast({
-          title: "Session Not Found",
-          description: "This session doesn't exist or has been removed.",
+          title: "Session Unavailable",
+          description: "This session is not accessible. You may need to switch accounts or wait for a new invite.",
           variant: "destructive"
         })
         navigate('/', { replace: true })
@@ -59,7 +85,10 @@ export default function AlmightySession() {
       }
       
       if (data.status === 'ended' || data.ended_at) {
-        console.warn('[AlmightySession:VALIDATE] Session already ended')
+        console.warn('[AlmightySession:VALIDATE] Session truly ended', {
+          status: data.status,
+          ended_at: data.ended_at
+        })
         toast({
           title: "Session Ended",
           description: "This session has already ended.",
@@ -160,6 +189,8 @@ function AlmightyShell() {
         sessionId,
         timestamp: new Date().toISOString()
       })
+      // Clear skip flag to allow queue cleanup after session
+      ;(window as any).__skipQueueCleanupOnSessionNav = false
       leave()
     }
   }, [sessionId, role, join, leave])

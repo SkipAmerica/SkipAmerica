@@ -88,21 +88,36 @@ export default function JoinQueue() {
     console.log('[JoinQueue:INVITE_LISTENER] 🎧 Starting for user:', user.id);
 
     const isSessionActive = async (sessionId: string): Promise<boolean> => {
-      console.log('[JoinQueue:SESSION_CHECK] Validating session:', sessionId)
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      
+      console.log('[JoinQueue:SESSION_CHECK] Validating session:', {
+        sessionId,
+        userId: authUser?.id,
+        timestamp: new Date().toISOString()
+      })
       
       const { data, error } = await supabase
         .from('almighty_sessions')
-        .select('id, status, ended_at')
+        .select('id, status, ended_at, creator_id, fan_id')
         .eq('id', sessionId)
         .maybeSingle()
       
+      console.log('[JoinQueue:SESSION_CHECK] Response:', {
+        hasData: !!data,
+        hasError: !!error,
+        status: data?.status,
+        ended_at: data?.ended_at,
+        userIsFan: data && authUser ? data.fan_id === authUser.id : null,
+        cause: !data && !error ? 'rls_or_not_found' : null
+      })
+      
       if (error) {
-        console.error('[JoinQueue:SESSION_CHECK] Error:', error)
+        console.error('[JoinQueue:SESSION_CHECK] Network error:', error)
         return false
       }
       
       if (!data) {
-        console.warn('[JoinQueue:SESSION_CHECK] Session not found')
+        console.warn('[JoinQueue:SESSION_CHECK] Session unavailable (RLS or deleted)')
         return false
       }
       
@@ -126,10 +141,25 @@ export default function JoinQueue() {
       // CRITICAL: Validate session is still active before navigating
       const active = await isSessionActive(sessionId)
       if (!active) {
-        console.warn('[JoinQueue:INVITE_NAV] ❌ Session ended, not navigating')
+        console.warn('[JoinQueue:INVITE_NAV] ❌ Session unavailable, cleaning up queue')
+        
+        // Proactive cleanup: Remove queue entry tied to unavailable session
+        try {
+          await supabase
+            .from('call_queue')
+            .delete()
+            .eq('creator_id', creatorId!)
+            .eq('fan_id', user.id)
+            .eq('fan_state', 'in_call')
+          
+          console.log('[JoinQueue:INVITE_NAV] Queue entry cleaned up')
+        } catch (cleanupError) {
+          console.error('[JoinQueue:INVITE_NAV] Cleanup failed:', cleanupError)
+        }
+        
         toast({
-          title: "Session Ended",
-          description: "The session has already ended. Please wait for the creator to go live again.",
+          title: "Session Unavailable",
+          description: "The session is no longer available. Please wait for the creator to go live again.",
           variant: "destructive"
         })
         return
@@ -309,6 +339,58 @@ export default function JoinQueue() {
     }
   }, [user, authLoading, autoLoginAttempted, signInAnonymously, toast]);
 
+  // Self-heal: Clean up stale in_call entries on mount
+  useEffect(() => {
+    const cleanupStaleEntries = async () => {
+      if (!user || !creatorId) return
+      
+      console.log('[JoinQueue:MOUNT_CLEANUP] Checking for stale queue entries', {
+        userId: user.id,
+        creatorId
+      })
+      
+      try {
+        // Check for entries with fan_state='in_call' but no active session
+        const { data: staleEntries } = await supabase
+          .from('call_queue')
+          .select('id, fan_state, created_at')
+          .eq('creator_id', creatorId)
+          .eq('fan_id', user.id)
+          .eq('fan_state', 'in_call')
+        
+        if (staleEntries && staleEntries.length > 0) {
+          console.warn('[JoinQueue:MOUNT_CLEANUP] Found stale entries', {
+            count: staleEntries.length,
+            entries: staleEntries
+          })
+          
+          // Delete all stale entries
+          const { error: deleteError } = await supabase
+            .from('call_queue')
+            .delete()
+            .eq('creator_id', creatorId)
+            .eq('fan_id', user.id)
+            .eq('fan_state', 'in_call')
+          
+          if (deleteError) {
+            console.error('[JoinQueue:MOUNT_CLEANUP] Failed to delete:', deleteError)
+          } else {
+            console.log('[JoinQueue:MOUNT_CLEANUP] ✅ Removed stale entries')
+          }
+        } else {
+          console.log('[JoinQueue:MOUNT_CLEANUP] No stale entries found')
+        }
+        
+        // Clear skip flag
+        ;(window as any).__skipQueueCleanupOnSessionNav = false
+      } catch (error) {
+        console.error('[JoinQueue:MOUNT_CLEANUP] Error during cleanup:', error)
+      }
+    }
+    
+    cleanupStaleEntries()
+  }, [user, creatorId])
+
   // Fetch creator info
   useEffect(() => {
     const fetchCreator = async () => {
@@ -429,6 +511,16 @@ export default function JoinQueue() {
         p_fan_id: user.id
       }) as { data: QueueStatusResponse | null; error: any };
 
+      console.log('[JoinQueue:QUEUE_STATUS] RPC response', {
+        hasData: !!queueStatus,
+        hasError: !!error,
+        in_queue: queueStatus?.in_queue,
+        position: queueStatus?.position,
+        in_session: (queueStatus as any)?.in_session,
+        fan_state: queueStatus?.entry?.fan_state,
+        entry_id: queueStatus?.entry?.id
+      })
+
       if (error) {
         console.error('[JoinQueue] Error fetching queue position:', error);
         return;
@@ -437,6 +529,33 @@ export default function JoinQueue() {
       if (!queueStatus) {
         console.warn('[JoinQueue] No queue status returned');
         return;
+      }
+      
+      // Handle stale in_session state
+      if ((queueStatus as any)?.in_session) {
+        console.warn('[JoinQueue:STALE_SESSION] Fan appears stuck in session state', {
+          entryId: queueStatus?.entry?.id,
+          fanState: queueStatus?.entry?.fan_state,
+          creatorId,
+          fanId: user.id
+        })
+        
+        toast({
+          title: "Reconnecting...",
+          description: "Cleaning up previous session...",
+        })
+        
+        // Manual cleanup
+        if (queueStatus.entry?.id) {
+          await supabase
+            .from('call_queue')
+            .delete()
+            .eq('id', queueStatus.entry.id)
+        }
+        
+        // Re-check status after cleanup
+        await checkLiveStatus()
+        return
       }
 
       // Reset consent ref when entering queue for first time or re-entering

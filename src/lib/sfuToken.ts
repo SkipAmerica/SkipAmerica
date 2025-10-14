@@ -8,35 +8,48 @@ export async function fetchLiveKitToken(payload: {
   sessionId?: string; // NEW: optional session ID
   roomName?: string; // NEW: explicit room name for preview room
 }) {
-  console.log('[sfuToken] 📤 Fetching token with payload:', payload);
+  const requestId = crypto.randomUUID().substring(0, 8)
+  
+  console.log('[LiveKit:TOKEN_REQUEST]', {
+    requestId,
+    role: payload.role,
+    creatorId: payload.creatorId,
+    identity: payload.identity,
+    sessionId: payload.sessionId,
+    roomName: payload.roomName,
+    timestamp: new Date().toISOString()
+  });
   
   const { data, error } = await supabase.functions.invoke("get_livekit_token", {
     body: {
       role: payload.role,
       creatorId: payload.creatorId,
       identity: payload.identity,
-      sessionId: payload.sessionId, // Pass session ID if provided
-      roomName: payload.roomName, // Pass room name if provided
+      sessionId: payload.sessionId,
+      roomName: payload.roomName,
+      requestId, // Pass requestId for correlation
     },
   });
   
   if (error) {
-    console.error('[sfuToken] ❌ Token fetch error:', {
+    console.error('[LiveKit:TOKEN_ERROR]', {
+      requestId,
       error,
       status: (error as any).status,
       message: error.message,
-      details: (error as any).details
+      details: (error as any).details,
+      timestamp: new Date().toISOString()
     });
-    // Enhanced logging in dev
+    
     if (process.env.NODE_ENV !== 'production') {
       console.error('[Token] Fetch failed:', {
+        requestId,
         status: (error as any).status,
         message: error.message,
-        details: (error as any).details?.slice(0, 200), // First 200 chars
+        details: (error as any).details?.slice(0, 200),
       })
     }
     
-    // Classify 401/403 for better UX
     const status = (error as any).status
     if (status === 401 || status === 403) {
       const e = new Error('Session expired') as any
@@ -47,19 +60,20 @@ export async function fetchLiveKitToken(payload: {
     throw error
   }
   
-  console.log('[sfuToken] ✅ Token response received:', {
+  console.log('[LiveKit:TOKEN_RESPONSE]', {
+    requestId,
     hasToken: !!data?.token,
     hasUrl: !!data?.url,
     hasRoom: !!data?.room,
     tokenPreview: data?.token?.substring(0, 20) + '...',
     url: data?.url,
-    room: data?.room
+    room: data?.room,
+    timestamp: new Date().toISOString()
   });
   
-  // data is { token, url, room }
   if (!data?.token || !data?.url) {
     const err = new Error("Bad token response");
-    console.error('[sfuToken] ❌ Invalid token response:', data);
+    console.error('[LiveKit:TOKEN_INVALID]', { requestId, data });
     throw err;
   }
   
