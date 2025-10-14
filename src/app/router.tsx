@@ -1,6 +1,7 @@
 // Centralized routing configuration
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { lazy, Suspense, useState, useEffect } from 'react'
+import * as React from 'react'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { AuthGuard } from './guards/auth-guard'
@@ -39,48 +40,93 @@ function RatingModalWithLoadingGuard() {
   const location = useLocation()
   const [isReady, setIsReady] = useState(false)
 
-  console.log('[RatingModalWithLoadingGuard:RENDER]', {
-    pathname: location.pathname,
-    search: location.search,
+  console.log('[RatingModalGuard] render', { 
+    pathname: location.pathname, 
+    search: location.search, 
     isReady,
-    timestamp: performance.now()
+    timestamp: performance.now() 
   })
 
+  // Only engage the guard if rating modal is requested (sr=1)
+  const hasSr = new URLSearchParams(location.search).get('sr') === '1'
+
+  // Wait for route transitions to settle before rendering rating modal
+  // This prevents the modal from interfering with page loads
   useEffect(() => {
-    console.log('[RatingModalWithLoadingGuard:TIMER] Setting up navigation settle timer', {
+    console.log('[RatingModalGuard] effect triggered', { hasSr, pathname: location.pathname })
+    
+    // If no rating modal requested, we're ready immediately
+    setIsReady(!hasSr)
+    
+    if (!hasSr) {
+      console.log('[RatingModalGuard] no sr=1, ready immediately')
+      return
+    }
+    
+    console.log('[RatingModalGuard] sr=1 detected, setting timer')
+    const timer = setTimeout(() => {
+      console.log('[RatingModalGuard] timer fired, ready')
+      setIsReady(true)
+    }, 200) // Small delay to let route stabilize
+    
+    return () => {
+      console.log('[RatingModalGuard] cleanup timer')
+      clearTimeout(timer)
+    }
+  }, [location.pathname, hasSr])
+
+  if (!isReady) {
+    console.log('[RatingModalGuard] not ready, returning null')
+    return null
+  }
+
+  console.log('[RatingModalGuard] ready, rendering RatingModalManager')
+  return <RatingModalManager />
+}
+
+// Route change monitor to detect loops
+function RouteChangeMonitor() {
+  const location = useLocation()
+  const routeCountRef = React.useRef(0)
+  const lastResetRef = React.useRef(Date.now())
+  
+  React.useEffect(() => {
+    const now = Date.now()
+    const elapsed = now - lastResetRef.current
+    
+    // Reset counter every 2 seconds
+    if (elapsed > 2000) {
+      routeCountRef.current = 0
+      lastResetRef.current = now
+    }
+    
+    routeCountRef.current++
+    
+    console.log('[RouteMonitor] route change', {
       pathname: location.pathname,
+      search: location.search,
+      count: routeCountRef.current,
+      elapsed,
       timestamp: performance.now()
     })
     
-    setIsReady(false)
-    const timer = setTimeout(() => {
-      console.log('[RatingModalWithLoadingGuard:TIMER] Timer fired, setting ready=true', {
-        timestamp: performance.now()
-      })
-      setIsReady(true)
-    }, 200)
-    
-    return () => {
-      console.log('[RatingModalWithLoadingGuard:TIMER] Cleanup timer', {
+    // Warn if we see >10 route updates in 2 seconds
+    if (routeCountRef.current > 10) {
+      console.warn('[RouteMonitor] LOOP DETECTED: >10 route changes in 2s', {
+        count: routeCountRef.current,
         pathname: location.pathname,
-        timestamp: performance.now()
+        search: location.search
       })
-      clearTimeout(timer)
     }
-  }, [location.pathname]) // Reset on route change
-
-  if (!isReady) {
-    console.log('[RatingModalWithLoadingGuard:RENDER] Not ready, returning null')
-    return null
-  }
+  }, [location.pathname, location.search])
   
-  console.log('[RatingModalWithLoadingGuard:RENDER] Ready, rendering RatingModalManager')
-  return <RatingModalManager />
+  return null
 }
 
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <RouteChangeMonitor />
       <Routes>
         <Route path="/auth" element={
           <RouteWrapper>

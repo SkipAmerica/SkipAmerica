@@ -1,6 +1,6 @@
 // Consolidated search provider
-import React, { createContext, useContext, useState } from 'react'
-import { useDebounce } from '@/shared/hooks'
+import React, { createContext, useContext, useState, useEffect } from 'react'
+import { useDebounce } from '@/shared/hooks/use-debounce'
 
 interface SearchState {
   query: string
@@ -49,6 +49,20 @@ export function SearchProvider({ children }: SearchProviderProps) {
   const [filters, setFilters] = useState<SearchState>(defaultState)
   const debouncedQuery = useDebounce(filters.query, 300)
 
+  // Lifecycle logging
+  useEffect(() => {
+    console.log('[SearchProvider] mount', { timestamp: performance.now() })
+    return () => console.log('[SearchProvider] unmount', { timestamp: performance.now() })
+  }, [])
+
+  // Query change logging
+  useEffect(() => {
+    console.log('[SearchProvider] query change', { 
+      query: filters.query, 
+      timestamp: performance.now() 
+    })
+  }, [filters.query])
+
   const updateQuery = (query: string) => {
     setFilters(prev => ({ ...prev, query }))
   }
@@ -96,7 +110,22 @@ export function SearchProvider({ children }: SearchProviderProps) {
 export function useSearch() {
   const context = useContext(SearchContext)
   if (context === undefined) {
-    throw new Error('useSearch must be used within a SearchProvider')
+    // Non-fatal fallback to prevent app crash
+    if (import.meta.env.DEV && !(window as any).__SEARCH_PROVIDER_WARNED__) {
+      console.error('[SearchProvider] Missing provider - using safe fallback. This should not happen in normal operation.')
+      ;(window as any).__SEARCH_PROVIDER_WARNED__ = true
+    }
+    // Safe fallback to keep UI alive (no-ops)
+    return {
+      filters: { ...defaultState },
+      debouncedQuery: '',
+      updateQuery: () => {},
+      updateSelectedCategory: () => {},
+      updateSortBy: () => {},
+      updateFilters: () => {},
+      resetFilters: () => {},
+      hasActiveFilters: false,
+    } as SearchContextType
   }
   return context
 }

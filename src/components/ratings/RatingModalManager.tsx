@@ -81,8 +81,20 @@ export function RatingModalManager() {
         timestamp: performance.now()
       })
 
-      // Immediately clean URL before setting state
+      // Guard against double URL cleanup (reentrancy protection)
+      if ((window as any).__RATING_URL_CLEANED__) {
+        console.log('[RatingModalManager:PARAMS] URL already cleaned recently, skipping cleanup')
+        return
+      }
+
+      // Immediately clean URL before setting state (single point of cleanup)
       console.log('[RatingModalManager:PARAMS] Cleaning URL params')
+      ;(window as any).__RATING_URL_CLEANED__ = true
+      setTimeout(() => {
+        console.log('[RatingModalManager:PARAMS] Resetting cleanup guard')
+        ;(window as any).__RATING_URL_CLEANED__ = false
+      }, 2000)
+      
       const cleanUrl = new URL(window.location.href)
       ;['sr', 'sid', 'tuid', 'tuname', 'tubio', 'tuavatar', 'raterRole', 'showTip', 'showAppt', 'hasAppt'].forEach(k =>
         cleanUrl.searchParams.delete(k)

@@ -72,7 +72,7 @@ const mockCreators = [
 ];
 
 const Index = () => {
-  console.log('Index page is rendering...');
+  console.log('[Index] render start', { timestamp: performance.now() });
   const [activeTab, setActiveTab] = useState("discover");
   
   // Use discovery context instead of local state
@@ -81,8 +81,11 @@ const Index = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   
-  // Use global search context
-  const { filters, updateQuery, updateSelectedCategory } = useSearch();
+  // Use global search context with lifecycle logging
+  console.log('[Index] before useSearch', { timestamp: performance.now() });
+  const searchCtx = useSearch();
+  console.log('[Index] got searchCtx', { hasCtx: !!searchCtx, timestamp: performance.now() });
+  const { filters, updateQuery, updateSelectedCategory } = searchCtx;
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<string | null>(null);
