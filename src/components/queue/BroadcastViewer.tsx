@@ -34,7 +34,7 @@ export function BroadcastViewer({
   }
 
   const selfVideoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true); // Start MUTED to comply with autoplay policies
+  const [isMuted, setIsMuted] = useState(false); // Start UNMUTED - audio plays by default
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
   const [fanUserId, setFanUserId] = useState<string | null>(null);
@@ -273,6 +273,8 @@ export function BroadcastViewer({
                 videoPlaying: !videoElement.paused,
                 timestamp: new Date().toISOString()
               });
+              // Restore actual audio state after autoplay succeeds
+              videoElement.muted = isMuted;
             })
             .catch(err => {
               console.warn('[BroadcastViewer] ⚠️ AUTOPLAY BLOCKED - Showing Tap to Watch', {
