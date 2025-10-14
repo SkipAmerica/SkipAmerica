@@ -21,8 +21,12 @@ import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
 import { useSessionInvites } from '@/hooks/useSessionInvites';
-import { z } from 'zod';
+import { queueJoinSchema, phoneSchema } from '@/shared/types/validation';
 import { cn } from '@/lib/utils';
+import { IOSTabBar } from '@/components/mobile/IOSTabBar';
+import { useLiveStore } from '@/stores/live-store';
+import { MessageSquare, X } from 'lucide-react';
+import { z } from 'zod';
 
 const displayNameSchema = z.string()
   .trim()
@@ -269,6 +273,13 @@ export default function JoinQueue() {
   const [consentStream, setConsentStream] = useState<MediaStream | undefined>(undefined);
   const [queueEntryId, setQueueEntryId] = useState<string | null>(null);
   const [isUpdatingConsent, setIsUpdatingConsent] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [showSmsNotification, setShowSmsNotification] = useState(false);
+  const [activeTab, setActiveTab] = useState('discover');
+
+  const { isDiscoverable } = useLiveStore();
+  const isCurrentUserCreator = profile?.account_type === 'creator';
 
   const isUnloadingRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1033,14 +1044,31 @@ export default function JoinQueue() {
     };
   }, []); // Empty deps = runs cleanup only on unmount
 
-  const handleJoinQueue = async () => {
-    if (!user || !creatorId || !displayName.trim()) return;
+  // Phone validation helper
+  const validatePhone = (phone: string): boolean => {
+    if (!phone) return true; // Optional field
+    const result = phoneSchema.safeParse(phone);
+    if (!result.success) {
+      setPhoneError(result.error.issues[0].message);
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
 
-    // Validate display name
-    const validation = displayNameSchema.safeParse(displayName);
+  const handleJoinQueue = async () => {
+    if (!user || !creatorId || joining) return;
+
+    // Validate inputs
+    const validation = queueJoinSchema.safeParse({
+      displayName: displayName.trim(),
+      discussionTopic: discussionTopic.trim(),
+      phoneNumber: phoneNumber.trim(),
+    });
+
     if (!validation.success) {
       toast({
-        title: "Invalid name",
+        title: "Validation Error",
         description: validation.error.issues[0].message,
         variant: "destructive"
       });
@@ -1068,7 +1096,8 @@ export default function JoinQueue() {
         .insert({
           creator_id: creatorId,
           fan_id: user.id,
-          discussion_topic: discussionTopic || null,
+          discussion_topic: discussionTopic.trim() || null,
+          fan_phone_number: phoneNumber.trim() || null,
           priority: 0, // FCFS - no priority jumps
           status: 'waiting'
         })
@@ -1099,6 +1128,11 @@ export default function JoinQueue() {
           .eq('fan_id', user.id)
           .maybeSingle();
         console.log(`[JoinQueue:INSERT_VERIFY:${requestId}]`, { verify, verifyError })
+
+        // Show SMS notification banner if phone provided
+        if (phoneNumber.trim()) {
+          setShowSmsNotification(true);
+        }
 
         // Refresh queue status to get accurate position
         await checkLiveStatus();
@@ -1134,6 +1168,8 @@ export default function JoinQueue() {
       // Reset ALL queue state atomically
       setIsInQueue(false);
       setDiscussionTopic('');
+      setPhoneNumber('');
+      setShowSmsNotification(false);
       setQueueEntryId(null);
       setHasConsentedToBroadcast(false);
       setActualPosition(null);
@@ -1434,8 +1470,13 @@ export default function JoinQueue() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-background pb-safe-bottom ios-safe-left ios-safe-right pb-20">
-          <div className="container mx-auto px-4 py-4 max-w-7xl">
+      <div 
+        className="min-h-screen bg-background ios-safe-left ios-safe-right overflow-y-auto"
+        style={{
+          paddingBottom: 'calc(49px + var(--lsb-height, 0px) + env(safe-area-inset-bottom, 0px))'
+        }}
+      >
+        <div className="container mx-auto px-4 py-4 max-w-7xl">
         {/* Creator info header - Mobile optimized */}
         <div className="mb-3">
           <div className={cn(
@@ -1466,6 +1507,30 @@ export default function JoinQueue() {
           </div>
         </div>
 
+        {/* SMS Notification Banner */}
+        {showSmsNotification && phoneNumber && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg ios-safe-left ios-safe-right">
+            <div className="flex items-start gap-2">
+              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  SMS notifications enabled
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+                  We'll text you at {phoneNumber} when you're next in line
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowSmsNotification(false)} 
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
+                aria-label="Dismiss notification"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Mobile Queue Status Banner - iOS Optimized */}
         {isInQueue && (
           <Card className="mb-4 ios-safe-left ios-safe-right">
@@ -1478,10 +1543,10 @@ export default function JoinQueue() {
                   </h3>
                 </div>
                 
-                {/* Leave Button - Always Visible */}
+                {/* Leave Button - Red Destructive Variant */}
                 <Button
                   onClick={handleLeaveQueue}
-                  variant="outline"
+                  variant="destructive"
                   size="sm"
                   className="flex-shrink-0 h-9 px-4"
                 >
@@ -1561,6 +1626,30 @@ export default function JoinQueue() {
                         className="h-9"
                       />
                     </div>
+                    <ErrorBoundary>
+                      <div>
+                        <label className="text-xs text-muted-foreground mb-1 block">
+                          Phone Number (optional)
+                        </label>
+                        <Input
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            setPhoneNumber(e.target.value);
+                            validatePhone(e.target.value);
+                          }}
+                          onBlur={() => validatePhone(phoneNumber)}
+                          className={`h-9 ${phoneError ? 'border-red-500' : ''}`}
+                        />
+                        {phoneError && (
+                          <p className="text-xs text-red-500 mt-1">{phoneError}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Get an SMS when you're next in line
+                        </p>
+                      </div>
+                    </ErrorBoundary>
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">
                         Discussion topic (optional)
@@ -1572,13 +1661,21 @@ export default function JoinQueue() {
                         className="min-h-[50px] resize-none text-sm"
                       />
                     </div>
-                    <Button
-                      onClick={handleJoinQueue}
-                      disabled={joining || !displayName.trim()}
-                      className="w-full h-9"
-                    >
-                      {joining ? 'Joining...' : 'Join Queue'}
-                    </Button>
+                    {isCurrentUserCreator && isDiscoverable ? (
+                      <div className="p-4 bg-muted rounded-lg border border-yellow-200 dark:border-yellow-800">
+                        <p className="text-sm text-muted-foreground text-center">
+                          You cannot join queues while discoverable. End your session to join other creators' queues.
+                        </p>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={handleJoinQueue}
+                        disabled={joining || !displayName.trim()}
+                        className="w-full h-9"
+                      >
+                        {joining ? 'Joining...' : 'Join Queue'}
+                      </Button>
+                    )}
                   </div>
                  ) : (
                   <div className="space-y-2.5">
@@ -1662,6 +1759,20 @@ export default function JoinQueue() {
         onLeaveQueue={handleConsentDecline}
         creatorName={creator?.full_name || 'Creator'}
         isProcessing={isUpdatingConsent}
+      />
+
+      {/* IOSTabBar */}
+      <IOSTabBar
+        activeTab={activeTab}
+        onTabChange={(tab) => {
+          setActiveTab(tab);
+          if (tab !== 'discover') {
+            navigate(`/${tab}`);
+          }
+        }}
+        showFollowing={!!user}
+        isCreator={profile?.account_type === 'creator'}
+        profile={profile}
       />
       </div>
     </ErrorBoundary>

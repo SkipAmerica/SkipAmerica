@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { NOTIFICATION_TEMPLATES } from '../_shared/notification-templates.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -22,37 +23,38 @@ serve(async (req) => {
       .eq('user_id', fanId)
       .single()
 
-    // Check quiet hours
-    if (prefs && isQuietHours(prefs)) {
-      return new Response(JSON.stringify({ skipped: 'quiet_hours' }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
-    }
-
-    // Position 2: Heads-up notification
-    if (position === 2) {
-      console.log('[queue-notify] Sending P2 heads-up', { fanId })
-      
-      // Send SMS if enabled and Twilio configured
-      if (prefs?.enable_sms && prefs?.phone_verified && twilioSid && twilioToken) {
-        const message = `You're almost up in the queue! ETA ~${eta} min. Reply READY when you're set, or SNOOZE to step back.`
-        await sendSMS(prefs.phone_number!, message)
-      }
-    }
-
     // Position 1: Go-time notification
     if (position === 1) {
-      console.log('[queue-notify] Sending P1 go-time', { fanId })
+      console.log('[queue-notify] Sending P1 go-time', { fanId, creatorId })
       
-      const joinLink = `${supabaseUrl.replace('://supabase', '://your-app')}/session/${creatorId}?role=user`
-      
-      if (prefs?.enable_sms && prefs?.phone_verified && twilioSid && twilioToken) {
-        const message = `🔴 Creator is ready for you! Join: ${joinLink}\nReply HOLD to wait 60s, PASS to skip.`
-        await sendSMS(prefs.phone_number!, message)
+      // Fetch phone from call_queue
+      const { data: queueEntry } = await supabase
+        .from('call_queue')
+        .select('fan_phone_number')
+        .eq('creator_id', creatorId)
+        .eq('fan_id', fanId)
+        .eq('status', 'waiting')
+        .single()
+
+      if (queueEntry?.fan_phone_number && twilioSid && twilioToken) {
+        // Fetch creator name for personalization
+        const { data: creator } = await supabase
+          .from('creators')
+          .select('full_name')
+          .eq('id', creatorId)
+          .single()
+
+        const creatorName = creator?.full_name || 'The creator'
+        const joinLink = `${supabaseUrl.replace('.supabase.co', '.lovable.app')}/join-queue/${creatorId}`
         
-        // Schedule reminder in 60s (would need proper job queue in production)
-        // setTimeout(() => sendReminder(prefs.phone_number!, joinLink), 60000)
+        const message = NOTIFICATION_TEMPLATES.QUEUE_P1_GO_TIME.sms
+          .replace('{creatorName}', creatorName)
+          .replace('{joinLink}', joinLink)
+        
+        await sendSMS(queueEntry.fan_phone_number, message)
+        console.log('[queue-notify] SMS sent to', queueEntry.fan_phone_number)
+      } else {
+        console.log('[queue-notify] No phone or Twilio not configured')
       }
     }
 
@@ -96,10 +98,4 @@ async function sendSMS(to: string, body: string) {
   if (!response.ok) {
     throw new Error(`Twilio SMS failed: ${await response.text()}`)
   }
-}
-
-function isQuietHours(prefs: any): boolean {
-  // Implement timezone-aware quiet hours check
-  // For now, just return false
-  return false
 }

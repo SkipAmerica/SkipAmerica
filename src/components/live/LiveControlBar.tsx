@@ -36,9 +36,6 @@ const LiveControlBarContent: React.FC = () => {
   // Check if user is a creator
   const isCreator = profile?.account_type === 'creator';
   
-  // Check if we're on the join-queue page - hide LSB there
-  const pathname = window.location.pathname;
-  const isOnJoinQueuePage = pathname === '/join-queue' || pathname.startsWith('/join-queue/');
   
   // Add custom event listener for queue count updates to force re-render
   useEffect(() => {
@@ -105,22 +102,22 @@ const LiveControlBarContent: React.FC = () => {
     };
   }, [state])
   
-  // Show LSB only for creators who are discoverable, not live, and not on join-queue pages
-  const shouldShowLSB = isCreator && isDiscoverable && !isLive && !isOnJoinQueuePage;
+  // Show LSB only for creators who are discoverable, not live
+  const shouldShowLSB = isCreator && isDiscoverable && !isLive;
 
   // Publish CSS variables for FAB positioning
   useEffect(() => {
     const shell = shellRef.current;
     
     // Set visibility variable based on shouldShowLSB (single source of truth)
-    console.log('[LiveControlBar] Setting LSB visibility:', shouldShowLSB, { isCreator, isDiscoverable, isLive, isOnJoinQueuePage, state });
+    console.log('[LiveControlBar] Setting LSB visibility:', shouldShowLSB, { isCreator, isDiscoverable, isLive, state });
     document.documentElement.style.setProperty('--lsb-visible', shouldShowLSB ? '1' : '0');
     
     // Set height variable
     if (shell && shell.offsetHeight > 0) {
       document.documentElement.style.setProperty('--lsb-height', `${shell.offsetHeight}px`);
     }
-  }, [shouldShowLSB, isCreator, isDiscoverable, isLive, isOnJoinQueuePage, state]);
+  }, [shouldShowLSB, isCreator, isDiscoverable, isLive, state]);
 
   // ResizeObserver to keep --lsb-height current
   useEffect(() => {

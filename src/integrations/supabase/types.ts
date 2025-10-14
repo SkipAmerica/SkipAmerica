@@ -465,6 +465,7 @@ export type Database = {
           fan_camera_ready: boolean
           fan_has_consented: boolean
           fan_id: string
+          fan_phone_number: string | null
           fan_preview_updated_at: string | null
           fan_state: Database["public"]["Enums"]["queue_fan_state"]
           id: string
@@ -481,6 +482,7 @@ export type Database = {
           fan_camera_ready?: boolean
           fan_has_consented?: boolean
           fan_id: string
+          fan_phone_number?: string | null
           fan_preview_updated_at?: string | null
           fan_state?: Database["public"]["Enums"]["queue_fan_state"]
           id?: string
@@ -497,6 +499,7 @@ export type Database = {
           fan_camera_ready?: boolean
           fan_has_consented?: boolean
           fan_id?: string
+          fan_phone_number?: string | null
           fan_preview_updated_at?: string | null
           fan_state?: Database["public"]["Enums"]["queue_fan_state"]
           id?: string

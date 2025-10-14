@@ -127,3 +127,18 @@ export type AppointmentInsert = z.infer<typeof appointmentInsertSchema>
 export type Message = z.infer<typeof messageSchema>
 export type MessageInsert = z.infer<typeof messageInsertSchema>
 export type APIError = z.infer<typeof apiErrorSchema>
+
+// Phone number validation (E.164 format)
+export const phoneSchema = z.string()
+  .regex(/^\+[1-9]\d{1,14}$/, 'Phone must be in E.164 format (+1234567890)')
+  .optional()
+  .or(z.literal(''));
+
+// Queue join validation
+export const queueJoinSchema = z.object({
+  displayName: z.string().min(1, 'Name is required').max(50),
+  discussionTopic: z.string().max(200).optional(),
+  phoneNumber: phoneSchema,
+});
+
+export type QueueJoinInput = z.infer<typeof queueJoinSchema>;

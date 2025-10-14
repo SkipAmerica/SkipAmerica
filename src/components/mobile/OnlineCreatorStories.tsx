@@ -156,7 +156,11 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
             <div
               key={creator.id}
               className="flex-shrink-0 cursor-pointer ios-story-item"
-              onClick={() => onCreatorSelect?.(creator.id)}
+              onClick={() => {
+                if (creator.id) {
+                  window.location.href = `/join-queue/${creator.id}`;
+                }
+              }}
             >
               <div className="relative p-[3px]">
                 {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
