@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Room, createLocalTracks, VideoPresets, TrackPublishOptions } from 'livekit-client';
 import { useLiveKitRoom, LiveKitRoomConfig } from '@/hooks/use-livekit-room';
 
@@ -24,291 +24,111 @@ export function LiveKitPublisher({
   onError,
 }: LiveKitPublisherProps) {
   const { room, isConnected } = useLiveKitRoom(config);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const publishLockRef = useRef(false);
-  const lastPublishAttemptRef = useRef(0);
-  const publishAttemptRef = useRef(false);
-  const publishedTracksRef = useRef<Set<string>>(new Set());
-  const lastLogTimeRef = useRef(0);
-  const lastRoomStateRef = useRef({ hasRoom: false, isConnected: false });
+  const [isPublished, setIsPublished] = useState(false);
+  
+  // Idempotency guards - prevent re-publishing the same stream
+  const publishInFlightRef = useRef<Promise<void> | null>(null);
+  const publishedOnceRef = useRef(false);
+  const lastStreamKeyRef = useRef<string>("");
 
-  // Log config once per connection change
+  // Build a stable key from the current mediaStream to detect real changes
+  const streamKey = useMemo(() => {
+    if (!mediaStream) return "none";
+    const trackIds = mediaStream.getTracks().map(t => `${t.kind}:${t.id}:${t.readyState}`).join("|");
+    return `${mediaStream.id}::${trackIds}`;
+  }, [mediaStream]);
+
+  // Connection key to trigger effects on connection changes
+  const connectionKey = useMemo(() => (isConnected ? "connected" : "disconnected"), [isConnected]);
+
+  // Reset published flag when stream changes (allow fresh publish)
   useEffect(() => {
-    console.info('[LiveKitPublisher] 🎬 Component config:', {
-      role: config?.role,
-      identity: config?.identity,
-      roomName: config?.roomName,
-      creatorId: config?.creatorId
-    });
-  }, [config?.role, config?.identity, config?.roomName, config?.creatorId]);
+    if (lastStreamKeyRef.current && lastStreamKeyRef.current !== streamKey) {
+      console.log('[LiveKitPublisher] Stream changed, resetting publish flag');
+      publishedOnceRef.current = false;
+      setIsPublished(false);
+    }
+  }, [streamKey]);
 
-  // Log component render only when room state changes
-  const currentHasRoom = !!room;
-  const currentIsConnected = isConnected;
-  if (lastRoomStateRef.current.hasRoom !== currentHasRoom || 
-      lastRoomStateRef.current.isConnected !== currentIsConnected) {
-    console.log('[LiveKitPublisher] 🎬 Component rendered', {
-      hasRoom: currentHasRoom,
-      isConnected: currentIsConnected,
-      publishVideo,
-      publishAudio,
-      hasMediaStream: !!mediaStream,
-      mediaStreamTracks: mediaStream?.getTracks().length || 0,
-      config
-    });
-    lastRoomStateRef.current = { hasRoom: currentHasRoom, isConnected: currentIsConnected };
-  }
-
-  // Unpublish tracks when mediaStream becomes null (broadcast ended)
+  // Main publishing effect - publish stream once per unique stream
   useEffect(() => {
-    if (!mediaStream && room?.localParticipant) {
-      console.log('[LiveKitPublisher] MediaStream removed, unpublishing tracks');
-      
-      // Unpublish all local tracks
-      room.localParticipant.audioTrackPublications.forEach(pub => {
-        if (pub.track) {
-          room.localParticipant.unpublishTrack(pub.track);
-        }
-      });
-      room.localParticipant.videoTrackPublications.forEach(pub => {
-        if (pub.track) {
-          room.localParticipant.unpublishTrack(pub.track);
-        }
-      });
-      
-      // Reset all refs to allow fresh publish
-      publishedTracksRef.current.clear();
-      publishLockRef.current = false;
-      publishAttemptRef.current = false;
-      setIsPublishing(false);
-      
-      console.log('[LiveKitPublisher] ✅ Tracks unpublished, refs reset');
+    // 1) Must be connected
+    if (!isConnected || !room) {
+      return;
     }
-  }, [mediaStream, room]);
 
-  useEffect(() => {
-    console.log('[LiveKitPublisher] 🔄 Publishing effect triggered', {
-      isConnected,
-      publishVideo,
-      publishAudio,
-      hasMediaStream: !!mediaStream,
-      hasRoom: !!room,
-      isPublishing,
-      lockHeld: publishLockRef.current
+    // 2) Must have a stream with at least one live track we intend to publish
+    if (!mediaStream) return;
+    
+    const tracksToPublish = mediaStream.getTracks().filter(t => {
+      if (t.readyState !== "live") return false;
+      if (t.kind === "video" && publishVideo) return true;
+      if (t.kind === "audio" && publishAudio) return true;
+      return false;
     });
-
-    if (!room || !isConnected) {
-      // Gate log to once per second
-      const now = Date.now();
-      if (now - lastLogTimeRef.current > 1000) {
-        console.log('[LiveKitPublisher] ⏸️ Not ready - no room or not connected');
-        lastLogTimeRef.current = now;
-      }
-      return;
-    }
     
-    if (!publishVideo && !publishAudio) {
-      console.log('[LiveKitPublisher] ⏸️ Not publishing - both audio and video disabled');
+    if (tracksToPublish.length === 0) return;
+
+    // 3) If we already published this exact stream, do nothing
+    if (publishedOnceRef.current && lastStreamKeyRef.current === streamKey) {
       return;
     }
 
-    if (isPublishing || !mediaStream) {
-      console.log('[LiveKitPublisher] ⏸️ Skipping - already publishing or no media stream');
+    // 4) If a publish op is currently in flight, don't start another
+    if (publishInFlightRef.current) {
       return;
     }
-    
-    // Skip publishing if tracks are already published (prevents flutter on reconnect)
-    if (room.localParticipant) {
-      const hasVideo = room.localParticipant.videoTrackPublications.size > 0;
-      const hasAudio = room.localParticipant.audioTrackPublications.size > 0;
-      
-      if (hasVideo && hasAudio) {
-        console.log('[LiveKitPublisher] ✅ Tracks already published, skipping');
-        return;
-      }
-    }
-    
-    // Connection lock: Prevent concurrent publishing attempts
-    if (publishLockRef.current || publishAttemptRef.current) {
-      console.log('[LiveKitPublisher] 🔒 Publish already in progress, skipping');
-      return;
-    }
-    
-    // Debounce: Prevent rapid reconnect attempts (min 1 second between attempts)
-    const now = Date.now();
-    const timeSinceLastAttempt = now - lastPublishAttemptRef.current;
-    if (timeSinceLastAttempt < 1000) {
-      console.log(`[LiveKitPublisher] ⏳ Debouncing publish attempt (${timeSinceLastAttempt}ms since last)`);
-      return;
-    }
-    
-    lastPublishAttemptRef.current = now;
 
-    let isMounted = true;
+    // 5) Mark this stream as the active one we're publishing
+    lastStreamKeyRef.current = streamKey;
 
-    const publish = async (attempt = 1) => {
+    // 6) Publish exactly once
+    publishInFlightRef.current = (async () => {
       try {
-        publishLockRef.current = true;
-        publishAttemptRef.current = true;
-        setIsPublishing(true);
+        console.log('[LiveKitPublisher] 📡 Publishing tracks:', {
+          streamId: mediaStream.id,
+          tracks: tracksToPublish.map(t => ({ kind: t.kind, id: t.id })),
+          roomName: room.name,
+          identity: room.localParticipant.identity
+        });
 
-        // Define broadcast-grade video publishing options (Instagram/TikTok quality)
+        // Define broadcast-grade video publishing options
         const videoPublishOptions: TrackPublishOptions = {
-          videoCodec: 'h264', // H.264 for Safari/iOS hardware acceleration
+          videoCodec: 'h264',
           videoEncoding: {
-            maxBitrate: 5_000_000, // 5 Mbps for crystal-clear 1080p
+            maxBitrate: 2_500_000, // 2.5 Mbps
             maxFramerate: 30,
           },
-          scalabilityMode: 'L3T3_KEY', // Better temporal scalability
-          simulcast: true, // Enable adaptive bitrate with multiple layers
-          videoSimulcastLayers: [
-            VideoPresets.h1080, // 1920x1080 high quality
-            VideoPresets.h720,  // 1280x720 medium quality
-            VideoPresets.h360,  // 640x360 low quality
-          ],
         };
 
         // Define high-quality audio publishing options
         const audioPublishOptions: TrackPublishOptions = {
-          dtx: false, // Don't drop audio during silence
+          dtx: false,
           audioPreset: {
-            maxBitrate: 128_000, // 128 kbps stereo - matches Instagram/TikTok
+            maxBitrate: 128_000,
           },
         };
 
-        let tracks;
-        
-        // Use provided MediaStream if available, otherwise create tracks
-        if (mediaStream) {
-          console.log(`[LiveKitPublisher] Publishing ${mediaStream.getTracks().length} tracks from provided stream (attempt ${attempt})`);
-          tracks = mediaStream.getTracks();
-        } else {
-          console.log(`[LiveKitPublisher] Creating local tracks... (attempt ${attempt})`);
-          const localTracks = await createLocalTracks({
-            audio: publishAudio,
-            video: publishVideo ? {
-              facingMode: 'user',
-              resolution: VideoPresets.h1080.resolution, // 1920x1080
-              frameRate: 30,
-            } : false,
-          });
-          tracks = localTracks;
+        for (const track of tracksToPublish) {
+          const opts = track.kind === 'video' ? videoPublishOptions : audioPublishOptions;
+          await room.localParticipant.publishTrack(track, opts);
+          console.log(`[LiveKitPublisher] ✅ Published ${track.kind} track:`, track.id);
         }
 
-        if (!isMounted) {
-          // Clean up tracks if component unmounted
-          if (!mediaStream) {
-            tracks.forEach(track => track.stop());
-          }
-          return;
-        }
-
-        console.log('[LiveKitPublisher] 📡 ABOUT TO PUBLISH:', {
-          roomName: room.name,
-          localIdentity: room.localParticipant.identity,
-          tracks: tracks.map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled, readyState: t.readyState })),
-          currentParticipants: Array.from(room.remoteParticipants.values()).map(p => p.identity)
-        });
-
-        for (const track of tracks) {
-          const trackId = track.id;
-          
-          // Skip if already published
-          if (publishedTracksRef.current.has(trackId)) {
-            console.log(`[LiveKitPublisher] Track ${trackId} already published, skipping`);
-            continue;
-          }
-          
-          if (track.kind === 'video') {
-            console.log('[LiveKitPublisher] Publishing video with:', {
-              codec: 'h264',
-              maxBitrate: '2.5 Mbps',
-              resolution: '1920x1080 @ 30fps',
-              simulcast: true
-            });
-            await room.localParticipant.publishTrack(track, videoPublishOptions);
-            publishedTracksRef.current.add(trackId);
-          } else {
-            // Log MediaStreamTrack properties before publishing
-            console.log('[LiveKitPublisher] MediaStreamTrack properties:', {
-              kind: track.kind,
-              enabled: track.enabled,
-              muted: track.muted,
-              readyState: track.readyState,
-              id: track.id,
-              label: track.label,
-              settings: track.getSettings?.()
-            });
-            
-            console.log('[LiveKitPublisher] Publishing audio track with settings:', {
-              bitrate: '128 kbps',
-              dtx: false,
-              enabled: track.enabled,
-              muted: track.muted
-            });
-            
-            await room.localParticipant.publishTrack(track, audioPublishOptions);
-            publishedTracksRef.current.add(trackId);
-            
-            console.log('[LiveKitPublisher] ✅ Audio track published successfully');
-            
-            // Log published audio track details
-            const audioPublications = Array.from(room.localParticipant.audioTrackPublications.values());
-            console.log('[LiveKitPublisher] Local audio publications:', audioPublications.map(pub => ({
-              trackSid: pub.trackSid,
-              trackName: pub.trackName,
-              source: pub.source,
-              muted: pub.isMuted,
-              enabled: pub.track?.mediaStreamTrack?.enabled
-            })));
-          }
-        }
-
-        console.log('[LiveKitPublisher] ✅ PUBLISH COMPLETE:', {
-          roomName: room.name,
-          localIdentity: room.localParticipant.identity,
-          publishedVideoTracks: room.localParticipant.videoTrackPublications.size,
-          publishedAudioTracks: room.localParticipant.audioTrackPublications.size,
-          videoTrackDetails: Array.from(room.localParticipant.videoTrackPublications.values()).map(pub => ({
-            sid: pub.trackSid,
-            name: pub.trackName,
-            source: pub.source,
-            dimensions: pub.dimensions,
-            simulcasted: pub.simulcasted
-          })),
-          roomParticipants: Array.from(room.remoteParticipants.values()).map(p => p.identity)
-        });
+        publishedOnceRef.current = true;
+        setIsPublished(true);
         onPublished?.();
-      } catch (err) {
-        console.error(`[LiveKitPublisher] Failed to publish tracks (attempt ${attempt}):`, err);
         
-        // Retry up to 2 times for NotAllowedError or timing issues
-        if (attempt < 3 && isMounted) {
-          console.log(`[LiveKitPublisher] Retrying in 300ms...`);
-          setTimeout(() => {
-            if (isMounted) publish(attempt + 1);
-          }, 300);
-        } else {
-          const error = err instanceof Error ? err : new Error('Failed to publish');
-          onError?.(error);
-        }
-      } finally {
-        if (isMounted && attempt >= 3) {
-          setIsPublishing(false);
-          publishLockRef.current = false;
-        }
+        console.log('[LiveKitPublisher] ✅ All tracks published successfully');
+      } catch (err: any) {
+        console.error('[LiveKitPublisher] ❌ Publish failed:', err);
+        onError?.(err instanceof Error ? err : new Error(String(err)));
       }
-    };
+    })().finally(() => {
+      publishInFlightRef.current = null;
+    });
 
-    publish();
-
-    return () => {
-      isMounted = false;
-      publishLockRef.current = false;
-      publishAttemptRef.current = false;
-      publishedTracksRef.current.clear();
-    };
-  }, [room, isConnected, publishAudio, publishVideo, mediaStream, onPublished, onError, isPublishing]);
+  }, [connectionKey, streamKey, publishVideo, publishAudio, room, isConnected, mediaStream, onPublished, onError]);
 
   return null; // This is a headless component
 }

@@ -6,6 +6,9 @@ import { Video, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { useMedia } from '@/modules/almighty/providers/MediaProvider';
 
+// Track if we've requested preview for this modal session
+const previewRequestedRef = { current: false };
+
 interface NextUpConsentModalProps {
   open: boolean;
   creatorName: string;
@@ -31,10 +34,20 @@ export function NextUpConsentModal({
   
   const previewRef = useRef<HTMLVideoElement>(null)
 
-  // Auto-request camera when modal opens (only once)
+  // Auto-request camera when modal opens (only once per session)
   useEffect(() => {
-    if (!open || localVideo) return
+    if (!open) {
+      // Reset when modal closes
+      previewRequestedRef.current = false;
+      return;
+    }
 
+    // If we already have video or already requested, skip
+    if (localVideo || previewRequestedRef.current) return;
+
+    // Mark as requested before calling to prevent loops
+    previewRequestedRef.current = true;
+    
     console.log('[ConsentModal] 📹 Requesting camera preview...')
     previewOnly()
       .then(() => {
@@ -42,8 +55,10 @@ export function NextUpConsentModal({
       })
       .catch(err => {
         console.error('[ConsentModal] ❌ Camera request failed:', err)
+        // Reset on error to allow retry button to work
+        previewRequestedRef.current = false;
       })
-  }, [open, localVideo, previewOnly])
+  }, [open, localVideo])
 
   // Attach video track to preview element
   useEffect(() => {
