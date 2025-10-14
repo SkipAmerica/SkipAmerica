@@ -2097,6 +2097,77 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_code_redemptions: {
+        Row: {
+          id: string
+          promo_code_id: string
+          redeemed_at: string
+          skips_received: number
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          promo_code_id: string
+          redeemed_at?: string
+          skips_received: number
+          user_id: string
+        }
+        Update: {
+          id?: string
+          promo_code_id?: string
+          redeemed_at?: string
+          skips_received?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_redemptions_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          current_redemptions: number
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_redemptions: number | null
+          metadata: Json | null
+          skips_amount: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_redemptions?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          metadata?: Json | null
+          skips_amount: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_redemptions?: number
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          metadata?: Json | null
+          skips_amount?: number
+        }
+        Relationships: []
+      }
       queues: {
         Row: {
           created_at: string | null
@@ -2226,6 +2297,80 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      session_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          session_id: string
+          tags: string[] | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id: string
+          rater_id: string
+          rating: number
+          session_id: string
+          tags?: string[] | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rated_user_id?: string
+          rater_id?: string
+          rating?: number
+          session_id?: string
+          tags?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_ratings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "almighty_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skips_transactions: {
+        Row: {
+          amount_skips: number
+          created_at: string
+          from_user_id: string | null
+          id: string
+          metadata: Json | null
+          reference_id: string | null
+          to_user_id: string | null
+          transaction_type: string
+        }
+        Insert: {
+          amount_skips: number
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          to_user_id?: string | null
+          transaction_type: string
+        }
+        Update: {
+          amount_skips?: number
+          created_at?: string
+          from_user_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          to_user_id?: string | null
+          transaction_type?: string
+        }
+        Relationships: []
       }
       social_accounts: {
         Row: {
@@ -2548,7 +2693,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      creator_ratings_summary: {
+        Row: {
+          average_rating: number | null
+          creator_id: string | null
+          negative_ratings: number | null
+          positive_ratings: number | null
+          recent_ratings: Json | null
+          total_ratings: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_onboarding_progress: {
@@ -2580,13 +2735,30 @@ export type Database = {
           standard_unread: number
         }[]
       }
+      get_anonymous_ratings: {
+        Args: { p_creator_id: string; p_limit?: number }
+        Returns: {
+          comment: string
+          created_at: string
+          rating: number
+          tags: string[]
+        }[]
+      }
       get_queue_position: {
         Args: { p_creator_id: string; p_fan_id: string }
         Returns: Json
       }
+      initialize_user_skips: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       mark_thread_read: {
         Args: { p_thread_id: string; p_user_id: string }
         Returns: undefined
+      }
+      redeem_promo_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: Json
       }
       remove_from_queue_v1: {
         Args: { p_creator_id: string; p_fan_id: string; p_reason: string }
@@ -2595,6 +2767,17 @@ export type Database = {
       start_almighty_session: {
         Args: { p_queue_entry: string }
         Returns: string
+      }
+      transfer_skips: {
+        Args: {
+          p_amount_skips: number
+          p_from_user_id: string
+          p_metadata?: Json
+          p_reference_id?: string
+          p_to_user_id: string
+          p_transaction_type: string
+        }
+        Returns: Json
       }
     }
     Enums: {

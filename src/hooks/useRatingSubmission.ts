@@ -45,19 +45,7 @@ export function useRatingSubmission() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Not authenticated')
 
-    // Check sender balance
-    const { data: balanceData } = await (supabase as any)
-      .from('user_balances')
-      .select('balance_skips')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
-    const currentBalance = balanceData?.balance_skips || 0
-    if (currentBalance < data.amountSkips) {
-      throw new Error(`Insufficient Skips balance. You have ${currentBalance} Skips.`)
-    }
-
-    // Insert tip
+    // Insert tip record first
     const { error: tipError } = await (supabase as any)
       .from('tips')
       .insert({
@@ -69,25 +57,20 @@ export function useRatingSubmission() {
 
     if (tipError) throw tipError
 
-    // Update sender balance
-    await (supabase as any)
-      .from('user_balances')
-      .update({ balance_skips: currentBalance - data.amountSkips })
-      .eq('user_id', user.id)
+    // Use atomic transfer_skips function
+    const { data: transferResult, error: transferError } = await supabase.rpc('transfer_skips', {
+      p_from_user_id: user.id,
+      p_to_user_id: data.recipientId,
+      p_amount_skips: data.amountSkips,
+      p_transaction_type: 'tip',
+      p_reference_id: data.sessionId,
+      p_metadata: {}
+    }) as { data: any; error: any }
 
-    // Update recipient balance
-    const { data: recipientBalance } = await (supabase as any)
-      .from('user_balances')
-      .select('balance_skips')
-      .eq('user_id', data.recipientId)
-      .maybeSingle()
-
-    const newRecipientBalance = (recipientBalance?.balance_skips || 0) + data.amountSkips
-
-    await (supabase as any)
-      .from('user_balances')
-      .update({ balance_skips: newRecipientBalance })
-      .eq('user_id', data.recipientId)
+    if (transferError) throw transferError
+    if (!transferResult?.success) {
+      throw new Error('Failed to transfer Skips')
+    }
   }
 
   const submitAll = async (ratingData?: RatingData, tipData?: TipData) => {

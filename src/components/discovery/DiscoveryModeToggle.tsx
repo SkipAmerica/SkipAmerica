@@ -38,7 +38,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         )}
       >
         <Search className="h-4 w-4" />
-        <span>Discover</span>
+        <span>For You</span>
       </Button>
       
       <Button

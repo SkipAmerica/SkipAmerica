@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { HalfStarRating } from './HalfStarRating'
 import { useRatingSubmission } from '@/hooks/useRatingSubmission'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Coins } from 'lucide-react'
+import { supabase } from '@/integrations/supabase/client'
 
 interface PostCallRatingModalProps {
   open: boolean
@@ -29,16 +30,40 @@ export function PostCallRatingModal({
   const [rating, setRating] = useState(0)
   const [comment, setComment] = useState('')
   const [tipSkips, setTipSkips] = useState<number | ''>('')
+  const [userBalance, setUserBalance] = useState<number | null>(null)
   const { submitAll, submitting } = useRatingSubmission()
+
+  // Fetch user's Skips balance
+  useEffect(() => {
+    const fetchBalance = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await (supabase as any)
+        .from('user_balances')
+        .select('balance_skips')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      setUserBalance(data?.balance_skips ?? 0)
+    }
+    
+    if (open) {
+      fetchBalance()
+    }
+  }, [open])
 
   const usd = useMemo(() => {
     if (typeof tipSkips === 'number' && tipSkips > 0) {
-      return (tipSkips / 100).toFixed(2)
+      return (tipSkips * 0.01).toFixed(2)
     }
     return '0.00'
   }, [tipSkips])
 
-  const canSubmit = rating > 0 || (typeof tipSkips === 'number' && tipSkips > 0)
+  const tipAmount = typeof tipSkips === 'number' ? tipSkips : 0
+  const tipError = tipAmount > 0 && tipAmount < 10 ? 'Minimum tip is 10 Skips' : 
+                   tipAmount > (userBalance ?? 0) ? `Insufficient balance (${userBalance} Skips)` : null
+  const canSubmit = rating > 0 || (tipAmount >= 10 && !tipError)
 
   if (!open) return null
 
@@ -135,21 +160,22 @@ export function PostCallRatingModal({
             <label className="text-sm font-medium text-foreground">
               Send a tip (optional)
             </label>
-            <span className="text-xs text-muted-foreground">
-              100 Skips = $1.00
-            </span>
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Coins className="h-4 w-4" />
+              <span>{userBalance ?? 0} Skips</span>
+            </div>
           </div>
           
           <div className="flex gap-2 mb-3">
             <Input
               type="number"
-              min={0}
+              min={10}
               value={tipSkips}
               onChange={(e) => {
                 const val = e.target.value
                 setTipSkips(val === '' ? '' : Math.max(0, Number(val)))
               }}
-              placeholder="Enter Skips amount"
+              placeholder="Min 10 Skips"
               className="flex-1 focus-visible:ring-[hsl(var(--turquoise))]"
             />
             <div className="flex items-center justify-center min-w-[80px] px-3 bg-muted rounded-md text-sm font-medium">
@@ -157,9 +183,17 @@ export function PostCallRatingModal({
             </div>
           </div>
 
+          {tipError && (
+            <p className="text-xs text-destructive mb-2">{tipError}</p>
+          )}
+
+          <p className="text-xs text-muted-foreground mb-3">
+            1 Skip = $0.01 USD • Minimum 10 Skips
+          </p>
+
           {/* Quick Tip Buttons */}
           <div className="grid grid-cols-4 gap-2">
-            {[50, 100, 200, 500].map((amount) => (
+            {[10, 50, 100, 500].map((amount) => (
               <Button
                 key={amount}
                 type="button"
@@ -188,7 +222,7 @@ export function PostCallRatingModal({
           <Button
             type="button"
             onClick={handleSubmit}
-            disabled={!canSubmit || submitting}
+            disabled={!canSubmit || submitting || !!tipError}
             className="flex-1 bg-[hsl(var(--turquoise))] hover:bg-[hsl(var(--turquoise))]/90 text-white"
           >
             {submitting ? (
