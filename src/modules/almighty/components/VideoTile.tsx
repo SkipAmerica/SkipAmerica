@@ -28,12 +28,22 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
     const el = videoRef.current as HTMLVideoElement | null
     if (!track || track.kind !== 'video' || !el || !el.isConnected) return
 
+    console.log('[VideoTile:ATTACH]', {
+      trackSid: track.sid,
+      kind: track.kind,
+      isLocal: trackRef?.isLocal,
+      enabled: (track as any).isEnabled,
+      timestamp: new Date().toISOString()
+    })
+
     let cancelled = false
     let retryTimer: number | undefined
     let watchdogTimer: number | undefined
 
     const tryPlay = () => {
-      if (!cancelled) el.play().catch(() => {})
+      if (!cancelled) {
+        el.play().catch(() => {})
+      }
     }
 
     const onTap = () => {
@@ -53,12 +63,21 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       el.playsInline = true
       el.autoplay = true
 
-      el.play().catch(() => {
-        // Chrome sometimes needs a post-layout retry
-        retryTimer = window.setTimeout(tryPlay, 200)
-        // Safari/iOS: start on next user gesture
-        document.addEventListener('click', onTap, { once: true })
-      })
+      // Aggressively play video with retry logic
+      el.play()
+        .then(() => {
+          console.log('[VideoTile:PLAY_SUCCESS]', { 
+            trackSid: track.sid,
+            isLocal: trackRef?.isLocal 
+          })
+        })
+        .catch(() => {
+          console.warn('[VideoTile:PLAY_FAILED]', { trackSid: track.sid })
+          // Chrome sometimes needs a post-layout retry
+          retryTimer = window.setTimeout(tryPlay, 200)
+          // Safari/iOS: start on next user gesture
+          document.addEventListener('click', onTap, { once: true })
+        })
     }
 
     // Initial attach (after layout)
@@ -72,18 +91,21 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       if (cancelled) return
       const notPainting = !el.videoWidth || !el.videoHeight || el.readyState < 2
       if (notPainting) {
-        if (process.env.NODE_ENV !== 'production') {
-          console.warn('[VideoTile] Watchdog: element not painting, re-attaching', {
-            videoWidth: el.videoWidth,
-            videoHeight: el.videoHeight,
-            readyState: el.readyState,
-            trackSid: track.sid
-          })
-        }
+        console.warn('[VideoTile:NOT_PAINTING]', {
+          videoWidth: el.videoWidth,
+          videoHeight: el.videoHeight,
+          readyState: el.readyState,
+          trackSid: track.sid
+        })
         try {
           track.detach(el)
         } catch {}
         attachOnce()
+      } else {
+        console.log('[VideoTile:PAINTING_OK]', {
+          videoWidth: el.videoWidth,
+          videoHeight: el.videoHeight
+        })
       }
     }, 400)
 

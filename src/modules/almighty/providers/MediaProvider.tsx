@@ -642,10 +642,20 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         refreshTracks()
       })
       
-      newRoom.on(RoomEvent.TrackPublished, (_pub, participant) => {
+      newRoom.on(RoomEvent.TrackPublished, (pub, participant) => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Track published by', participant.identity)
+          console.log('[LK] Track published by', participant.identity, 'kind:', pub.kind)
         }
+        
+        // Belt-and-suspenders: explicitly subscribe to video tracks
+        if (pub.kind === 'video' && !pub.isSubscribed) {
+          try {
+            pub.setSubscribed(true)
+          } catch (e) {
+            console.warn('[LK] Failed to subscribe to video track:', e)
+          }
+        }
+        
         // A tiny defer helps if LK is still normalizing internal state
         setTimeout(() => ensureSubscribed(newRoom), 0);
       })
@@ -849,10 +859,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         publishedTracks: newRoom.localParticipant.trackPublications.size
       })
       
-      // Set initial mute states via LiveKit APIs
-      await newRoom.localParticipant.setMicrophoneEnabled(MEDIA.START_AUDIO)
-      await newRoom.localParticipant.setCameraEnabled(MEDIA.START_VIDEO)
-      
+      // Tracks are already created with correct enabled state (MEDIA.START_AUDIO/VIDEO)
+      // No need to call setCameraEnabled/setMicrophoneEnabled after publishing
       setMicEnabled(MEDIA.START_AUDIO)
       setCamEnabled(MEDIA.START_VIDEO)
       
