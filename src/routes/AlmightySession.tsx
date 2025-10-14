@@ -10,10 +10,13 @@ import { LeftPane } from '@/modules/almighty/panes/LeftPane'
 import { CenterPane } from '@/modules/almighty/panes/CenterPane'
 import { RightPane } from '@/modules/almighty/panes/RightPane'
 import { getIdentityForRole } from '@/modules/almighty/lib/identity'
+import { useToast } from '@/hooks/use-toast'
+import { supabase } from '@/lib/supabase'
 
 export default function AlmightySession() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
+  const { toast } = useToast()
 
   // Session ID validation
   useEffect(() => {
@@ -24,6 +27,53 @@ export default function AlmightySession() {
       navigate('/', { replace: true })
     }
   }, [sessionId, navigate])
+
+  // Session status validation (guard against ended sessions)
+  useEffect(() => {
+    const validateSession = async () => {
+      if (!sessionId) return
+      
+      console.log('[AlmightySession:VALIDATE] Checking session status:', sessionId)
+      
+      const { data, error } = await supabase
+        .from('almighty_sessions')
+        .select('id, status, ended_at')
+        .eq('id', sessionId)
+        .maybeSingle()
+      
+      if (error) {
+        console.error('[AlmightySession:VALIDATE] Error:', error)
+        navigate('/', { replace: true })
+        return
+      }
+      
+      if (!data) {
+        console.warn('[AlmightySession:VALIDATE] Session not found')
+        toast({
+          title: "Session Not Found",
+          description: "This session doesn't exist or has been removed.",
+          variant: "destructive"
+        })
+        navigate('/', { replace: true })
+        return
+      }
+      
+      if (data.status === 'ended' || data.ended_at) {
+        console.warn('[AlmightySession:VALIDATE] Session already ended')
+        toast({
+          title: "Session Ended",
+          description: "This session has already ended.",
+          variant: "destructive"
+        })
+        navigate('/', { replace: true })
+        return
+      }
+      
+      console.log('[AlmightySession:VALIDATE] Session is active')
+    }
+    
+    validateSession()
+  }, [sessionId, navigate, toast])
 
   return (
     <SessionProvider>

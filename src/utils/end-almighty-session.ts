@@ -105,6 +105,25 @@ export async function endAlmightySession(
       console.log('[endAlmightySession:UPDATE] Session already ended, skipping update')
     }
 
+    // 3.5. Decline any pending session invites (prevent stale navigation)
+    console.log('[endAlmightySession:INVITES] Declining pending invites', { 
+      elapsed: performance.now() - startTime 
+    })
+
+    const { error: inviteError } = await supabase
+      .from('session_invites')
+      .update({ 
+        status: 'declined'
+      })
+      .eq('session_id', sessionId)
+      .eq('status', 'pending')
+
+    if (inviteError) {
+      console.error('[endAlmightySession:INVITES] Failed to decline invites:', inviteError)
+    } else {
+      console.log('[endAlmightySession:INVITES] Pending invites declined')
+    }
+
     // 3. Remove from queue using V2 service
     // The cleanup_queue_on_session_end trigger will also handle this, but we do it here for immediate effect
     console.log('[endAlmightySession:QUEUE] Removing from queue', { 

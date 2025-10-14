@@ -87,11 +87,54 @@ export default function JoinQueue() {
     
     console.log('[JoinQueue:INVITE_LISTENER] 🎧 Starting for user:', user.id);
 
-    const goto = (sessionId: string, source: string) => {
+    const isSessionActive = async (sessionId: string): Promise<boolean> => {
+      console.log('[JoinQueue:SESSION_CHECK] Validating session:', sessionId)
+      
+      const { data, error } = await supabase
+        .from('almighty_sessions')
+        .select('id, status, ended_at')
+        .eq('id', sessionId)
+        .maybeSingle()
+      
+      if (error) {
+        console.error('[JoinQueue:SESSION_CHECK] Error:', error)
+        return false
+      }
+      
+      if (!data) {
+        console.warn('[JoinQueue:SESSION_CHECK] Session not found')
+        return false
+      }
+      
+      const isActive = data.status === 'active' && !data.ended_at
+      console.log('[JoinQueue:SESSION_CHECK]', { 
+        sessionId, 
+        status: data.status, 
+        ended_at: data.ended_at,
+        isActive 
+      })
+      
+      return isActive
+    }
+
+    const goto = async (sessionId: string, source: string) => {
       if (navigatedRef.current) {
         console.log('[JoinQueue:INVITE_NAV] ⚠️ Already navigated, skipping');
         return;
       }
+      
+      // CRITICAL: Validate session is still active before navigating
+      const active = await isSessionActive(sessionId)
+      if (!active) {
+        console.warn('[JoinQueue:INVITE_NAV] ❌ Session ended, not navigating')
+        toast({
+          title: "Session Ended",
+          description: "The session has already ended. Please wait for the creator to go live again.",
+          variant: "destructive"
+        })
+        return
+      }
+      
       navigatedRef.current = true;
       
       // Set flag to prevent queue cleanup on navigation
@@ -120,7 +163,7 @@ export default function JoinQueue() {
           description: "Connecting to session...",
           duration: 2000,
         });
-        goto(pending[0].session_id, 'INITIAL_FETCH');
+        await goto(pending[0].session_id, 'INITIAL_FETCH');
         return; // Skip realtime setup since we're navigating
       } else {
         console.log('[JoinQueue:INVITE_FETCH] No pending invites found');
