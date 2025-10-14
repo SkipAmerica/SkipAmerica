@@ -189,6 +189,8 @@ function AlmightyShell() {
         sessionId,
         timestamp: new Date().toISOString()
       })
+      // Reset join guard to allow re-join in dev mode (Strict Mode double-render)
+      joinedRef.current = false
       // Clear skip flag to allow queue cleanup after session
       ;(window as any).__skipQueueCleanupOnSessionNav = false
       leave()

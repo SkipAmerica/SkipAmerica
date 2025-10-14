@@ -36,25 +36,6 @@ const LiveControlBarContent: React.FC = () => {
   // Check if user is a creator
   const isCreator = profile?.account_type === 'creator';
   
-  
-  // Add custom event listener for queue count updates to force re-render
-  useEffect(() => {
-    const handleQueueUpdate = (event: CustomEvent) => {
-      console.log('[LiveControlBar] Custom queue event received:', event.detail);
-      // Force component re-render by updating a state value
-      setCurrentTime(Date.now());
-    };
-
-    window.addEventListener('queue-count-updated', handleQueueUpdate as EventListener);
-    
-    return () => {
-      window.removeEventListener('queue-count-updated', handleQueueUpdate as EventListener);
-    };
-  }, []);
-
-  // Force re-render key based on queueCount to ensure visual updates
-  const renderKey = useMemo(() => `queue-${queueCount}`, [queueCount]);
-  
   // Compute discoverable posture using same predicate as store
   const isInDiscoverablePosture = state === 'DISCOVERABLE' || state === 'SESSION_PREP' || state === 'SESSION_JOINING';
 
@@ -254,7 +235,6 @@ const LiveControlBarContent: React.FC = () => {
         >
           {/* Left - Queue button */}
           <Button
-            key={renderKey}
             variant="ghost"
             size="sm"
             onClick={handleQueueClick}
