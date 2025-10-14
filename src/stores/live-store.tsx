@@ -639,7 +639,7 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     return `${state.callsTaken} / $${(state.totalEarningsCents / 100).toFixed(0)}`
   }, [state.callsTaken, state.totalEarningsCents])
 
-  const contextValue: LiveStoreContextValue = {
+  const contextValue: LiveStoreContextValue = useMemo(() => ({
     // State
     isLive: state.state === 'SESSION_ACTIVE',
     isDiscoverable: ['DISCOVERABLE', 'SESSION_PREP', 'SESSION_JOINING'].includes(state.state),
@@ -692,7 +692,50 @@ export function LiveStoreProvider({ children }: LiveStoreProviderProps) {
     setDiscoverabilityModal,
     setLobbyBroadcasting,
     addLobbyChatMessage
-  }
+  }), [
+    // State dependencies
+    state.state,
+    state.startedAt,
+    state.sessionId,
+    state.callsTaken,
+    state.totalEarningsCents,
+    state.showEarnings,
+    state.queueCount,
+    state.hapticsEnabled,
+    state.inFlight.start,
+    state.inFlight.end,
+    state.todayKey,
+    state.todayEarningsCents,
+    state.todayCalls,
+    state.currentSessionId,
+    state.sessionCalls,
+    state.sessionEarningsCents,
+    state.sessionStartedAt,
+    state.sessionElapsed,
+    state.discoverableStartedAt,
+    state.accumulatedDiscoverableTime,
+    state.showDiscoverabilityModal,
+    state.isLobbyBroadcasting,
+    state.lobbyChatMessages,
+    elapsedTime,
+    earningsDisplay,
+    // Stable callbacks
+    handleDispatch,
+    goLive,
+    goDiscoverable,
+    goUndiscoverable,
+    toggleDiscoverable,
+    confirmJoin,
+    startNext,
+    endLive,
+    toggleEarningsDisplay,
+    incrementCall,
+    updateQueueCount,
+    triggerHaptic,
+    setDiscoverabilityModal,
+    setLobbyBroadcasting,
+    addLobbyChatMessage
+  ])
   
   return (
     <LiveStoreContext.Provider value={contextValue}>
