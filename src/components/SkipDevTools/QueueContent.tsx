@@ -310,9 +310,20 @@ export function QueueContent() {
   
   const handleStartCall = useCallback(() => {
     if (state.entries[0]) {
-      startSession(state.entries[0])
+      console.log('[QueueContent:START_SESSION] 🚀 Creator initiating session', {
+        timestamp: new Date().toISOString(),
+        creatorId: user?.id,
+        queueEntry: {
+          id: state.entries[0].id,
+          fan_id: state.entries[0].fan_id,
+          fan_state: state.entries[0].fan_state,
+          fan_name: state.entries[0].profiles?.full_name,
+          joined_at: state.entries[0].joined_at
+        }
+      });
+      startSession(state.entries[0]);
     }
-  }, [state.entries, startSession])
+  }, [state.entries, startSession, user?.id])
 
   const formatWaitTime = (minutes: number) => {
     if (minutes < 60) return `${minutes}m`

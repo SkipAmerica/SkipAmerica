@@ -344,12 +344,21 @@ export default function JoinQueue() {
       });
 
       const isFront = queueStatus.is_front;
-      console.log('[JoinQueue] Queue status:', {
+      console.log('[JoinQueue:QUEUE_STATUS] 📊', {
+        timestamp: new Date().toISOString(),
+        in_queue: queueStatus.in_queue,
         position: queueStatus.position,
-        isFront,
-        needsConsent: queueStatus.needs_consent,
+        is_front: isFront,
         total: queueStatus.total,
-        entryId: queueStatus.entry?.id
+        fan_state: queueStatus.entry?.fan_state,
+        fan_has_consented: queueStatus.entry?.fan_has_consented,
+        needs_consent: queueStatus.needs_consent,
+        entry_id: queueStatus.entry?.id,
+        changed_from: {
+          was_in_queue: isInQueue,
+          was_position: actualPosition,
+          was_entry_id: queueEntryId
+        }
       });
 
       wasFrontRef.current = isFront;
@@ -385,13 +394,34 @@ export default function JoinQueue() {
       .on(
         'postgres_changes',
         {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'call_queue',
+          filter: `fan_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('[JoinQueue:REALTIME:UPDATE] 🔔', {
+            timestamp: new Date().toISOString(),
+            old: payload.old,
+            new: payload.new,
+            eventType: payload.eventType
+          });
+          debouncedCheck();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
           event: 'DELETE',
           schema: 'public',
           table: 'call_queue',
           filter: `fan_id=eq.${user.id}`
         },
         (payload) => {
-          console.log('[JoinQueue] Queue entry deleted', payload);
+          console.log('[JoinQueue:REALTIME:DELETE] 🔔', {
+            timestamp: new Date().toISOString(),
+            payload
+          });
           
           // Reset ALL queue-related state
           setIsInQueue(false);
@@ -425,7 +455,14 @@ export default function JoinQueue() {
         },
         debouncedCheck
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[JoinQueue:REALTIME:STATUS] 📡', {
+          timestamp: new Date().toISOString(),
+          status,
+          error: err,
+          creatorId
+        });
+      });
 
     // Subscribe to live session changes
     const liveChannel = supabase
@@ -477,17 +514,39 @@ export default function JoinQueue() {
     
     console.log('[JoinQueue] Setting up heartbeat for position', actualPosition);
     const heartbeatInterval = setInterval(() => {
-      console.log('[JoinQueue] Heartbeat poll for positions 1-2');
+      console.log('[JoinQueue:HEARTBEAT] 💓', {
+        timestamp: new Date().toISOString(),
+        queueEntryId,
+        isInQueue,
+        position: actualPosition,
+        fan_state: 'polling...'
+      });
       checkLiveStatus();
     }, 10000); // 10 seconds
     
     return () => clearInterval(heartbeatInterval);
   }, [creatorId, user, isInQueue, actualPosition, checkLiveStatus]);
 
+  // Listen for session invites (log when listener is active)
+  useEffect(() => {
+    if (user && isInQueue) {
+      console.log('[JoinQueue:INVITE_LISTENER] 👂 Active and waiting for session invite', {
+        userId: user.id,
+        isInQueue,
+        queueEntryId,
+        timestamp: new Date().toISOString()
+      });
+    }
+  }, [user, isInQueue, queueEntryId]);
+
   // Log position changes for debugging + cleanup when leaving position 1
   useEffect(() => {
     if (actualPosition !== null) {
-      console.log('[JoinQueue] Position changed to:', actualPosition);
+      console.log('[JoinQueue:POSITION_CHANGED] 📍', {
+        timestamp: new Date().toISOString(),
+        position: actualPosition,
+        previous: prevPositionRef.current
+      });
       
       // When user left position 1, reset consent modal state for next time
       if (prevPositionRef.current === 1 && actualPosition !== 1) {

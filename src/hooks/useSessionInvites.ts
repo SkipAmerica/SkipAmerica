@@ -112,7 +112,12 @@ export function useSessionInvites() {
       return
     }
 
-    console.log('[SessionInvites] Setting up real-time subscription for:', user.id)
+    console.log('[SessionInvites:SETUP] 🎧 Initializing subscription', {
+      userId: user.id,
+      filter: `invitee_id=eq.${user.id}`,
+      v2Enabled: import.meta.env.VITE_ALMIGHTY_V2 === 'on',
+      timestamp: new Date().toISOString()
+    });
 
     // Subscribe to session_invites for this fan (use invitee_id, not fan_id)
     const channel = supabase
@@ -138,11 +143,21 @@ export function useSessionInvites() {
 
     channelRef.current = channel
 
+    // Timeout warning if no invite received after 60s
+    const timeoutId = setTimeout(() => {
+      console.warn('[SessionInvites:TIMEOUT] ⏰ No invite received after 60s', {
+        userId: user.id,
+        subscriptionStatus: channelRef.current?.state,
+        timestamp: new Date().toISOString()
+      });
+    }, 60000);
+
     return () => {
-      console.log('[SessionInvites] Cleaning up subscription')
+      clearTimeout(timeoutId);
+      console.log('[SessionInvites] Cleaning up subscription');
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current)
-        channelRef.current = null
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     }
   }, [user, handleInvite])
