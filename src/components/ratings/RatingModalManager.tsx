@@ -20,17 +20,48 @@ export function RatingModalManager() {
     creatorHasAppointments?: boolean
   } | null>(null)
 
+  console.log('[RatingModalManager:RENDER]', {
+    pathname: location.pathname,
+    search: location.search,
+    modalOpen,
+    pageReady,
+    hasModalData: !!modalData,
+    timestamp: performance.now()
+  })
+
   // Wait for initial page render to stabilize
   useEffect(() => {
-    const timer = setTimeout(() => setPageReady(true), 100)
-    return () => clearTimeout(timer)
+    console.log('[RatingModalManager:INIT] Setting up page ready timer')
+    const timer = setTimeout(() => {
+      console.log('[RatingModalManager:INIT] Page ready timer fired')
+      setPageReady(true)
+    }, 100)
+    return () => {
+      console.log('[RatingModalManager:INIT] Cleanup page ready timer')
+      clearTimeout(timer)
+    }
   }, [])
 
   useEffect(() => {
-    if (!pageReady) return
+    console.log('[RatingModalManager:PARAMS] Effect triggered', {
+      pageReady,
+      search: location.search,
+      timestamp: performance.now()
+    })
+    
+    if (!pageReady) {
+      console.log('[RatingModalManager:PARAMS] Page not ready, skipping')
+      return
+    }
     
     const params = new URLSearchParams(location.search)
     const shouldShow = params.get('sr') === '1'
+
+    console.log('[RatingModalManager:PARAMS] Parsed params', {
+      shouldShow,
+      allParams: Object.fromEntries(params.entries()),
+      timestamp: performance.now()
+    })
 
     if (shouldShow) {
       const sessionId = params.get('sid') || ''
@@ -43,14 +74,24 @@ export function RatingModalManager() {
       const showAppointmentLink = params.get('showAppt') === '1'
       const creatorHasAppointments = params.get('hasAppt') === '1'
 
+      console.log('[RatingModalManager:PARAMS] Extracted rating data', {
+        sessionId,
+        targetUserId,
+        raterRole,
+        timestamp: performance.now()
+      })
+
       // Immediately clean URL before setting state
+      console.log('[RatingModalManager:PARAMS] Cleaning URL params')
       const cleanUrl = new URL(window.location.href)
       ;['sr', 'sid', 'tuid', 'tuname', 'tubio', 'tuavatar', 'raterRole', 'showTip', 'showAppt', 'hasAppt'].forEach(k =>
         cleanUrl.searchParams.delete(k)
       )
       window.history.replaceState({}, '', cleanUrl.pathname)
+      console.log('[RatingModalManager:PARAMS] URL cleaned', { newUrl: cleanUrl.pathname })
 
       if (sessionId && targetUserId) {
+        console.log('[RatingModalManager:PARAMS] Setting modal state and opening')
         setModalData({
           sessionId,
           targetUserId,
@@ -63,17 +104,23 @@ export function RatingModalManager() {
           creatorHasAppointments
         })
         setModalOpen(true)
+      } else {
+        console.warn('[RatingModalManager:PARAMS] Missing sessionId or targetUserId, skipping modal')
       }
+    } else {
+      console.log('[RatingModalManager:PARAMS] No rating modal requested (sr != 1)')
     }
   }, [location.search, pageReady])
 
   const handleModalClose = () => {
+    console.log('[RatingModalManager:CLOSE] Modal closing', { timestamp: performance.now() })
     setModalOpen(false)
     setModalData(null)
     const url = new URL(window.location.href)
     ;['sr', 'sid', 'tuid', 'tuname', 'tubio', 'tuavatar', 'raterRole', 'showTip', 'showAppt', 'hasAppt'].forEach(k =>
       url.searchParams.delete(k)
     )
+    console.log('[RatingModalManager:CLOSE] Navigating after close', { pathname: url.pathname })
     navigate({ pathname: url.pathname }, { replace: true })
   }
 

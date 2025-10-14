@@ -75,14 +75,30 @@ export function CenterPane() {
   }
   
   const handleEndCall = async () => {
+    const startTime = performance.now()
+    console.log('[CenterPane:END_CALL] Starting end call process', { 
+      sessionId, 
+      role, 
+      timestamp: startTime 
+    })
+    
     try {
-      console.log('[CenterPane] Ending session', { sessionId, role })
+      console.log('[CenterPane:END_CALL] Calling endAlmightySession', { 
+        elapsed: performance.now() - startTime 
+      })
       
       // End session in database (V2 process)
       const result = await endAlmightySession({ sessionId, role })
       
+      console.log('[CenterPane:END_CALL] endAlmightySession returned', { 
+        success: result.success,
+        navigationPath: result.navigationPath,
+        shouldShowRating: result.shouldShowRating,
+        elapsed: performance.now() - startTime 
+      })
+      
       if (!result.success) {
-        console.error('[CenterPane] Session end failed:', result.error)
+        console.error('[CenterPane:END_CALL] Session end failed:', result.error)
         toast({
           title: 'Error ending session',
           description: result.error || 'Could not end session properly',
@@ -91,19 +107,36 @@ export function CenterPane() {
       }
       
       // Disconnect media
+      console.log('[CenterPane:END_CALL] Disconnecting media', { 
+        elapsed: performance.now() - startTime 
+      })
       await leave()
+      console.log('[CenterPane:END_CALL] Media disconnected', { 
+        elapsed: performance.now() - startTime 
+      })
       
       // Navigation is handled by endAlmightySession with query params
       if (result.navigationPath) {
-        console.log('[CenterPane] Navigating to:', result.navigationPath)
+        console.log('[CenterPane:END_CALL] Navigating to:', { 
+          path: result.navigationPath,
+          elapsed: performance.now() - startTime 
+        })
         navigate(result.navigationPath, { replace: true })
       } else {
-        console.log('[CenterPane] No navigation path, going home')
+        console.log('[CenterPane:END_CALL] No navigation path, going home', { 
+          elapsed: performance.now() - startTime 
+        })
         navigate('/', { replace: true })
       }
       
+      console.log('[CenterPane:END_CALL] End call process complete', { 
+        totalElapsed: performance.now() - startTime 
+      })
+      
     } catch (error) {
-      console.error('[CenterPane] Unexpected error ending call:', error)
+      console.error('[CenterPane:END_CALL] Unexpected error ending call:', error, {
+        elapsed: performance.now() - startTime
+      })
       toast({
         title: 'Error ending call',
         description: 'An unexpected error occurred',
@@ -111,6 +144,7 @@ export function CenterPane() {
       })
       
       // Fallback: still disconnect media and go home
+      console.log('[CenterPane:END_CALL] Fallback: disconnecting and going home')
       await leave()
       navigate('/', { replace: true })
     }

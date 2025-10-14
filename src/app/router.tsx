@@ -36,15 +36,45 @@ function RouteWrapper({ children }: { children: React.ReactNode }) {
 
 // Rating modal guard to prevent interference with route transitions
 function RatingModalWithLoadingGuard() {
-  const [isReady, setIsReady] = useState(false)
   const location = useLocation()
+  const [isReady, setIsReady] = useState(false)
+
+  console.log('[RatingModalWithLoadingGuard:RENDER]', {
+    pathname: location.pathname,
+    search: location.search,
+    isReady,
+    timestamp: performance.now()
+  })
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsReady(true), 200)
-    return () => clearTimeout(timer)
-  }, [location.pathname])
+    console.log('[RatingModalWithLoadingGuard:TIMER] Setting up navigation settle timer', {
+      pathname: location.pathname,
+      timestamp: performance.now()
+    })
+    
+    setIsReady(false)
+    const timer = setTimeout(() => {
+      console.log('[RatingModalWithLoadingGuard:TIMER] Timer fired, setting ready=true', {
+        timestamp: performance.now()
+      })
+      setIsReady(true)
+    }, 200)
+    
+    return () => {
+      console.log('[RatingModalWithLoadingGuard:TIMER] Cleanup timer', {
+        pathname: location.pathname,
+        timestamp: performance.now()
+      })
+      clearTimeout(timer)
+    }
+  }, [location.pathname]) // Reset on route change
 
-  if (!isReady) return null
+  if (!isReady) {
+    console.log('[RatingModalWithLoadingGuard:RENDER] Not ready, returning null')
+    return null
+  }
+  
+  console.log('[RatingModalWithLoadingGuard:RENDER] Ready, rendering RatingModalManager')
   return <RatingModalManager />
 }
 

@@ -35,19 +35,36 @@ export async function endAlmightySession(
   params: EndSessionParams
 ): Promise<EndSessionResult> {
   const { sessionId, role } = params
+  
+  const startTime = performance.now()
+  console.log('[endAlmightySession:START]', { 
+    sessionId, 
+    role, 
+    timestamp: startTime 
+  })
 
   try {
-    console.log('[endAlmightySession] Starting session end process', { sessionId, role })
 
     // 1. Fetch session data to get creator_id and fan_id
+    console.log('[endAlmightySession:FETCH] Fetching session data', { 
+      sessionId, 
+      elapsed: performance.now() - startTime 
+    })
+    
     const { data: session, error: fetchError } = await supabase
       .from('almighty_sessions')
       .select('creator_id, fan_id, status')
       .eq('id', sessionId)
       .single()
 
+    console.log('[endAlmightySession:FETCH] Session fetch complete', { 
+      success: !fetchError, 
+      status: session?.status,
+      elapsed: performance.now() - startTime 
+    })
+
     if (fetchError || !session) {
-      console.error('[endAlmightySession] Failed to fetch session:', fetchError)
+      console.error('[endAlmightySession:FETCH] Failed to fetch session:', fetchError)
       // Fallback to home for both roles if session not found
       return {
         success: false,
@@ -60,6 +77,10 @@ export async function endAlmightySession(
 
     // 2. Update almighty_sessions status to 'ended' (idempotent)
     if (status !== 'ended') {
+      console.log('[endAlmightySession:UPDATE] Updating session status to ended', { 
+        elapsed: performance.now() - startTime 
+      })
+      
       const { error: updateError } = await supabase
         .from('almighty_sessions')
         .update({
@@ -70,30 +91,48 @@ export async function endAlmightySession(
         .eq('id', sessionId)
         .eq('status', 'active') // Only update if still active (idempotent)
 
+      console.log('[endAlmightySession:UPDATE] Update complete', { 
+        success: !updateError, 
+        elapsed: performance.now() - startTime 
+      })
+
       if (updateError) {
-        console.error('[endAlmightySession] Failed to update session:', updateError)
+        console.error('[endAlmightySession:UPDATE] Failed to update session:', updateError)
       } else {
-        console.log('[endAlmightySession] Session status updated to ended')
+        console.log('[endAlmightySession:UPDATE] Session status updated to ended')
       }
     } else {
-      console.log('[endAlmightySession] Session already ended, skipping update')
+      console.log('[endAlmightySession:UPDATE] Session already ended, skipping update')
     }
 
     // 3. Remove from queue using V2 service
     // The cleanup_queue_on_session_end trigger will also handle this, but we do it here for immediate effect
+    console.log('[endAlmightySession:QUEUE] Removing from queue', { 
+      creatorId: creator_id, 
+      fanId: fan_id,
+      elapsed: performance.now() - startTime 
+    })
+    
     try {
       await QueueService.removeFromQueue({
         creatorId: creator_id,
         fanId: fan_id,
         reason: 'session_ended'
       })
-      console.log('[endAlmightySession] Queue entry removed')
+      console.log('[endAlmightySession:QUEUE] Queue entry removed', { 
+        elapsed: performance.now() - startTime 
+      })
     } catch (queueError) {
-      console.error('[endAlmightySession] Queue removal failed (trigger will handle):', queueError)
+      console.error('[endAlmightySession:QUEUE] Queue removal failed (trigger will handle):', queueError)
       // Non-fatal - database trigger will clean up as safety net
     }
 
     // 4. Fetch target user profile for rating modal
+    console.log('[endAlmightySession:PROFILE] Fetching target profile', { 
+      role, 
+      elapsed: performance.now() - startTime 
+    })
+    
     let sessionMetadata: EndSessionResult['sessionMetadata']
     try {
       if (role === 'creator') {
@@ -143,8 +182,13 @@ export async function endAlmightySession(
         }
       }
     } catch (err) {
-      console.warn('[endAlmightySession] Failed to fetch target profile:', err)
+      console.warn('[endAlmightySession:PROFILE] Failed to fetch target profile:', err)
     }
+
+    console.log('[endAlmightySession:PROFILE] Profile fetch complete', { 
+      hasMetadata: !!sessionMetadata, 
+      elapsed: performance.now() - startTime 
+    })
 
     // 5. Return navigation path based on role with query params for rating modal
     const navigationPath = role === 'creator' ? '/' : `/join-queue/${creator_id}`
@@ -163,17 +207,24 @@ export async function endAlmightySession(
         hasAppt: sessionMetadata.creatorHasAppointments ? '1' : '0'
       })
       
-      console.log('[endAlmightySession] Session end complete with rating modal')
+      const finalPath = `${navigationPath}?${params.toString()}`
+      console.log('[endAlmightySession:COMPLETE] Session end complete with rating modal', {
+        navigationPath: finalPath,
+        totalElapsed: performance.now() - startTime
+      })
       
       return {
         success: true,
-        navigationPath: `${navigationPath}?${params.toString()}`,
+        navigationPath: finalPath,
         shouldShowRating: true,
         sessionMetadata
       }
     }
     
-    console.log('[endAlmightySession] Session end complete', { navigationPath })
+    console.log('[endAlmightySession:COMPLETE] Session end complete (no rating)', { 
+      navigationPath,
+      totalElapsed: performance.now() - startTime 
+    })
     
     return {
       success: true,
@@ -182,7 +233,9 @@ export async function endAlmightySession(
     }
 
   } catch (error) {
-    console.error('[endAlmightySession] Unexpected error:', error)
+    console.error('[endAlmightySession:ERROR] Unexpected error:', error, {
+      totalElapsed: performance.now() - startTime
+    })
     return {
       success: false,
       navigationPath: '/',
