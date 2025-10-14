@@ -4,6 +4,7 @@ import { lazy, Suspense } from 'react'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { AuthGuard } from './guards/auth-guard'
+import { RatingModalManager } from '@/components/ratings/RatingModalManager'
 
 // Lazy load pages for code splitting
 const HomePage = lazy(() => import('@/pages/Index'))
@@ -150,6 +151,9 @@ export function AppRouter() {
         
         <Route path="*" element={<Navigate to="/404" replace />} />
       </Routes>
+      
+      {/* Global Rating Modal Manager - renders inside router context */}
+      <RatingModalManager />
     </BrowserRouter>
   )
 }
