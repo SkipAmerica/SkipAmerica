@@ -19,11 +19,13 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
         <AvatarImage src={src} alt={alt} />
         <AvatarFallback>{fallback}</AvatarFallback>
       </Avatar>
-      {isLive && (
+      {isLive ? (
         <>
           <div className="absolute -inset-0.5 rounded-full border-2 border-green-500" />
           <div className="absolute -inset-0.5 rounded-full border-2 border-green-500 animate-ping" />
         </>
+      ) : (
+        <div className="absolute -inset-0.5 rounded-full border-2 border-turquoise" />
       )}
       {onFollowToggle && (
         <button
