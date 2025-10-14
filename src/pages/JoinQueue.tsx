@@ -20,6 +20,7 @@ import { useCreatorPresence } from '@/shared/hooks';
 import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
+import { useSessionInvites } from '@/hooks/useSessionInvites';
 import { z } from 'zod';
 import { cn } from '@/lib/utils';
 
@@ -71,6 +72,9 @@ export default function JoinQueue() {
   
   // Use centralized presence hook for online status
   const { isOnline } = useCreatorPresence(creatorId || null);
+
+  // Enable session invite listening for fans in queue
+  useSessionInvites();
 
   const [creator, setCreator] = useState<Creator | null>(null);
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
@@ -375,6 +379,22 @@ export default function JoinQueue() {
     }
   }, [creatorId, user]);
 
+  // Dev-only debug object for real-time state inspection
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      (window as any).__queueDebug = {
+        creatorId,
+        userId: user?.id,
+        isInQueue,
+        actualPosition,
+        queueEntryId,
+        hasConsentedToBroadcast,
+        liveSession,
+        refreshStatus: checkLiveStatus
+      };
+    }
+  }, [creatorId, user?.id, isInQueue, actualPosition, queueEntryId, hasConsentedToBroadcast, liveSession, checkLiveStatus]);
+
   // Subscribe to live status and queue changes with debounce
   useEffect(() => {
     if (!creatorId || !user) return;
@@ -456,12 +476,18 @@ export default function JoinQueue() {
         debouncedCheck
       )
       .subscribe((status, err) => {
-        console.log('[JoinQueue:REALTIME:STATUS] 📡', {
+        console.log('[JoinQueue:REALTIME:STATUS:QUEUE] 📡', {
           timestamp: new Date().toISOString(),
           status,
           error: err,
-          creatorId
+          creatorId,
+          userId: user.id,
+          channel: 'call_queue'
         });
+        
+        if (err) {
+          console.error('[JoinQueue:REALTIME:ERROR:QUEUE] ❌', err);
+        }
       });
 
     // Subscribe to live session changes
@@ -477,7 +503,19 @@ export default function JoinQueue() {
         },
         debouncedCheck
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        console.log('[JoinQueue:REALTIME:STATUS:LIVE] 📡', {
+          timestamp: new Date().toISOString(),
+          status,
+          error: err,
+          creatorId,
+          channel: 'live_sessions'
+        });
+        
+        if (err) {
+          console.error('[JoinQueue:REALTIME:ERROR:LIVE] ❌', err);
+        }
+      });
 
     // Note: Presence subscription now handled by useCreatorPresence hook
 
