@@ -118,7 +118,7 @@ export function QueueContent() {
         .select('*, discussion_topic, fan_state')
         .eq('creator_id', user.id)
         .eq('status', 'waiting')
-        .neq('fan_state', 'in_call') // Exclude fans currently in Almighty sessions
+        .in('fan_state', ['waiting', 'awaiting_consent', 'ready', 'declined']) // Explicit positive filter
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
 

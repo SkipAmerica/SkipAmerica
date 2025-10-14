@@ -106,7 +106,7 @@ export function QueueDrawer({ isOpen, onClose }: QueueDrawerProps) {
         .select('*, discussion_topic, priority, fan_state')
         .eq('creator_id', creatorId)
         .eq('status', 'waiting')
-        .neq('fan_state', 'in_call') // Exclude fans currently in Almighty sessions
+        .in('fan_state', ['waiting', 'awaiting_consent', 'ready', 'declined']) // Explicit positive filter
         .order('priority', { ascending: false })
         .order('joined_at', { ascending: true })
         .abortSignal(abortController.signal)
