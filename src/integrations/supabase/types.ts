@@ -2189,6 +2189,8 @@ export type Database = {
       session_invites: {
         Row: {
           created_at: string
+          creator_avatar_url: string | null
+          creator_name: string | null
           id: string
           invitee_id: string
           responded_at: string | null
@@ -2197,6 +2199,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          creator_avatar_url?: string | null
+          creator_name?: string | null
           id?: string
           invitee_id: string
           responded_at?: string | null
@@ -2205,6 +2209,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          creator_avatar_url?: string | null
+          creator_name?: string | null
           id?: string
           invitee_id?: string
           responded_at?: string | null
