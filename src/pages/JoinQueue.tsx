@@ -158,11 +158,15 @@ export default function JoinQueue() {
           console.error('[JoinQueue:INVITE_NAV] Cleanup failed:', cleanupError)
         }
         
-        toast({
-          title: "Session Unavailable",
-          description: "The session is no longer available. Please wait for the creator to go live again.",
-          variant: "destructive"
-        })
+        if (source !== 'INITIAL_FETCH') {
+          toast({
+            title: "Session Unavailable",
+            description: "The session is no longer available. Please wait for the creator to go live again.",
+            variant: "destructive"
+          })
+        } else {
+          console.warn('[JoinQueue:INVITE_NAV] Session unavailable on initial fetch (suppressing toast)')
+        }
         return
       }
       
@@ -503,7 +507,9 @@ export default function JoinQueue() {
         .select('*')
         .eq('creator_id', creatorId)
         .is('ended_at', null)
-        .single();
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       setLiveSession(session);
 
@@ -1055,8 +1061,9 @@ export default function JoinQueue() {
         console.error('Error updating profile:', profileError);
       }
 
-      // Join the queue
-      const { error } = await supabase
+      // Join the queue (return inserted row for verification)
+      const requestId = `join_${Date.now()}_${Math.random().toString(36).slice(2,8)}`
+      const { data: inserted, error } = await supabase
         .from('call_queue')
         .insert({
           creator_id: creatorId,
@@ -1064,30 +1071,41 @@ export default function JoinQueue() {
           discussion_topic: discussionTopic || null,
           priority: 0, // FCFS - no priority jumps
           status: 'waiting'
-        });
+        })
+        .select('id, creator_id, fan_id, status, fan_state, joined_at')
+        .single();
 
       if (error) {
-        if (error.code === '23505') {
+        if ((error as any).code === '23505') {
           console.log('[JoinQueue] User already in queue');
           toast({
             title: "Already in queue",
             description: "You're already in this creator's queue.",
           });
-          setIsInQueue(true); // Update state to reflect reality
+          setIsInQueue(true); // Reflect reality
         } else {
           throw error;
         }
       } else {
-        console.log('[JoinQueue] Successfully joined queue');
+        console.log(`[JoinQueue:INSERT_OK:${requestId}]`, inserted)
         setIsInQueue(true);
-        checkLiveStatus();
-      // Refresh queue status to get accurate position
-      await checkLiveStatus();
-      
-      toast({
-        title: "Joined queue!",
-        description: actualPosition === 1 ? "You're next up." : `You're in queue at position ${actualPosition || 'calculating...'}.`,
-      });
+        setQueueEntryId(inserted.id)
+
+        // Verify visibility immediately from fan side
+        const { data: verify, error: verifyError } = await supabase
+          .from('call_queue')
+          .select('id, status, fan_state, joined_at')
+          .eq('creator_id', creatorId)
+          .eq('fan_id', user.id)
+          .maybeSingle();
+        console.log(`[JoinQueue:INSERT_VERIFY:${requestId}]`, { verify, verifyError })
+
+        // Refresh queue status to get accurate position
+        await checkLiveStatus();
+        toast({
+          title: "Joined queue!",
+          description: actualPosition === 1 ? "You're next up." : `You're in queue at position ${actualPosition || 'calculating...'}.`,
+        });
       }
     } catch (error) {
       console.error('Error joining queue:', error);

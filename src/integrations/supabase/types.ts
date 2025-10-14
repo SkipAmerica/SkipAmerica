@@ -2605,6 +2605,27 @@ export type Database = {
           },
         ]
       }
+      user_balances: {
+        Row: {
+          balance_skips: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance_skips?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance_skips?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_feed_preferences: {
         Row: {
           created_at: string
