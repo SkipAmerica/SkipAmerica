@@ -76,61 +76,102 @@ export default function JoinQueue() {
   // Enable session invite listening for fans in queue
   useSessionInvites();
 
-  // Inline invite listener - unconditional mount bypassing useSessionInvites hook
+  // Inline invite listener with initial fetch fallback
+  const navigatedRef = useRef(false);
+
   useEffect(() => {
     if (!user?.id) {
       console.log('[JoinQueue:INVITE_LISTENER] ❌ No user ID, skipping');
       return;
     }
     
-    console.log('[JoinQueue:INVITE_LISTENER] 🎧 Starting subscription for user:', user.id);
+    console.log('[JoinQueue:INVITE_LISTENER] 🎧 Starting for user:', user.id);
 
-    const inviteChannel = supabase
-      .channel(`invites:${user.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'session_invites',
-        filter: `invitee_id=eq.${user.id}`
-      }, (payload) => {
-        console.log('[JoinQueue:INVITE_RECEIVED] 📨', {
-          timestamp: new Date().toISOString(),
-          invite: payload.new
-        });
-        
-        const invite = payload.new as any;
-        
-        // Show toast notification
+    const goto = (sessionId: string, source: string) => {
+      if (navigatedRef.current) {
+        console.log('[JoinQueue:INVITE_NAV] ⚠️ Already navigated, skipping');
+        return;
+      }
+      navigatedRef.current = true;
+      
+      // Set flag to prevent queue cleanup on navigation
+      (window as any).__skipQueueCleanupOnSessionNav = true;
+      
+      console.log(`[JoinQueue:INVITE_NAV] 🚀 Navigating via ${source} to:`, sessionId);
+      window.location.href = `/session/${sessionId}?role=user`;
+    };
+
+    // Initial fetch fallback - catch invites created before page load
+    (async () => {
+      const { data: pending, error } = await supabase
+        .from('session_invites')
+        .select('id, session_id, status, creator_name, created_at')
+        .eq('invitee_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('[JoinQueue:INVITE_FETCH] ❌ Error:', error);
+      } else if (pending && pending[0]) {
+        console.log('[JoinQueue:INVITE_FETCH] ✅ Found pending invite:', pending[0]);
         toast({
-          title: `${invite.creator_name || 'Creator'} is ready!`,
+          title: `${pending[0].creator_name || 'Creator'} is ready!`,
           description: "Connecting to session...",
           duration: 2000,
         });
-        
-        // Set flag to prevent queue cleanup on navigation
-        (window as any).__skipQueueCleanupOnSessionNav = true;
-        
-        // Navigate immediately to session
-        console.log('[JoinQueue:NAVIGATING] 🚀 To session:', invite.session_id);
-        window.location.replace(`/session/${invite.session_id}?role=user`);
-      })
-      .subscribe((status, err) => {
-        console.log('[JoinQueue:REALTIME:STATUS:INVITES] 📡', { 
-          timestamp: new Date().toISOString(),
-          status, 
-          error: err,
-          userId: user.id
-        });
-        
-        if (err) {
-          console.error('[JoinQueue:REALTIME:ERROR:INVITES] ❌', err);
-        }
-      });
+        goto(pending[0].session_id, 'INITIAL_FETCH');
+        return; // Skip realtime setup since we're navigating
+      } else {
+        console.log('[JoinQueue:INVITE_FETCH] No pending invites found');
+      }
 
-    return () => { 
-      console.log('[JoinQueue:INVITE_LISTENER] Cleaning up subscription');
-      supabase.removeChannel(inviteChannel); 
-    };
+      // Realtime listener - catch invites created after page load
+      const inviteChannel = supabase
+        .channel(`invites:${user.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'session_invites',
+          filter: `invitee_id=eq.${user.id}`
+        }, (payload) => {
+          console.log('[JoinQueue:INVITE_EVENT] 📨 Received:', {
+            timestamp: new Date().toISOString(),
+            invite: payload.new
+          });
+          
+          const invite = payload.new as any;
+          
+          toast({
+            title: `${invite.creator_name || 'Creator'} is ready!`,
+            description: "Connecting to session...",
+            duration: 2000,
+          });
+          
+          goto(invite.session_id, 'REALTIME');
+        })
+        .subscribe((status, err) => {
+          console.log('[JoinQueue:REALTIME:STATUS:INVITES] 📡', { 
+            timestamp: new Date().toISOString(),
+            status, 
+            error: err,
+            userId: user.id
+          });
+          
+          if (err) {
+            console.error('[JoinQueue:REALTIME:ERROR:INVITES] ❌', err);
+          }
+        });
+
+      return () => { 
+        console.log('[JoinQueue:INVITE_LISTENER] 🧹 Cleaning up');
+        try {
+          supabase.removeChannel(inviteChannel);
+        } catch (e) {
+          console.error('[JoinQueue:INVITE_LISTENER] Cleanup error:', e);
+        }
+      };
+    })();
   }, [user?.id, toast]);
 
   const [creator, setCreator] = useState<Creator | null>(null);
