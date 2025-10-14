@@ -859,8 +859,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         publishedTracks: newRoom.localParticipant.trackPublications.size
       })
       
-      // Tracks are already created with correct enabled state (MEDIA.START_AUDIO/VIDEO)
-      // No need to call setCameraEnabled/setMicrophoneEnabled after publishing
+      // Explicitly unmute tracks after publishing so remote side receives media immediately
+      await newRoom.localParticipant.setCameraEnabled(MEDIA.START_VIDEO)
+      await newRoom.localParticipant.setMicrophoneEnabled(MEDIA.START_AUDIO)
+      
       setMicEnabled(MEDIA.START_AUDIO)
       setCamEnabled(MEDIA.START_VIDEO)
       

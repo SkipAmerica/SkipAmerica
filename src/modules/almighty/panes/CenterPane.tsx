@@ -1,4 +1,5 @@
 import { useRef, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useUIContext } from '../providers/UIProvider'
 import { useMedia } from '../providers/MediaProvider'
@@ -13,6 +14,7 @@ import { ConnectionBanner } from '../components/ConnectionBanner'
 import { PermissionPrompt } from '../components/PermissionPrompt'
 
 export function CenterPane() {
+  const navigate = useNavigate()
   const { primaryFocus, setPrimaryFocus, chatOpen } = useUIContext()
   const {
     localVideo,
@@ -34,6 +36,7 @@ export function CenterPane() {
     audioOutputDevices,
     switchAudioOutput,
     markUserPinned,
+    leave,
   } = useMedia()
   
   const containerRef = useRef<HTMLDivElement>(null)
@@ -64,6 +67,11 @@ export function CenterPane() {
     if (!primaryRemoteVideo && !localVideo) return
     markUserPinned() // Disable auto-promotion
     setPrimaryFocus(primaryFocus === 'remote' ? 'local' : 'remote')
+  }
+  
+  const handleEndCall = async () => {
+    await leave()
+    navigate('/', { replace: true })
   }
   
   return (
@@ -153,8 +161,6 @@ export function CenterPane() {
           left: '50%',
           bottom: 'calc(max(env(safe-area-inset-bottom, 0px) + 14px, 2.2vh))',
           translate: '-50% 0',
-          transform: 'scale(0.85)',
-          transformOrigin: 'center bottom',
         }}
       >
         <MediaControls
@@ -167,6 +173,7 @@ export function CenterPane() {
           onToggleCam={toggleCam}
           onFlipCamera={flipCamera}
           onSwitchAudioOutput={switchAudioOutput}
+          onEndCall={handleEndCall}
         />
       </div>
       
