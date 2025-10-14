@@ -140,7 +140,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
     <div
       ref={cardRef}
       className={cn(
-        "bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-instagram relative overflow-hidden"
+        "bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-inter relative overflow-hidden"
       )}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
