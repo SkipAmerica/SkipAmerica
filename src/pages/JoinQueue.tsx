@@ -76,6 +76,63 @@ export default function JoinQueue() {
   // Enable session invite listening for fans in queue
   useSessionInvites();
 
+  // Inline invite listener - unconditional mount bypassing useSessionInvites hook
+  useEffect(() => {
+    if (!user?.id) {
+      console.log('[JoinQueue:INVITE_LISTENER] ❌ No user ID, skipping');
+      return;
+    }
+    
+    console.log('[JoinQueue:INVITE_LISTENER] 🎧 Starting subscription for user:', user.id);
+
+    const inviteChannel = supabase
+      .channel(`invites:${user.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'session_invites',
+        filter: `invitee_id=eq.${user.id}`
+      }, (payload) => {
+        console.log('[JoinQueue:INVITE_RECEIVED] 📨', {
+          timestamp: new Date().toISOString(),
+          invite: payload.new
+        });
+        
+        const invite = payload.new as any;
+        
+        // Show toast notification
+        toast({
+          title: `${invite.creator_name || 'Creator'} is ready!`,
+          description: "Connecting to session...",
+          duration: 2000,
+        });
+        
+        // Set flag to prevent queue cleanup on navigation
+        (window as any).__skipQueueCleanupOnSessionNav = true;
+        
+        // Navigate immediately to session
+        console.log('[JoinQueue:NAVIGATING] 🚀 To session:', invite.session_id);
+        window.location.replace(`/session/${invite.session_id}?role=user`);
+      })
+      .subscribe((status, err) => {
+        console.log('[JoinQueue:REALTIME:STATUS:INVITES] 📡', { 
+          timestamp: new Date().toISOString(),
+          status, 
+          error: err,
+          userId: user.id
+        });
+        
+        if (err) {
+          console.error('[JoinQueue:REALTIME:ERROR:INVITES] ❌', err);
+        }
+      });
+
+    return () => { 
+      console.log('[JoinQueue:INVITE_LISTENER] Cleaning up subscription');
+      supabase.removeChannel(inviteChannel); 
+    };
+  }, [user?.id, toast]);
+
   const [creator, setCreator] = useState<Creator | null>(null);
   const [liveSession, setLiveSession] = useState<LiveSession | null>(null);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
@@ -397,7 +454,20 @@ export default function JoinQueue() {
 
   // Subscribe to live status and queue changes with debounce
   useEffect(() => {
-    if (!creatorId || !user) return;
+    console.log('[JoinQueue:SUBSCRIPTION_MOUNT] 🔍 Checking mount conditions:', {
+      hasUser: !!user,
+      hasCreatorId: !!creatorId,
+      loading,
+      userId: user?.id,
+      creatorId
+    });
+
+    if (!creatorId || !user) {
+      console.log('[JoinQueue:SUBSCRIPTION_MOUNT] ❌ Early return - missing deps');
+      return;
+    }
+
+    console.log('[JoinQueue:SUBSCRIPTION_MOUNT] ✅ Proceeding with queue/live subscriptions');
 
     checkLiveStatus();
 
