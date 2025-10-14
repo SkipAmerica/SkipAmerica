@@ -105,9 +105,14 @@ serve(async (req) => {
         const { rooms } = await listResponse.json();
         console.log(`[force-end-almighty] Found ${rooms?.length || 0} LiveKit rooms`);
 
-        // Delete session rooms
+        // Delete ALL room types (session, lobby, fanviewer)
         for (const room of rooms || []) {
-          if (room.name.startsWith('almighty-')) {
+          const shouldDelete = 
+            room.name.startsWith('almighty-') ||   // Almighty sessions
+            room.name.startsWith('lobby_') ||      // Queue lobbies
+            room.name.startsWith('fanviewer_');    // Fan preview rooms
+            
+          if (shouldDelete) {
             const deleteResponse = await fetch(`${livekitUrl}/twirp/livekit.RoomService/DeleteRoom`, {
               method: 'POST',
               headers: {
