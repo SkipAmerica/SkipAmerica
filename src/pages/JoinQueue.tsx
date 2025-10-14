@@ -593,6 +593,12 @@ export default function JoinQueue() {
 
     // Only cleanup on actual page unload, not tab switching
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Skip cleanup if navigating to session (invite accepted)
+      if ((window as any).__skipQueueCleanupOnSessionNav) {
+        console.log('[JoinQueue] beforeunload - skipping cleanup (session navigation)');
+        return;
+      }
+      
       console.log('[JoinQueue] beforeunload - cleaning up queue');
       isUnloadingRef.current = true;
       

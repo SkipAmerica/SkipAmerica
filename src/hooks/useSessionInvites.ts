@@ -7,7 +7,7 @@ import { RealtimeChannel } from '@supabase/supabase-js'
 interface SessionInvite {
   id: string
   session_id: string
-  fan_id: string
+  invitee_id: string
   creator_name: string
   creator_avatar_url: string | null
   status: 'pending' | 'accepted' | 'expired'
@@ -79,6 +79,9 @@ export function useSessionInvites() {
         })
       }
       
+      // Set global flag to prevent JoinQueue cleanup on navigation
+      ;(window as any).__skipQueueCleanupOnSessionNav = true
+      
       window.location.replace(`/session/${invite.session_id}?role=user`)
     }
 
@@ -111,7 +114,7 @@ export function useSessionInvites() {
 
     console.log('[SessionInvites] Setting up real-time subscription for:', user.id)
 
-    // Subscribe to session_invites for this fan (type assertion until Supabase types regenerate)
+    // Subscribe to session_invites for this fan (use invitee_id, not fan_id)
     const channel = supabase
       .channel('session-invites-subscription')
       .on(
@@ -120,7 +123,7 @@ export function useSessionInvites() {
           event: 'INSERT',
           schema: 'public',
           table: 'session_invites' as any,
-          filter: `fan_id=eq.${user.id}`
+          filter: `invitee_id=eq.${user.id}`
         },
         (payload) => {
           const invite = payload.new as SessionInvite
