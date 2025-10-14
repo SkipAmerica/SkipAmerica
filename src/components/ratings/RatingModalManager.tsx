@@ -1,8 +1,9 @@
 import { PostCallRatingModal } from './PostCallRatingModal'
 import { CreatorRatesUserModal } from './CreatorRatesUserModal'
 import { useRatingModal } from '@/hooks/useRatingModal'
+import { ErrorBoundary } from '@/shared/ui/error-boundary'
 
-export function RatingModalManager() {
+function RatingModalManager() {
   const { params, close } = useRatingModal()
 
   if (!params) return null
@@ -34,3 +35,15 @@ export function RatingModalManager() {
     />
   )
 }
+
+// Wrap with error boundary for defense-in-depth
+export function RatingModalManagerWithBoundary() {
+  return (
+    <ErrorBoundary fallback={<div className="p-4 text-center text-muted-foreground">Rating modal error - please refresh</div>}>
+      <RatingModalManager />
+    </ErrorBoundary>
+  )
+}
+
+// Export wrapped version as default
+export { RatingModalManagerWithBoundary as RatingModalManager }

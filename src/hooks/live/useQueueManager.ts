@@ -1,5 +1,6 @@
 /**
  * Queue manager - now integrates with centralized store
+ * With enterprise-grade stability, observability, and defense-in-depth
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
@@ -8,6 +9,12 @@ import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { useLiveStore } from '@/stores/live-store'
+
+// Gated logging for observability (dev only)
+const DEBUG = import.meta.env.DEV
+const log = (msg: string, data?: any) => {
+  if (DEBUG) console.log(`[useQueueManager] ${msg}`, data)
+}
 
 interface QueueManagerState {
   error?: string
@@ -18,6 +25,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   const { toast } = useToast()
   const store = useLiveStore()
   const channelRef = useRef<any>()
+  const subscriptionRef = useRef<any>(null) // Guard against duplicate subscriptions
   const retryTimeoutRef = useRef<NodeJS.Timeout>()
   
   // Use refs to avoid triggering effect re-runs
@@ -28,11 +36,17 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   
   const [state, setState] = useState<QueueManagerState>({})
 
-  // Real-time subscription for queue changes
+  // Real-time subscription for queue changes with defense-in-depth guard
   useEffect(() => {
     if (!user) return
+    
+    // Defense-in-depth: Prevent duplicate subscriptions
+    if (subscriptionRef.current) {
+      log('SUBSCRIBE:SKIP - Already subscribed', { userId: user.id })
+      return
+    }
 
-    console.log('[useQueueManager:SUBSCRIBE] Setting up realtime subscription', { 
+    log('SUBSCRIBE:INIT', { 
       userId: user.id,
       timestamp: performance.now()
     })
@@ -48,10 +62,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async (payload) => {
-          console.log('[useQueueManager:INSERT] Queue INSERT event received', { 
-            payload, 
-            timestamp: performance.now() 
-          })
+          log('INSERT', { payload, timestamp: performance.now() })
           
           // Fetch current queue count to avoid stale closure
           const { count } = await supabase
@@ -61,9 +72,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
-          console.log('[useQueueManager:INSERT] Person joined - Updated queue count immediately:', currentCount, { 
-            timestamp: performance.now() 
-          })
+          log('INSERT:COUNT_UPDATE', { currentCount, timestamp: performance.now() })
           store.updateQueueCount(currentCount)
           
           // Force immediate visual update by dispatching a custom event
@@ -95,9 +104,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async () => {
-          console.log('[useQueueManager:DELETE] Queue DELETE event received', { 
-            timestamp: performance.now() 
-          })
+          log('DELETE', { timestamp: performance.now() })
           
           // Fetch current queue count to avoid stale closure
           const { count } = await supabase
@@ -107,9 +114,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
             .eq('status', 'waiting')
           
           const currentCount = count || 0
-          console.log('[useQueueManager:DELETE] Person left - Updated queue count immediately:', currentCount, { 
-            timestamp: performance.now() 
-          })
+          log('DELETE:COUNT_UPDATE', { currentCount, timestamp: performance.now() })
           store.updateQueueCount(currentCount)
           
           // Force immediate visual update by dispatching a custom event
@@ -122,48 +127,42 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         }
       )
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
-        console.error('[useQueueManager:CHANNEL_ERROR] Queue subscription error:', { 
-          error, 
-          timestamp: performance.now() 
-        })
+        log('CHANNEL_ERROR', { error, timestamp: performance.now() })
         setState(prev => ({ ...prev, error: 'Connection lost' }))
         isConnectedRef.current = false
         
-        // Retry subscription after delay
+        // Retry subscription after delay with exponential backoff
         if (retryTimeoutRef.current) {
           clearTimeout(retryTimeoutRef.current)
         }
         retryCountRef.current++
-        console.log('[useQueueManager:CHANNEL_ERROR] Retrying subscription in 5s')
+        const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
+        log('CHANNEL_ERROR:RETRY', { delay, retryCount: retryCountRef.current })
         retryTimeoutRef.current = setTimeout(() => {
-          console.log('[useQueueManager:CHANNEL_ERROR] Retry timeout fired, resubscribing')
+          log('CHANNEL_ERROR:RETRY_EXECUTE')
           channel.subscribe()
-        }, 5000)
+        }, delay)
       })
       .subscribe((status) => {
-        console.log('[useQueueManager:SUBSCRIBE] Channel status:', { 
-          status, 
-          timestamp: performance.now() 
-        })
+        log('SUBSCRIBE:STATUS', { status, timestamp: performance.now() })
       })
 
     channelRef.current = channel
+    subscriptionRef.current = channel // Mark as subscribed
     isConnectedRef.current = true
-    console.log('[useQueueManager:SUBSCRIBE] Subscription setup complete')
+    log('SUBSCRIBE:COMPLETE')
 
     return () => {
-      console.log('[useQueueManager:SUBSCRIBE] Cleaning up subscription', { 
-        userId: user.id, 
-        timestamp: performance.now() 
-      })
+      log('SUBSCRIBE:CLEANUP', { userId: user.id, timestamp: performance.now() })
       if (channelRef.current) {
         if ((window as any).__allow_ch_teardown) {
           try { supabase.removeChannel(channelRef.current); } catch {}
         } else {
-          console.warn('[PQ-GUARD] prevented runtime removeChannel', new Error().stack);
+          log('PQ-GUARD prevented removeChannel');
         }
         channelRef.current = null
       }
+      subscriptionRef.current = null // Clear subscription guard
       if (retryTimeoutRef.current) {
         clearTimeout(retryTimeoutRef.current)
         retryTimeoutRef.current = undefined
@@ -181,17 +180,16 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     const now = Date.now()
     const timeSinceLastFetch = now - lastFetchTimeRef.current
     
-    console.log('[useQueueManager:FETCH] Effect triggered', {
+    log('FETCH:TRIGGER', {
       userId: user.id,
       timeSinceLastFetch,
-      lastFetchTime: lastFetchTimeRef.current,
       fetchInProgress: fetchInProgressRef.current,
       timestamp: performance.now()
     })
     
     // Prevent overlapping fetches and debounce rapid calls
     if (fetchInProgressRef.current || timeSinceLastFetch < 2000) {
-      console.log('[useQueueManager:FETCH] Skipping fetch', { 
+      log('FETCH:SKIP', { 
         fetchInProgress: fetchInProgressRef.current,
         timeSinceLastFetch 
       })
@@ -200,22 +198,22 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     // Cancel any in-flight request
     if (abortControllerRef.current) {
-      console.log('[useQueueManager:FETCH] Aborting previous request')
+      log('FETCH:ABORT_PREVIOUS')
       abortControllerRef.current.abort()
     }
 
-    console.log('[useQueueManager:FETCH] Creating new AbortController')
+    log('FETCH:CREATE_CONTROLLER')
     abortControllerRef.current = new AbortController()
     fetchInProgressRef.current = true
     let mounted = true
 
     const fetchCount = async (attempt: number = 0) => {
       if (!mounted || !abortControllerRef.current) {
-        console.log('[useQueueManager:FETCH] Early exit', { mounted, hasController: !!abortControllerRef.current })
+        log('FETCH:EARLY_EXIT', { mounted, hasController: !!abortControllerRef.current })
         return
       }
 
-      console.log('[useQueueManager:FETCH] Starting fetch attempt', { 
+      log('FETCH:ATTEMPT', { 
         attempt, 
         userId: user.id,
         timestamp: performance.now()
@@ -227,9 +225,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
       try {
         lastFetchTimeRef.current = now
-        console.log('[useQueueManager:FETCH] Updated lastFetchTime:', now)
-        
-        console.log('[useQueueManager:FETCH] Executing Supabase query')
+        log('FETCH:EXECUTE')
         const { count, error } = await supabase
           .from('call_queue')
           .select('*', { count: 'exact', head: true })
@@ -239,14 +235,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           .order('joined_at', { ascending: true })
           .abortSignal(abortControllerRef.current.signal)
 
-        console.log('[useQueueManager:FETCH] Query complete', { 
-          success: !error, 
-          count, 
-          timestamp: performance.now() 
-        })
+        log('FETCH:COMPLETE', { success: !error, count, timestamp: performance.now() })
 
         if (!mounted || !abortControllerRef.current) {
-          console.log('[useQueueManager:FETCH] Component unmounted, ignoring result')
+          log('FETCH:UNMOUNTED')
           return
         }
 
@@ -256,9 +248,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
         // Success - reset retry count and update state
         const currentCount = count || 0
-        console.log('[useQueueManager:FETCH] Fetched initial count from DB:', currentCount, { 
-          timestamp: performance.now() 
-        })
+        log('FETCH:SUCCESS', { currentCount, timestamp: performance.now() })
         store.updateQueueCount(currentCount)
         
         // Force immediate visual update
@@ -274,7 +264,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       } catch (error: any) {
         // Ignore AbortError - this is normal cleanup
         if (!mounted || !abortControllerRef.current || error.name === 'AbortError') {
-          console.log('[useQueueManager:FETCH] Request aborted (normal cleanup)', { 
+          log('FETCH:ABORTED', { 
             mounted, 
             hasController: !!abortControllerRef.current,
             timestamp: performance.now()
@@ -283,9 +273,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           return
         }
         
-        console.warn(`[useQueueManager:FETCH] Fetch attempt ${attempt + 1} failed:`, error.message, { 
-          timestamp: performance.now() 
-        })
+        log('FETCH:ERROR', { attempt: attempt + 1, error: error.message })
         
         const isNetworkError = error.message?.includes('503') || 
                               error.message?.includes('Failed to fetch') ||
@@ -324,14 +312,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
     fetchCount()
 
     return () => {
-      console.log('[useQueueManager:FETCH] Cleanup effect', { 
-        userId: user.id, 
-        timestamp: performance.now() 
-      })
+      log('FETCH:CLEANUP', { userId: user.id, timestamp: performance.now() })
       mounted = false
       fetchInProgressRef.current = false
       if (abortControllerRef.current) {
-        console.log('[useQueueManager:FETCH] Aborting controller on cleanup')
+        log('FETCH:ABORT_CLEANUP')
         abortControllerRef.current.abort()
         abortControllerRef.current = null
       }

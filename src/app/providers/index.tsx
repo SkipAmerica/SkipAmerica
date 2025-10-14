@@ -8,6 +8,7 @@ import { AuthProvider } from './auth-provider'
 import { SearchProvider } from './search-provider'
 import { DiscoveryProvider } from './discovery-provider'
 import { MediaProvider } from '@/modules/almighty/providers/MediaProvider'
+import { TabProvider } from './tab-provider'
 import { config } from '@/shared/config'
 
 const queryClient = new QueryClient({
@@ -37,15 +38,17 @@ export function AppProviders({ children }: AppProvidersProps) {
       <AuthProvider>
         <MediaProvider>
           <LiveStoreProvider>
-            <SearchProvider>
-              <DiscoveryProvider>
-                <TooltipProvider>
-                  {children}
-                  <Toaster />
-                  <Sonner />
-                </TooltipProvider>
-              </DiscoveryProvider>
-            </SearchProvider>
+            <TabProvider>
+              <SearchProvider>
+                <DiscoveryProvider>
+                  <TooltipProvider>
+                    {children}
+                    <Toaster />
+                    <Sonner />
+                  </TooltipProvider>
+                </DiscoveryProvider>
+              </SearchProvider>
+            </TabProvider>
           </LiveStoreProvider>
         </MediaProvider>
       </AuthProvider>

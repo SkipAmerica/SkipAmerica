@@ -10,9 +10,14 @@ import { useSearch } from "@/app/providers/search-provider";
 import { useDiscovery } from "@/app/providers/discovery-provider";
 import { useLive } from '@/hooks/live';
 import { useOnboardingProgress } from "@/hooks/useOnboardingProgress";
+import { useTab } from "@/app/providers/tab-provider";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
+
+// Memoized components to prevent cascading re-renders
+const MemoizedCreatorDashboard = memo(CreatorDashboard);
+const MemoizedFanInterface = memo(FanInterface);
 import VideoCallInterface from "@/components/VideoCallInterface";
 import CreatorProfile from "@/components/CreatorProfile";
 import { CallFlow } from "@/components/call/CallFlow";
@@ -73,7 +78,9 @@ const mockCreators = [
 
 const Index = () => {
   console.log('[Index] render start', { timestamp: performance.now() });
-  const [activeTab, setActiveTab] = useState("discover");
+  
+  // Extract tab state to context to prevent unnecessary re-renders
+  const { activeTab, setActiveTab } = useTab();
   
   // Use discovery context instead of local state
   const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange, resetToInitialState } = useDiscovery();
@@ -99,6 +106,22 @@ const Index = () => {
   const navigate = useNavigate();
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
+  
+  // Diagnostic logging to track re-render causes (dev only)
+  useEffect(() => {
+    if (import.meta.env.DEV) {
+      console.log('[Index] Re-render cause:', {
+        user: user?.id,
+        profileId: profile?.id,
+        activeTab,
+        discoveryMode,
+        browseMode,
+        showSearch,
+        showMenu,
+        timestamp: performance.now()
+      });
+    }
+  });
   
   // Safely access live store values after hooks
   const isLive = live?.isLive || false;
@@ -192,13 +215,13 @@ const Index = () => {
     }
   }
 
-  // Handle different views
+  // Handle different views with memoized components
   if (activeTab === "creator-dashboard") {
-    return <CreatorDashboard onBack={() => setActiveTab("discover")} />;
+    return <MemoizedCreatorDashboard onBack={() => setActiveTab("discover")} />;
   }
 
   if (activeTab === "fan-interface") {
-    return <FanInterface onBack={() => setActiveTab("discover")} />;
+    return <MemoizedFanInterface onBack={() => setActiveTab("discover")} />;
   }
 
   if (activeTab === "call") {
