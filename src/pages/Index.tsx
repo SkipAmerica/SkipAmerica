@@ -109,6 +109,24 @@ const Index = () => {
   const navigate = useNavigate();
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
+  const [queueUpdateTrigger, setQueueUpdateTrigger] = useState(0);
+
+  // Listen for real-time queue updates from useQueueManager
+  useEffect(() => {
+    const handleQueueUpdate = (e: CustomEvent) => {
+      if (import.meta.env.DEV) {
+        console.log('[Index] Queue updated from event', e.detail);
+      }
+      // Force re-render to update queue count display
+      setQueueUpdateTrigger(prev => prev + 1);
+    };
+    
+    window.addEventListener('queue-count-updated', handleQueueUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('queue-count-updated', handleQueueUpdate as EventListener);
+    };
+  }, []);
   
   // Diagnostic logging to track re-render causes (dev only) - moved inside conditionals
   if (import.meta.env.DEV) {

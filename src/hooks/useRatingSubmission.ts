@@ -33,7 +33,7 @@ export function useRatingSubmission() {
         session_id: data.sessionId,
         rater_id: user.id,
         rated_user_id: data.ratedUserId,
-        rating: data.rating,
+        rating: Math.round(data.rating), // Round to nearest integer for database
         comment: data.comment || null,
         tags: data.tags || null
       })
