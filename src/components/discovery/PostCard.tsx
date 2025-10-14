@@ -152,7 +152,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
       )}
       <div className="flex relative z-10">
         {/* Profile Column */}
-        <div className="bg-turquoise-light/15 backdrop-blur-md p-2 md:p-3 flex-shrink-0">
+        <div className="p-2 md:p-3 flex-shrink-0">
           <LiveAvatar
             src={post.creator.avatar_url}
             alt={post.creator.full_name}
