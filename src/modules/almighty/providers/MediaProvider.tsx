@@ -233,7 +233,27 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   // Idempotent state setter helper to prevent no-op re-renders
   const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T | ((prev: T) => T)) => void) => {
     // Functional updater to avoid stale closures during rapid event bursts
-    setter((prev: T) => (Object.is(prev, next) ? prev : next))
+    setter((prev: T) => {
+      const willChange = !Object.is(prev, next)
+      
+      // Defensive logging: track when valid state is being cleared
+      if (isDebug() && willChange) {
+        const prevRef = prev as any
+        const nextRef = next as any
+        const isClearing = (prevRef?.track?.sid || prevRef?.sid) && !nextRef
+        
+        if (isClearing) {
+          console.warn('[STATE:CLEARING]', {
+            from: prevRef?.track?.sid || prevRef?.sid || 'unknown',
+            to: 'null',
+            stack: new Error().stack?.split('\n').slice(2, 5).join('\n'),
+            t: t()
+          })
+        }
+      }
+      
+      return Object.is(prev, next) ? prev : next
+    })
   }, [])
   
   // Connection state
@@ -380,18 +400,32 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     })
     
     // [STATE] Hop 2: MediaProvider writes local video state
-    if (isDebug() && nextLocalVideo) {
+    if (isDebug()) {
       const myIdentity = room?.localParticipant?.identity || 'unknown'
-      console.log('[STATE]', {
+      const wasValid = localVideo?.track?.sid != null
+      const isNowNull = nextLocalVideo == null
+      
+      console.log('[STATE:PRE]', {
         sessionId: joinParamsRef.current?.sessionId,
         event: 'SetLocalCam',
-        target: 'pip',
-        isLocal: true,
-        pubSid: nextLocalVideo.track?.sid || 'local-preview',
-        trackId: nextLocalVideo.track?.mediaStreamTrack?.id,
-        t: t(),
-        bc: `${myIdentity}|camera|${nextLocalVideo.track?.sid || 'local-preview'}`
+        before: localVideo ? { pubSid: localVideo.track?.sid, participantId: localVideo.participantId } : null,
+        after: nextLocalVideo ? { pubSid: nextLocalVideo.track?.sid, participantId: nextLocalVideo.participantId } : null,
+        clearingValidState: wasValid && isNowNull,
+        t: t()
       })
+      
+      if (nextLocalVideo) {
+        console.log('[STATE]', {
+          sessionId: joinParamsRef.current?.sessionId,
+          event: 'SetLocalCam',
+          target: 'pip',
+          isLocal: true,
+          pubSid: nextLocalVideo.track?.sid || 'local-preview',
+          trackId: nextLocalVideo.track?.mediaStreamTrack?.id,
+          t: t(),
+          bc: `${myIdentity}|camera|${nextLocalVideo.track?.sid || 'local-preview'}`
+        })
+      }
     }
     
     setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
@@ -465,18 +499,32 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       // [STATE] Hop 2: MediaProvider writes remote primary video state
-      if (nextRemoteVideo && isDebug()) {
+      if (isDebug()) {
         const myIdentity = room?.localParticipant?.identity || 'unknown'
-        console.log('[STATE]', {
+        const wasValid = primaryRemoteVideo?.track?.sid != null
+        const isNowNull = nextRemoteVideo == null
+        
+        console.log('[STATE:PRE]', {
           sessionId: joinParamsRef.current?.sessionId,
           event: 'SetRemotePrimary',
-          target: 'primary',
-          isLocal: false,
-          pubSid: nextRemoteVideo.track?.sid,
-          trackId: nextRemoteVideo.track?.mediaStreamTrack?.id,
-          t: t(),
-          bc: `${firstRemote.identity}|camera|${nextRemoteVideo.track?.sid || 'unknown'}`
+          before: primaryRemoteVideo ? { pubSid: primaryRemoteVideo.track?.sid, participantId: primaryRemoteVideo.participantId } : null,
+          after: nextRemoteVideo ? { pubSid: nextRemoteVideo.track?.sid, participantId: nextRemoteVideo.participantId } : null,
+          clearingValidState: wasValid && isNowNull,
+          t: t()
         })
+        
+        if (nextRemoteVideo) {
+          console.log('[STATE]', {
+            sessionId: joinParamsRef.current?.sessionId,
+            event: 'SetRemotePrimary',
+            target: 'primary',
+            isLocal: false,
+            pubSid: nextRemoteVideo.track?.sid,
+            trackId: nextRemoteVideo.track?.mediaStreamTrack?.id,
+            t: t(),
+            bc: `${firstRemote.identity}|camera|${nextRemoteVideo.track?.sid || 'unknown'}`
+          })
+        }
       }
       
       setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
