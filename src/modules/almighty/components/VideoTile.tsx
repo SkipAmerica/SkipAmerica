@@ -58,6 +58,20 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
     // Attach track to video element
     track.attach(el)
 
+    // After track.attach(el)
+    const stream = el.srcObject as MediaStream | null;
+    const tracks = stream?.getVideoTracks() || [];
+    console.log('[DOM]', {
+      slot,
+      hasSrc: !!el.srcObject,
+      vTracks: tracks.length,
+      w: el.videoWidth,
+      h: el.videoHeight,
+      readyState: el.readyState,
+      visible: el.offsetWidth > 0 && el.offsetHeight > 0,
+      t: performance.now(),
+    });
+
     // Ensure srcObject is set for Safari/iOS
     if (!el.srcObject && track.mediaStreamTrack) {
       el.srcObject = new MediaStream([track.mediaStreamTrack])
