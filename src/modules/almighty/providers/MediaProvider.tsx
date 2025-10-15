@@ -770,27 +770,34 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 2: Fetch token
-      console.log('[MediaProvider:TOKEN_FETCH_START]', {
+      // Extract sessionId from URL if present (for V2 validation)
+      const urlSessionId = window.location.pathname.match(/\/session\/([^\/]+)/)?.[1]
+      
+      console.log('[TOKEN_FETCH_START]', {
+        role,
         sessionId,
         identity,
-        role,
+        urlSessionId,
         timestamp: new Date().toISOString()
       })
 
-      // Extract sessionId from URL if present (for V2 validation)
-      const urlSessionId = window.location.pathname.match(/\/session\/([^\/]+)/)?.[1]
-
-      const tokenData = await fetchLiveKitToken({
-        role: 'publisher',
-        creatorId: sessionId,
-        identity,
-        sessionId: urlSessionId, // Pass session ID for V2 validation
-      })
-      
-      console.log('[MediaProvider:TOKEN_RECEIVED]', {
-        roomName: tokenData.room,
-        wsUrl: tokenData.url
-      })
+      let tokenData: { token: string; url: string; room?: string };
+      try {
+        tokenData = await fetchLiveKitToken({
+          role: 'publisher',
+          creatorId: sessionId,
+          identity,
+          sessionId: urlSessionId, // Pass session ID for V2 validation
+        })
+        console.log('[TOKEN_RECEIVED]', {
+          length: tokenData.token?.length || 0,
+          roomName: tokenData.room,
+          wsUrl: tokenData.url
+        })
+      } catch (e) {
+        console.log('[TOKEN_FETCH_ERROR]', { message: (e as Error).message })
+        throw e
+      }
 
       // Decode and log token payload for debugging
       if (process.env.NODE_ENV !== 'production') {
@@ -1149,7 +1156,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       // Step 4: Connect to room with autoSubscribe disabled
+      console.log('[LK] CONNECTING');
       await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: true })
+      console.log('[LK] Connected');
       
       const DBG = isDebug()
       if (DBG) {
