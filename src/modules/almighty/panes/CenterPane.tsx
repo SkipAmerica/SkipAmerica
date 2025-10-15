@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { useUIContext } from '../providers/UIProvider'
@@ -58,6 +58,23 @@ export function CenterPane() {
   const canFlip = canFlipCamera()
   const hotZoneHeight = typeof window !== 'undefined' && window.innerWidth < 360 ? 28 : 32
   
+  // Mount/unmount logging
+  useEffect(() => {
+    console.log('[CenterPane:MOUNT]', {
+      sessionId,
+      role,
+      timestamp: new Date().toISOString()
+    })
+    
+    return () => {
+      console.log('[CenterPane:UNMOUNT]', {
+        sessionId,
+        role,
+        timestamp: new Date().toISOString()
+      })
+    }
+  }, [sessionId, role])
+  
   // Primary/PIP logic based on focus (memoized to prevent recalc on every render)
   const primary = useMemo(() => {
     return primaryFocus === 'remote' && primaryRemoteVideo ? primaryRemoteVideo : localVideo
@@ -76,6 +93,27 @@ export function CenterPane() {
   const showRemoteVideoLoader = useMemo(() => {
     return connectionState === 'connected' && !primaryRemoteVideo
   }, [connectionState, primaryRemoteVideo])
+  
+  // Track ref update logging
+  useEffect(() => {
+    console.log('[CenterPane:TRACK_REFS_UPDATE]', {
+      primary: primary ? {
+        participantId: primary.participantId,
+        trackSid: primary.track?.sid,
+        kind: primary.kind,
+        isLocal: primary.isLocal
+      } : null,
+      pip: pip ? {
+        participantId: pip.participantId,
+        trackSid: pip.track?.sid,
+        kind: pip.kind,
+        isLocal: pip.isLocal
+      } : null,
+      showRemoteVideoLoader,
+      primaryFocus,
+      timestamp: new Date().toISOString()
+    })
+  }, [primary, pip, showRemoteVideoLoader, primaryFocus])
   
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present

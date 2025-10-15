@@ -11,6 +11,7 @@ import {
   switchCamera,
   classifyMediaError,
 } from '../lib/livekitClient'
+import { startConnectionHealthCheck } from '../lib/connectionHealthCheck'
 import type { TrackRef } from '../components/VideoTile'
 
 // Debug toggle: enable with ?debug=1 or VITE_ALMIGHTY_DEBUG=1
@@ -277,6 +278,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const hasAutoPromotedRef = useRef(false)
   const userPinnedRef = useRef(false)
   const publishedRef = useRef(false)
+  const healthCheckCleanupRef = useRef<(() => void) | null>(null)
   
   // Analytics helper
   const mark = useCallback((name: string) => {
@@ -311,7 +313,19 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Refresh track refs
   const refreshTracks = useCallback(() => {
-    if (!room) return
+    if (!room) {
+      console.log('[MediaProvider:REFRESH_TRACKS] No room, skipping')
+      return
+    }
+    
+    console.log('[MediaProvider:REFRESH_TRACKS_START]', {
+      roomState: room.state,
+      localParticipantSid: room.localParticipant.sid,
+      localParticipantIdentity: room.localParticipant.identity,
+      localPublishedTracks: room.localParticipant.trackPublications.size,
+      remoteParticipantsCount: room.remoteParticipants.size,
+      timestamp: new Date().toISOString()
+    })
     
     // Local tracks
     const localVideoTrack = room.localParticipant.videoTrackPublications.values().next().value?.track
@@ -331,12 +345,50 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       isLocal: true,
     } : undefined
     
+    console.log('[MediaProvider:REFRESH_TRACKS_LOCAL]', {
+      hasLocalVideo: !!nextLocalVideo,
+      hasLocalAudio: !!nextLocalAudio,
+      localVideoSid: localVideoTrack?.sid,
+      localVideoEnabled: (localVideoTrack as any)?.isEnabled,
+      localAudioSid: localAudioTrack?.sid,
+      localAudioEnabled: (localAudioTrack as any)?.isEnabled
+    })
+    
     setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
     setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
     
     // Remote tracks (first remote participant for 1:1)
-    const firstRemote = Array.from(room.remoteParticipants.values())[0]
+    const remoteParticipantsList = Array.from(room.remoteParticipants.values())
+    
+    console.log('[MediaProvider:REFRESH_TRACKS_REMOTES]', {
+      remoteCount: remoteParticipantsList.length,
+      remotes: remoteParticipantsList.map(p => ({
+        sid: p.sid,
+        identity: p.identity,
+        videoTracks: Array.from(p.videoTrackPublications.values()).map(pub => ({
+          sid: pub.trackSid,
+          subscribed: pub.isSubscribed,
+          hasTrack: !!pub.track,
+          kind: pub.kind
+        })),
+        audioTracks: Array.from(p.audioTrackPublications.values()).map(pub => ({
+          sid: pub.trackSid,
+          subscribed: pub.isSubscribed,
+          hasTrack: !!pub.track,
+          kind: pub.kind
+        }))
+      }))
+    })
+    
+    const firstRemote = remoteParticipantsList[0]
     if (firstRemote) {
+      console.log('[MediaProvider:REFRESH_TRACKS_FIRST_REMOTE]', {
+        sid: firstRemote.sid,
+        identity: firstRemote.identity,
+        videoPublications: firstRemote.videoTrackPublications.size,
+        audioPublications: firstRemote.audioTrackPublications.size
+      })
+      
       const remoteVideoTrack = firstRemote.videoTrackPublications.values().next().value?.track
       const remoteAudioTrack = firstRemote.audioTrackPublications.values().next().value?.track
       
@@ -356,14 +408,33 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       if (remoteVideoTrack) mark('first_remote_video')
       
+      console.log('[MediaProvider:REFRESH_TRACKS_REMOTE_TRACKS]', {
+        hasRemoteVideo: !!nextRemoteVideo,
+        hasRemoteAudio: !!nextRemoteAudio,
+        remoteVideoSid: remoteVideoTrack?.sid,
+        remoteAudioSid: remoteAudioTrack?.sid,
+        primaryRemoteId: firstRemote.sid
+      })
+      
       setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
       setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
       setIfChanged(primaryRemoteId, firstRemote.sid, setPrimaryRemoteId)
     } else {
+      console.log('[MediaProvider:REFRESH_TRACKS_NO_REMOTES]', {
+        clearing: true
+      })
       setIfChanged(primaryRemoteVideo, undefined, setPrimaryRemoteVideo)
       setIfChanged(primaryRemoteAudio, undefined, setPrimaryRemoteAudio)
       setIfChanged(primaryRemoteId, undefined, setPrimaryRemoteId)
     }
+    
+    console.log('[MediaProvider:REFRESH_TRACKS_COMPLETE]', {
+      localVideo: !!nextLocalVideo,
+      localAudio: !!nextLocalAudio,
+      remoteVideo: !!primaryRemoteVideo,
+      remoteAudio: !!primaryRemoteAudio,
+      remoteId: firstRemote?.sid
+    })
   }, [room, mark, localVideo, localAudio, primaryRemoteVideo, primaryRemoteAudio, primaryRemoteId, setIfChanged])
   
   // Join room
@@ -628,9 +699,20 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       newRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Participant connected:', participant.identity)
-        }
+        console.log('[LK:ParticipantConnected]', {
+          participantSid: participant.sid,
+          participantIdentity: participant.identity,
+          existingTrackPubs: participant.trackPublications.size,
+          existingTracks: Array.from(participant.trackPublications.values()).map(pub => ({
+            kind: pub.kind,
+            trackSid: pub.trackSid,
+            subscribed: pub.isSubscribed,
+            hasTrack: !!pub.track
+          })),
+          totalRemoteParticipants: newRoom.remoteParticipants.size,
+          timestamp: new Date().toISOString()
+        })
+        
         // Double-check subscriptions to their existing pubs
         for (const pub of participant.trackPublications.values()) {
           if (!pub.isSubscribed) pub.setSubscribed(true);
@@ -674,17 +756,26 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       newRoom.on(RoomEvent.ParticipantDisconnected, (participant: RemoteParticipant) => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Participant left:', participant.identity)
-        }
+        console.log('[LK:ParticipantDisconnected]', {
+          participantSid: participant.sid,
+          participantIdentity: participant.identity,
+          reason: 'disconnected',
+          remainingRemoteParticipants: newRoom.remoteParticipants.size - 1,
+          timestamp: new Date().toISOString()
+        })
         refreshParticipants()
         refreshTracks()
       })
       
       newRoom.on(RoomEvent.TrackPublished, (pub, participant) => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Track published by', participant.identity, 'kind:', pub.kind)
-        }
+        console.log('[LK:TrackPublished]', {
+          publisherSid: participant.sid,
+          publisherIdentity: participant.identity,
+          trackKind: pub.kind,
+          trackSid: pub.trackSid,
+          subscribed: pub.isSubscribed,
+          timestamp: new Date().toISOString()
+        })
         
         // Belt-and-suspenders: explicitly subscribe to video tracks
         if (pub.kind === 'video' && !pub.isSubscribed) {
@@ -700,9 +791,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Track subscribed:', track.kind, 'from', participant.identity, 'muted:', track.isMuted)
-        }
+        console.log('[LK:TrackSubscribed]', {
+          trackKind: track.kind,
+          trackSid: track.sid,
+          participantSid: participant.sid,
+          participantIdentity: participant.identity,
+          trackMuted: track.isMuted,
+          trackEnabled: (track as any).isEnabled,
+          mediaStreamTrackId: track.mediaStreamTrack?.id,
+          mediaStreamTrackReadyState: track.mediaStreamTrack?.readyState,
+          autoPromoteState: {
+            hasAutoPromoted: hasAutoPromotedRef.current,
+            userPinned: userPinnedRef.current
+          },
+          timestamp: new Date().toISOString()
+        })
         
         // Note: Remote tracks are controlled by sender - we can't unmute them locally
         // The local track unmuting in createLocalTracksWithFallback ensures our tracks arrive unmuted
@@ -713,6 +816,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           track.kind === 'video' &&
           !userPinnedRef.current
         ) {
+          console.log('[LK:TrackSubscribed:AUTO_PROMOTE]', {
+            beforePrimaryRemoteId: primaryRemoteId,
+            newPrimaryRemoteId: participant.sid,
+            participantIdentity: participant.identity
+          })
+          
           try {
             // Store in sessionStorage for UIProvider coordination
             const sessionId = joinParamsRef.current?.sessionId
@@ -724,13 +833,20 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
             setPrimaryRemote(participant.sid)
             hasAutoPromotedRef.current = true
             
-            if (process.env.NODE_ENV !== 'production') {
-              console.log('[AutoPromote] Switched primary to remote video')
-            }
+            console.log('[LK:TrackSubscribed:AUTO_PROMOTE_SUCCESS]', {
+              primaryRemoteId: participant.sid,
+              hasAutoPromoted: true
+            })
           } catch (e) {
-          console.warn('[AutoPromote] Error promoting remote video', e)
+            console.error('[LK:TrackSubscribed:AUTO_PROMOTE_ERROR]', e)
+          }
+        } else {
+          console.log('[LK:TrackSubscribed:AUTO_PROMOTE_SKIPPED]', {
+            reason: track.kind !== 'video' ? 'not_video' : 
+                    hasAutoPromotedRef.current ? 'already_promoted' : 
+                    'user_pinned'
+          })
         }
-      }
       
       // Auto-play remote audio immediately
       if (track.kind === 'audio' && !participant.isLocal) {
@@ -740,10 +856,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       refreshTracks()
       })
       
-      newRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Track unsubscribed:', track.kind)
-        }
+      newRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
+        console.log('[LK:TrackUnsubscribed]', {
+          trackKind: track.kind,
+          trackSid: track.sid,
+          participantSid: participant.sid,
+          participantIdentity: participant.identity,
+          timestamp: new Date().toISOString()
+        })
         refreshTracks()
       })
       
@@ -785,10 +905,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setConnectionState('connected')
       setConnected(true)
       
-      console.log('[MediaProvider:ROOM_CONNECTED]', {
-        roomName: newRoom.name,
-        participantCount: newRoom.remoteParticipants.size,
-        connectionState: newRoom.state,
+      console.log('[MediaProvider:ROOM_CONNECTED_IMMEDIATE]', {
+        roomState: newRoom.state,
+        localParticipantSid: newRoom.localParticipant.sid,
+        localParticipantIdentity: newRoom.localParticipant.identity,
+        remoteParticipantsCount: newRoom.remoteParticipants.size,
+        remoteParticipants: Array.from(newRoom.remoteParticipants.values()).map(p => ({
+          sid: p.sid,
+          identity: p.identity,
+          trackCount: p.trackPublications.size
+        })),
         timestamp: new Date().toISOString()
       })
       
@@ -951,6 +1077,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
       }
       
+      // Start periodic health check logging
+      if (healthCheckCleanupRef.current) {
+        healthCheckCleanupRef.current()
+      }
+      healthCheckCleanupRef.current = startConnectionHealthCheck(newRoom)
+      console.log('[MediaProvider] Health check started (logs every 5s)')
+      
       // Expose debug handle for console inspection
       if (process.env.NODE_ENV !== 'production') {
         (window as any).__almightyDebug = {
@@ -1005,8 +1138,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const leave = useCallback(async () => {
     if (!room) return
     
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('[LiveKit] Leaving room')
+    console.log('[MediaProvider:LEAVE]', {
+      roomName: room.name,
+      timestamp: new Date().toISOString()
+    })
+    
+    // Stop health check
+    if (healthCheckCleanupRef.current) {
+      healthCheckCleanupRef.current()
+      healthCheckCleanupRef.current = null
     }
     
     // ✅ FIX 3: Immediately update UI state so user sees disconnected
