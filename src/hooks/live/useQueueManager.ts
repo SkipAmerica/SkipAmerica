@@ -33,6 +33,7 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   const lastFetchTimeRef = useRef(0)
   const isConnectedRef = useRef(false)
   const fetchInProgressRef = useRef(false)
+  const suspendedUntilRef = useRef(0)
   
   const [state, setState] = useState<QueueManagerState>({})
   
@@ -46,6 +47,22 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       log('SCHEDULE_RETRY:SKIP - already scheduled')
       return
     }
+
+    // Check if we're in suspension period
+    const now = Date.now()
+    if (now < suspendedUntilRef.current) {
+      log('SCHEDULE_RETRY:SUSPENDED', { until: suspendedUntilRef.current })
+      return
+    }
+
+    // After 6 failures, suspend retries for 30 seconds
+    if (retryCountRef.current > 6) {
+      suspendedUntilRef.current = now + 30000
+      retryCountRef.current = 0
+      log('SCHEDULE_RETRY:SUSPEND', { until: suspendedUntilRef.current })
+      return
+    }
+
     retryScheduledRef.current = true
 
     const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
@@ -78,6 +95,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     const channel = supabase
       .channel('queue-changes')
+    
+    // Capture current channel for stale-channel guard
+    const myChannel = channel
+      
+    channel
       .on(
         'postgres_changes',
         {
@@ -87,6 +109,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async (payload) => {
+          // Ignore events from torn-down channels
+          if (channelRef.current !== myChannel) {
+            log('INSERT:STALE_CHANNEL - ignoring')
+            return
+          }
           log('INSERT', { payload, timestamp: performance.now() })
           
           // Fetch current queue count to avoid stale closure
@@ -129,6 +156,11 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           filter: `creator_id=eq.${user.id}`
         },
         async () => {
+          // Ignore events from torn-down channels
+          if (channelRef.current !== myChannel) {
+            log('DELETE:STALE_CHANNEL - ignoring')
+            return
+          }
           log('DELETE', { timestamp: performance.now() })
           
           // Fetch current queue count to avoid stale closure
@@ -152,6 +184,12 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         }
       )
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
+        // Ignore events from torn-down channels
+        if (channelRef.current !== myChannel) {
+          log('CHANNEL_ERROR:STALE_CHANNEL - ignoring')
+          return
+        }
+        
         log('CHANNEL_ERROR', { error, timestamp: performance.now() })
         
         // Supabase emits CHANNEL_ERROR with status: "ok" on successful subscription
@@ -167,6 +205,12 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         scheduleRetry()
       })
       .subscribe((status) => {
+        // Ignore events from torn-down channels
+        if (channelRef.current !== myChannel) {
+          log('SUBSCRIBE:STATUS:STALE_CHANNEL - ignoring', { status })
+          return
+        }
+        
         log('SUBSCRIBE:STATUS', { status, timestamp: performance.now() })
 
         // Ignore duplicate status emissions

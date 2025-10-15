@@ -9,6 +9,7 @@ import { LiveControlBar } from '@/components/live/LiveControlBar'
 import PreCallLobby from '@/components/live/PreCallLobby'
 import { useLive } from '@/hooks/live'
 import { useSessionInvites } from '@/hooks/useSessionInvites'
+import { QueueManagerMount } from './providers/QueueManagerMount'
 
 function App() {
   React.useEffect(() => {
@@ -63,25 +64,30 @@ function AppContent() {
   const isLive = live?.isLive || false
   
   return (
-    <div 
-      className={cn(
-        "transition-all duration-300 ease-in-out",
-        isLive ? 'pb-[40px]' : ''  // LSB height for content padding
-      )}
-      style={{
-        '--lsb-height': isLive ? '40px' : '0px'
-      } as React.CSSProperties}
-    >
-      <AppRouter />
-      <PWAInstallPrompt />
+    <>
+      {/* Single mount point for queue manager - prevents multi-mount loops */}
+      <QueueManagerMount />
       
-      {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
-      {live?.state === 'SESSION_PREP' && (
-        <PreCallLobby 
-          onBack={() => live?.store?.dispatch({ type: 'START_FAILED' })}
-        />
-      )}
-    </div>
+      <div 
+        className={cn(
+          "transition-all duration-300 ease-in-out",
+          isLive ? 'pb-[40px]' : ''  // LSB height for content padding
+        )}
+        style={{
+          '--lsb-height': isLive ? '40px' : '0px'
+        } as React.CSSProperties}
+      >
+        <AppRouter />
+        <PWAInstallPrompt />
+        
+        {/* Pre-Call Lobby - Mount when in SESSION_PREP state */}
+        {live?.state === 'SESSION_PREP' && (
+          <PreCallLobby 
+            onBack={() => live?.store?.dispatch({ type: 'START_FAILED' })}
+          />
+        )}
+      </div>
+    </>
   )
 }
 
