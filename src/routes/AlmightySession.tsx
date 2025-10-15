@@ -183,6 +183,7 @@ function AlmightyShell() {
       timestamp: new Date().toISOString()
     })
     
+    console.log('[JOIN:CALLER] about to call join()', { sessionId, identity, role });
     join(sessionId, identity, role)
       .then(() => {
         console.log('[AlmightySession:JOIN_SUCCESS]', { 
