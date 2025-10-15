@@ -616,6 +616,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (room?.state === 'connected' && room?.name === `session_${sessionId}`) {
       console.log('[JOIN:BLOCK]', 'reason=already connected', { sessionId, identity, role });
       console.log('[MediaProvider] Already connected to session', sessionId)
+      console.log('[JOIN:BLOCK]', 'returning early here', { line: '619' });
       return
     }
     
@@ -637,6 +638,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Join blocked (already joining)')
       }
+      console.log('[JOIN:BLOCK]', 'returning early here', { line: '640' });
       return
     }
     
@@ -1253,6 +1255,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         const stateAtAttach = (newRoom as any)?.state
         if (stateAtAttach === 'connected') {
           finish('state-already-connected')
+          console.log('[JOIN:BLOCK]', 'returning early here', { line: '1256' });
           return
         }
 
