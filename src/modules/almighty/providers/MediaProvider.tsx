@@ -337,6 +337,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Refresh track refs
   const refreshTracks = useCallback((roomOverride?: Room) => {
+    console.log('[MediaProvider:REFRESH_TRACKS] DISABLED FOR TESTING')
+    return
+    
     const targetRoom = roomOverride ?? room
     if (!targetRoom) {
       console.log('[MediaProvider:REFRESH_TRACKS] No room, skipping')
