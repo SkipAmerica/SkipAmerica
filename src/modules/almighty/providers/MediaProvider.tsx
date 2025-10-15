@@ -227,6 +227,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // === 1. Debug: MediaProvider mounted ===
   useEffect(() => {
+    console.log('[MP] mounted');
     exportDebug({ phase: 'MediaProvider:mounted' })
     console.log('[MediaProvider] mounted')
   }, [])
@@ -608,6 +609,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
+    console.log('[MP] join start');
     // Guard 1: Already connected to the target session?
     if (room?.state === 'connected' && room?.name === `session_${sessionId}`) {
       console.log('[MediaProvider] Already connected to session', sessionId)
