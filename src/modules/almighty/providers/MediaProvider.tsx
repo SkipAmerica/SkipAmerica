@@ -312,34 +312,35 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, [room])
   
   // Refresh track refs
-  const refreshTracks = useCallback(() => {
-    if (!room) {
+  const refreshTracks = useCallback((roomOverride?: Room) => {
+    const targetRoom = roomOverride ?? room
+    if (!targetRoom) {
       console.log('[MediaProvider:REFRESH_TRACKS] No room, skipping')
       return
     }
     
     console.log('[MediaProvider:REFRESH_TRACKS_START]', {
-      roomState: room.state,
-      localParticipantSid: room.localParticipant.sid,
-      localParticipantIdentity: room.localParticipant.identity,
-      localPublishedTracks: room.localParticipant.trackPublications.size,
-      remoteParticipantsCount: room.remoteParticipants.size,
+      roomState: targetRoom.state,
+      localParticipantSid: targetRoom.localParticipant.sid,
+      localParticipantIdentity: targetRoom.localParticipant.identity,
+      localPublishedTracks: targetRoom.localParticipant.trackPublications.size,
+      remoteParticipantsCount: targetRoom.remoteParticipants.size,
       timestamp: new Date().toISOString()
     })
     
     // Local tracks
-    const localVideoTrack = room.localParticipant.videoTrackPublications.values().next().value?.track
-    const localAudioTrack = room.localParticipant.audioTrackPublications.values().next().value?.track
+    const localVideoTrack = targetRoom.localParticipant.videoTrackPublications.values().next().value?.track
+    const localAudioTrack = targetRoom.localParticipant.audioTrackPublications.values().next().value?.track
     
     const nextLocalVideo = localVideoTrack ? {
-      participantId: room.localParticipant.sid,
+      participantId: targetRoom.localParticipant.sid,
       track: localVideoTrack,
       kind: 'video' as const,
       isLocal: true,
     } : undefined
     
     const nextLocalAudio = localAudioTrack ? {
-      participantId: room.localParticipant.sid,
+      participantId: targetRoom.localParticipant.sid,
       track: localAudioTrack,
       kind: 'audio' as const,
       isLocal: true,
@@ -366,7 +367,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_LOCAL] Called setLocalVideo/Audio')
     
     // Remote tracks (first remote participant for 1:1)
-    const remoteParticipantsList = Array.from(room.remoteParticipants.values())
+    const remoteParticipantsList = Array.from(targetRoom.remoteParticipants.values())
     
     console.log('[MediaProvider:REFRESH_TRACKS_REMOTES]', {
       remoteCount: remoteParticipantsList.length,
@@ -1070,7 +1071,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       setCamEnabled(MEDIA.START_VIDEO)
       
       // Refresh tracks to capture published state
-      refreshTracks()
+      refreshTracks(newRoom)
       
       // Debug output
       if (process.env.NODE_ENV !== 'production') {
