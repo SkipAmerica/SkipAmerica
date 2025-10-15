@@ -771,6 +771,15 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         })
       }
       
+      console.log('[JOIN:BEFORE_TOKEN_FETCH]', {
+        reached: true,
+        localTracksCount: localTracks.length,
+        trackKinds: localTracks.map(t => t.kind),
+        sessionId,
+        role,
+        identity
+      });
+
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Step 2: Fetching LiveKit token...')
       }
