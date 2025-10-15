@@ -53,6 +53,8 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       })
     }
 
+    console.log('[VT:CHECK]', { slot, trackRef, track: trackRef?.track, sid: trackRef?.track?.sid });
+
     // Attach track to video element
     track.attach(el)
 
