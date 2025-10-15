@@ -190,10 +190,9 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
           isConnectedRef.current = false
           setState(prev => ({ ...prev, error: 'Reconnecting...', isConnected: false }))
 
-          // Drop our reference (Supabase handles internal cleanup)
-          try { supabase.removeChannel(channel) } catch {}
-          channelRef.current = null
-          // DO NOT null subscriptionRef here - keep defense guard active
+          // DO NOT remove channel or null refs during reconnection
+          // Supabase will handle internal cleanup
+          // subscriptionRef stays active to prevent duplicate subscriptions
 
           scheduleRetry() // One guarded retry only
           return
@@ -201,23 +200,36 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       })
 
     channelRef.current = channel
-    subscriptionRef.current = channel // Mark as subscribed
+
+    // Only set subscriptionRef if it's not already set (defense-in-depth)
+    if (!subscriptionRef.current) {
+      subscriptionRef.current = channel
+      log('SUBSCRIBE:DEFENSE_GUARD_ACTIVE')
+    }
+
     isConnectedRef.current = true
     log('SUBSCRIBE:COMPLETE')
 
     return () => {
       log('SUBSCRIBE:CLEANUP', { userId: user.id, timestamp: performance.now() })
+      
+      // Clear retry state
       lastStatusRef.current = null
       if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
       retryScheduledRef.current = false
+      
+      // Remove channel on unmount (not during reconnection)
       if (channelRef.current) {
-        if ((window as any).__allow_ch_teardown) {
-          try { supabase.removeChannel(channelRef.current); } catch {}
-        } else {
-          log('PQ-GUARD prevented removeChannel');
+        try { 
+          supabase.removeChannel(channelRef.current)
+          log('SUBSCRIBE:CLEANUP:CHANNEL_REMOVED')
+        } catch (e) {
+          log('SUBSCRIBE:CLEANUP:CHANNEL_REMOVE_ERROR', e)
         }
         channelRef.current = null
       }
+      
+      // Clear subscription guard on unmount
       subscriptionRef.current = null
       isConnectedRef.current = false
     }
