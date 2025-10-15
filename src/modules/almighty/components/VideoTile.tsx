@@ -14,10 +14,14 @@ interface VideoTileProps {
   mirror?: boolean
   rounded?: boolean
   className?: string
+  slot?: 'primary' | 'pip'
+  sessionId?: string
 }
 
-export default function VideoTile({ trackRef, mirror, rounded, className }: VideoTileProps) {
+export default function VideoTile({ trackRef, mirror, rounded, className, slot, sessionId }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const t0Ref = useRef<number>(performance.now())
+  const t = () => Math.round(performance.now() - t0Ref.current)
   
   // Attach/detach track when trackRef changes
   useEffect(() => {
@@ -25,6 +29,8 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
     const el = videoRef.current
     if (!track || track.kind !== 'video' || !el) return
 
+    const DBG = new URLSearchParams(location.search).get('debug') === '1' || import.meta.env.VITE_ALMIGHTY_DEBUG === '1'
+    
     console.log('[VideoTile:ATTACH]', {
       trackSid: track.sid,
       kind: track.kind,
@@ -32,6 +38,20 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       enabled: (track as any).isEnabled,
       timestamp: new Date().toISOString()
     })
+    
+    if (DBG && slot && sessionId) {
+      const remoteIdentity = trackRef?.isLocal ? 'local' : (trackRef?.participantId || 'unknown')
+      console.log('[VT]', {
+        sessionId,
+        slot,
+        action: 'attach',
+        isLocal: trackRef?.isLocal,
+        pubSid: track.sid,
+        trackId: track.mediaStreamTrack?.id,
+        t: t(),
+        bc: `${remoteIdentity}|camera|${track.sid || 'unknown'}`
+      })
+    }
 
     // Attach track to video element
     track.attach(el)
@@ -56,6 +76,26 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
             videoWidth: el.videoWidth,
             videoHeight: el.videoHeight
           })
+          
+          // [DOM] paint evidence
+          if (DBG && slot && sessionId) {
+            setTimeout(() => {
+              const srcObj = el.srcObject as MediaStream | null
+              const remoteIdentity = trackRef?.isLocal ? 'local' : (trackRef?.participantId || 'unknown')
+              console.log('[DOM]', {
+                sessionId,
+                slot,
+                hasSrc: !!srcObj,
+                vTracks: srcObj?.getVideoTracks()?.length || 0,
+                w: el.videoWidth,
+                h: el.videoHeight,
+                readyState: el.readyState,
+                visible: el.offsetWidth > 0 && el.offsetHeight > 0,
+                t: t(),
+                bc: `${remoteIdentity}|camera|${track.sid || 'unknown'}`
+              })
+            }, 50)
+          }
         })
         .catch((e) => {
           console.warn('[VideoTile:PLAY_BLOCKED]', { 
@@ -75,12 +115,26 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
 
     // Cleanup
     return () => {
+      if (DBG && slot && sessionId) {
+        const remoteIdentity = trackRef?.isLocal ? 'local' : (trackRef?.participantId || 'unknown')
+        console.log('[VT]', {
+          sessionId,
+          slot,
+          action: 'detach',
+          isLocal: trackRef?.isLocal,
+          pubSid: track.sid,
+          trackId: track.mediaStreamTrack?.id,
+          t: t(),
+          bc: `${remoteIdentity}|camera|${track.sid || 'unknown'}`
+        })
+      }
+      
       el.removeEventListener('loadedmetadata', onLoadedMetadata)
       try {
         track.detach(el)
       } catch {}
     }
-  }, [trackRef?.track?.sid, trackRef?.track?.mediaStreamTrack?.id, trackRef?.isLocal])
+  }, [trackRef?.track?.sid, trackRef?.track?.mediaStreamTrack?.id, trackRef?.isLocal, slot, sessionId])
   
   return (
     <div className={cn('relative w-full h-full', className)}>

@@ -268,19 +268,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [cachedFacingMode, setCachedFacingMode] = useState<'user' | 'environment'>()
   const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>()
   
-  // State change diagnostics
-  useEffect(() => {
-    const info = localVideo ? { participantId: localVideo.participantId, sid: (localVideo as any).track?.sid, enabled: (localVideo as any).track?.isEnabled } : null;
-    console.log('[MediaProvider:STATE localVideo]', info);
-  }, [localVideo]);
-
-  useEffect(() => {
-    const info = primaryRemoteVideo ? { participantId: primaryRemoteVideo.participantId, sid: (primaryRemoteVideo as any).track?.sid, enabled: (primaryRemoteVideo as any).track?.isEnabled } : null;
-    console.log('[MediaProvider:STATE primaryRemoteVideo]', info);
-  }, [primaryRemoteVideo]);
-
   // Refs
   const joinParamsRef = useRef<{ sessionId: string; identity: string; role: 'creator' | 'user' }>()
+  const t0Ref = useRef<number>(0)
+  
+  // Timing helper for breadcrumb logs
+  const t = () => Math.round(performance.now() - (t0Ref.current || performance.now()))
   const joinInProgressRef = useRef(false)
   const connectedOnceRef = useRef(false)
   const flipDebounceRef = useRef<NodeJS.Timeout>()
@@ -494,6 +487,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         await room.disconnect() 
       } catch {}
     }
+    
+    // Initialize timing breadcrumb
+    joinParamsRef.current = { sessionId, identity, role }
+    t0Ref.current = performance.now()
     
     // Guard 3: Prevent duplicate joins
     if (joinInProgressRef.current || connecting) {
@@ -740,6 +737,34 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         setConnectionState('connected')
       })
       
+      // Event: Local track published
+      newRoom.on(RoomEvent.LocalTrackPublished, (pub, participant) => {
+        const DBG = isDebug()
+        if (DBG && pub.kind === 'video' && pub.source === 'camera') {
+          console.log('[LK]', {
+            sessionId,
+            role,
+            myIdentity: newRoom.localParticipant.identity,
+            remoteIdentity: newRoom.localParticipant.identity,
+            event: 'LocalTrackPublished',
+            source: 'camera',
+            kind: pub.kind,
+            pubSid: pub.trackSid,
+            trackId: pub.track?.mediaStreamTrack?.id,
+            subscribed: true,
+            t: t(),
+            bc: `${newRoom.localParticipant.identity}|camera|${pub.trackSid || 'unknown'}`
+          })
+        }
+        console.log('[MediaProvider:EVENT] LocalTrackPublished', {
+          kind: pub.kind,
+          source: pub.source,
+          trackSid: pub.trackSid,
+          participantIdentity: participant.identity
+        })
+        setTimeout(() => refreshTracks(newRoom), 0)
+      })
+      
       newRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
         console.log('[LK:ParticipantConnected]', {
           participantSid: participant.sid,
@@ -810,6 +835,23 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       newRoom.on(RoomEvent.TrackPublished, (pub, participant) => {
+        const DBG = isDebug()
+        if (DBG && pub.kind === 'video' && pub.source === 'camera') {
+          console.log('[LK]', {
+            sessionId,
+            role,
+            myIdentity: newRoom.localParticipant.identity,
+            remoteIdentity: participant.identity,
+            event: 'TrackPublished',
+            source: 'camera',
+            kind: pub.kind,
+            pubSid: pub.trackSid,
+            trackId: pub.track?.mediaStreamTrack?.id,
+            subscribed: pub.isSubscribed,
+            t: t(),
+            bc: `${participant.identity}|camera|${pub.trackSid || 'unknown'}`
+          })
+        }
         console.log('[LK:TrackPublished]', {
           publisherSid: participant.sid,
           publisherIdentity: participant.identity,
@@ -836,6 +878,23 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       })
       
       newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
+        const DBG = isDebug()
+        if (DBG && track.kind === 'video') {
+          console.log('[LK]', {
+            sessionId,
+            role,
+            myIdentity: newRoom.localParticipant.identity,
+            remoteIdentity: participant.identity,
+            event: 'TrackSubscribed',
+            source: 'camera',
+            kind: track.kind,
+            pubSid: _pub.trackSid,
+            trackId: track.mediaStreamTrack?.id,
+            subscribed: true,
+            t: t(),
+            bc: `${participant.identity}|camera|${_pub.trackSid || 'unknown'}`
+          })
+        }
         console.log('[LK:TrackSubscribed]', {
           trackKind: track.kind,
           trackSid: track.sid,
@@ -945,6 +1004,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       // Step 4: Connect to room with autoSubscribe disabled
       await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: true })
+      
+      const DBG = isDebug()
+      if (DBG) {
+        console.log('[LK]', {
+          sessionId,
+          role,
+          myIdentity: newRoom.localParticipant.identity,
+          event: 'Connected',
+          t: t()
+        })
+      }
       
       // ✅ FIX 1: Immediately update connection state (don't wait for async event)
       setConnectionState('connected')

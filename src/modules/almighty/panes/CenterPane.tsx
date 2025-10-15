@@ -124,6 +124,30 @@ export function CenterPane() {
     })
   }, [primary, pip, showRemoteVideoLoader, primaryFocus])
   
+  // [CP] Props receipt breadcrumb
+  const t0Ref = useRef<number>(performance.now())
+  const t = () => Math.round(performance.now() - t0Ref.current)
+  
+  useEffect(() => {
+    const DBG = new URLSearchParams(location.search).get('debug') === '1' || import.meta.env.VITE_ALMIGHTY_DEBUG === '1'
+    if (!DBG) return
+    
+    console.log('[CP]', {
+      sessionId,
+      primary: {
+        has: !!primary,
+        pubSid: primary?.track?.sid,
+        trackId: primary?.track?.mediaStreamTrack?.id
+      },
+      pip: {
+        has: !!pip,
+        pubSid: pip?.track?.sid,
+        trackId: pip?.track?.mediaStreamTrack?.id
+      },
+      t: t()
+    })
+  }, [primary, pip, sessionId])
+  
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present
     if (!primaryRemoteVideo && !localVideo) return
@@ -266,6 +290,8 @@ export function CenterPane() {
             }
             trackRef={primary}
             mirror={primary?.isLocal && facingMode === 'user'}
+            slot="primary"
+            sessionId={sessionId}
           />
           {showRemoteVideoLoader && (
             <div className="absolute inset-0 pointer-events-none z-20">
@@ -282,6 +308,7 @@ export function CenterPane() {
             onDoubleTap={handleSwapPIP}
             className="w-full h-full"
             rounded
+            sessionId={sessionId}
           />
         </PIPDock>
       </div>

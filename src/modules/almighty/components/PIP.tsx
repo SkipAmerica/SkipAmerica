@@ -8,9 +8,10 @@ interface PIPProps {
   onDoubleTap: () => void
   className?: string
   rounded?: boolean
+  sessionId?: string
 }
 
-export function PIP({ trackRef, mirror, onDoubleTap, className, rounded = true }: PIPProps) {
+export function PIP({ trackRef, mirror, onDoubleTap, className, rounded = true, sessionId }: PIPProps) {
   const { onTapStart } = useDoubleTap({ onDoubleTap, delay: 300 })
 
   return (
@@ -32,6 +33,8 @@ export function PIP({ trackRef, mirror, onDoubleTap, className, rounded = true }
         mirror={mirror}
         rounded={rounded}
         className="w-full h-full border-2 border-white/20"
+        slot="pip"
+        sessionId={sessionId}
       />
     </div>
   )
