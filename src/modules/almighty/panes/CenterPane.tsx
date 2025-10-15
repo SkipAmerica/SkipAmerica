@@ -88,6 +88,15 @@ export function CenterPane() {
     if (!localVideo && !primaryRemoteVideo) return undefined
     return primary === localVideo ? primaryRemoteVideo : localVideo
   }, [primary, localVideo, primaryRemoteVideo])
+
+  // DEBUG: Log MediaProvider state
+  console.log('[CenterPane] MediaProvider state:', {
+    primaryFocus,
+    localVideo: localVideo ? { participantId: localVideo.participantId, trackSid: localVideo.track?.sid, isLocal: localVideo.isLocal } : null,
+    primaryRemoteVideo: primaryRemoteVideo ? { participantId: primaryRemoteVideo.participantId, trackSid: primaryRemoteVideo.track?.sid, isLocal: primaryRemoteVideo.isLocal } : null,
+    computed_primary: primary ? { participantId: primary.participantId, trackSid: primary.track?.sid } : null,
+    computed_pip: pip ? { participantId: pip.participantId, trackSid: pip.track?.sid } : null
+  })
   
   // Determine if we should show loading animation for remote video
   const showRemoteVideoLoader = useMemo(() => {
