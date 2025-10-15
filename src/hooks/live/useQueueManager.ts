@@ -153,10 +153,17 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       )
       .on('system', { event: 'CHANNEL_ERROR' }, (error) => {
         log('CHANNEL_ERROR', { error, timestamp: performance.now() })
+        
+        // Supabase emits CHANNEL_ERROR with status: "ok" on successful subscription
+        // Only treat it as an error if status is NOT "ok"
+        if (error?.status === 'ok') {
+          log('CHANNEL_ERROR:SUCCESS - ignoring')
+          return
+        }
+        
+        // Actual error - trigger retry
         setState(prev => ({ ...prev, error: 'Connection lost' }))
         isConnectedRef.current = false
-        
-        // Use the same retry pattern as CLOSED/TIMED_OUT
         scheduleRetry()
       })
       .subscribe((status) => {
@@ -224,7 +231,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       subscriptionRef.current = null
       isConnectedRef.current = false
     }
-  }, [user?.id, retryVersion, scheduleRetry])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, retryVersion])
 
   // Fetch initial queue count with enhanced error recovery and proper abort handling
   const abortControllerRef = useRef<AbortController | null>(null)
