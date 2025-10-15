@@ -804,10 +804,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         });
         
         tokenData = await fetchLiveKitToken({
-          role: 'publisher',
-          creatorId: sessionId,
+          role: role === 'creator' ? 'publisher' : 'viewer',
+          creatorId: role === 'creator' ? identity : sessionId,
           identity,
-          sessionId: urlSessionId, // Pass session ID for V2 validation
+          sessionId: urlSessionId,
         })
         
         console.log('[TOKEN:POST]', { 
