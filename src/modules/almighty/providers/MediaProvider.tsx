@@ -658,6 +658,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     mark('lk_join_start')
     
+    console.log('[JOIN:PROGRESS]', 'entered async body');
+    
     // Unlock autoplay during user gesture
     await unlockAutoplay();
     
