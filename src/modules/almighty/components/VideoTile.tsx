@@ -72,6 +72,14 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       t: performance.now(),
     });
 
+    // Force playback after attach (autoplay unlock)
+    requestAnimationFrame(() => {
+      el.muted = true;
+      el.playsInline = true;
+      el.autoplay = true;
+      el.play().catch(() => {});
+    });
+
     // Ensure srcObject is set for Safari/iOS
     if (!el.srcObject && track.mediaStreamTrack) {
       el.srcObject = new MediaStream([track.mediaStreamTrack])
