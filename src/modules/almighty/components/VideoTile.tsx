@@ -80,6 +80,10 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       el.play().catch(() => {});
     });
 
+    // DEBUG: Make video element visible with red outline
+    el.style.outline = '2px solid red';
+    el.style.zIndex = '99999';
+
     // Ensure srcObject is set for Safari/iOS
     if (!el.srcObject && track.mediaStreamTrack) {
       el.srcObject = new MediaStream([track.mediaStreamTrack])
