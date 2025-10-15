@@ -18,12 +18,16 @@ interface VideoTileProps {
 
 export default function VideoTile({ trackRef, mirror, rounded, className }: VideoTileProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const watchdogFiredRef = useRef(false)
   
-  // Attach/detach track when trackRef changes
+  // Stable trackId to prevent attach churn on trackRef rewrap
+  const track = trackRef?.track as LocalVideoTrack | RemoteVideoTrack | undefined
+  const trackId = track?.sid ?? track?.mediaStreamTrack?.id
+  
   useEffect(() => {
     const track = trackRef?.track
-    const el = videoRef.current
-    if (!track || track.kind !== 'video' || !el) return
+    const el = videoRef.current as HTMLVideoElement | null
+    if (!track || track.kind !== 'video' || !el || !el.isConnected) return
 
     console.log('[VideoTile:ATTACH]', {
       trackSid: track.sid,
@@ -33,75 +37,117 @@ export default function VideoTile({ trackRef, mirror, rounded, className }: Vide
       timestamp: new Date().toISOString()
     })
 
-    // Attach track to video element
-    track.attach(el)
+    let cancelled = false
+    let retryTimer: number | undefined
+    let watchdogTimer: number | undefined
 
-    // Ensure srcObject is set for Safari/iOS
-    if (!el.srcObject && track.mediaStreamTrack) {
-      el.srcObject = new MediaStream([track.mediaStreamTrack])
+    const tryPlay = () => {
+      if (!cancelled) {
+        el.play().catch(() => {})
+      }
     }
 
-    // Set video element properties
-    el.muted = !!trackRef?.isLocal
-    el.playsInline = true
-    el.autoplay = true
+    const onTap = () => {
+      document.removeEventListener('click', onTap)
+      tryPlay()
+    }
 
-    // Play on loadedmetadata
-    const onLoadedMetadata = () => {
+    const attachOnce = () => {
+      track.attach(el)
+
+      // Help Safari/iOS paint immediately
+      if (!el.srcObject && track.mediaStreamTrack) {
+        el.srcObject = new MediaStream([track.mediaStreamTrack])
+      }
+
+      el.muted = !!trackRef?.isLocal
+      el.playsInline = true
+      el.autoplay = true
+
+      // Aggressively play video with retry logic
       el.play()
         .then(() => {
           console.log('[VideoTile:PLAY_SUCCESS]', { 
             trackSid: track.sid,
-            isLocal: trackRef?.isLocal,
-            videoWidth: el.videoWidth,
-            videoHeight: el.videoHeight
+            isLocal: trackRef?.isLocal 
           })
         })
-        .catch((e) => {
-          console.warn('[VideoTile:PLAY_BLOCKED]', { 
-            trackSid: track.sid,
-            error: e.message,
-            readyState: el.readyState
-          })
+        .catch(() => {
+          console.warn('[VideoTile:PLAY_FAILED]', { trackSid: track.sid })
+          // Chrome sometimes needs a post-layout retry
+          retryTimer = window.setTimeout(tryPlay, 200)
+          // Safari/iOS: start on next user gesture
+          document.addEventListener('click', onTap, { once: true })
         })
     }
 
-    el.addEventListener('loadedmetadata', onLoadedMetadata)
+    // Initial attach (after layout)
+    const rafId = requestAnimationFrame(() => {
+      if (cancelled) return
+      attachOnce()
+    })
 
-    // Attempt immediate play (may succeed if metadata already loaded)
-    if (el.readyState >= 1) {
-      onLoadedMetadata()
-    }
+    // Watchdog: if not painting after 400ms, detach/reattach once with cooldown
+    watchdogTimer = window.setTimeout(() => {
+      if (cancelled || watchdogFiredRef.current) return
+      const notPainting = !el.videoWidth || !el.videoHeight || el.readyState < 2
+      if (notPainting) {
+        console.warn('[VideoTile:NOT_PAINTING]', {
+          videoWidth: el.videoWidth,
+          videoHeight: el.videoHeight,
+          readyState: el.readyState,
+          trackSid: track.sid
+        })
+        watchdogFiredRef.current = true // Prevent loop
+        try {
+          track.detach(el)
+        } catch {}
+        attachOnce()
+        setTimeout(() => { watchdogFiredRef.current = false }, 2000) // 2s cooldown
+      } else {
+        console.log('[VideoTile:PAINTING_OK]', {
+          videoWidth: el.videoWidth,
+          videoHeight: el.videoHeight
+        })
+      }
+    }, 400)
 
-    // Cleanup
     return () => {
-      el.removeEventListener('loadedmetadata', onLoadedMetadata)
+      cancelled = true
+      if (retryTimer) clearTimeout(retryTimer)
+      if (watchdogTimer) clearTimeout(watchdogTimer)
+      document.removeEventListener('click', onTap)
+      cancelAnimationFrame(rafId)
       try {
         track.detach(el)
       } catch {}
     }
-  }, [trackRef?.track?.sid, trackRef?.track?.mediaStreamTrack?.id, trackRef?.isLocal])
+  }, [
+    // IMPORTANT: include track identity that actually changes
+    trackRef?.track?.sid,
+    trackRef?.track?.mediaStreamTrack?.id,
+    trackRef?.isLocal
+  ])
+  
+  if (!trackRef) {
+    return (
+      <div className={cn('flex items-center justify-center bg-gray-800 text-white/60', className)}>
+        <span className="text-sm">No video</span>
+      </div>
+    )
+  }
   
   return (
-    <div className={cn('relative w-full h-full', className)}>
-      <video
-        ref={videoRef}
-        className={cn('w-full h-full object-cover', rounded && 'rounded-lg')}
-        autoPlay
-        playsInline
-        muted={trackRef?.isLocal ?? true}
-        style={{
-          transform: mirror ? 'scaleX(-1)' : undefined,
-          objectPosition: 'center center',
-          minWidth: '1px',
-          minHeight: '1px',
-        }}
-      />
-      {!trackRef && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-800 text-white/60">
-          <span className="text-sm">No video</span>
-        </div>
-      )}
-    </div>
+    <video
+      ref={videoRef}
+      className={cn('w-full h-full object-cover', rounded && 'rounded-lg', className)}
+      autoPlay
+      playsInline
+      muted={trackRef.isLocal}
+      style={{
+        transform: mirror ? 'scaleX(-1)' : undefined,
+        objectPosition: 'center center', // Better crop for tall portrait devices
+      }}
+    />
   )
 }

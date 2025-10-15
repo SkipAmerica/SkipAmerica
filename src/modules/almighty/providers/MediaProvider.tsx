@@ -701,11 +701,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
         if (process.env.NODE_ENV !== 'production') {
-          console.log('[LK] Track subscribed:', track.kind, 'from', participant.identity, 'muted:', track.isMuted)
+          console.log('[LK] Track subscribed:', track.kind, 'from', participant.identity)
         }
-        
-        // Note: Remote tracks are controlled by sender - we can't unmute them locally
-        // The local track unmuting in createLocalTracksWithFallback ensures our tracks arrive unmuted
         
         // --- Auto-promote remote video once (safe) ---
         if (
@@ -780,10 +777,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       // Step 4: Connect to room with autoSubscribe disabled
       await newRoom.connect(tokenData.url, tokenData.token, { autoSubscribe: true })
-      
-      // ✅ FIX 1: Immediately update connection state (don't wait for async event)
-      setConnectionState('connected')
-      setConnected(true)
       
       console.log('[MediaProvider:ROOM_CONNECTED]', {
         roomName: newRoom.name,
@@ -1008,10 +1001,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[LiveKit] Leaving room')
     }
-    
-    // ✅ FIX 3: Immediately update UI state so user sees disconnected
-    setConnected(false)
-    setConnectionState('disconnected')
     
     // Reset published flag to allow future republishing
     publishedRef.current = false
