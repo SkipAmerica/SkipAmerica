@@ -173,7 +173,7 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
     <div className={cn('relative w-full h-full', className)}>
       <video
         ref={videoRef}
-        className={cn('w-full h-full object-cover', rounded && 'rounded-lg')}
+        className={cn('absolute inset-0 z-0 pointer-events-none object-cover', rounded && 'rounded-lg')}
         autoPlay
         playsInline
         muted={trackRef?.isLocal ?? true}
