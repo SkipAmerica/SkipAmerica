@@ -92,6 +92,27 @@ function ensureSubscribed(room: Room) {
 }
 
 /**
+ * Unlock autoplay by creating/resuming AudioContext and playing silent buffer.
+ * Must be called during user gesture to satisfy browser autoplay policies.
+ */
+const unlockAutoplay = async () => {
+  try {
+    const AnyWindow = window as any
+    if (!AnyWindow.__AUDIO_CTX__) {
+      AnyWindow.__AUDIO_CTX__ = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const ctx: AudioContext = AnyWindow.__AUDIO_CTX__;
+    if (ctx.state !== 'running') await ctx.resume();
+    
+    // Play silent buffer to satisfy gesture policy
+    const src = ctx.createBufferSource();
+    src.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    src.connect(ctx.destination);
+    src.start(0);
+  } catch {}
+};
+
+/**
  * Get or create a hidden audio element for remote audio playback.
  * This element is reused across all remote audio tracks.
  */
@@ -384,6 +405,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     userPinnedRef.current = false;
     
     mark('lk_join_start')
+    
+    // Unlock autoplay during user gesture
+    await unlockAutoplay();
     
     let newRoom: Room | undefined
     let localTracks: any[] = []
