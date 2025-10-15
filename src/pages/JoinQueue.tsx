@@ -20,7 +20,6 @@ import { useCreatorPresence } from '@/shared/hooks';
 import { QueueChat } from '@/components/queue/QueueChat';
 import { NextUpConsentModal } from '@/components/queue/NextUpConsentModal';
 import { ErrorBoundary } from '@/shared/ui/error-boundary';
-import { useSessionInvites } from '@/hooks/useSessionInvites';
 import { queueJoinSchema, phoneSchema } from '@/shared/types/validation';
 import { cn } from '@/lib/utils';
 import { IOSTabBar } from '@/components/mobile/IOSTabBar';
@@ -77,9 +76,6 @@ export default function JoinQueue() {
   
   // Use centralized presence hook for online status
   const { isOnline } = useCreatorPresence(creatorId || null);
-
-  // Enable session invite listening for fans in queue
-  useSessionInvites();
 
   // Inline invite listener with initial fetch fallback
   const navigatedRef = useRef(false);

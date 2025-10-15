@@ -1,6 +1,6 @@
-import { useEffect, useCallback, useRef } from 'react'
-import { useAuth } from '@/app/providers/auth-provider'
+import { useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/app/providers/auth-provider'
 import { useToast } from '@/hooks/use-toast'
 import { RealtimeChannel } from '@supabase/supabase-js'
 
@@ -21,10 +21,14 @@ export function useSessionInvites() {
   const channelRef = useRef<RealtimeChannel | null>(null)
   const processedInvitesRef = useRef<Set<string>>(new Set())
 
+  const DEBUG = import.meta.env.VITE_DEBUG_SESSION_INVITES === 'true'
+  const V2 = import.meta.env.VITE_ALMIGHTY_V2 === 'on'
+
+  // Stable handler to avoid effect churn
   const handleInvite = useCallback(async (invite: SessionInvite) => {
     // Prevent duplicate processing
     if (processedInvitesRef.current.has(invite.id)) {
-      console.log('[SessionInvites] Already processed:', invite.id)
+      DEBUG && console.log('[SessionInvites] Already processed:', invite.id)
       return
     }
     processedInvitesRef.current.add(invite.id)
@@ -55,7 +59,7 @@ export function useSessionInvites() {
       })
     }
 
-    // Mark invite as accepted (type assertion until Supabase types regenerate)
+    // Mark invite as accepted
     await supabase
       .from('session_invites' as any)
       .update({ status: 'accepted' })
@@ -101,26 +105,38 @@ export function useSessionInvites() {
       setTimeout(go, 1200)
     }
 
-  }, []) // Empty deps - toast is stable from useToast
+  }, [toast, DEBUG])
 
   useEffect(() => {
     if (!user) return
 
     // Feature flag check
-    if (import.meta.env.VITE_ALMIGHTY_V2 !== 'on') {
-      console.log('[SessionInvites] V2 flag disabled, skipping subscription')
+    if (!V2) {
+      DEBUG && console.log('[SessionInvites] V2 flag disabled, skipping subscription')
       return
     }
+
+    // Tear down any prior channel for this hook instance
+    if (channelRef.current) {
+      try {
+        supabase.removeChannel(channelRef.current)
+      } catch (e) {
+        console.error('[SessionInvites] Channel cleanup error:', e)
+      }
+      channelRef.current = null
+    }
+
+    const filter = `invitee_id=eq.${user.id}`
 
     console.log('[SessionInvites:SETUP] 🎧 Initializing subscription', {
       userId: user.id,
       userEmail: user.email,
-      filter: `invitee_id=eq.${user.id}`,
-      v2Enabled: import.meta.env.VITE_ALMIGHTY_V2 === 'on',
+      filter,
+      v2Enabled: V2,
       timestamp: new Date().toISOString()
     });
 
-    // Subscribe to session_invites for this fan (use invitee_id, not fan_id)
+    // Subscribe to session_invites for this fan
     const channel = supabase
       .channel('session-invites-subscription')
       .on(
@@ -129,10 +145,10 @@ export function useSessionInvites() {
           event: 'INSERT',
           schema: 'public',
           table: 'session_invites' as any,
-          filter: `invitee_id=eq.${user.id}`
+          filter
         },
         (payload) => {
-          console.log('[SessionInvites:RAW_EVENT] 🔔 Received realtime event:', {
+          DEBUG && console.log('[SessionInvites:RAW_EVENT] 🔔 Received realtime event:', {
             event: payload.eventType,
             table: payload.table,
             new: payload.new,
@@ -145,7 +161,7 @@ export function useSessionInvites() {
         }
       )
       .subscribe((status, err) => {
-        console.log('[SessionInvites:SUBSCRIPTION]', {
+        DEBUG && console.log('[SessionInvites:SUBSCRIPTION]', {
           status,
           error: err,
           channelState: channel.state,
@@ -155,13 +171,12 @@ export function useSessionInvites() {
         if (status === 'SUBSCRIBED') {
           console.log('[SessionInvites] ✅ Subscription active and listening')
           
-          // Check for any pending invites that might have been created before subscription
+          // Cold-start: Check for any pending invites created before subscription
           supabase
             .from('session_invites' as any)
             .select('*')
             .eq('invitee_id', user.id)
             .eq('status', 'pending')
-            .gte('expires_at', new Date().toISOString())
             .order('created_at', { ascending: false })
             .limit(1)
             .then(({ data, error }) => {
@@ -171,11 +186,11 @@ export function useSessionInvites() {
               }
               
               if (data && data.length > 0) {
-                console.log('[SessionInvites:COLD_START] Found pending invite, processing:', data[0])
+                DEBUG && console.log('[SessionInvites:COLD_START] Found pending invite, processing:', data[0])
                 const invite = data[0] as unknown as SessionInvite
                 handleInvite(invite)
               } else {
-                console.log('[SessionInvites:COLD_START] No pending invites found')
+                DEBUG && console.log('[SessionInvites:COLD_START] No pending invites found')
               }
             })
         }
@@ -187,24 +202,18 @@ export function useSessionInvites() {
 
     channelRef.current = channel
 
-    // Timeout warning if no invite received after 60s
-    const timeoutId = setTimeout(() => {
-      console.warn('[SessionInvites:TIMEOUT] ⏰ No invite received after 60s', {
-        userId: user.id,
-        subscriptionStatus: channelRef.current?.state,
-        timestamp: new Date().toISOString()
-      });
-    }, 60000);
-
     return () => {
-      clearTimeout(timeoutId);
-      console.log('[SessionInvites] Cleaning up subscription');
+      DEBUG && console.log('[SessionInvites] Cleaning up subscription');
       if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
+        try {
+          supabase.removeChannel(channelRef.current)
+        } catch (e) {
+          console.error('[SessionInvites] Cleanup error:', e)
+        }
+        channelRef.current = null
       }
     }
-  }, [user])
+  }, [user?.id, handleInvite, V2, DEBUG])
 
   return null // Hook doesn't return anything, just handles side effects
 }
