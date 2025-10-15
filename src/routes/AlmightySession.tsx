@@ -17,6 +17,24 @@ export default function AlmightySession() {
   const { sessionId } = useParams()
   const navigate = useNavigate()
   const { toast } = useToast()
+  
+  // Session entry confirmation logging
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const role = searchParams.get('role');
+    const sessionEntryTime = performance.now();
+    
+    console.log('[AlmightySession:MOUNT] 🎬 Session page loaded', {
+      timestamp: sessionEntryTime,
+      sessionId,
+      role,
+      userAgent: navigator.userAgent.slice(0, 50)
+    });
+    
+    return () => {
+      console.log('[AlmightySession:UNMOUNT] 🏁 Session page unloading');
+    };
+  }, [sessionId]);
 
   // Session ID validation
   useEffect(() => {

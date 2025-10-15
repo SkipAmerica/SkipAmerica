@@ -30,6 +30,7 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
   const startSession = useCallback(async (queueEntry: QueueEntryInput) => {
     if (!user || isProcessing) return
 
+    const startTimeMs = performance.now();
     setError(null)
     
     // Feature flag check (default ON, can be disabled with 'off')
@@ -147,11 +148,19 @@ export function useAlmightySessionStart(options?: UseAlmightySessionStartOptions
 
       // Navigate creator to session (replace to prevent back button)
       setTimeout(() => {
-        console.log('[AlmightySessionStart:NAVIGATING]', { 
+        const navStartTime = performance.now();
+        console.log('[AlmightySessionStart:NAV_START] 🚀', { 
           sessionId, 
           path: `/session/${sessionId}?role=creator`,
+          rpcLatencyMs: navStartTime - startTimeMs,
           timestamp: new Date().toISOString()
-        })
+        });
+        
+        // Add navigation completion listener
+        window.addEventListener('beforeunload', () => {
+          console.log('[AlmightySessionStart:NAV_COMPLETE] ✅ Page unloading for navigation');
+        }, { once: true });
+        
         window.location.assign(`/session/${sessionId}?role=creator`)
       }, 100)
 

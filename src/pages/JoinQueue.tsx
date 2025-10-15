@@ -218,9 +218,13 @@ export default function JoinQueue() {
           table: 'session_invites',
           filter: `invitee_id=eq.${user.id}`
         }, (payload) => {
-          console.log('[JoinQueue:INVITE_EVENT] 📨 Received:', {
-            timestamp: new Date().toISOString(),
-            invite: payload.new
+          const inviteReceivedTime = performance.now();
+          
+          console.log('[JoinQueue:INVITE_RECEIVED] 📨', {
+            timestamp: inviteReceivedTime,
+            invite: payload.new,
+            sessionId: (payload.new as any).session_id,
+            creatorName: (payload.new as any).creator_name
           });
           
           const invite = payload.new as any;
@@ -229,6 +233,13 @@ export default function JoinQueue() {
             title: `${invite.creator_name || 'Creator'} is ready!`,
             description: "Connecting to session...",
             duration: 2000,
+          });
+          
+          console.log('[JoinQueue:INVITE_NAV_START] 🚀', {
+            timestamp: performance.now(),
+            sessionId: invite.session_id,
+            latencyMs: performance.now() - inviteReceivedTime,
+            source: 'REALTIME'
           });
           
           goto(invite.session_id, 'REALTIME');
@@ -1382,6 +1393,17 @@ export default function JoinQueue() {
         roomName: `lobby_${creatorId}`,
         hasConsentedToBroadcast: true,
         consentStream: !!consentStream
+      });
+      
+      // Log "ready and waiting" state for handshake tracking
+      console.log('[JoinQueue:FAN_READY] ⏳ Waiting for creator to start call', {
+        timestamp: performance.now(),
+        userId: user.id,
+        creatorId,
+        queueEntryId: data[0].id,
+        fan_state: 'ready',
+        fan_has_consented: true,
+        fan_camera_ready: true
       });
       
       toast({
