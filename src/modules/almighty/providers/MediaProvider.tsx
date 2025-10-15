@@ -231,9 +231,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   }, [])
   
   // Idempotent state setter helper to prevent no-op re-renders
-  const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T) => void) => {
-    if (Object.is(current, next)) return
-    setter(next)
+  const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T | ((prev: T) => T)) => void) => {
+    // Functional updater to avoid stale closures during rapid event bursts
+    setter((prev: T) => (Object.is(prev, next) ? prev : next))
   }, [])
   
   // Connection state
@@ -268,6 +268,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [cachedFacingMode, setCachedFacingMode] = useState<'user' | 'environment'>()
   const [audioOutputDevices, setAudioOutputDevices] = useState<MediaDeviceInfo[]>()
   
+  // State change diagnostics
+  useEffect(() => {
+    const info = localVideo ? { participantId: localVideo.participantId, sid: (localVideo as any).track?.sid, enabled: (localVideo as any).track?.isEnabled } : null;
+    console.log('[MediaProvider:STATE localVideo]', info);
+  }, [localVideo]);
+
+  useEffect(() => {
+    const info = primaryRemoteVideo ? { participantId: primaryRemoteVideo.participantId, sid: (primaryRemoteVideo as any).track?.sid, enabled: (primaryRemoteVideo as any).track?.isEnabled } : null;
+    console.log('[MediaProvider:STATE primaryRemoteVideo]', info);
+  }, [primaryRemoteVideo]);
+
   // Refs
   const joinParamsRef = useRef<{ sessionId: string; identity: string; role: 'creator' | 'user' }>()
   const joinInProgressRef = useRef(false)
@@ -1089,6 +1100,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       
       // Refresh tracks to capture published state
       refreshTracks(newRoom)
+      // Also schedule a microtask refresh to catch any late publications
+      setTimeout(() => refreshTracks(newRoom), 0)
       
       // Debug output
       if (process.env.NODE_ENV !== 'production') {
