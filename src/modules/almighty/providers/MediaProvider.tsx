@@ -614,6 +614,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     // Guard 1: Already connected to the target session?
     if (room?.state === 'connected' && room?.name === `session_${sessionId}`) {
+      console.log('[JOIN:SKIP]', 'condition hit', { condition: 'already_connected', params: { sessionId, identity, role } });
       console.log('[JOIN:BLOCK]', 'reason=already connected', { sessionId, identity, role });
       console.log('[MediaProvider] Already connected to session', sessionId)
       console.log('[JOIN:BLOCK]', 'returning early here', { line: '619' });
@@ -634,6 +635,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     // Guard 3: Prevent duplicate joins
     if (joinInProgressRef.current || connecting) {
+      console.log('[JOIN:SKIP]', 'condition hit', { condition: 'join_in_progress', params: { sessionId, identity, role, joinInProgressRef: joinInProgressRef.current, connecting } });
       console.log('[JOIN:BLOCK]', 'reason=join in progress', { sessionId, identity, role });
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Join blocked (already joining)')
