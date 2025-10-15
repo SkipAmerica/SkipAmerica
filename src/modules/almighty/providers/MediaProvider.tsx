@@ -995,12 +995,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
           timestamp: new Date().toISOString()
         })
         
-        // Belt-and-suspenders: explicitly subscribe to video tracks
-        if (pub.kind === 'video' && !pub.isSubscribed) {
+        // Force-subscribe to remote video tracks immediately
+        if (participant.identity !== newRoom.localParticipant.identity && pub.kind === 'video') {
           try {
             pub.setSubscribed(true)
+            if (DBG) {
+              console.log('[LK:TrackPublished] Force-subscribed to remote video', {
+                participantIdentity: participant.identity,
+                trackSid: pub.trackSid
+              })
+            }
           } catch (e) {
-            console.warn('[LK] Failed to subscribe to video track:', e)
+            console.warn('[LK] Failed to force-subscribe to remote video track:', e)
           }
         }
         
