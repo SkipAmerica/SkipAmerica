@@ -233,27 +233,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   // Idempotent state setter helper to prevent no-op re-renders
   const setIfChanged = useCallback(<T,>(current: T, next: T, setter: (value: T | ((prev: T) => T)) => void) => {
     // Functional updater to avoid stale closures during rapid event bursts
-    setter((prev: T) => {
-      const willChange = !Object.is(prev, next)
-      
-      // Defensive logging: track when valid state is being cleared
-      if (isDebug() && willChange) {
-        const prevRef = prev as any
-        const nextRef = next as any
-        const isClearing = (prevRef?.track?.sid || prevRef?.sid) && !nextRef
-        
-        if (isClearing) {
-          console.warn('[STATE:CLEARING]', {
-            from: prevRef?.track?.sid || prevRef?.sid || 'unknown',
-            to: 'null',
-            stack: new Error().stack?.split('\n').slice(2, 5).join('\n'),
-            t: t()
-          })
-        }
-      }
-      
-      return Object.is(prev, next) ? prev : next
-    })
+    setter((prev: T) => (Object.is(prev, next) ? prev : next))
   }, [])
   
   // Connection state
@@ -356,26 +336,12 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     const localVideoTrack = targetRoom.localParticipant.videoTrackPublications.values().next().value?.track
     const localAudioTrack = targetRoom.localParticipant.audioTrackPublications.values().next().value?.track
     
-    let nextLocalVideo: TrackRef | undefined = localVideoTrack ? {
+    const nextLocalVideo: TrackRef | undefined = localVideoTrack ? {
       participantId: targetRoom.localParticipant.sid,
       track: localVideoTrack,
       kind: 'video' as const,
       isLocal: true,
     } : undefined
-    
-    // Preserve pre-publish preview if no published track yet
-    if (!nextLocalVideo && localVideo && localVideo.kind === 'video' && (localVideo.participantId === 'local' || localVideo.participantId === 'preview')) {
-      console.log('[MediaProvider:REFRESH_TRACKS_PRESERVE_PREVIEW] Keeping preview track', {
-        participantId: localVideo.participantId,
-        trackSid: localVideo.track?.sid
-      })
-      nextLocalVideo = localVideo
-    } else if (nextLocalVideo && localVideo && (localVideo.participantId === 'local' || localVideo.participantId === 'preview')) {
-      console.log('[MediaProvider:REFRESH_TRACKS_SWITCH_TO_PUBLISHED] Transitioning from preview to published', {
-        from: localVideo.participantId,
-        to: nextLocalVideo.participantId
-      })
-    }
     
     const nextLocalAudio = localAudioTrack ? {
       participantId: targetRoom.localParticipant.sid,
@@ -393,42 +359,43 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       localAudioEnabled: (localAudioTrack as any)?.isEnabled
     })
     
-    console.log('[MediaProvider:REFRESH_TRACKS_SET_LOCAL]', {
-      willSetLocalVideo: nextLocalVideo !== localVideo,
-      currentLocalVideo: localVideo ? { participantId: localVideo.participantId, trackSid: localVideo.track?.sid } : null,
-      nextLocalVideo: nextLocalVideo ? { participantId: nextLocalVideo.participantId, trackSid: nextLocalVideo.track?.sid } : null
-    })
-    
-    // [STATE] Hop 2: MediaProvider writes local video state
-    if (isDebug()) {
-      const myIdentity = room?.localParticipant?.identity || 'unknown'
-      const wasValid = localVideo?.track?.sid != null
-      const isNowNull = nextLocalVideo == null
+    // Use functional updater to read fresh state and preserve preview
+    setLocalVideo(currentLocalVideo => {
+      let finalVideo = nextLocalVideo
       
-      console.log('[STATE:PRE]', {
-        sessionId: joinParamsRef.current?.sessionId,
-        event: 'SetLocalCam',
-        before: localVideo ? { pubSid: localVideo.track?.sid, participantId: localVideo.participantId } : null,
-        after: nextLocalVideo ? { pubSid: nextLocalVideo.track?.sid, participantId: nextLocalVideo.participantId } : null,
-        clearingValidState: wasValid && isNowNull,
-        t: t()
-      })
+      // Preserve pre-publish preview if no published track yet
+      if (!finalVideo && currentLocalVideo && currentLocalVideo.kind === 'video' && 
+          (currentLocalVideo.participantId === 'local' || currentLocalVideo.participantId === 'preview')) {
+        console.log('[MediaProvider:REFRESH_TRACKS_PRESERVE_PREVIEW] Keeping preview track', {
+          participantId: currentLocalVideo.participantId,
+          trackSid: currentLocalVideo.track?.sid
+        })
+        finalVideo = currentLocalVideo
+      } else if (finalVideo && currentLocalVideo && 
+                 (currentLocalVideo.participantId === 'local' || currentLocalVideo.participantId === 'preview')) {
+        console.log('[MediaProvider:REFRESH_TRACKS_SWITCH_TO_PUBLISHED] Transitioning from preview to published', {
+          from: currentLocalVideo.participantId,
+          to: finalVideo.participantId
+        })
+      }
       
-      if (nextLocalVideo) {
+      if (isDebug() && finalVideo) {
+        const myIdentity = targetRoom.localParticipant?.identity || 'unknown'
         console.log('[STATE]', {
           sessionId: joinParamsRef.current?.sessionId,
           event: 'SetLocalCam',
           target: 'pip',
           isLocal: true,
-          pubSid: nextLocalVideo.track?.sid || 'local-preview',
-          trackId: nextLocalVideo.track?.mediaStreamTrack?.id,
+          pubSid: finalVideo.track?.sid || 'local-preview',
+          trackId: finalVideo.track?.mediaStreamTrack?.id,
           t: t(),
-          bc: `${myIdentity}|camera|${nextLocalVideo.track?.sid || 'local-preview'}`
+          bc: `${myIdentity}|camera|${finalVideo.track?.sid || 'local-preview'}`
         })
       }
-    }
+      
+      return Object.is(currentLocalVideo, finalVideo) ? currentLocalVideo : finalVideo
+    })
     
-    setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
     setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
     
     console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_LOCAL] Called setLocalVideo/Audio')
@@ -498,22 +465,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         nextRemoteVideo: nextRemoteVideo ? { participantId: nextRemoteVideo.participantId, trackSid: nextRemoteVideo.track?.sid } : null
       })
       
-      // [STATE] Hop 2: MediaProvider writes remote primary video state
-      if (isDebug()) {
-        const myIdentity = room?.localParticipant?.identity || 'unknown'
-        const wasValid = primaryRemoteVideo?.track?.sid != null
-        const isNowNull = nextRemoteVideo == null
-        
-        console.log('[STATE:PRE]', {
-          sessionId: joinParamsRef.current?.sessionId,
-          event: 'SetRemotePrimary',
-          before: primaryRemoteVideo ? { pubSid: primaryRemoteVideo.track?.sid, participantId: primaryRemoteVideo.participantId } : null,
-          after: nextRemoteVideo ? { pubSid: nextRemoteVideo.track?.sid, participantId: nextRemoteVideo.participantId } : null,
-          clearingValidState: wasValid && isNowNull,
-          t: t()
-        })
-        
-        if (nextRemoteVideo) {
+      // Use functional updater to read fresh state (avoid stale closure)
+      setPrimaryRemoteVideo(currentRemoteVideo => {
+        if (isDebug() && nextRemoteVideo) {
+          const myIdentity = targetRoom.localParticipant?.identity || 'unknown'
           console.log('[STATE]', {
             sessionId: joinParamsRef.current?.sessionId,
             event: 'SetRemotePrimary',
@@ -525,9 +480,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
             bc: `${firstRemote.identity}|camera|${nextRemoteVideo.track?.sid || 'unknown'}`
           })
         }
-      }
-      
-      setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
+        
+        return Object.is(currentRemoteVideo, nextRemoteVideo) ? currentRemoteVideo : nextRemoteVideo
+      })
       setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
       
       console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_REMOTE] Called setPrimaryRemoteVideo/Audio')
@@ -536,19 +491,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       console.log('[MediaProvider:REFRESH_TRACKS_NO_REMOTES]', {
         clearing: true
       })
-      setIfChanged(primaryRemoteVideo, undefined, setPrimaryRemoteVideo)
+      setPrimaryRemoteVideo(current => current ? undefined : current)
       setIfChanged(primaryRemoteAudio, undefined, setPrimaryRemoteAudio)
       setIfChanged(primaryRemoteId, undefined, setPrimaryRemoteId)
     }
     
-    console.log('[MediaProvider:REFRESH_TRACKS_COMPLETE]', {
-      localVideo: !!nextLocalVideo,
-      localAudio: !!nextLocalAudio,
-      remoteVideo: !!primaryRemoteVideo,
-      remoteAudio: !!primaryRemoteAudio,
-      remoteId: firstRemote?.sid
-    })
-  }, [room, mark, localVideo, localAudio, primaryRemoteVideo, primaryRemoteAudio, primaryRemoteId, setIfChanged])
+    console.log('[MediaProvider:REFRESH_TRACKS_COMPLETE]')
+  }, [room, mark, setIfChanged])
   
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
