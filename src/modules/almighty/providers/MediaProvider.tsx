@@ -697,12 +697,14 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         // Create fresh tracks
+        console.log('[JOIN:PRE_TRACKS_CREATE]', { role, sessionId, identity });
         const { tracks, usedConstraints } = await createLocalTracksWithFallback({
           audio: MEDIA.START_AUDIO,
           video: MEDIA.START_VIDEO,
           facingMode: cachedFacingMode || 'user',
           cachedDeviceIds,
         })
+        console.log('[JOIN:POST_TRACKS_CREATE]', { gotTracks: tracks?.length, kinds: tracks?.map(t => t.kind) });
         localTracks = tracks
         
         // Cache device IDs
