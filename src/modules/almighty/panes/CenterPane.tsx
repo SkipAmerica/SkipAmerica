@@ -15,6 +15,7 @@ import { PermissionPrompt } from '../components/PermissionPrompt'
 import { useSession } from '../providers/SessionProvider'
 import { endAlmightySession } from '@/utils/end-almighty-session'
 import { useToast } from '@/hooks/use-toast'
+import { SkipLogoLoader } from '../components/SkipLogoLoader'
 
 export function CenterPane() {
   const navigate = useNavigate()
@@ -66,6 +67,15 @@ export function CenterPane() {
     if (!localVideo && !primaryRemoteVideo) return undefined
     return primary === localVideo ? primaryRemoteVideo : localVideo
   }, [primary, localVideo, primaryRemoteVideo])
+  
+  // Determine if we should show loading animation for remote video
+  const showRemoteVideoLoader = useMemo(() => {
+    // Show loader when:
+    // 1. We're connected to the room
+    // 2. We don't have remote video yet
+    // 3. We're supposed to be showing remote video (primaryFocus === 'remote')
+    return connectionState === 'connected' && !primaryRemoteVideo && primaryFocus === 'remote'
+  }, [connectionState, primaryRemoteVideo, primaryFocus])
   
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present
@@ -199,16 +209,20 @@ export function CenterPane() {
         onTouchEnd={handleChatTouchEnd}
       />
       
-        {/* Primary Video */}
-        <VideoTile
-          key={
-            primary?.track?.sid ||
-            primary?.track?.mediaStreamTrack?.id ||
-            (primary?.isLocal ? 'local' : 'remote')
-          }
-          trackRef={primary}
-          mirror={primary?.isLocal && facingMode === 'user'}
-        />
+        {/* Primary Video or Loading Animation */}
+        {showRemoteVideoLoader ? (
+          <SkipLogoLoader />
+        ) : (
+          <VideoTile
+            key={
+              primary?.track?.sid ||
+              primary?.track?.mediaStreamTrack?.id ||
+              (primary?.isLocal ? 'local' : 'remote')
+            }
+            trackRef={primary}
+            mirror={primary?.isLocal && facingMode === 'user'}
+          />
+        )}
         
         {/* PIP with Draggable Dock */}
         {pip ? (
