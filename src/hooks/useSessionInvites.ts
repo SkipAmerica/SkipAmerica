@@ -101,7 +101,7 @@ export function useSessionInvites() {
       setTimeout(go, 1200)
     }
 
-  }, [toast])
+  }, []) // Empty deps - toast is stable from useToast
 
   useEffect(() => {
     if (!user) return
@@ -114,6 +114,7 @@ export function useSessionInvites() {
 
     console.log('[SessionInvites:SETUP] 🎧 Initializing subscription', {
       userId: user.id,
+      userEmail: user.email,
       filter: `invitee_id=eq.${user.id}`,
       v2Enabled: import.meta.env.VITE_ALMIGHTY_V2 === 'on',
       timestamp: new Date().toISOString()
@@ -131,14 +132,57 @@ export function useSessionInvites() {
           filter: `invitee_id=eq.${user.id}`
         },
         (payload) => {
+          console.log('[SessionInvites:RAW_EVENT] 🔔 Received realtime event:', {
+            event: payload.eventType,
+            table: payload.table,
+            new: payload.new,
+            timestamp: new Date().toISOString()
+          })
           const invite = payload.new as SessionInvite
           if (invite.status === 'pending') {
             handleInvite(invite)
           }
         }
       )
-      .subscribe((status) => {
-        console.log('[SessionInvites] Subscription status:', status)
+      .subscribe((status, err) => {
+        console.log('[SessionInvites:SUBSCRIPTION]', {
+          status,
+          error: err,
+          channelState: channel.state,
+          timestamp: new Date().toISOString()
+        })
+        
+        if (status === 'SUBSCRIBED') {
+          console.log('[SessionInvites] ✅ Subscription active and listening')
+          
+          // Check for any pending invites that might have been created before subscription
+          supabase
+            .from('session_invites' as any)
+            .select('*')
+            .eq('invitee_id', user.id)
+            .eq('status', 'pending')
+            .gte('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .then(({ data, error }) => {
+              if (error) {
+                console.error('[SessionInvites:COLD_START] Error checking pending invites:', error)
+                return
+              }
+              
+              if (data && data.length > 0) {
+                console.log('[SessionInvites:COLD_START] Found pending invite, processing:', data[0])
+                const invite = data[0] as unknown as SessionInvite
+                handleInvite(invite)
+              } else {
+                console.log('[SessionInvites:COLD_START] No pending invites found')
+              }
+            })
+        }
+        
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[SessionInvites] ❌ Channel error:', err)
+        }
       })
 
     channelRef.current = channel
@@ -160,7 +204,7 @@ export function useSessionInvites() {
         channelRef.current = null;
       }
     }
-  }, [user, handleInvite])
+  }, [user])
 
   return null // Hook doesn't return anything, just handles side effects
 }
