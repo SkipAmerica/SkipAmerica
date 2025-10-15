@@ -15,6 +15,7 @@ import { PermissionPrompt } from '../components/PermissionPrompt'
 import { useSession } from '../providers/SessionProvider'
 import { endAlmightySession } from '@/utils/end-almighty-session'
 import { useToast } from '@/hooks/use-toast'
+import { SkipLogoLoader } from '../components/SkipLogoLoader'
 
 export function CenterPane() {
   const navigate = useNavigate()
@@ -63,9 +64,18 @@ export function CenterPane() {
   }, [primaryFocus, primaryRemoteVideo, localVideo])
   
   const pip = useMemo(() => {
+    // If showing loader (no remote), always show local in PIP
+    if (!primaryRemoteVideo && localVideo) return localVideo
+    
+    // Normal: show whichever isn't primary
     if (!localVideo && !primaryRemoteVideo) return undefined
     return primary === localVideo ? primaryRemoteVideo : localVideo
   }, [primary, localVideo, primaryRemoteVideo])
+  
+  // Determine if we should show loading animation for remote video
+  const showRemoteVideoLoader = useMemo(() => {
+    return connectionState === 'connected' && !primaryRemoteVideo
+  }, [connectionState, primaryRemoteVideo])
   
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present
@@ -199,33 +209,34 @@ export function CenterPane() {
         onTouchEnd={handleChatTouchEnd}
       />
       
-        {/* Primary Video */}
-        <VideoTile
-          key={
-            primary?.track?.sid ||
-            primary?.track?.mediaStreamTrack?.id ||
-            (primary?.isLocal ? 'local' : 'remote')
-          }
-          trackRef={primary}
-          mirror={primary?.isLocal && facingMode === 'user'}
-        />
+        {/* Primary Video - Always Rendered */}
+        <div className="absolute inset-0">
+          <VideoTile
+            key={
+              primary?.track?.sid ||
+              primary?.track?.mediaStreamTrack?.id ||
+              (primary?.isLocal ? 'local' : 'remote')
+            }
+            trackRef={primary}
+            mirror={primary?.isLocal && facingMode === 'user'}
+          />
+          {showRemoteVideoLoader && (
+            <div className="absolute inset-0 pointer-events-none z-20">
+              <SkipLogoLoader />
+            </div>
+          )}
+        </div>
         
-        {/* PIP with Draggable Dock */}
-        {pip ? (
-          <PIPDock boundsRef={stageRef} avoidRef={controlsRef} initialCorner="bottom-right">
-            <PIP
-              trackRef={pip}
-              mirror={pip.isLocal && facingMode === 'user'}
-              onDoubleTap={handleSwapPIP}
-              className="w-full h-full"
-              rounded
-            />
-          </PIPDock>
-        ) : (
-          <div className="absolute top-4 right-4 w-24 h-32 rounded-lg bg-gray-800/80 flex items-center justify-center text-white/60 text-xs">
-            No video
-          </div>
-        )}
+        {/* PIP with Draggable Dock - Always Rendered */}
+        <PIPDock boundsRef={stageRef} avoidRef={controlsRef} initialCorner="bottom-right">
+          <PIP
+            trackRef={pip}
+            mirror={pip?.isLocal && facingMode === 'user'}
+            onDoubleTap={handleSwapPIP}
+            className="w-full h-full"
+            rounded
+          />
+        </PIPDock>
       </div>
       
       {/* Media Controls */}

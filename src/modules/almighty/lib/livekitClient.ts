@@ -49,6 +49,7 @@ export async function createLocalTracksWithFallback(options: {
         ...MEDIA.AUDIO_CONSTRAINTS,
         deviceId: options.cachedDeviceIds?.audio,
       })
+      await audioTrack.unmute()
       tracks.push(audioTrack)
       usedConstraints.audio = true
     } catch (err) {
@@ -66,6 +67,7 @@ export async function createLocalTracksWithFallback(options: {
       
       try {
         const videoTrack = await createLocalVideoTrack(constraints)
+        await videoTrack.unmute()
         tracks.push(videoTrack)
         usedConstraints.video = { level: i, constraints }
         break
