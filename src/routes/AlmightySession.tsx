@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { SessionProvider, useSession } from '@/modules/almighty/providers/SessionProvider'
-import { MediaProvider, useMedia } from '@/modules/almighty/providers/MediaProvider'
+import { useMedia } from '@/modules/almighty/providers/MediaProvider'
 import { UIProvider, useUIContext, Pane } from '@/modules/almighty/providers/UIProvider'
 import { useSwipeGestures } from '@/modules/almighty/hooks/useSwipeGestures'
 import { useWakeLock } from '@/modules/almighty/hooks/useWakeLock'
@@ -124,11 +124,9 @@ export default function AlmightySession() {
 
   return (
     <SessionProvider>
-      <MediaProvider>
-        <UIProvider>
-          <AlmightyShell />
-        </UIProvider>
-      </MediaProvider>
+      <UIProvider>
+        <AlmightyShell />
+      </UIProvider>
     </SessionProvider>
   )
 }
