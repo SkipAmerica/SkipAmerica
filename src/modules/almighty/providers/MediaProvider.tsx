@@ -787,6 +787,13 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         timestamp: new Date().toISOString()
       })
 
+      console.log('[JOIN:BEFORE_FETCH_BLOCK]', {
+        serverUrl: undefined,
+        tokenEndpoint: undefined,
+        params: { sessionId, identity, role },
+        insideFetchBlock: false,
+      });
+
       let tokenData: { token: string; url: string; room?: string };
       try {
         console.log('[TOKEN:PRE]', { 
