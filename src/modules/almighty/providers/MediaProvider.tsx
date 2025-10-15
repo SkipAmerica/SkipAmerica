@@ -610,8 +610,11 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
     console.log('[MP] join start');
+    console.log('[JOIN:START]', { role, sessionId });
+    
     // Guard 1: Already connected to the target session?
     if (room?.state === 'connected' && room?.name === `session_${sessionId}`) {
+      console.log('[JOIN:BLOCK]', 'reason=already connected', { sessionId, identity, role });
       console.log('[MediaProvider] Already connected to session', sessionId)
       return
     }
@@ -630,6 +633,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     // Guard 3: Prevent duplicate joins
     if (joinInProgressRef.current || connecting) {
+      console.log('[JOIN:BLOCK]', 'reason=join in progress', { sessionId, identity, role });
       if (process.env.NODE_ENV !== 'production') {
         console.log('[MediaProvider] Join blocked (already joining)')
       }
