@@ -35,6 +35,31 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
   const fetchInProgressRef = useRef(false)
   
   const [state, setState] = useState<QueueManagerState>({})
+  
+  // Retry infrastructure for guarded reconnection
+  const lastStatusRef = useRef<string | null>(null)
+  const retryScheduledRef = useRef(false)
+  const [retryVersion, setRetryVersion] = useState(0)
+  
+  const scheduleRetry = useCallback(() => {
+    if (retryScheduledRef.current) {
+      log('SCHEDULE_RETRY:SKIP - already scheduled')
+      return
+    }
+    retryScheduledRef.current = true
+
+    const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
+    retryCountRef.current += 1
+
+    if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
+
+    log('SCHEDULE_RETRY:EXECUTE', { delay, retryCount: retryCountRef.current })
+    retryTimeoutRef.current = setTimeout(() => {
+      retryTimeoutRef.current = undefined
+      retryScheduledRef.current = false
+      setRetryVersion(v => v + 1) // Triggers effect ONCE
+    }, delay)
+  }, [])
 
   // Real-time subscription for queue changes with defense-in-depth guard
   useEffect(() => {
@@ -145,37 +170,33 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
       })
       .subscribe((status) => {
         log('SUBSCRIBE:STATUS', { status, timestamp: performance.now() })
-        
-        // Handle terminal states (CLOSED, TIMED_OUT)
+
+        // Ignore duplicate status emissions
+        if (status === lastStatusRef.current) return
+        lastStatusRef.current = status
+
+        if (status === 'SUBSCRIBED') {
+          retryCountRef.current = 0
+          retryScheduledRef.current = false
+          if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
+          isConnectedRef.current = true
+          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+          log('✅ SUBSCRIBED')
+          return
+        }
+
         if (status === 'CLOSED' || status === 'TIMED_OUT') {
-          log('CHANNEL_CLOSED:RESUBSCRIBE', { status })
+          log('⚠️ CHANNEL CLOSED — scheduling retry', { status })
           isConnectedRef.current = false
           setState(prev => ({ ...prev, error: 'Reconnecting...', isConnected: false }))
-          
-          // Clean up dead channel
-          if (channelRef.current) {
-            try { supabase.removeChannel(channelRef.current) } catch {}
-            channelRef.current = null
-          }
-          subscriptionRef.current = null
-          
-          // Retry with exponential backoff
-          if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
-          
-          const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
-          retryCountRef.current++
-          
-          retryTimeoutRef.current = setTimeout(() => {
-            log('CHANNEL_CLOSED:RETRY_EXECUTE', { attempt: retryCountRef.current })
-            // Force re-render to trigger useEffect (creates fresh channel)
-            setState(prev => ({ ...prev }))
-          }, delay)
-        }
-        
-        if (status === 'SUBSCRIBED') {
-          isConnectedRef.current = true
-          retryCountRef.current = 0 // Reset on successful connect
-          setState(prev => ({ ...prev, error: undefined, isConnected: true }))
+
+          // Drop our reference (Supabase handles internal cleanup)
+          try { supabase.removeChannel(channel) } catch {}
+          channelRef.current = null
+          // DO NOT null subscriptionRef here - keep defense guard active
+
+          scheduleRetry() // One guarded retry only
+          return
         }
       })
 
@@ -186,6 +207,9 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
 
     return () => {
       log('SUBSCRIBE:CLEANUP', { userId: user.id, timestamp: performance.now() })
+      lastStatusRef.current = null
+      if (retryTimeoutRef.current) clearTimeout(retryTimeoutRef.current)
+      retryScheduledRef.current = false
       if (channelRef.current) {
         if ((window as any).__allow_ch_teardown) {
           try { supabase.removeChannel(channelRef.current); } catch {}
@@ -194,14 +218,10 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         }
         channelRef.current = null
       }
-      subscriptionRef.current = null // Clear subscription guard
-      if (retryTimeoutRef.current) {
-        clearTimeout(retryTimeoutRef.current)
-        retryTimeoutRef.current = undefined
-      }
+      subscriptionRef.current = null
       isConnectedRef.current = false
     }
-  }, [user?.id]) // ONLY depend on stable user ID
+  }, [user?.id, retryVersion, scheduleRetry])
 
   // Fetch initial queue count with enhanced error recovery and proper abort handling
   const abortControllerRef = useRef<AbortController | null>(null)
