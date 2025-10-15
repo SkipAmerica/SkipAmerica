@@ -64,18 +64,18 @@ export function CenterPane() {
   }, [primaryFocus, primaryRemoteVideo, localVideo])
   
   const pip = useMemo(() => {
+    // If showing loader (no remote), always show local in PIP
+    if (!primaryRemoteVideo && localVideo) return localVideo
+    
+    // Normal: show whichever isn't primary
     if (!localVideo && !primaryRemoteVideo) return undefined
     return primary === localVideo ? primaryRemoteVideo : localVideo
   }, [primary, localVideo, primaryRemoteVideo])
   
   // Determine if we should show loading animation for remote video
   const showRemoteVideoLoader = useMemo(() => {
-    // Show loader when:
-    // 1. We're connected to the room
-    // 2. We don't have remote video yet
-    // 3. We're supposed to be showing remote video (primaryFocus === 'remote')
-    return connectionState === 'connected' && !primaryRemoteVideo && primaryFocus === 'remote'
-  }, [connectionState, primaryRemoteVideo, primaryFocus])
+    return connectionState === 'connected' && !primaryRemoteVideo
+  }, [connectionState, primaryRemoteVideo])
   
   const handleSwapPIP = () => {
     // Idempotent: no-op if no remote present
