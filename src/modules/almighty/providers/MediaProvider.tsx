@@ -255,6 +255,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const shouldSampleAnalytics = useRef(Math.random() < MEDIA.ANALYTICS_SAMPLE_RATE)
   const hasAutoPromotedRef = useRef(false)
   const userPinnedRef = useRef(false)
+  const publishedRef = useRef(false)
   
   // Analytics helper
   const mark = useCallback((name: string) => {
@@ -346,10 +347,24 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Join room
   const join = useCallback(async (sessionId: string, identity: string, role: 'creator' | 'user') => {
-    // Guard: prevent duplicate joins
-    if (joinInProgressRef.current || connecting || connected) {
+    // Guard 1: Already connected to the target session?
+    if (room?.state === 'connected' && room?.name === `session_${sessionId}`) {
+      console.log('[MediaProvider] Already connected to session', sessionId)
+      return
+    }
+    
+    // Guard 2: Mandatory disconnect from any previous room before proceeding
+    if (room && room.state !== 'disconnected') {
+      console.log('[MediaProvider] Disconnecting from previous room before join')
+      try { 
+        await room.disconnect() 
+      } catch {}
+    }
+    
+    // Guard 3: Prevent duplicate joins
+    if (joinInProgressRef.current || connecting) {
       if (process.env.NODE_ENV !== 'production') {
-        console.log('[MediaProvider] Join blocked (already joining/connected)')
+        console.log('[MediaProvider] Join blocked (already joining)')
       }
       return
     }
@@ -845,14 +860,29 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         console.log('[MediaProvider] Step 6: Publishing tracks...')
       }
       
-      // Step 7: Publish tracks (only after Connected)
-      console.log('[MediaProvider:PUBLISHING_TRACKS]', {
-        trackCount: localTracks.length,
-        hasVideo: localTracks.some(t => t.kind === 'video'),
-        hasAudio: localTracks.some(t => t.kind === 'audio')
-      })
-      
-      await publishTracks(newRoom, localTracks)
+      // Step 7: Publish tracks (only after Connected) - idempotent
+      if (publishedRef.current) {
+        console.log('[MediaProvider:TRACKS_ALREADY_PUBLISHED] (via ref)')
+      } else {
+        // Check if tracks are already published
+        const pubs = Array.from(newRoom.localParticipant.trackPublications.values())
+        const hasVideo = pubs.some(p => p.kind === 'video' && p.track)
+        const hasAudio = pubs.some(p => p.kind === 'audio' && p.track)
+        
+        if (hasVideo && hasAudio) {
+          publishedRef.current = true
+          console.log('[MediaProvider:TRACKS_ALREADY_PUBLISHED] (already in room)')
+        } else {
+          console.log('[MediaProvider:PUBLISHING_TRACKS]', {
+            trackCount: localTracks.length,
+            hasVideo: localTracks.some(t => t.kind === 'video'),
+            hasAudio: localTracks.some(t => t.kind === 'audio')
+          })
+          
+          await publishTracks(newRoom, localTracks)
+          publishedRef.current = true
+        }
+      }
       
       console.log('[MediaProvider:TRACKS_PUBLISHED]', {
         localParticipant: newRoom.localParticipant.identity,
@@ -947,6 +977,9 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[LiveKit] Leaving room')
     }
+    
+    // Reset published flag to allow future republishing
+    publishedRef.current = false
     
     // Stop local tracks
     stopLocalTracks(room)

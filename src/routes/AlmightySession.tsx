@@ -149,7 +149,7 @@ function AlmightyShell() {
   useWakeLock(isPublishing)
   
   // Auto-join on mount (strict once-only with ref guard)
-  const joinedRef = useRef(false)
+  const joinAttemptRef = useRef<{ id?: string; done: boolean }>({ done: false })
   useEffect(() => {
     // === 4. Debug: AlmightySession mounted ===
     ;(window as any).__almightyDebug = Object.assign(
@@ -163,14 +163,13 @@ function AlmightyShell() {
       timestamp: new Date().toISOString() 
     })
     
-    if (joinedRef.current) {
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[AlmightyShell] Join blocked (already joined once)')
-      }
+    // Idempotent per sessionId
+    if (joinAttemptRef.current.done && joinAttemptRef.current.id === sessionId) {
+      console.log('[AlmightySession] Join already completed for', sessionId)
       return
     }
     
-    joinedRef.current = true
+    joinAttemptRef.current = { id: sessionId, done: true }
     
     const identity = getIdentityForRole(sessionId, role)
     
@@ -194,6 +193,8 @@ function AlmightyShell() {
         })
       })
       .catch(err => {
+        // Allow retry only on real failure
+        joinAttemptRef.current.done = false
         console.error('[AlmightySession:JOIN_ERROR]', { 
           sessionId, 
           error: err,
@@ -207,9 +208,7 @@ function AlmightyShell() {
         sessionId,
         timestamp: new Date().toISOString()
       })
-      // Reset join guard to allow re-join in dev mode (Strict Mode double-render)
-      joinedRef.current = false
-      // Clear skip flag to allow queue cleanup after session
+      // Do not clear the guard on cleanup; only leave the room
       ;(window as any).__skipQueueCleanupOnSessionNav = false
       leave()
     }

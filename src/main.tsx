@@ -49,7 +49,9 @@ if (ogTitle) {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+  // StrictMode temporarily disabled during media provider stabilization
+  // TODO: Re-enable after join guards are verified stable
+  // <StrictMode>
     <App />
-  </StrictMode>,
+  // </StrictMode>,
 );
