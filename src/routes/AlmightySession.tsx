@@ -133,7 +133,7 @@ export default function AlmightySession() {
 
 function AlmightyShell() {
   const { sessionId, role } = useSession()
-  const { join, leave, connected, micEnabled, camEnabled, unlockAudio } = useMedia()
+  const { join, leave, connected, micEnabled, camEnabled, unlockAudio, mediaReady } = useMedia()
   const { activePane, swipeLocked, isDragging, lockSwipe } = useUIContext()
   const {
     containerRef,
@@ -375,7 +375,16 @@ function AlmightyShell() {
       </div>
       <div className="w-screen h-full min-h-0 flex-shrink-0" data-pane="center">
         <PaneErrorBoundary paneName="Center Pane">
-          <CenterPane />
+          {mediaReady ? (
+            <CenterPane />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-black">
+              <div className="text-center space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto" />
+                <p className="text-white/60 text-sm">Initializing media...</p>
+              </div>
+            </div>
+          )}
         </PaneErrorBoundary>
       </div>
       <div className="w-screen h-full min-h-0 flex-shrink-0" data-pane="right">

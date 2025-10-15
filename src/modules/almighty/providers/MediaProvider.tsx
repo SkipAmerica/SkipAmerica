@@ -173,6 +173,7 @@ interface MediaContext {
   permissionError?: { error: Error; type: 'denied' | 'not_found' | 'in_use' | 'unknown' }
   tokenError?: { is401Or403: boolean; message: string }
   needsAudioUnlock: boolean
+  mediaReady: boolean
   
   // Local tracks
   localVideo?: TrackRef
@@ -273,6 +274,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user')
   const [isFlippingCamera, setIsFlippingCamera] = useState(false)
   const [currentQualityLevel, setCurrentQualityLevel] = useState(0)
+  const [mediaReady, setMediaReady] = useState(false)
   
   // Remote state
   const [primaryRemoteVideo, setPrimaryRemoteVideo] = useState<TrackRef>()
@@ -303,6 +305,18 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   const userPinnedRef = useRef(false)
   const publishedRef = useRef(false)
   const healthCheckCleanupRef = useRef<(() => void) | null>(null)
+  
+  // Set mediaReady when local video track is available
+  useEffect(() => {
+    if (localVideo && localVideo.track && !mediaReady) {
+      console.log('[MediaProvider:MEDIA_READY] Local video track available', {
+        participantId: localVideo.participantId,
+        trackSid: localVideo.track.sid,
+        timestamp: new Date().toISOString()
+      })
+      setMediaReady(true)
+    }
+  }, [localVideo, mediaReady])
   
   // Analytics helper
   const mark = useCallback((name: string) => {
@@ -337,9 +351,6 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
   
   // Refresh track refs
   const refreshTracks = useCallback((roomOverride?: Room) => {
-    console.log('[MediaProvider:REFRESH_TRACKS] DISABLED FOR TESTING')
-    return
-    
     const targetRoom = roomOverride ?? room
     if (!targetRoom) {
       console.log('[MediaProvider:REFRESH_TRACKS] No room, skipping')
@@ -402,6 +413,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       nextLocalVideo: nextLocalVideo ? { participantId: nextLocalVideo.participantId, trackSid: nextLocalVideo.track?.sid } : null
     })
     
+    // [STATE:PRE] Log before setting local video
+    if (isDebug()) {
+      console.log('[STATE:PRE]', {
+        before: localVideo?.track?.sid || null,
+        after: nextLocalVideo?.track?.sid || null,
+        clearingValidState: !!(localVideo?.track?.sid && !nextLocalVideo),
+        t: t()
+      })
+    }
+    
     // [STATE] Hop 2: MediaProvider writes local video state
     if (isDebug()) {
       const myIdentity = room?.localParticipant?.identity || 'unknown'
@@ -432,6 +453,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
     
     setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
+    
+    // [STATE:PRE] Log before setting local audio
+    if (isDebug()) {
+      console.log('[STATE:PRE]', {
+        before: localAudio?.track?.sid || null,
+        after: nextLocalAudio?.track?.sid || null,
+        clearingValidState: !!(localAudio?.track?.sid && !nextLocalAudio),
+        t: t()
+      })
+    }
+    
     setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
     
     console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_LOCAL] Called setLocalVideo/Audio')
@@ -501,6 +533,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         nextRemoteVideo: nextRemoteVideo ? { participantId: nextRemoteVideo.participantId, trackSid: nextRemoteVideo.track?.sid } : null
       })
       
+      // [STATE:PRE] Log before setting remote video
+      if (isDebug()) {
+        console.log('[STATE:PRE]', {
+          before: primaryRemoteVideo?.track?.sid || null,
+          after: nextRemoteVideo?.track?.sid || null,
+          clearingValidState: !!(primaryRemoteVideo?.track?.sid && !nextRemoteVideo),
+          t: t()
+        })
+      }
+      
       // [STATE] Hop 2: MediaProvider writes remote primary video state
       if (isDebug()) {
         const myIdentity = room?.localParticipant?.identity || 'unknown'
@@ -531,6 +573,17 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
+      
+      // [STATE:PRE] Log before setting remote audio
+      if (isDebug()) {
+        console.log('[STATE:PRE]', {
+          before: primaryRemoteAudio?.track?.sid || null,
+          after: nextRemoteAudio?.track?.sid || null,
+          clearingValidState: !!(primaryRemoteAudio?.track?.sid && !nextRemoteAudio),
+          t: t()
+        })
+      }
+      
       setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
       
       console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_REMOTE] Called setPrimaryRemoteVideo/Audio')
@@ -1673,6 +1726,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     permissionError,
     tokenError,
     needsAudioUnlock,
+    mediaReady,
     localVideo,
     localAudio,
     micEnabled,
