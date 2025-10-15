@@ -72,6 +72,11 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       t: performance.now(),
     });
 
+    // Force on-top & visible (diagnostic)
+    el.style.opacity = '1';
+    el.style.position = 'relative';
+    el.style.zIndex = '99999';
+
     // Force playback after attach (autoplay unlock)
     requestAnimationFrame(() => {
       el.muted = true;
