@@ -156,17 +156,8 @@ export function useQueueManager(isLive: boolean, isDiscoverable: boolean = false
         setState(prev => ({ ...prev, error: 'Connection lost' }))
         isConnectedRef.current = false
         
-        // Retry subscription after delay with exponential backoff
-        if (retryTimeoutRef.current) {
-          clearTimeout(retryTimeoutRef.current)
-        }
-        retryCountRef.current++
-        const delay = Math.min(250 * Math.pow(2, retryCountRef.current), 15000)
-        log('CHANNEL_ERROR:RETRY', { delay, retryCount: retryCountRef.current })
-        retryTimeoutRef.current = setTimeout(() => {
-          log('CHANNEL_ERROR:RETRY_EXECUTE')
-          channel.subscribe()
-        }, delay)
+        // Use the same retry pattern as CLOSED/TIMED_OUT
+        scheduleRetry()
       })
       .subscribe((status) => {
         log('SUBSCRIBE:STATUS', { status, timestamp: performance.now() })
