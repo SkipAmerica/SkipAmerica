@@ -789,12 +789,26 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
 
       let tokenData: { token: string; url: string; room?: string };
       try {
+        console.log('[TOKEN:PRE]', { 
+          sessionId, 
+          role,
+          identity,
+          urlSessionId 
+        });
+        
         tokenData = await fetchLiveKitToken({
           role: 'publisher',
           creatorId: sessionId,
           identity,
           sessionId: urlSessionId, // Pass session ID for V2 validation
         })
+        
+        console.log('[TOKEN:POST]', { 
+          hasToken: !!tokenData.token, 
+          hasUrl: !!tokenData.url,
+          room: tokenData.room 
+        });
+        
         console.log('[TOKEN_RECEIVED]', {
           length: tokenData.token?.length || 0,
           roomName: tokenData.room,
