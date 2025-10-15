@@ -354,8 +354,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       localAudioEnabled: (localAudioTrack as any)?.isEnabled
     })
     
+    console.log('[MediaProvider:REFRESH_TRACKS_SET_LOCAL]', {
+      willSetLocalVideo: nextLocalVideo !== localVideo,
+      currentLocalVideo: localVideo ? { participantId: localVideo.participantId, trackSid: localVideo.track?.sid } : null,
+      nextLocalVideo: nextLocalVideo ? { participantId: nextLocalVideo.participantId, trackSid: nextLocalVideo.track?.sid } : null
+    })
+    
     setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
     setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
+    
+    console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_LOCAL] Called setLocalVideo/Audio')
     
     // Remote tracks (first remote participant for 1:1)
     const remoteParticipantsList = Array.from(room.remoteParticipants.values())
@@ -416,8 +424,16 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         primaryRemoteId: firstRemote.sid
       })
       
+      console.log('[MediaProvider:REFRESH_TRACKS_SET_REMOTE]', {
+        willSetRemoteVideo: nextRemoteVideo !== primaryRemoteVideo,
+        currentPrimaryRemoteVideo: primaryRemoteVideo ? { participantId: primaryRemoteVideo.participantId, trackSid: primaryRemoteVideo.track?.sid } : null,
+        nextRemoteVideo: nextRemoteVideo ? { participantId: nextRemoteVideo.participantId, trackSid: nextRemoteVideo.track?.sid } : null
+      })
+      
       setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
       setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
+      
+      console.log('[MediaProvider:REFRESH_TRACKS_AFTER_SET_REMOTE] Called setPrimaryRemoteVideo/Audio')
       setIfChanged(primaryRemoteId, firstRemote.sid, setPrimaryRemoteId)
     } else {
       console.log('[MediaProvider:REFRESH_TRACKS_NO_REMOTES]', {
