@@ -379,6 +379,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       nextLocalVideo: nextLocalVideo ? { participantId: nextLocalVideo.participantId, trackSid: nextLocalVideo.track?.sid } : null
     })
     
+    // [STATE] Hop 2: MediaProvider writes local video state
+    if (isDebug() && nextLocalVideo) {
+      const myIdentity = room?.localParticipant?.identity || 'unknown'
+      console.log('[STATE]', {
+        sessionId: joinParamsRef.current?.sessionId,
+        event: 'SetLocalCam',
+        target: 'pip',
+        isLocal: true,
+        pubSid: nextLocalVideo.track?.sid || 'local-preview',
+        trackId: nextLocalVideo.track?.mediaStreamTrack?.id,
+        t: t(),
+        bc: `${myIdentity}|camera|${nextLocalVideo.track?.sid || 'local-preview'}`
+      })
+    }
+    
     setIfChanged(localVideo, nextLocalVideo, setLocalVideo)
     setIfChanged(localAudio, nextLocalAudio, setLocalAudio)
     
@@ -448,6 +463,21 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         currentPrimaryRemoteVideo: primaryRemoteVideo ? { participantId: primaryRemoteVideo.participantId, trackSid: primaryRemoteVideo.track?.sid } : null,
         nextRemoteVideo: nextRemoteVideo ? { participantId: nextRemoteVideo.participantId, trackSid: nextRemoteVideo.track?.sid } : null
       })
+      
+      // [STATE] Hop 2: MediaProvider writes remote primary video state
+      if (nextRemoteVideo && isDebug()) {
+        const myIdentity = room?.localParticipant?.identity || 'unknown'
+        console.log('[STATE]', {
+          sessionId: joinParamsRef.current?.sessionId,
+          event: 'SetRemotePrimary',
+          target: 'primary',
+          isLocal: false,
+          pubSid: nextRemoteVideo.track?.sid,
+          trackId: nextRemoteVideo.track?.mediaStreamTrack?.id,
+          t: t(),
+          bc: `${firstRemote.identity}|camera|${nextRemoteVideo.track?.sid || 'unknown'}`
+        })
+      }
       
       setIfChanged(primaryRemoteVideo, nextRemoteVideo, setPrimaryRemoteVideo)
       setIfChanged(primaryRemoteAudio, nextRemoteAudio, setPrimaryRemoteAudio)
