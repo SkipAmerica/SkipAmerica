@@ -332,12 +332,26 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     const localVideoTrack = targetRoom.localParticipant.videoTrackPublications.values().next().value?.track
     const localAudioTrack = targetRoom.localParticipant.audioTrackPublications.values().next().value?.track
     
-    const nextLocalVideo = localVideoTrack ? {
+    let nextLocalVideo: TrackRef | undefined = localVideoTrack ? {
       participantId: targetRoom.localParticipant.sid,
       track: localVideoTrack,
       kind: 'video' as const,
       isLocal: true,
     } : undefined
+    
+    // Preserve pre-publish preview if no published track yet
+    if (!nextLocalVideo && localVideo && localVideo.kind === 'video' && (localVideo.participantId === 'local' || localVideo.participantId === 'preview')) {
+      console.log('[MediaProvider:REFRESH_TRACKS_PRESERVE_PREVIEW] Keeping preview track', {
+        participantId: localVideo.participantId,
+        trackSid: localVideo.track?.sid
+      })
+      nextLocalVideo = localVideo
+    } else if (nextLocalVideo && localVideo && (localVideo.participantId === 'local' || localVideo.participantId === 'preview')) {
+      console.log('[MediaProvider:REFRESH_TRACKS_SWITCH_TO_PUBLISHED] Transitioning from preview to published', {
+        from: localVideo.participantId,
+        to: nextLocalVideo.participantId
+      })
+    }
     
     const nextLocalAudio = localAudioTrack ? {
       participantId: targetRoom.localParticipant.sid,
@@ -804,7 +818,10 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
         }
         
         // A tiny defer helps if LK is still normalizing internal state
-        setTimeout(() => ensureSubscribed(newRoom), 0);
+        setTimeout(() => {
+          ensureSubscribed(newRoom)
+          refreshTracks(newRoom)
+        }, 0);
       })
       
       newRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, _pub, participant: RemoteParticipant) => {
