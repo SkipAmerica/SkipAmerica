@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DrawerContent, DrawerClose } from '@/components/ui/drawer'
 import { cn } from '@/shared/lib/utils'
-import { useKeyboardAware } from '@/hooks/use-keyboard-aware'
 import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/lib/post-utils'
 import { toast } from 'sonner'
 
@@ -30,7 +29,7 @@ export const ExpandedPostCreator = ({
   const [inputValue, setInputValue] = useState(initialValue)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const { isKeyboardVisible } = useKeyboardAware()
+  const [viewportBottom, setViewportBottom] = useState(0)
 
   // Auto-focus on mount
   useEffect(() => {
@@ -42,6 +41,27 @@ export const ExpandedPostCreator = ({
       }
     }, 100)
     return () => clearTimeout(timer)
+  }, [])
+
+  // Track keyboard position for instant toolbar positioning
+  useEffect(() => {
+    if (!window.visualViewport) return
+    
+    const updateViewport = () => {
+      // Calculate how far up from screen bottom the viewport is
+      const bottom = window.innerHeight - (window.visualViewport!.offsetTop + window.visualViewport!.height)
+      setViewportBottom(bottom)
+    }
+    
+    updateViewport() // Initial position
+    
+    window.visualViewport.addEventListener('resize', updateViewport)
+    window.visualViewport.addEventListener('scroll', updateViewport)
+    
+    return () => {
+      window.visualViewport.removeEventListener('resize', updateViewport)
+      window.visualViewport.removeEventListener('scroll', updateViewport)
+    }
   }, [])
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -166,7 +186,13 @@ export const ExpandedPostCreator = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 min-h-0">
+      <div 
+        className="flex-1 overflow-y-auto px-4 pt-4 min-h-0"
+        style={{
+          // Reserve space for toolbar + keyboard offset
+          paddingBottom: `calc(60px + ${viewportBottom}px)`, // 60px = toolbar height
+        }}
+      >
         <div className="flex gap-3">
           {/* User Avatar */}
           <Avatar className="w-12 h-12 flex-shrink-0">
@@ -225,9 +251,7 @@ export const ExpandedPostCreator = ({
       <div
         className="border-t bg-background fixed left-0 right-0 z-[71]"
         style={{
-          bottom: isKeyboardVisible 
-            ? 'calc(12px + env(safe-area-inset-bottom))' 
-            : 'calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom))',
+          bottom: `${viewportBottom}px`,
         }}
       >
         <div className="flex items-center gap-2 px-4 py-3">
