@@ -674,6 +674,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       }
       
       // Step 1: Check if preview stream exists and reuse it
+      console.log('[JOIN:CHECK_PREVIEW]', { hasPreviewStream: hasPreviewStream(), hasLocalVideo: !!localVideo?.track });
       if (hasPreviewStream() && localVideo?.track) {
         console.log('[MediaProvider] Reusing preview stream for session')
         localTracks = [localVideo.track as any]
