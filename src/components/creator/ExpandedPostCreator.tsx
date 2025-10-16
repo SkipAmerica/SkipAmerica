@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
-import { X, Plus, BarChart3, Image, Camera } from 'lucide-react'
+import { X, Plus, BarChart3 } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useOnClickOutside } from '@/shared/hooks/use-on-click-outside'
 import { useAuth } from '@/app/providers/auth-provider'
 import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/lib/post-utils'
 import { toast } from 'sonner'
+import { supabase } from '@/integrations/supabase/client'
 
 interface ExpandedPostCreatorProps {
   isOpen: boolean
@@ -29,7 +30,6 @@ export const ExpandedPostCreator = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const containerRef = useOnClickOutside<HTMLDivElement>((e) => {
-    // Don't close if clicking on the textarea or action buttons
     if (textareaRef.current?.contains(e.target as Node)) {
       return
     }
@@ -39,14 +39,12 @@ export const ExpandedPostCreator = ({
   useEffect(() => {
     if (isOpen && textareaRef.current) {
       textareaRef.current.focus()
-      // Auto-resize textarea
       textareaRef.current.style.height = 'auto'
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
   }, [isOpen])
 
   useEffect(() => {
-    // Handle escape key
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
@@ -55,7 +53,6 @@ export const ExpandedPostCreator = ({
 
     if (isOpen) {
       document.addEventListener('keydown', handleKeyDown)
-      // Prevent background scrolling
       document.body.style.overflow = 'hidden'
     }
 
@@ -67,7 +64,6 @@ export const ExpandedPostCreator = ({
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value)
-    // Auto-resize
     e.target.style.height = 'auto'
     e.target.style.height = `${e.target.scrollHeight}px`
   }
@@ -95,7 +91,7 @@ export const ExpandedPostCreator = ({
         mediaRes = await uploadPostMedia(file, { pathPrefix: `users/${user.id}` })
       }
 
-      await createPostRecord({
+      const postId = await createPostRecord({
         social_account_id,
         content_type,
         title: null,
@@ -108,13 +104,45 @@ export const ExpandedPostCreator = ({
         aspect_ratio: mediaRes?.aspect_ratio || null,
       })
 
-      toast.success('Posted successfully!')
+      // Hydrate the exact row we just created (with joins) for optimistic prepend
+      const { data } = await supabase
+        .from('creator_content')
+        .select(`
+          id,
+          content_type,
+          title,
+          description,
+          media_url,
+          thumbnail_url,
+          provider,
+          playback_id,
+          view_count,
+          like_count,
+          comment_count,
+          published_at,
+          created_at,
+          social_accounts!inner (
+            platform,
+            profiles!inner (
+              id,
+              full_name,
+              avatar_url,
+              username
+            )
+          )
+        `)
+        .eq('id', postId)
+        .single()
+
+      // Call global callback for optimistic prepend
+      if (data && (window as any).__feedPostCreated) {
+        (window as any).__feedPostCreated(data)
+      }
+
+      toast.success('Posted!')
       setInputValue('')
       setFile(null)
       onClose()
-      
-      // Refresh the page to show the new post
-      window.location.reload()
     } catch (e: any) {
       console.error('Post error:', e)
       toast.error(e?.message || 'Failed to post')

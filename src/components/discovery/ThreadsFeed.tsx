@@ -1,43 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { PostCard } from './PostCard'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { supabase } from '@/integrations/supabase/client'
 
-interface ThreadPost {
+type FeedPost = {
   id: string
-  title?: string
-  description?: string
-  content_type: string
-  media_url?: string
-  thumbnail_url?: string
+  content_type: 'text' | 'image' | 'video'
+  title: string | null
+  description: string | null
+  media_url: string | null
+  thumbnail_url: string | null
+  provider: 'supabase' | 'mux' | null
+  playback_id: string | null
   view_count: number
   like_count: number
   comment_count: number
-  published_at?: string
+  published_at: string | null
   created_at: string
-  creator: {
-    id: string
-    full_name: string
-    avatar_url?: string
-    username?: string
-    isLive?: boolean
-    title?: string
-    industry?: string
+  social_accounts: {
+    platform: string
+    profiles: { 
+      id: string
+      full_name: string | null
+      avatar_url: string | null
+      username?: string | null
+    }
   }
-  platform?: string
-  provider?: 'supabase' | 'mux' | null
-  playback_id?: string | null
 }
 
 interface ThreadsFeedProps {
   hasNotificationZone?: boolean
+  onPostCreated?: (post: FeedPost) => void
 }
 
 export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
-  const [posts, setPosts] = useState<ThreadPost[]>([])
+  const [posts, setPosts] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const loadedIds = useRef<Set<string>>(new Set())
 
+  // 1) Initial fetch
   useEffect(() => {
     let mounted = true
     ;(async () => {
@@ -77,37 +79,85 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
         setLoading(false)
         return
       }
-
-      // Transform data to match ThreadPost interface
-      const transformedPosts = (data || []).map((post: any) => ({
-        id: post.id,
-        content_type: post.content_type,
-        title: post.title,
-        description: post.description,
-        media_url: post.media_url,
-        thumbnail_url: post.thumbnail_url,
-        provider: post.provider,
-        playback_id: post.playback_id,
-        view_count: post.view_count || 0,
-        like_count: post.like_count || 0,
-        comment_count: post.comment_count || 0,
-        published_at: post.published_at,
-        created_at: post.created_at,
-        creator: {
-          id: post.social_accounts?.profiles?.id || '',
-          full_name: post.social_accounts?.profiles?.full_name || 'Creator',
-          avatar_url: post.social_accounts?.profiles?.avatar_url,
-          username: post.social_accounts?.profiles?.username,
-        },
-        platform: post.social_accounts?.platform || 'skip_native',
-      }))
-
-      setPosts(transformedPosts)
+      const rows = (data ?? []) as FeedPost[]
+      rows.forEach(r => loadedIds.current.add(r.id))
+      setPosts(rows)
       setLoading(false)
     })()
+    return () => { mounted = false }
+  }, [])
 
+  // 2) Realtime: INSERT → prepend, UPDATE → patch counts
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-creator-content')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'creator_content' }, async (payload) => {
+        const id = (payload.new as any)?.id as string | undefined
+        if (!id || loadedIds.current.has(id)) return
+        
+        // Hydrate joins for UI
+        const { data } = await supabase
+          .from('creator_content')
+          .select(`
+            id,
+            content_type,
+            title,
+            description,
+            media_url,
+            thumbnail_url,
+            provider,
+            playback_id,
+            view_count,
+            like_count,
+            comment_count,
+            published_at,
+            created_at,
+            social_accounts!inner (
+              platform,
+              profiles!inner (
+                id,
+                full_name,
+                avatar_url,
+                username
+              )
+            )
+          `)
+          .eq('id', id)
+          .single()
+        
+        if (data) {
+          loadedIds.current.add(id)
+          setPosts(prev => [data as FeedPost, ...prev])
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'creator_content' }, (payload) => {
+        const row = payload.new as any
+        if (!row?.id) return
+        setPosts(prev => prev.map(p => 
+          p.id === row.id 
+            ? { ...p, like_count: row.like_count, comment_count: row.comment_count, view_count: row.view_count } 
+            : p
+        ))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [])
+
+  // 3) Expose callback for optimistic prepend (called by post creator)
+  const handlePostCreated = (newPost: FeedPost) => {
+    if (!newPost?.id) return
+    if (!loadedIds.current.has(newPost.id)) {
+      loadedIds.current.add(newPost.id)
+      setPosts(prev => [newPost, ...prev])
+    }
+  }
+
+  // Store in window for access by ExpandedPostCreator
+  useEffect(() => {
+    ;(window as any).__feedPostCreated = handlePostCreated
     return () => {
-      mounted = false
+      delete (window as any).__feedPostCreated
     }
   }, [])
 
@@ -136,21 +186,47 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   }
 
   return (
-      <div 
-        className={`w-full pb-0 px-3 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
-        style={{
-          background: 'var(--gradient-feed)',
-          ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {})
-        }}
-      >
+    <div 
+      className={`w-full pb-0 px-3 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
+      style={{
+        background: 'var(--gradient-feed)',
+        ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {})
+      }}
+    >
       <div className="space-y-3 pt-[10px]">
-        {posts.map((post, index) => (
-          <PostCard 
-            key={post.id} 
-            post={post} 
-            isLast={index === posts.length - 1}
-          />
-        ))}
+        {posts.map((post, index) => {
+          // Transform FeedPost to ThreadPost for PostCard
+          const threadPost = {
+            id: post.id,
+            content_type: post.content_type,
+            title: post.title,
+            description: post.description,
+            media_url: post.media_url,
+            thumbnail_url: post.thumbnail_url,
+            provider: post.provider,
+            playback_id: post.playback_id,
+            view_count: post.view_count,
+            like_count: post.like_count,
+            comment_count: post.comment_count,
+            published_at: post.published_at,
+            created_at: post.created_at,
+            creator: {
+              id: post.social_accounts.profiles.id,
+              full_name: post.social_accounts.profiles.full_name || 'Creator',
+              avatar_url: post.social_accounts.profiles.avatar_url || undefined,
+              username: post.social_accounts.profiles.username || undefined,
+            },
+            platform: post.social_accounts.platform,
+          }
+          
+          return (
+            <PostCard 
+              key={post.id} 
+              post={threadPost} 
+              isLast={index === posts.length - 1}
+            />
+          )
+        })}
       </div>
     </div>
   )
