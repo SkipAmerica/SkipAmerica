@@ -2774,6 +2774,10 @@ export type Database = {
           standard_unread: number
         }[]
       }
+      ensure_skip_native_social_account: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       get_anonymous_ratings: {
         Args: { p_creator_id: string; p_limit?: number }
         Returns: {
@@ -2873,6 +2877,7 @@ export type Database = {
         | "youtube"
         | "tiktok"
         | "linkedin"
+        | "skip_native"
       thread_type: "standard" | "priority" | "offer" | "request" | "system"
       verification_status: "pending" | "verified" | "failed"
     }
@@ -3061,6 +3066,7 @@ export const Constants = {
         "youtube",
         "tiktok",
         "linkedin",
+        "skip_native",
       ],
       thread_type: ["standard", "priority", "offer", "request", "system"],
       verification_status: ["pending", "verified", "failed"],
