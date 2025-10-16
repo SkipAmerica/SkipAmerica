@@ -223,9 +223,9 @@ export const ExpandedPostCreator = ({
 
       {/* Toolbar */}
       <div
-        className="border-t bg-background"
+        className="border-t bg-background fixed left-0 right-0 z-[71]"
         style={{
-          paddingBottom: isKeyboardVisible 
+          bottom: isKeyboardVisible 
             ? 'calc(12px + env(safe-area-inset-bottom))' 
             : 'calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom))',
         }}
