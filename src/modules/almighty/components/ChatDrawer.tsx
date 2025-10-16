@@ -15,7 +15,7 @@ export function ChatDrawer({
 }: ChatDrawerProps) {
   return (
     <div
-      className="absolute inset-0 bg-black/80 flex flex-col z-[60]"
+      className="absolute inset-0 bg-black/80 flex flex-col z-10"
       style={{
         transform: `translateY(${translateY}px)`,
         touchAction: 'pan-y',
