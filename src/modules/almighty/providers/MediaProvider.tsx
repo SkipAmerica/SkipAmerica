@@ -662,8 +662,8 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     console.log('[JOIN:PROGRESS]', 'entered async body');
     
-    // Unlock autoplay during user gesture
-    await unlockAutoplay();
+    // Don't block join on autoplay unlock
+    unlockAutoplay().catch(() => {});
     console.log('[JOIN:AFTER_UNLOCK_AUTOPLAY]', { unlocked: true });
     
     let newRoom: Room | undefined
