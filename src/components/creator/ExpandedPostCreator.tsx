@@ -137,13 +137,12 @@ export const ExpandedPostCreator = ({
   return (
     <DrawerContent className={cn("h-[100dvh] rounded-none", className)}>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b">
+      <div className="flex items-center justify-between px-4 py-3">
         <DrawerClose asChild>
           <button
-            className="text-foreground hover:bg-accent p-2 rounded-full transition-colors"
-            aria-label="Cancel"
+            className="text-foreground hover:opacity-70 transition-opacity underline"
           >
-            <X className="w-5 h-5" />
+            Cancel
           </button>
         </DrawerClose>
         <button
