@@ -487,7 +487,7 @@ const Index = () => {
 
       {/* Creator Post Prompt - Only show for creators */}
       {profile?.account_type === 'creator' && (
-        <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+        <CreatorPostPrompt />
       )}
 
       {/* Live Control Bar - Shows when live */}

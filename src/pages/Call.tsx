@@ -156,7 +156,7 @@ export default function Call({ creator, caller, isCreatorView = false }: CallPro
 
       {/* Creator Post Prompt - Only show for creators */}
       {profile?.account_type === 'creator' && (
-        <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+        <CreatorPostPrompt />
       )}
 
       {/* iOS Tab Bar - Persists on Call page */}

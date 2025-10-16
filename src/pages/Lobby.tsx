@@ -184,7 +184,7 @@ export default function Lobby({ creator, caller, isCreatorView = false }: LobbyP
 
       {/* Creator Post Prompt - Only show for creators */}
       {profile?.account_type === 'creator' && (
-        <CreatorPostPrompt isVisible={!isKeyboardVisible} />
+        <CreatorPostPrompt />
       )}
 
       {/* iOS Tab Bar - Persists on Lobby page */}

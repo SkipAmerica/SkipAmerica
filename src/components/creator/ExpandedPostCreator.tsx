@@ -222,7 +222,7 @@ export const ExpandedPostCreator = ({
       </div>
 
       {/* Content Area - Full height flex container */}
-      <div className="flex-1 flex flex-col overflow-hidden p-4 pb-0">
+      <div className="flex-1 flex flex-col overflow-hidden p-4 pb-16">
         <div className="flex gap-3 flex-1 min-h-0">
           {/* Avatar */}
           <Avatar className="w-11 h-11 flex-shrink-0">
@@ -276,7 +276,7 @@ export const ExpandedPostCreator = ({
 
       {/* Bottom Toolbar - Keyboard aware */}
       <div 
-        className="px-4 py-2 flex items-center gap-1 bg-background transition-all duration-200"
+        className="fixed bottom-0 left-0 right-0 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex items-center gap-1 bg-background z-[81] border-t border-border/10"
         style={{
           transform: isKeyboardVisible ? `translateY(-${keyboardHeight}px)` : 'translateY(0)',
         }}
