@@ -5,7 +5,6 @@ import { useProfile } from '@/hooks/useProfile'
 import { supabase } from '@/integrations/supabase/client'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DrawerContent, DrawerClose } from '@/components/ui/drawer'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/shared/lib/utils'
 import { useKeyboardAware } from '@/hooks/use-keyboard-aware'
 import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/lib/post-utils'
@@ -137,7 +136,7 @@ export const ExpandedPostCreator = ({
 
   return (
     <DrawerContent 
-      className={cn("rounded-none !inset-0 !mt-0 flex flex-col", className)}
+      className={cn("rounded-none !inset-0 !mt-0 flex flex-col z-[71]", className)}
       style={{
         paddingTop: 'var(--safe-area-top)',
         height: '100dvh',
@@ -231,38 +230,22 @@ export const ExpandedPostCreator = ({
             : 'calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom))',
         }}
       >
-        <TooltipProvider>
-          <div className="flex items-center gap-2 px-4 py-3">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleMediaUpload}
-                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
-                  aria-label="Add media"
-                >
-                  <Image className="w-5 h-5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="text-[1.3em]">
-                <p>Add media</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleCreatePoll}
-                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
-                  aria-label="Create poll"
-                >
-                  <BarChart3 className="w-5 h-5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent className="text-[1.3em]">
-                <p>Create poll</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-        </TooltipProvider>
+        <div className="flex items-center gap-2 px-4 py-3">
+          <button
+            onClick={handleMediaUpload}
+            className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
+            aria-label="Add media"
+          >
+            <Image className="w-5 h-5" />
+          </button>
+          <button
+            onClick={handleCreatePoll}
+            className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
+            aria-label="Create poll"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Hidden File Input */}
