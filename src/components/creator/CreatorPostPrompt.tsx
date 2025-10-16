@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
+import { Drawer, DrawerTrigger } from '@/components/ui/drawer'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
 
 interface CreatorPostPromptProps {
@@ -21,23 +22,15 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     const randomIndex = Math.floor(Math.random() * prompts.length)
     return prompts[randomIndex]
   })
-  const [isExpanded, setIsExpanded] = useState(false)
-  const openLockRef = useRef(false)
+  const [isOpen, setIsOpen] = useState(false)
 
-  const handleCircleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    if (openLockRef.current) return
-    openLockRef.current = true
-    setIsExpanded(true)
-    setTimeout(() => { openLockRef.current = false }, 350)
-  }
-
-  const handleExpandedClose = () => {
-    setIsExpanded(false)
-    // Rotate to next prompt
-    const randomIndex = Math.floor(Math.random() * prompts.length)
-    setCurrentPrompt(prompts[randomIndex])
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (!open) {
+      // Rotate to next prompt when closing
+      const randomIndex = Math.floor(Math.random() * prompts.length)
+      setCurrentPrompt(prompts[randomIndex])
+    }
   }
 
   if (!isVisible) {
@@ -45,7 +38,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
   }
 
   return (
-    <>
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       {/* Button Container */}
       <div 
         className="fixed left-4 z-[70] flex flex-col gap-4 transition-all duration-300 ease-in-out pointer-events-none"
@@ -55,31 +48,31 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         }}
       >
         {/* Post Button */}
-        <button
-          onClick={handleCircleClick}
-          className={cn(
-            "w-[50px] h-[50px] bg-white rounded-full shadow-2xl pointer-events-auto",
-            "flex items-center justify-center",
-            "transition-all duration-300 ease-in-out",
-            "hover:scale-105 active:scale-95",
-            className
-          )}
-          style={{
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 8px 12px -2px rgba(0, 0, 0, 0.3)',
-          }}
-          aria-label="Create post"
-        >
-          <Plus className="w-6 h-6 text-cyan-500" />
-        </button>
+        <DrawerTrigger asChild>
+          <button
+            className={cn(
+              "w-[50px] h-[50px] bg-white rounded-full shadow-2xl pointer-events-auto",
+              "flex items-center justify-center",
+              "transition-all duration-300 ease-in-out",
+              "hover:scale-105 active:scale-95",
+              className
+            )}
+            style={{
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 8px 12px -2px rgba(0, 0, 0, 0.3)',
+            }}
+            aria-label="Create post"
+          >
+            <Plus className="w-6 h-6 text-cyan-500" />
+          </button>
+        </DrawerTrigger>
       </div>
 
       {/* Expanded Post Creator */}
       <ExpandedPostCreator
-        isOpen={isExpanded}
-        onClose={handleExpandedClose}
+        onClose={() => setIsOpen(false)}
         initialPrompt={currentPrompt}
         initialValue=""
       />
-    </>
+    </Drawer>
   )
 }
