@@ -175,7 +175,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
     >
       <div className="flex relative z-10">
         {/* Profile Column */}
-        <div className="p-2 md:p-3 flex-shrink-0 flex flex-col items-center">
+        <div className="py-3 px-3 md:py-4 md:px-4 flex-shrink-0 flex flex-col items-center">
           <LiveAvatar
             src={post.creator.avatar_url}
             alt={post.creator.full_name}
@@ -190,7 +190,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
         </div>
 
         {/* Content Column */}
-        <div className="min-w-0 flex-1 pt-2 pr-3 pb-3 md:pt-3 md:pr-4 md:pb-4">
+        <div className="min-w-0 flex-1 py-3 pr-3 md:py-4 md:pr-4">
           {/* Header */}
           <div className="mb-3">
             <div className="flex items-center gap-1">

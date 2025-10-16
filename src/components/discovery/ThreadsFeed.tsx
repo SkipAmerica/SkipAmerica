@@ -225,13 +225,10 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
 
   return (
     <div 
-      className={`w-full pb-0 px-3 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
-      style={{
-        background: 'var(--gradient-feed)',
-        ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {})
-      }}
+      className={`w-full pb-0 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
+      style={hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {}}
     >
-      <div className="space-y-3 pt-[10px]">
+      <div className="divide-y divide-border">
         {posts.map((post, index) => {
           // Transform FeedPost to ThreadPost for PostCard
           const threadPost = {

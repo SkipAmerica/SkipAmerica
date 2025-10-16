@@ -50,8 +50,8 @@ export function IOSModal({
       )}
       <DialogContent 
         className={cn(
-          "bg-white/10 backdrop-blur-lg border-white/30",
-          "dark:bg-black/40 dark:border-white/20",
+          "bg-white border-border",
+          "dark:bg-black dark:border-border",
           "rounded-2xl",
           "p-0 gap-0",
           "overflow-hidden",
