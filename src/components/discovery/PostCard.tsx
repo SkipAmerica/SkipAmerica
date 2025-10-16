@@ -9,7 +9,6 @@ import { RUNTIME } from '@/config/runtime'
 import { useAuth } from '@/app/providers/auth-provider'
 import { toggleLike } from '@/lib/post-utils'
 import { toast } from 'sonner'
-import '@/types/mux-player'
 
 interface ThreadPost {
   id: string
