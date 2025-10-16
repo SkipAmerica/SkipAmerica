@@ -175,7 +175,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
     >
       <div className="flex relative z-10">
         {/* Profile Column */}
-        <div className="p-2 md:p-3 flex-shrink-0">
+        <div className="p-2 md:p-3 flex-shrink-0 flex flex-col items-center">
           <LiveAvatar
             src={post.creator.avatar_url}
             alt={post.creator.full_name}
@@ -184,6 +184,9 @@ export function PostCard({ post, isLast }: PostCardProps) {
             isFollowing={isFollowing}
             onFollowToggle={handleFollowToggle}
           />
+          <span className="text-muted-foreground text-xs font-normal mt-1">
+            {formatTime(post.published_at || post.created_at)}
+          </span>
         </div>
 
         {/* Content Column */}
@@ -208,9 +211,6 @@ export function PostCard({ post, isLast }: PostCardProps) {
                 {post.creator.industry}
               </p>
             )}
-            <span className="text-muted-foreground text-xs font-normal">
-              {formatTime(post.published_at || post.created_at)}
-            </span>
           </div>
 
           {/* Content */}
