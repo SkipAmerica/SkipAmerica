@@ -10,28 +10,34 @@ export type MediaUploadResult = {
 }
 
 export async function ensureSkipNativeAccount(userId: string): Promise<string> {
+  // 1) Try read: if it exists, return fast
   const { data: existing } = await supabase
     .from('social_accounts')
     .select('id')
     .eq('user_id', userId)
-    .eq('platform', 'instagram') // Using instagram as platform since skip_native doesn't exist in types
-    .eq('platform_username', `skip_${userId.slice(0, 8)}`)
+    .eq('platform', 'skip_native')
     .maybeSingle()
 
   if (existing?.id) return existing.id
 
-  const username = `skip_${userId.slice(0, 8)}`
+  // 2) Create via SECURE RPC (DB uses auth.uid(); cannot be spoofed)
+  const { data: createdId, error: rpcErr } = await supabase.rpc('ensure_skip_native_social_account')
+  if (rpcErr) {
+    console.error('ensure_skip_native_social_account RPC failed', rpcErr)
+    throw rpcErr
+  }
+
+  // 3) Return the id directly if function returns it; else fetch once
+  if (createdId) return createdId as string
+
   const { data, error } = await supabase
     .from('social_accounts')
-    .insert({
-      platform: 'instagram' as any, // Cast to any to bypass type check
-      platform_username: username,
-      platform_user_id: userId,
-    } as any)
     .select('id')
+    .eq('user_id', userId)
+    .eq('platform', 'skip_native')
     .single()
 
-  if (error || !data) throw error || new Error('Failed to create social account')
+  if (error || !data) throw new Error('Social account exists but could not be retrieved')
   return data.id
 }
 

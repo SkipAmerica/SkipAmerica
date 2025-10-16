@@ -2775,8 +2775,8 @@ export type Database = {
         }[]
       }
       ensure_skip_native_social_account: {
-        Args: { p_user_id: string }
-        Returns: undefined
+        Args: Record<PropertyKey, never> | { p_user_id: string }
+        Returns: string
       }
       get_anonymous_ratings: {
         Args: { p_creator_id: string; p_limit?: number }
