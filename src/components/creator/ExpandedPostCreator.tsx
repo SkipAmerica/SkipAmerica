@@ -100,7 +100,7 @@ export const ExpandedPostCreator = ({
         : 'text'
 
       // 4. Create post record
-      await createPostRecord({
+      const postId = await createPostRecord({
         social_account_id: socialAccountId,
         content_type: contentType,
         description: inputValue.trim() || null,
@@ -111,6 +111,57 @@ export const ExpandedPostCreator = ({
         duration_sec: mediaResult?.duration_sec || null,
         aspect_ratio: mediaResult?.aspect_ratio || null,
       })
+
+      // 5. Trigger instant feed update (optimistic)
+      if (typeof window !== 'undefined' && (window as any).__feedPostCreated) {
+        // Fetch the newly created post with full relations for immediate display
+        const { data: newPostData } = await supabase
+          .from('creator_content')
+          .select(`
+            id,
+            content_type,
+            title,
+            description,
+            media_url,
+            thumbnail_url,
+            provider,
+            playback_id,
+            view_count,
+            like_count,
+            comment_count,
+            published_at,
+            created_at,
+            social_accounts!inner (
+              platform,
+              user_id,
+              profiles!inner (
+                id,
+                full_name,
+                avatar_url,
+                username
+              )
+            )
+          `)
+          .eq('id', postId)
+          .single()
+        
+        if (newPostData) {
+          // Fetch creator info
+          const { data: creatorData } = await supabase
+            .from('creators')
+            .select('headline, categories')
+            .eq('id', user.id)
+            .single()
+          
+          const feedPost = {
+            ...newPostData,
+            creator_headline: creatorData?.headline || null,
+            creator_categories: creatorData?.categories || null,
+          }
+          
+          ;(window as any).__feedPostCreated(feedPost)
+        }
+      }
 
       toast.success('Post created successfully!')
 
