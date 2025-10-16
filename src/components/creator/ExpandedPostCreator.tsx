@@ -135,7 +135,14 @@ export const ExpandedPostCreator = ({
   }
 
   return (
-    <DrawerContent className={cn("h-[100dvh] rounded-none", className)}>
+    <DrawerContent 
+      className={cn("rounded-none", className)}
+      style={{
+        top: 'var(--safe-area-top)',
+        height: 'calc(100dvh - var(--safe-area-top))',
+        maxHeight: 'calc(100dvh - var(--safe-area-top))',
+      }}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
         <DrawerClose asChild>
