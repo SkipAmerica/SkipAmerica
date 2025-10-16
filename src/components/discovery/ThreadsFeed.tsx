@@ -19,6 +19,7 @@ type FeedPost = {
   created_at: string
   social_accounts: {
     platform: string
+    user_id: string
     profiles: { 
       id: string
       full_name: string | null
@@ -26,6 +27,8 @@ type FeedPost = {
       username?: string | null
     }
   }
+  creator_headline?: string | null
+  creator_categories?: string[] | null
 }
 
 interface ThreadsFeedProps {
@@ -61,6 +64,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           created_at,
           social_accounts!inner (
             platform,
+            user_id,
             profiles!inner (
               id,
               full_name,
@@ -79,8 +83,27 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
         setLoading(false)
         return
       }
+      
+      // Hydrate with creator data
       const rows = (data ?? []) as FeedPost[]
-      rows.forEach(r => loadedIds.current.add(r.id))
+      const userIds = rows.map(r => r.social_accounts.user_id)
+      
+      const { data: creatorsData } = await supabase
+        .from('creators')
+        .select('id, headline, categories')
+        .in('id', userIds)
+      
+      const creatorsMap = new Map(creatorsData?.map(c => [c.id, c]) || [])
+      
+      rows.forEach(r => {
+        loadedIds.current.add(r.id)
+        const creatorInfo = creatorsMap.get(r.social_accounts.user_id)
+        if (creatorInfo) {
+          r.creator_headline = creatorInfo.headline
+          r.creator_categories = creatorInfo.categories
+        }
+      })
+      
       setPosts(rows)
       setLoading(false)
     })()
@@ -114,6 +137,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
             created_at,
             social_accounts!inner (
               platform,
+              user_id,
               profiles!inner (
                 id,
                 full_name,
@@ -126,8 +150,22 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           .single()
         
         if (data) {
+          const post = data as FeedPost
+          
+          // Fetch creator info
+          const { data: creatorData } = await supabase
+            .from('creators')
+            .select('headline, categories')
+            .eq('id', post.social_accounts.user_id)
+            .single()
+          
+          if (creatorData) {
+            post.creator_headline = creatorData.headline
+            post.creator_categories = creatorData.categories
+          }
+          
           loadedIds.current.add(id)
-          setPosts(prev => [data as FeedPost, ...prev])
+          setPosts(prev => [post, ...prev])
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'creator_content' }, (payload) => {
@@ -215,6 +253,8 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
               full_name: post.social_accounts.profiles.full_name || 'Creator',
               avatar_url: post.social_accounts.profiles.avatar_url || undefined,
               username: post.social_accounts.profiles.username || undefined,
+              title: post.creator_headline || undefined,
+              industry: post.creator_categories?.[0] || undefined,
             },
             platform: post.social_accounts.platform,
           }
