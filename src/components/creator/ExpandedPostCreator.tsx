@@ -31,9 +31,16 @@ export const ExpandedPostCreator = ({
 
   useEffect(() => {
     if (isOpen && textareaRef.current) {
-      textareaRef.current.focus()
-      textareaRef.current.style.height = 'auto'
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+      // Delay focus until after the modal's slide-in animation completes (300ms)
+      const timer = setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus()
+          textareaRef.current.style.height = 'auto'
+          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+        }
+      }, 350) // 350ms = 300ms animation + 50ms buffer
+      
+      return () => clearTimeout(timer)
     }
   }, [isOpen])
 
