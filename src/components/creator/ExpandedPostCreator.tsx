@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { Plus, BarChart3, X } from 'lucide-react'
+import { ImagePlus, BarChart3, X } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import { Button } from '@/components/ui/button'
-import { IOSModal } from '@/components/mobile/IOSModal'
 import { useAuth } from '@/app/providers/auth-provider'
 import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/lib/post-utils'
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 interface ExpandedPostCreatorProps {
   isOpen: boolean
@@ -157,91 +156,107 @@ export const ExpandedPostCreator = ({
     // TODO: Handle poll creation
   }
 
+  if (!isOpen) return null
+
   return (
-    <IOSModal
-      open={isOpen}
-      onOpenChange={onClose}
-      title="Create Post"
-      size="full"
-      showCloseButton={true}
-      className={cn("md:max-w-2xl", className)}
+    <div 
+      className={cn(
+        "fixed inset-0 z-50 bg-background",
+        "transform transition-transform duration-300 ease-out",
+        isOpen ? "translate-y-0" : "translate-y-full",
+        className
+      )}
     >
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 h-14 border-b border-border">
+        <button
+          onClick={onClose}
+          className="text-base font-normal text-foreground hover:opacity-70 transition-opacity"
+        >
+          Cancel
+        </button>
+        
+        <button
+          onClick={handlePost}
+          disabled={loading || (!inputValue.trim() && !file)}
+          className={cn(
+            "px-4 py-1.5 rounded-full text-sm font-semibold transition-opacity",
+            "bg-primary text-primary-foreground",
+            (loading || (!inputValue.trim() && !file)) && "opacity-50"
+          )}
+        >
+          {loading ? 'Posting…' : 'Post'}
+        </button>
+      </div>
+
       {/* Content Area */}
-      <div className="flex flex-col gap-4">
-        {/* Text Input */}
-        <textarea
-          ref={textareaRef}
-          value={inputValue}
-          onChange={handleTextareaChange}
-          placeholder={initialPrompt || "What's on your mind?"}
-          className="w-full min-h-[120px] p-4 bg-muted/50 rounded-xl border border-transparent hover:border-border focus:border-border focus:outline-none transition-colors placeholder:text-muted-foreground text-foreground resize-none"
-          rows={4}
-        />
+      <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex gap-3">
+          {/* Avatar */}
+          <Avatar className="w-10 h-10 flex-shrink-0">
+            <AvatarImage src={user?.user_metadata?.avatar_url} />
+            <AvatarFallback>
+              {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || '?'}
+            </AvatarFallback>
+          </Avatar>
 
-        {/* Hidden File Input */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*,video/*"
-          hidden
-          onChange={handleFileChange}
-        />
+          {/* Input Column */}
+          <div className="flex-1 flex flex-col">
+            <textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={handleTextareaChange}
+              placeholder={initialPrompt || "What's happening?"}
+              className="w-full min-h-[120px] bg-transparent border-none focus:outline-none text-base text-foreground placeholder:text-muted-foreground resize-none"
+              rows={4}
+            />
 
-        {/* Media Preview Area */}
-        {file && (
-          <div className="min-h-[100px] bg-muted/30 rounded-xl p-4 flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{file.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setFile(null)}
-              className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {/* Media Preview */}
+            {file && (
+              <div className="mt-3 bg-muted/30 rounded-2xl p-3 flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">{file.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+                <button
+                  onClick={() => setFile(null)}
+                  className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-destructive/10 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
           </div>
-        )}
-
-        {/* Actions Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-border">
-          {/* Media Actions */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMediaUpload}
-              className="flex items-center gap-2 text-primary hover:bg-primary/10"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="text-sm">Media</span>
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCreatePoll}
-              className="flex items-center gap-2 text-primary hover:bg-primary/10"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span className="text-sm">Poll</span>
-            </Button>
-          </div>
-
-          {/* Post Button */}
-          <Button
-            onClick={handlePost}
-            disabled={loading || (!inputValue.trim() && !file)}
-            className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? 'Posting…' : 'Post'}
-          </Button>
         </div>
       </div>
-    </IOSModal>
+
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*,video/*"
+        hidden
+        onChange={handleFileChange}
+      />
+
+      {/* Bottom Toolbar */}
+      <div className="border-t border-border px-4 py-2 flex items-center gap-1">
+        <button
+          onClick={handleMediaUpload}
+          className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors text-primary"
+        >
+          <ImagePlus className="h-5 w-5" />
+        </button>
+        
+        <button
+          onClick={handleCreatePoll}
+          className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors text-primary"
+        >
+          <BarChart3 className="h-5 w-5" />
+        </button>
+      </div>
+    </div>
   )
 }
