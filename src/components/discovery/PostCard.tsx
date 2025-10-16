@@ -187,7 +187,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
         </div>
 
         {/* Content Column */}
-        <div className="min-w-0 flex-1 p-3 md:p-4">
+        <div className="min-w-0 flex-1 pt-2 pr-3 pb-3 md:pt-3 md:pr-4 md:pb-4">
           {/* Header */}
           <div className="mb-3">
             <div className="flex items-center gap-1">
