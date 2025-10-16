@@ -72,11 +72,6 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       t: performance.now(),
     });
 
-    // Force on-top & visible (diagnostic)
-    el.style.opacity = '1';
-    el.style.position = 'relative';
-    el.style.zIndex = '99999';
-
     // Force playback after attach (autoplay unlock)
     requestAnimationFrame(() => {
       el.muted = true;
@@ -84,10 +79,6 @@ export default function VideoTile({ trackRef, mirror, rounded, className, slot, 
       el.autoplay = true;
       el.play().catch(() => {});
     });
-
-    // DEBUG: Make video element visible with red outline
-    el.style.outline = '2px solid red';
-    el.style.zIndex = '99999';
 
     // Ensure srcObject is set for Safari/iOS
     if (!el.srcObject && track.mediaStreamTrack) {
