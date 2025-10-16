@@ -30,6 +30,7 @@ interface ThreadPost {
   comment_count: number
   published_at?: string
   created_at: string
+  media_status?: string
   creator: {
     id: string
     full_name: string
@@ -274,7 +275,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
             )}
 
             {/* Media */}
-            {(post.media_url || post.playback_id) && (
+            {(post.media_url || post.playback_id || (post.content_type === 'video' && post.media_status === 'processing')) && (
               <div className="rounded-lg overflow-hidden w-full max-w-full">
                 {post.content_type === 'image' && post.media_url && (
                   <img
@@ -286,7 +287,14 @@ export function PostCard({ post, isLast }: PostCardProps) {
                 )}
                 {post.content_type === 'video' && (
                   <>
-                    {post.provider === 'mux' && post.playback_id ? (
+                    {post.media_status === 'processing' ? (
+                      <div className="relative w-full rounded-lg overflow-hidden bg-muted flex items-center justify-center min-h-[300px]">
+                        <div className="text-center space-y-3">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
+                          <p className="text-sm text-muted-foreground">Processing video...</p>
+                        </div>
+                      </div>
+                    ) : post.provider === 'mux' && post.playback_id ? (
                       <mux-player
                         stream-type="on-demand"
                         playback-id={post.playback_id}

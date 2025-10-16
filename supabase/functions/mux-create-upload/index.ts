@@ -53,10 +53,16 @@ Deno.serve(async (req) => {
     }
 
     const data = await resp.json()
-    console.log('Mux upload created:', data.data.id)
+    const uploadId = data.data.id
+    const uploadUrl = data.data.url
+    
+    console.log('[mux-create-upload] SUCCESS:', { uploadId, uploadUrl })
 
     return new Response(
-      JSON.stringify({ upload_url: data.data.url }), 
+      JSON.stringify({ 
+        upload_url: uploadUrl,
+        upload_id: uploadId 
+      }), 
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {

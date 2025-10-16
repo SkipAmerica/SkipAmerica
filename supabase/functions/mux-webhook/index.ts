@@ -23,37 +23,50 @@ Deno.serve(async (req) => {
 
   try {
     const payload = await req.json()
-    console.log('Mux webhook received:', payload.type)
+    console.log('[mux-webhook] Event received:', {
+      type: payload.type,
+      assetId: payload?.data?.id,
+      uploadId: payload?.data?.upload_id,
+      timestamp: new Date().toISOString()
+    })
 
     const type = payload?.type
 
     if (type === 'video.asset.ready') {
       const playbackId = payload?.data?.playback_ids?.[0]?.id
       const assetId = payload?.data?.id
+      const uploadId = payload?.data?.upload_id
       const duration = payload?.data?.duration || null
       const aspectRatio = payload?.data?.aspect_ratio || null
       const poster = playbackId ? `https://image.mux.com/${playbackId}/thumbnail.jpg` : null
 
-      console.log('Asset ready:', { assetId, playbackId, duration, aspectRatio })
+      console.log('[mux-webhook] Asset ready:', { 
+        assetId, 
+        uploadId, 
+        playbackId, 
+        duration, 
+        aspectRatio 
+      })
 
-      // Find the most recent processing post with null playback_id
-      // In production, you'd store the upload_id in the post record to match precisely
+      // Match by mux_upload_id for precise identification
       const { data: posts, error: selectError } = await supabase
         .from('creator_content')
-        .select('id')
+        .select('id, mux_upload_id')
+        .eq('mux_upload_id', uploadId)
         .eq('media_status', 'processing')
-        .is('playback_id', null)
-        .order('created_at', { ascending: false })
         .limit(1)
 
       if (selectError) {
-        console.error('Error finding post:', selectError)
+        console.error('[mux-webhook] Error finding post:', selectError)
         return new Response('ok', { headers: corsHeaders })
       }
 
       const targetPost = posts?.[0]
       if (targetPost && playbackId) {
-        console.log('Updating post:', targetPost.id)
+        console.log('[mux-webhook] Updating post:', {
+          postId: targetPost.id,
+          uploadId: targetPost.mux_upload_id
+        })
 
         const { error: updateError } = await supabase
           .from('creator_content')
@@ -68,13 +81,19 @@ Deno.serve(async (req) => {
           .eq('id', targetPost.id)
 
         if (updateError) {
-          console.error('Error updating post:', updateError)
+          console.error('[mux-webhook] Error updating post:', updateError)
         } else {
-          console.log('Post updated successfully')
+          console.log('[mux-webhook] ✅ Post updated successfully:', targetPost.id)
         }
       } else {
-        console.warn('No matching post found for asset:', assetId)
+        console.warn('[mux-webhook] ⚠️ No matching post found for:', { 
+          assetId, 
+          uploadId,
+          reason: !targetPost ? 'no post found' : 'no playback_id'
+        })
       }
+    } else {
+      console.log('[mux-webhook] Ignoring event type:', type)
     }
 
     return new Response('ok', { headers: corsHeaders })

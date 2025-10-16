@@ -84,14 +84,26 @@ export const ExpandedPostCreator = ({
 
     setLoading(true)
 
+    console.log('[ExpandedPostCreator] Starting post creation:', {
+      hasText: !!inputValue.trim(),
+      hasFile: !!file,
+      fileType: file?.type,
+      fileSize: file?.size
+    })
+
     try {
+      console.log('[ExpandedPostCreator] User authenticated:', user.id)
+
       // 1. Ensure skip_native social account
       const socialAccountId = await ensureSkipNativeAccount(user.id)
+      console.log('[ExpandedPostCreator] Social account ID:', socialAccountId)
 
       // 2. Upload media if present
       let mediaResult
       if (file) {
+        console.log('[ExpandedPostCreator] Starting media upload...')
         mediaResult = await uploadPostMedia(file)
+        console.log('[ExpandedPostCreator] Media upload result:', mediaResult)
       }
 
       // 3. Determine content type
@@ -100,6 +112,7 @@ export const ExpandedPostCreator = ({
         : 'text'
 
       // 4. Create post record
+      console.log('[ExpandedPostCreator] Creating post record...')
       const postId = await createPostRecord({
         social_account_id: socialAccountId,
         content_type: contentType,
@@ -110,7 +123,10 @@ export const ExpandedPostCreator = ({
         playback_id: mediaResult?.playback_id || null,
         duration_sec: mediaResult?.duration_sec || null,
         aspect_ratio: mediaResult?.aspect_ratio || null,
+        mux_upload_id: mediaResult?.mux_upload_id || null,
       })
+
+      console.log('[ExpandedPostCreator] ✅ Post created successfully:', postId)
 
       // 5. Trigger instant feed update (optimistic)
       if (typeof window !== 'undefined' && (window as any).__feedPostCreated) {

@@ -758,6 +758,7 @@ export type Database = {
           media_status: string | null
           media_url: string | null
           metadata: Json | null
+          mux_upload_id: string | null
           platform_post_id: string
           playback_id: string | null
           provider: string | null
@@ -782,6 +783,7 @@ export type Database = {
           media_status?: string | null
           media_url?: string | null
           metadata?: Json | null
+          mux_upload_id?: string | null
           platform_post_id: string
           playback_id?: string | null
           provider?: string | null
@@ -806,6 +808,7 @@ export type Database = {
           media_status?: string | null
           media_url?: string | null
           metadata?: Json | null
+          mux_upload_id?: string | null
           platform_post_id?: string
           playback_id?: string | null
           provider?: string | null

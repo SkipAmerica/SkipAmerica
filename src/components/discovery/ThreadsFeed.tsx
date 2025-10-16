@@ -12,6 +12,7 @@ type FeedPost = {
   thumbnail_url: string | null
   provider: 'supabase' | 'mux' | null
   playback_id: string | null
+  media_status?: string
   view_count: number
   like_count: number
   comment_count: number
@@ -57,6 +58,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           thumbnail_url,
           provider,
           playback_id,
+          media_status,
           view_count,
           like_count,
           comment_count,
@@ -130,6 +132,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
             thumbnail_url,
             provider,
             playback_id,
+          media_status,
             view_count,
             like_count,
             comment_count,

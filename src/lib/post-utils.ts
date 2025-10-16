@@ -7,6 +7,7 @@ export type MediaUploadResult = {
   playback_id?: string
   duration_sec?: number
   aspect_ratio?: string
+  mux_upload_id?: string
 }
 
 export async function ensureSkipNativeAccount(userId: string): Promise<string> {
@@ -73,18 +74,41 @@ export async function uploadPostMedia(file: File, opts?: { pathPrefix?: string }
   }
 
   if (isVideo) {
+    console.log('[uploadPostMedia] Starting video upload:', { 
+      fileName: file.name, 
+      fileSize: file.size,
+      fileType: file.type
+    })
+
     // Ask Edge Function for a direct upload URL to Mux
     const { data: uploadData, error: fnError } = await supabase.functions.invoke('mux-create-upload')
-    if (fnError) throw new Error('Failed to init Mux upload')
-    const { upload_url } = uploadData
+    if (fnError) {
+      console.error('[uploadPostMedia] Mux init error:', fnError)
+      throw new Error('Failed to init Mux upload')
+    }
+    
+    const { upload_url, upload_id } = uploadData
+    console.log('[uploadPostMedia] Mux upload created:', { upload_id, upload_url })
 
     // Send the file to Mux direct upload URL
+    console.log('[uploadPostMedia] Starting PUT to Mux...')
     const put = await fetch(upload_url, { method: 'PUT', body: file })
-    if (!put.ok) throw new Error('Mux upload failed')
+    
+    if (!put.ok) {
+      const errorText = await put.text()
+      console.error('[uploadPostMedia] Mux PUT failed:', { 
+        status: put.status, 
+        statusText: put.statusText,
+        error: errorText
+      })
+      throw new Error('Mux upload failed')
+    }
+
+    console.log('[uploadPostMedia] ✅ Video uploaded to Mux:', { upload_id })
 
     // The webhook will finalize asset + playback_id. For now, return a placeholder status.
     // Client will post with media_status='processing'; feed will swap to ready when webhook updates the row.
-    return { provider: 'mux' }
+    return { provider: 'mux', mux_upload_id: upload_id }
   }
 
   throw new Error('Unsupported file type')
@@ -101,8 +125,16 @@ export async function createPostRecord(input: {
   playback_id?: string | null
   duration_sec?: number | null
   aspect_ratio?: string | null
+  mux_upload_id?: string | null
 }): Promise<string> {
   const platform_post_id = `skip_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
+
+  console.log('[createPostRecord] Creating post:', {
+    content_type: input.content_type,
+    provider: input.provider,
+    mux_upload_id: input.mux_upload_id,
+    has_media: !!input.media_url
+  })
 
   const { data, error } = await supabase
     .from('creator_content')
@@ -118,13 +150,19 @@ export async function createPostRecord(input: {
       playback_id: input.playback_id ?? null,
       duration_sec: input.duration_sec ?? null,
       aspect_ratio: input.aspect_ratio ?? null,
+      mux_upload_id: input.mux_upload_id ?? null,
       media_status: input.content_type === 'video' ? 'processing' : 'ready',
       published_at: new Date().toISOString(),
     })
     .select('id')
     .single()
 
-  if (error || !data) throw error || new Error('Failed to insert post')
+  if (error || !data) {
+    console.error('[createPostRecord] Insert failed:', error)
+    throw error || new Error('Failed to insert post')
+  }
+  
+  console.log('[createPostRecord] ✅ Post created:', data.id)
   return data.id
 }
 
