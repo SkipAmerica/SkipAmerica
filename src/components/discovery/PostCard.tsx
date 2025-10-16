@@ -6,6 +6,10 @@ import { LiveAvatar } from './LiveAvatar'
 import { LiveActionButton } from './LiveActionButton'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
+import { useAuth } from '@/app/providers/auth-provider'
+import { toggleLike } from '@/lib/post-utils'
+import { toast } from 'sonner'
+import '@/types/mux-player'
 
 interface ThreadPost {
   id: string
@@ -29,6 +33,8 @@ interface ThreadPost {
     industry?: string
   }
   platform?: string
+  provider?: 'supabase' | 'mux' | null
+  playback_id?: string | null
 }
 
 interface PostCardProps {
@@ -37,6 +43,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, isLast }: PostCardProps) {
+  const { user } = useAuth()
   const [showHistory, setShowHistory] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.like_count)
@@ -73,10 +80,30 @@ export function PostCard({ post, isLast }: PostCardProps) {
     isDragging.current = false
   }, [showHistory])
 
-  const handleLike = useCallback(() => {
+  const handleLike = useCallback(async () => {
+    if (!user) {
+      toast.error('Please sign in to like posts')
+      return
+    }
+    
+    // Optimistic update
+    const prevLiked = isLiked
+    const prevCount = likeCount
     setIsLiked(!isLiked)
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1)
-  }, [isLiked])
+    setLikeCount(prev => isLiked ? Math.max(0, prev - 1) : prev + 1)
+    
+    try {
+      const result = await toggleLike(post.id, user.id)
+      setIsLiked(result.liked)
+      setLikeCount(result.count)
+    } catch (error) {
+      // Rollback on error
+      setIsLiked(prevLiked)
+      setLikeCount(prevCount)
+      toast.error('Failed to update like')
+      console.error('Like error:', error)
+    }
+  }, [isLiked, likeCount, post.id, user])
 
   const handleJoinLive = useCallback(() => {
     if (RUNTIME.DEBUG_LOGS) {
@@ -202,22 +229,38 @@ export function PostCard({ post, isLast }: PostCardProps) {
             )}
 
             {/* Media */}
-            {post.media_url && (
+            {(post.media_url || post.playback_id) && (
               <div className="rounded-lg overflow-hidden w-full max-w-full">
-                {post.content_type.startsWith('image') ? (
+                {post.content_type === 'image' && post.media_url && (
                   <img
                     src={post.media_url}
                     alt={post.title || 'Post image'}
                     className="block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover"
+                    loading="lazy"
                   />
-                ) : post.content_type.startsWith('video') ? (
-                  <video
-                    src={post.media_url}
-                    poster={post.thumbnail_url}
-                    controls
-                    className="block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover"
-                  />
-                ) : null}
+                )}
+                {post.content_type === 'video' && (
+                  <>
+                    {post.provider === 'mux' && post.playback_id ? (
+                      <mux-player
+                        stream-type="on-demand"
+                        playback-id={post.playback_id}
+                        muted
+                        playsInline
+                        style={{ width: '100%', borderRadius: 8, overflow: 'hidden' }}
+                      />
+                    ) : post.media_url ? (
+                      <video
+                        src={post.media_url}
+                        poster={post.thumbnail_url}
+                        controls
+                        muted
+                        playsInline
+                        className="block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover"
+                      />
+                    ) : null}
+                  </>
+                )}
               </div>
             )}
           </div>

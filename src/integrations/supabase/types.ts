@@ -702,15 +702,20 @@ export type Database = {
       }
       creator_content: {
         Row: {
+          aspect_ratio: string | null
           comment_count: number | null
           content_type: string
           created_at: string
           description: string | null
+          duration_sec: number | null
           id: string
           like_count: number | null
+          media_status: string | null
           media_url: string | null
           metadata: Json | null
           platform_post_id: string
+          playback_id: string | null
+          provider: string | null
           published_at: string | null
           social_account_id: string
           thumbnail_url: string | null
@@ -718,15 +723,20 @@ export type Database = {
           view_count: number | null
         }
         Insert: {
+          aspect_ratio?: string | null
           comment_count?: number | null
           content_type: string
           created_at?: string
           description?: string | null
+          duration_sec?: number | null
           id?: string
           like_count?: number | null
+          media_status?: string | null
           media_url?: string | null
           metadata?: Json | null
           platform_post_id: string
+          playback_id?: string | null
+          provider?: string | null
           published_at?: string | null
           social_account_id: string
           thumbnail_url?: string | null
@@ -734,15 +744,20 @@ export type Database = {
           view_count?: number | null
         }
         Update: {
+          aspect_ratio?: string | null
           comment_count?: number | null
           content_type?: string
           created_at?: string
           description?: string | null
+          duration_sec?: number | null
           id?: string
           like_count?: number | null
+          media_status?: string | null
           media_url?: string | null
           metadata?: Json | null
           platform_post_id?: string
+          playback_id?: string | null
+          provider?: string | null
           published_at?: string | null
           social_account_id?: string
           thumbnail_url?: string | null

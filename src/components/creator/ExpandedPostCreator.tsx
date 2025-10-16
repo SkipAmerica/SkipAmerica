@@ -3,6 +3,9 @@ import { X, Plus, BarChart3, Image, Camera } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useOnClickOutside } from '@/shared/hooks/use-on-click-outside'
+import { useAuth } from '@/app/providers/auth-provider'
+import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/lib/post-utils'
+import { toast } from 'sonner'
 
 interface ExpandedPostCreatorProps {
   isOpen: boolean
@@ -19,8 +22,12 @@ export const ExpandedPostCreator = ({
   initialValue = '',
   className 
 }: ExpandedPostCreatorProps) => {
+  const { user } = useAuth()
   const [inputValue, setInputValue] = useState(initialValue)
+  const [file, setFile] = useState<File | null>(null)
+  const [loading, setLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const containerRef = useOnClickOutside<HTMLDivElement>((e) => {
     // Don't close if clicking on the textarea or action buttons
     if (textareaRef.current?.contains(e.target as Node)) {
@@ -65,18 +72,79 @@ export const ExpandedPostCreator = ({
     e.target.style.height = `${e.target.scrollHeight}px`
   }
 
-  const handlePost = () => {
-    if (inputValue.trim()) {
-      console.log('Posting:', inputValue)
-      // TODO: Handle actual posting
+  const handlePost = async () => {
+    if (!user) {
+      toast.error('You must be signed in to post.')
+      return
+    }
+    
+    if (!inputValue.trim() && !file) {
+      toast.error('Please add some content to your post.')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const social_account_id = await ensureSkipNativeAccount(user.id)
+
+      let mediaRes: Awaited<ReturnType<typeof uploadPostMedia>> | undefined
+      let content_type: 'text' | 'image' | 'video' = 'text'
+
+      if (file) {
+        content_type = file.type.startsWith('image/') ? 'image' : 'video'
+        mediaRes = await uploadPostMedia(file, { pathPrefix: `users/${user.id}` })
+      }
+
+      await createPostRecord({
+        social_account_id,
+        content_type,
+        title: null,
+        description: inputValue || null,
+        media_url: mediaRes?.media_url || null,
+        thumbnail_url: mediaRes?.thumbnail_url || null,
+        provider: mediaRes?.provider,
+        playback_id: mediaRes?.playback_id || null,
+        duration_sec: mediaRes?.duration_sec || null,
+        aspect_ratio: mediaRes?.aspect_ratio || null,
+      })
+
+      toast.success('Posted successfully!')
       setInputValue('')
+      setFile(null)
       onClose()
+      
+      // Refresh the page to show the new post
+      window.location.reload()
+    } catch (e: any) {
+      console.error('Post error:', e)
+      toast.error(e?.message || 'Failed to post')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleMediaUpload = () => {
-    console.log('Media upload requested')
-    // TODO: Handle media upload
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    
+    const isImage = f.type.startsWith('image/')
+    const isVideo = f.type.startsWith('video/')
+    
+    if (!isImage && !isVideo) {
+      toast.error('Unsupported file type. Please select an image or video.')
+      return
+    }
+    
+    if (isVideo && f.size > 1024 * 1024 * 500) {
+      toast.error('Video too large (max 500MB)')
+      return
+    }
+    
+    setFile(f)
   }
 
   const handleCreatePoll = () => {
@@ -131,13 +199,34 @@ export const ExpandedPostCreator = ({
             rows={4}
           />
 
+          {/* Hidden File Input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,video/*"
+            hidden
+            onChange={handleFileChange}
+          />
+
           {/* Media Preview Area */}
-          <div className="hidden min-h-[200px] bg-muted/30 rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-            <div className="text-center">
-              <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-sm text-muted-foreground">Add photos or videos</p>
+          {file && (
+            <div className="min-h-[100px] bg-muted/30 rounded-xl p-4 flex items-center gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">{file.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setFile(null)}
+                className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Actions Footer */}
@@ -168,10 +257,10 @@ export const ExpandedPostCreator = ({
           {/* Post Button */}
           <Button
             onClick={handlePost}
-            disabled={!inputValue.trim()}
+            disabled={loading || (!inputValue.trim() && !file)}
             className="px-6 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-medium rounded-full transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Post
+            {loading ? 'Posting…' : 'Post'}
           </Button>
         </div>
       </div>
