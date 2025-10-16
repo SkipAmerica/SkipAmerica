@@ -6,6 +6,7 @@ import { ensureSkipNativeAccount, uploadPostMedia, createPostRecord } from '@/li
 import { toast } from 'sonner'
 import { supabase } from '@/integrations/supabase/client'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { useKeyboardAware } from '@/hooks/use-keyboard-aware'
 
 interface ExpandedPostCreatorProps {
   isOpen: boolean
@@ -27,16 +28,29 @@ export const ExpandedPostCreator = ({
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [isVisible, setIsVisible] = useState(false)
+  const [shouldRender, setShouldRender] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const { isKeyboardVisible, keyboardHeight } = useKeyboardAware()
 
   useEffect(() => {
     if (isOpen) {
+      setShouldRender(true)
       setIsVisible(true)
     } else {
       setIsVisible(false)
     }
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen && !isVisible) {
+      // Wait for slide-out animation to complete before unmounting
+      const timer = setTimeout(() => {
+        setShouldRender(false)
+      }, 300) // Match animation duration
+      return () => clearTimeout(timer)
+    }
+  }, [isOpen, isVisible])
 
   useEffect(() => {
     if (isVisible && textareaRef.current) {
@@ -172,7 +186,7 @@ export const ExpandedPostCreator = ({
     // TODO: Handle poll creation
   }
 
-  if (!isOpen && !isVisible) return null
+  if (!shouldRender) return null
 
   return (
     <div 
@@ -186,7 +200,7 @@ export const ExpandedPostCreator = ({
       onTouchStartCapture={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 h-14 border-b border-border">
+      <div className="flex items-center justify-between px-4 h-14">
         <button
           onClick={onClose}
           className="text-base font-normal text-foreground hover:opacity-70 transition-opacity"
@@ -207,33 +221,32 @@ export const ExpandedPostCreator = ({
         </button>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex gap-3">
+      {/* Content Area - Full height flex container */}
+      <div className="flex-1 flex flex-col overflow-hidden p-4 pb-0">
+        <div className="flex gap-3 flex-1 min-h-0">
           {/* Avatar */}
-          <Avatar className="w-10 h-10 flex-shrink-0">
+          <Avatar className="w-11 h-11 flex-shrink-0">
             <AvatarImage src={user?.user_metadata?.avatar_url} />
             <AvatarFallback>
               {user?.user_metadata?.full_name?.[0] || user?.email?.[0] || '?'}
             </AvatarFallback>
           </Avatar>
 
-          {/* Input Column */}
-          <div className="flex-1 flex flex-col">
+          {/* Input Column - fills remaining space */}
+          <div className="flex-1 flex flex-col min-h-0">
             <textarea
               ref={textareaRef}
               value={inputValue}
               onChange={handleTextareaChange}
               placeholder={initialPrompt || "What's happening?"}
-              className="w-full min-h-[120px] bg-transparent border-none focus:outline-none text-base text-foreground placeholder:text-muted-foreground resize-none"
-              rows={4}
+              className="w-full flex-1 bg-transparent border-none focus:outline-none text-lg text-foreground placeholder:text-muted-foreground resize-none"
               onPointerDownCapture={(e) => e.stopPropagation()}
               onTouchStartCapture={(e) => e.stopPropagation()}
             />
 
-            {/* Media Preview */}
+            {/* Media Preview - stays at bottom of textarea area */}
             {file && (
-              <div className="mt-3 bg-muted/30 rounded-2xl p-3 flex items-center gap-3">
+              <div className="mt-3 bg-muted/30 rounded-2xl p-3 flex items-center gap-3 flex-shrink-0">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">{file.name}</p>
                   <p className="text-xs text-muted-foreground">
@@ -261,8 +274,13 @@ export const ExpandedPostCreator = ({
         onChange={handleFileChange}
       />
 
-      {/* Bottom Toolbar */}
-      <div className="border-t border-border px-4 py-2 flex items-center gap-1">
+      {/* Bottom Toolbar - Keyboard aware */}
+      <div 
+        className="px-4 py-2 flex items-center gap-1 bg-background transition-all duration-200"
+        style={{
+          transform: isKeyboardVisible ? `translateY(-${keyboardHeight}px)` : 'translateY(0)',
+        }}
+      >
         <button
           onClick={handleMediaUpload}
           className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors text-primary"

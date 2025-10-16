@@ -25,3 +25,6 @@ export { useNotificationRegistry } from '../../hooks/useNotificationRegistry'
 
 // Re-export Almighty session hooks
 export { useAlmightySessionStart } from '../../hooks/useAlmightySessionStart'
+
+// Re-export keyboard hooks
+export { useKeyboardAware } from '../../hooks/use-keyboard-aware'
