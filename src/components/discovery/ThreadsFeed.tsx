@@ -143,7 +143,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {})
         }}
       >
-      <div className="space-y-3">
+      <div className="space-y-3 pt-[10px]">
         {posts.map((post, index) => (
           <PostCard 
             key={post.id} 
