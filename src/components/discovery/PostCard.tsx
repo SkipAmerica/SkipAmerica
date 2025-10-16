@@ -191,7 +191,7 @@ export function PostCard({ post, isLast }: PostCardProps) {
           {/* Header */}
           <div className="mb-3">
             <div className="flex items-center gap-1">
-              <h3 className="font-semibold text-sm truncate">
+              <h3 className="font-semibold text-[0.7rem] truncate">
                 {post.creator.full_name}
               </h3>
               {post.creator.title && (
