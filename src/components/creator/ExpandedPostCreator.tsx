@@ -26,11 +26,20 @@ export const ExpandedPostCreator = ({
   const [inputValue, setInputValue] = useState(initialValue)
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
-    if (isOpen && textareaRef.current) {
+    if (isOpen) {
+      setIsVisible(true)
+    } else {
+      setIsVisible(false)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (isVisible && textareaRef.current) {
       // Delay focus until after the modal's slide-in animation completes (300ms)
       const timer = setTimeout(() => {
         if (textareaRef.current) {
@@ -42,7 +51,7 @@ export const ExpandedPostCreator = ({
       
       return () => clearTimeout(timer)
     }
-  }, [isOpen])
+  }, [isVisible])
 
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -163,14 +172,14 @@ export const ExpandedPostCreator = ({
     // TODO: Handle poll creation
   }
 
-  if (!isOpen) return null
+  if (!isOpen && !isVisible) return null
 
   return (
     <div 
       className={cn(
         "fixed inset-0 z-[80] bg-background",
         "transform transition-transform duration-300 ease-out",
-        isOpen ? "translate-y-0" : "translate-y-full",
+        isVisible ? "translate-y-0" : "translate-y-full",
         className
       )}
       onPointerDownCapture={(e) => e.stopPropagation()}
