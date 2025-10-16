@@ -126,6 +126,7 @@ serve(async (req) => {
           roomJoin: true,
           canPublish: true,
           canSubscribe: true,
+          canPublishData: true,
         });
 
         const jwtToken = await at.toJwt();
@@ -168,8 +169,9 @@ serve(async (req) => {
       at.addGrant({
         room,
         roomJoin: true,
-        canPublish: user.id === session.creator_id || role === "publisher",
+        canPublish: true,        // Both creator & user need publish rights for two-way video
         canSubscribe: true,
+        canPublishData: true,
       });
 
       const jwtToken = await at.toJwt();
