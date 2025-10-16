@@ -161,11 +161,13 @@ export const ExpandedPostCreator = ({
   return (
     <div 
       className={cn(
-        "fixed inset-0 z-50 bg-background",
+        "fixed inset-0 z-[80] bg-background",
         "transform transition-transform duration-300 ease-out",
         isOpen ? "translate-y-0" : "translate-y-full",
         className
       )}
+      onPointerDownCapture={(e) => e.stopPropagation()}
+      onTouchStartCapture={(e) => e.stopPropagation()}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 h-14 border-b border-border">
@@ -209,6 +211,8 @@ export const ExpandedPostCreator = ({
               placeholder={initialPrompt || "What's happening?"}
               className="w-full min-h-[120px] bg-transparent border-none focus:outline-none text-base text-foreground placeholder:text-muted-foreground resize-none"
               rows={4}
+              onPointerDownCapture={(e) => e.stopPropagation()}
+              onTouchStartCapture={(e) => e.stopPropagation()}
             />
 
             {/* Media Preview */}

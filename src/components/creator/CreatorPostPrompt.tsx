@@ -1,7 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
-import { useScrollDetection } from '@/hooks/use-scroll-detection'
 import { ExpandedPostCreator } from './ExpandedPostCreator'
 
 interface CreatorPostPromptProps {
@@ -23,16 +22,15 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     return prompts[randomIndex]
   })
   const [isExpanded, setIsExpanded] = useState(false)
-  const { isScrolling } = useScrollDetection()
+  const openLockRef = useRef(false)
 
-  // Calculate opacity based on scroll state
-  const getOpacity = () => {
-    if (isScrolling) return 0.25 // 75% transparent when scrolling
-    return 1 // 100% opaque when still
-  }
-
-  const handleCircleClick = () => {
+  const handleCircleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (openLockRef.current) return
+    openLockRef.current = true
     setIsExpanded(true)
+    setTimeout(() => { openLockRef.current = false }, 350)
   }
 
   const handleExpandedClose = () => {
@@ -50,7 +48,7 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
     <>
       {/* Button Container */}
       <div 
-        className="fixed left-4 z-40 flex flex-col gap-4 transition-all duration-300 ease-in-out"
+        className="fixed left-4 z-[70] flex flex-col gap-4 transition-all duration-300 ease-in-out pointer-events-none"
         style={{
           bottom: `calc(var(--ios-tab-bar-height) + env(safe-area-inset-bottom) + 12px + (var(--lsb-visible,0) * (var(--lsb-height,72px) + 50px)))`,
           transition: 'bottom 300ms cubic-bezier(0.4, 0, 0.2, 1)'
@@ -60,14 +58,13 @@ export const CreatorPostPrompt = ({ className, isVisible = true }: CreatorPostPr
         <button
           onClick={handleCircleClick}
           className={cn(
-            "w-[50px] h-[50px] bg-white rounded-full shadow-2xl",
+            "w-[50px] h-[50px] bg-white rounded-full shadow-2xl pointer-events-auto",
             "flex items-center justify-center",
             "transition-all duration-300 ease-in-out",
             "hover:scale-105 active:scale-95",
             className
           )}
           style={{
-            opacity: getOpacity(),
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 8px 12px -2px rgba(0, 0, 0, 0.3)',
           }}
           aria-label="Create post"
