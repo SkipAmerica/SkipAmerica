@@ -36,11 +36,10 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
       try {
         console.log('[OnlineCreatorStories] Loading real creators with presence tracking');
 
-        // First, get online creator IDs from creator_presence - limited to 10 for initial load
+        // Get all creators from presence table (temporarily not filtering by online status)
         const { data: presenceData, error: presenceError } = await supabase
           .from('creator_presence')
           .select('creator_id')
-          .eq('is_online', true)
           .limit(15);
 
         if (presenceError) {

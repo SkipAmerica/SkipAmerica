@@ -41,8 +41,8 @@ export function OnlineCreatorsGrid({ selectedCategory, onCreatorSelect, hideHead
     availableOnly: filters.filters?.isAvailable || false
   });
 
-  // Filter for online creators only
-  const onlineCreators = creators.filter(creator => creator.isOnline);
+  // Show all creators (temporarily not filtering by online status)
+  const onlineCreators = creators;
 
   // Group creators into pages of 12 (4x3)
   const creatorsPerPage = 12;
