@@ -664,6 +664,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     
     // Unlock autoplay during user gesture
     await unlockAutoplay();
+    console.log('[JOIN:AFTER_UNLOCK_AUTOPLAY]', { unlocked: true });
     
     let newRoom: Room | undefined
     let localTracks: any[] = []
