@@ -232,8 +232,8 @@ export function CenterPane() {
   }
   
   return (
-    <div ref={containerRef} className="relative h-full min-h-0 bg-black overflow-hidden">
-      <div ref={stageRef} data-center-stage className="absolute inset-0">
+    <div ref={containerRef} className="relative h-full min-h-0 bg-black overflow-hidden flex flex-col">
+      <div ref={stageRef} data-center-stage className="absolute inset-0 min-h-0">
       {/* Connection Banner */}
       <ConnectionBanner
         connectionState={connectionState}
