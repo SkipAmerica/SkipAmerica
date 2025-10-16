@@ -57,7 +57,13 @@ export const ExpandedPostCreator = ({
       // Delay focus until after the modal's slide-in animation completes (300ms)
       const timer = setTimeout(() => {
         if (textareaRef.current) {
+          // Multi-step approach for better mobile keyboard triggering
           textareaRef.current.focus()
+          
+          // Explicitly click to ensure mobile keyboard appears (iOS Safari)
+          textareaRef.current.click()
+          
+          // Auto-size the textarea
           textareaRef.current.style.height = 'auto'
           textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
         }
@@ -236,6 +242,8 @@ export const ExpandedPostCreator = ({
           <div className="flex-1 flex flex-col min-h-0">
             <textarea
               ref={textareaRef}
+              autoFocus
+              inputMode="text"
               value={inputValue}
               onChange={handleTextareaChange}
               placeholder={initialPrompt || "What's happening?"}
