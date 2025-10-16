@@ -60,7 +60,7 @@ export const useKeyboardAware = (currentTab?: string) => {
           });
         }
       }
-    }, isKeyboardCurrentlyVisible ? 50 : 200); // Faster response when showing, slower when hiding for stability
+    }, isKeyboardCurrentlyVisible ? 0 : 50); // Instant show, 50ms hide delay
 
     // Add event listeners with passive option for better performance
     if (isIOS() && window.visualViewport) {

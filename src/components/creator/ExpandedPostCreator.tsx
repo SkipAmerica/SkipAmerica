@@ -223,7 +223,7 @@ export const ExpandedPostCreator = ({
 
       {/* Toolbar */}
       <div
-        className="border-t bg-background transition-transform duration-300 ease-in-out"
+        className="border-t bg-background"
         style={{
           paddingBottom: isKeyboardVisible 
             ? 'calc(12px + env(safe-area-inset-bottom))' 
