@@ -304,7 +304,7 @@ export default function PIPDock({
       role="group"
       aria-label="Picture-in-picture"
       className={cn(
-        'absolute top-0 left-0 z-[2147483000] rounded-xl overflow-hidden bg-black/80 backdrop-blur-sm',
+        'absolute top-0 left-0 z-20 rounded-xl overflow-hidden bg-black/80 backdrop-blur-sm',
         className
       )}
     style={{

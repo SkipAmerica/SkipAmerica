@@ -313,29 +313,31 @@ export function CenterPane() {
         </PIPDock>
       </div>
       
-      {/* Media Controls */}
+      {/* Media Controls - Always visible and clickable */}
       <div 
-        ref={controlsRef}
-        className="pointer-events-auto z-[65]"
+        id="media-center"
+        className="absolute inset-x-0 bottom-0 z-30 pointer-events-none"
         style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: 'calc(max(env(safe-area-inset-bottom, 0px) + 14px, 2.2vh))',
-          translate: '-50% 0',
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px) + 14px, 2.2vh)'
         }}
       >
-        <MediaControls
-          micEnabled={micEnabled}
-          camEnabled={camEnabled}
-          canFlipCamera={canFlip}
-          isFlippingCamera={isFlippingCamera}
-          audioOutputDevices={audioOutputDevices}
-          onToggleMic={toggleMic}
-          onToggleCam={toggleCam}
-          onFlipCamera={flipCamera}
-          onSwitchAudioOutput={switchAudioOutput}
-          onEndCall={handleEndCall}
-        />
+        <div 
+          ref={controlsRef}
+          className="pointer-events-auto flex justify-center"
+        >
+          <MediaControls
+            micEnabled={micEnabled}
+            camEnabled={camEnabled}
+            canFlipCamera={canFlip}
+            isFlippingCamera={isFlippingCamera}
+            audioOutputDevices={audioOutputDevices}
+            onToggleMic={toggleMic}
+            onToggleCam={toggleCam}
+            onFlipCamera={flipCamera}
+            onSwitchAudioOutput={switchAudioOutput}
+            onEndCall={handleEndCall}
+          />
+        </div>
       </div>
       
       {/* Chat Drawer */}
