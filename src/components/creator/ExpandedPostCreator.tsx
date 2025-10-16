@@ -136,11 +136,11 @@ export const ExpandedPostCreator = ({
 
   return (
     <DrawerContent 
-      className={cn("rounded-none", className)}
+      className={cn("rounded-none !inset-0 !mt-0 flex flex-col", className)}
       style={{
-        top: 'var(--safe-area-top)',
-        height: 'calc(100dvh - var(--safe-area-top))',
-        maxHeight: 'calc(100dvh - var(--safe-area-top))',
+        paddingTop: 'var(--safe-area-top)',
+        height: '100dvh',
+        maxHeight: '100dvh',
       }}
     >
       {/* Header */}
@@ -166,7 +166,7 @@ export const ExpandedPostCreator = ({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-safe">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 min-h-0">
         <div className="flex gap-3">
           {/* User Avatar */}
           <Avatar className="w-10 h-10 flex-shrink-0">
