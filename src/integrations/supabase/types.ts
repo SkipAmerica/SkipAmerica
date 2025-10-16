@@ -602,6 +602,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "content_comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_content_comments_parent_id"
             columns: ["parent_comment_id"]
             isOneToOne: false
@@ -609,6 +616,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      content_deletion_log: {
+        Row: {
+          content_id: string
+          content_snapshot: Json
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          id: string
+        }
+        Insert: {
+          content_id: string
+          content_snapshot: Json
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          id?: string
+        }
+        Update: {
+          content_id?: string
+          content_snapshot?: Json
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          id?: string
+        }
+        Relationships: []
       }
       content_reactions: {
         Row: {
@@ -632,7 +666,15 @@ export type Database = {
           reaction_type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "content_reactions_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "creator_content"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       creator_availability: {
         Row: {
@@ -706,6 +748,9 @@ export type Database = {
           comment_count: number | null
           content_type: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
           description: string | null
           duration_sec: number | null
           id: string
@@ -727,6 +772,9 @@ export type Database = {
           comment_count?: number | null
           content_type: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           description?: string | null
           duration_sec?: number | null
           id?: string
@@ -748,6 +796,9 @@ export type Database = {
           comment_count?: number | null
           content_type?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
           description?: string | null
           duration_sec?: number | null
           id?: string
@@ -2773,6 +2824,14 @@ export type Database = {
           requests_unread: number
           standard_unread: number
         }[]
+      }
+      delete_creator_content: {
+        Args: {
+          p_content_id: string
+          p_hard_delete?: boolean
+          p_reason?: string
+        }
+        Returns: Json
       }
       ensure_skip_native_social_account: {
         Args: Record<PropertyKey, never> | { p_user_id: string }

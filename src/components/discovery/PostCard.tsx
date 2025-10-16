@@ -1,9 +1,17 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar, MoreVertical, Trash2 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { CreatorHistoryCarousel } from './CreatorHistoryCarousel'
 import { LiveAvatar } from './LiveAvatar'
 import { LiveActionButton } from './LiveActionButton'
+import { DeleteContentDialog } from '@/components/shared/DeleteContentDialog'
+import { useContentDeletion } from '@/hooks/use-content-deletion'
 import { cn } from '@/lib/utils'
 import { RUNTIME } from '@/config/runtime'
 import { useAuth } from '@/app/providers/auth-provider'
@@ -47,10 +55,22 @@ export function PostCard({ post, isLast }: PostCardProps) {
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.like_count)
   const [isFollowing, setIsFollowing] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const startX = useRef<number>(0)
   const currentX = useRef<number>(0)
   const isDragging = useRef<boolean>(false)
+  
+  const isOwnPost = user?.id === post.creator.id
+  
+  const { deleteContent, loading: deleting } = useContentDeletion({
+    onSuccess: (contentId) => {
+      // Emit event for any listeners
+      window.dispatchEvent(
+        new CustomEvent('content-deleted', { detail: { contentId } })
+      )
+    }
+  })
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
@@ -125,6 +145,11 @@ export function PostCard({ post, isLast }: PostCardProps) {
     }
     // TODO: Implement follow/unfollow logic
   }, [post.creator.id, isFollowing])
+  
+  const handleDelete = useCallback(async (reason?: string) => {
+    await deleteContent(post.id, { reason })
+    setShowDeleteDialog(false)
+  }, [deleteContent, post.id])
 
   const formatCount = (count: number) => {
     if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
@@ -192,24 +217,45 @@ export function PostCard({ post, isLast }: PostCardProps) {
         {/* Content Column */}
         <div className="min-w-0 flex-1 py-3 pr-3 md:py-4 md:pr-4">
           {/* Header */}
-          <div className="mb-3">
-            <div className="flex items-center gap-1">
-              <h3 className="font-semibold text-[0.96rem] truncate">
-                {post.creator.full_name}
-              </h3>
-              {post.creator.title && (
-                <>
-                  <span className="text-gray-500 text-sm font-normal">|</span>
-                  <span className="text-sm font-normal text-foreground truncate">
-                    {post.creator.title}
-                  </span>
-                </>
+          <div className="mb-3 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1">
+                <h3 className="font-semibold text-[0.96rem] truncate">
+                  {post.creator.full_name}
+                </h3>
+                {post.creator.title && (
+                  <>
+                    <span className="text-gray-500 text-sm font-normal">|</span>
+                    <span className="text-sm font-normal text-foreground truncate">
+                      {post.creator.title}
+                    </span>
+                  </>
+                )}
+              </div>
+              {post.creator.industry && (
+                <p className="text-sm font-normal text-gray-500 truncate">
+                  {post.creator.industry}
+                </p>
               )}
             </div>
-            {post.creator.industry && (
-              <p className="text-sm font-normal text-gray-500 truncate">
-                {post.creator.industry}
-              </p>
+            
+            {isOwnPost && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Post
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </div>
 
@@ -312,6 +358,13 @@ export function PostCard({ post, isLast }: PostCardProps) {
           </div>
         </div>
       </div>
+      
+      <DeleteContentDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDelete}
+        loading={deleting}
+      />
     </div>
   )
 }

@@ -198,6 +198,21 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
       delete (window as any).__feedPostCreated
     }
   }, [])
+  
+  // 4) Listen for content deletion events (universal event system)
+  useEffect(() => {
+    const handleContentDeleted = (e: Event) => {
+      const customEvent = e as CustomEvent<{ contentId: string }>
+      const { contentId } = customEvent.detail
+      setPosts(prev => prev.filter(p => p.id !== contentId))
+      loadedIds.current.delete(contentId)
+    }
+
+    window.addEventListener('content-deleted', handleContentDeleted)
+    return () => {
+      window.removeEventListener('content-deleted', handleContentDeleted)
+    }
+  }, [])
 
   if (loading) {
     return (
