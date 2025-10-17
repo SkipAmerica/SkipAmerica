@@ -19,7 +19,15 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
   },
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@mux/mux-player-react'],
+    exclude: [],
+    force: true,
+  },
   build: {
     sourcemap: true,
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
   },
 }));
