@@ -13,8 +13,21 @@ interface ThreadsFeedProps {
 }
 
 export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsFeedProps) {
-  const { user, loading: authLoading } = useAuth()
+  const { user, loading: authLoading, session } = useAuth()
   const { posts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeedPosts()
+  
+  console.log('[ThreadsFeed Debug]', {
+    authLoading,
+    hasUser: !!user,
+    userId: user?.id,
+    hasSession: !!session,
+    hasToken: !!session?.access_token,
+    isLoading,
+    hasError: !!error,
+    errorMessage: error?.message,
+    postsCount: posts.length,
+    queryEnabled: !!user && !!session?.access_token
+  })
   
   const parentRef = useRef<HTMLDivElement>(null)
 
