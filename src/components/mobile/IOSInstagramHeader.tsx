@@ -6,7 +6,7 @@ import { QueueDrawer } from '@/components/live/QueueDrawer';
 import { supabase } from '@/integrations/supabase/client';
 import { IOSHeaderTopRow } from './IOSHeaderTopRow';
 import { IOSHeaderBottomRow } from './IOSHeaderBottomRow';
-import { FEATURES } from '@/config/features';
+
 
 interface IOSInstagramHeaderProps {
   transparent?: boolean;
@@ -33,7 +33,7 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
     requests_unread: 0,
   });
 
-  const showAdPanel = FEATURES.SHOW_AD_PANEL;
+  
 
   // Fetch inbox counts for creators - optimized with staleTime and conditional execution
   useEffect(() => {
@@ -114,7 +114,6 @@ export const IOSInstagramHeader = React.memo(function IOSInstagramHeader({
           profile={profile}
           user={user}
           onCreatorSelect={onCreatorSelect}
-          showAdPanel={showAdPanel}
         />
       )}
 

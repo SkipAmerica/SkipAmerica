@@ -19,14 +19,12 @@ interface IOSHeaderBottomRowProps {
   onCreatorSelect?: (creatorId: string) => void;
   profile?: Profile;
   user?: User;
-  showAdPanel: boolean;
 }
 
 export const IOSHeaderBottomRow = React.memo(function IOSHeaderBottomRow({
   profile,
   user,
   onCreatorSelect,
-  showAdPanel,
 }: IOSHeaderBottomRowProps) {
   const handleRecordVideo = () => {
     const input = document.createElement('input');
@@ -60,12 +58,7 @@ export const IOSHeaderBottomRow = React.memo(function IOSHeaderBottomRow({
   };
 
   return (
-    <div 
-      className={cn(
-        "z-20 w-full bg-white border-b border-border px-4",
-        showAdPanel ? "static" : "sticky top-[56px]"
-      )}
-    >
+    <div className="z-20 w-full bg-white px-4">
       <div className="flex items-center pb-1.5 pt-2">
         <div className="relative flex-shrink-0 flex flex-col items-center">
           <Avatar className="h-16 w-16 ring-2 ring-primary/20">
