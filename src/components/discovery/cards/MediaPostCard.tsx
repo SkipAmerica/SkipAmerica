@@ -50,6 +50,17 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
   const { user } = useAuth()
   const isOwnPost = user?.id === post.creator.id
 
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) return 'now'
+    if (diffInHours < 24) return `${diffInHours}h ago`
+    if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`
+    return `${Math.floor(diffInHours / 168)}w ago`
+  }
+
   const {
     isLiked,
     likeCount,
@@ -127,7 +138,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         />
       )}
 
-      {/* Row 3: Username + Caption */}
+      {/* Row 3: Username + Caption + Timestamp */}
       {(post.creator.username || caption) && (
         <div className="px-4 py-3">
           <p className="text-sm text-foreground leading-relaxed">
@@ -135,6 +146,9 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
               <span className="font-semibold">@{post.creator.username} </span>
             )}
             {caption && <ExpandableCaption text={caption} maxLength={75} inline={true} />}
+            <span className="text-xs italic text-gray-400 ml-1">
+              {formatTime(post.published_at || post.created_at)}
+            </span>
           </p>
         </div>
       )}

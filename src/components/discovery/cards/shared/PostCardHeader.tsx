@@ -82,11 +82,6 @@ export function PostCardHeader({
                 {creator.industry}
               </p>
             )}
-            {creator.username && (
-              <p className="text-xs text-muted-foreground">
-                {formatTime(timestamp)}
-              </p>
-            )}
           </div>
         </div>
         
