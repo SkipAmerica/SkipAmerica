@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { PostCard } from './PostCard'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { supabase } from '@/integrations/supabase/client'
+import { creatorPresenceService } from '@/services/creator-presence.service'
 
 type FeedPost = {
   id: string
@@ -46,6 +47,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const loadedIds = useRef<Set<string>>(new Set())
+  const lastRefreshTime = useRef<number>(0)
 
   // 1) Initial fetch
   useEffect(() => {
@@ -239,6 +241,93 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
     window.addEventListener('content-deleted', handleContentDeleted)
     return () => {
       window.removeEventListener('content-deleted', handleContentDeleted)
+    }
+  }, [])
+
+  // 5) Heartbeat fallback: Poll for new posts every 30s (battery-optimized)
+  useEffect(() => {
+    const refreshTask = async () => {
+      // Tab visibility guard - skip when tab is hidden
+      if (document.hidden) return
+      
+      // Rate limit: at least 29s between refreshes
+      const now = Date.now()
+      if (now - lastRefreshTime.current < 29000) return
+      lastRefreshTime.current = now
+
+      const startTime = performance.now()
+      
+      const { data } = await supabase
+        .from('creator_content')
+        .select(`
+          id,
+          content_type,
+          title,
+          description,
+          media_url,
+          thumbnail_url,
+          provider,
+          playback_id,
+          mux_upload_id,
+          media_status,
+          duration_sec,
+          aspect_ratio,
+          metadata,
+          view_count,
+          like_count,
+          comment_count,
+          published_at,
+          created_at,
+          social_accounts!inner (
+            platform,
+            user_id,
+            profiles!inner (
+              id,
+              full_name,
+              avatar_url,
+              username
+            )
+          )
+        `)
+        .order('published_at', { ascending: false })
+        .limit(50)
+
+      const queryTime = Math.round(performance.now() - startTime)
+      
+      if (!data) return
+
+      // Find new posts not in loadedIds
+      const newPosts = (data as FeedPost[]).filter(p => !loadedIds.current.has(p.id))
+      
+      if (newPosts.length > 0) {
+        console.log(`[ThreadsFeed:Heartbeat] Query took ${queryTime}ms, found ${newPosts.length} new posts`)
+        
+        // Hydrate creator data
+        const userIds = newPosts.map(p => p.social_accounts.user_id)
+        const { data: creatorsData } = await supabase
+          .from('creators')
+          .select('id, headline, categories')
+          .in('id', userIds)
+        
+        const creatorsMap = new Map(creatorsData?.map(c => [c.id, c]) || [])
+        
+        newPosts.forEach(p => {
+          loadedIds.current.add(p.id)
+          const creatorInfo = creatorsMap.get(p.social_accounts.user_id)
+          if (creatorInfo) {
+            p.creator_headline = creatorInfo.headline
+            p.creator_categories = creatorInfo.categories
+          }
+        })
+        
+        setPosts(prev => [...newPosts, ...prev])
+      }
+    }
+
+    creatorPresenceService.registerTask('timeline-refresh', refreshTask)
+    
+    return () => {
+      creatorPresenceService.unregisterTask('timeline-refresh')
     }
   }, [])
 

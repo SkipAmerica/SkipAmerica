@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client'
 class CreatorPresenceService {
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null
   private currentStatus: boolean = false
+  private tasks: Map<string, () => Promise<void>> = new Map()
 
   /**
    * Start sending heartbeats every 30 seconds
@@ -22,9 +23,10 @@ class CreatorPresenceService {
       clearInterval(this.heartbeatInterval)
     }
     
-    // Start periodic heartbeats
-    this.heartbeatInterval = setInterval(() => {
-      this.sendHeartbeat(isOnline)
+    // Start periodic heartbeats + run registered tasks
+    this.heartbeatInterval = setInterval(async () => {
+      await this.sendHeartbeat(isOnline)
+      await this.runTasks()
     }, 30000) // 30 seconds
     
     console.log('[CreatorPresenceService] Heartbeat started, isOnline:', isOnline)
@@ -70,6 +72,35 @@ class CreatorPresenceService {
    */
   getCurrentStatus(): boolean {
     return this.currentStatus
+  }
+
+  /**
+   * Register a task to run every 30 seconds alongside heartbeat
+   */
+  registerTask(taskId: string, task: () => Promise<void>): void {
+    this.tasks.set(taskId, task)
+    console.log(`[CreatorPresenceService] Registered task: ${taskId}`)
+  }
+
+  /**
+   * Unregister a task
+   */
+  unregisterTask(taskId: string): void {
+    this.tasks.delete(taskId)
+    console.log(`[CreatorPresenceService] Unregistered task: ${taskId}`)
+  }
+
+  /**
+   * Run all registered tasks
+   */
+  private async runTasks(): Promise<void> {
+    for (const [taskId, task] of this.tasks.entries()) {
+      try {
+        await task()
+      } catch (error) {
+        console.error(`[CreatorPresenceService] Task ${taskId} failed:`, error)
+      }
+    }
   }
 
   /**
