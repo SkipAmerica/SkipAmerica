@@ -74,7 +74,7 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     }
   }
 
-  // Phase 4: Wait for auth before attempting to load
+  // Phase 1: Simplified loading states
   if (authLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -92,10 +92,12 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     )
   }
 
-  if (isLoading) {
+  // Only show loading spinner on initial load when no posts exist
+  if (isLoading && posts.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
         <LoadingSpinner />
+        <p className="text-sm text-muted-foreground ml-2">Loading posts...</p>
       </div>
     )
   }
@@ -108,16 +110,34 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     )
   }
 
-  if (!posts.length) {
+  // Debug fallback to catch rendering issues
+  if (posts.length === 0 && !isLoading && !error) {
     return (
       <div className="p-6 text-center text-muted-foreground">
         No posts yet. Be the first to share something!
+        <pre className="text-xs mt-2">{JSON.stringify({ 
+          isLoading, 
+          isFetchingNextPage, 
+          hasNextPage,
+          authLoading 
+        }, null, 2)}</pre>
       </div>
     )
   }
 
+  // If we have posts, render them regardless of background loading state
+  console.log('[ThreadsFeed] Rendering posts:', posts.length)
+
   const offsets = getContentOffsets(FEATURES.SHOW_AD_PANEL)
   const virtualItems = rowVirtualizer.getVirtualItems()
+
+  // Phase 3: Virtualization debug logging
+  console.log('[ThreadsFeed Virtualization]', {
+    postsTotal: posts.length,
+    virtualItemsCount: virtualItems.length,
+    totalHeight: rowVirtualizer.getTotalSize(),
+    scrollElement: !!parentRef.current
+  })
 
   return (
     <Profiler id="ThreadsFeed" onRender={onRender}>
@@ -126,6 +146,7 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
         className={`w-full pb-0 ${hasNotificationZone ? '' : offsets.feedPaddingClass}`}
         style={{
           ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {}),
+          height: '100vh',
           overflowY: 'auto',
           contain: 'strict',
         }}
