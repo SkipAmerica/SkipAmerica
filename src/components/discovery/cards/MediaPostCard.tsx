@@ -132,10 +132,10 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
             handleFollowToggle()
           }}
           className={cn(
-            "absolute top-3 right-3 z-10 px-4 py-1.5 rounded-lg text-sm font-medium border-2 border-white transition-all duration-200",
+            "absolute top-[72px] right-3 z-20 px-4 py-1.5 rounded-lg text-sm font-medium border-2 border-white transition-all duration-200 backdrop-blur-sm",
             isFollowing 
-              ? "bg-gray-400/30 text-black hover:bg-gray-500/40" 
-              : "bg-transparent text-white hover:bg-white/10"
+              ? "bg-gray-600/50 text-white hover:bg-gray-600/70" 
+              : "bg-black/30 text-white hover:bg-black/50"
           )}
         >
           {isFollowing ? 'Unfollow' : 'Follow'}
