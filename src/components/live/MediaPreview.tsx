@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useMemo } from 'react';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
+import { useAuth } from '@/app/providers/auth-provider';
 
 interface MediaPreviewProps {
   className?: string;
@@ -14,26 +14,8 @@ interface MediaPreviewProps {
  * Publishes to user's own room and displays the local video
  */
 export function MediaPreview({ className, muted = true, autoPlay = true }: MediaPreviewProps) {
-  const [userId, setUserId] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.id) {
-        setUserId(data.user.id);
-      }
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const uid = session?.user?.id;
-      if (uid) {
-        setUserId(uid);
-      }
-    });
-
-    return () => {
-      try { authListener?.subscription?.unsubscribe(); } catch {}
-    };
-  }, []);
+  const { user } = useAuth();
+  const userId = user?.id || null;
 
   // Stabilize config objects to prevent unnecessary re-renders
   const publisherConfig = useMemo(() => ({

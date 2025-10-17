@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Volume2, VolumeX, RefreshCw, Video, VideoOff } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { resolveCreatorUserId } from '@/lib/queueResolver';
+import { useAuth } from '@/app/providers/auth-provider';
 import { LiveKitVideoPlayer } from '@/components/video/LiveKitVideoPlayer';
 import { LiveKitPublisher } from '@/components/video/LiveKitPublisher';
 import { lobbyRoomName, fanIdentity, previewRoomName } from '@/lib/lobbyIdentity';
@@ -33,11 +33,13 @@ export function BroadcastViewer({
     return <div className="p-4 text-red-500">No queue ID provided</div>;
   }
 
+  const { user } = useAuth();
+  const fanUserId = user?.id || null;
+  
   const selfVideoRef = useRef<HTMLVideoElement>(null);
   const [isMuted, setIsMuted] = useState(false); // Start UNMUTED - audio plays by default
   const [connectionState, setConnectionState] = useState<ConnectionState>('checking');
   const [resolvedCreatorId, setResolvedCreatorId] = useState<string | null>(null);
-  const [fanUserId, setFanUserId] = useState<string | null>(null);
   const [showSelfVideo, setShowSelfVideo] = useState(false);
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [isTransitioningToPublisher, setIsTransitioningToPublisher] = useState(false);
@@ -115,26 +117,6 @@ export function BroadcastViewer({
     });
   }, [queueId]);
 
-  // Keep fanUserId in sync with auth
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data?.user?.id) {
-        console.log('[BroadcastViewer] Initial fan user ID:', data.user.id);
-        setFanUserId(data.user.id);
-      }
-    });
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      const uid = session?.user?.id;
-      if (uid) {
-        console.log('[BroadcastViewer] Fan user ID updated:', uid);
-        setFanUserId(uid);
-      }
-    });
-    return () => {
-      try { authListener?.subscription?.unsubscribe(); } catch {}
-    };
-  }, []);
 
   // Effect to transition to publisher mode (one-time connection)
   useEffect(() => {
