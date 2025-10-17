@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { PostCard } from './PostCard'
+import { PostCardFactory } from './cards/PostCardFactory'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { supabase } from '@/integrations/supabase/client'
 import { creatorPresenceService } from '@/services/creator-presence.service'
@@ -398,7 +398,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           }
           
           return (
-            <PostCard 
+            <PostCardFactory 
               key={post.id} 
               post={threadPost} 
               isLast={index === posts.length - 1}
