@@ -132,7 +132,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
             handleFollowToggle()
           }}
           className={cn(
-            "absolute top-[72px] right-3 z-20 px-4 py-1.5 rounded-lg text-sm font-medium border-2 border-white transition-all duration-200 backdrop-blur-sm",
+            "absolute top-[72px] right-3 z-20 px-3.5 py-1 rounded text-xs font-medium border-2 border-white transition-all duration-200 backdrop-blur-sm",
             isFollowing 
               ? "bg-gray-600/50 text-white hover:bg-gray-600/70" 
               : "bg-black/30 text-white hover:bg-black/50"
