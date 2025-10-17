@@ -1,5 +1,5 @@
 // Centralized authentication provider
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
 import type { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/integrations/supabase/client'
 import { isMobile } from '@/shared/lib/platform'
@@ -394,19 +394,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }
 
-  const value: AuthContextType = {
-    user,
-    session,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
-    resendConfirmation,
-    signInAnonymously,
-    signInWithGoogle,
-    signInWithApple,
-  }
+  // Phase 4: Memoize context value to prevent unnecessary re-renders
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      session,
+      loading,
+      signIn,
+      signUp,
+      signOut,
+      resetPassword,
+      resendConfirmation,
+      signInAnonymously,
+      signInWithGoogle,
+      signInWithApple,
+    }),
+    [user, session, loading] // Only re-compute when auth state changes
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

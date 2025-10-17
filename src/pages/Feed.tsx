@@ -250,7 +250,7 @@ export default function Feed() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden flex flex-col bg-background">
       {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -277,8 +277,9 @@ export default function Feed() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-2xl mx-auto p-6">
+      {/* Phase 6: Main Content with proper height constraint */}
+      <div className="flex-1 overflow-hidden">
+        <div className="max-w-2xl mx-auto p-6 h-full overflow-y-auto">
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">Your Feed</h1>
           <p className="text-muted-foreground">
@@ -315,6 +316,7 @@ export default function Feed() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   );

@@ -112,14 +112,6 @@ export function useFeedPosts() {
   const queryClient = useQueryClient()
   const { user, session } = useAuth()
 
-  console.log('[useFeedPosts Auth State]', {
-    hasUser: !!user,
-    userId: user?.id,
-    hasSession: !!session,
-    hasToken: !!session?.access_token,
-    enabled: !!user && !!session?.access_token
-  })
-
   const query = useInfiniteQuery({
     queryKey: ['feed-posts'],
     queryFn: ({ pageParam = 0 }) => fetchPosts(pageParam),
@@ -129,19 +121,13 @@ export function useFeedPosts() {
     initialPageParam: 0,
     // Phase 2: Only run query when authenticated
     enabled: !!user && !!session?.access_token,
-    staleTime: 30000, // 30 seconds
-    refetchInterval: 30000, // Auto-refetch every 30s when tab is visible
+    // Phase 2: Optimized caching strategy
+    staleTime: 5 * 60 * 1000, // 5 minutes - reduce unnecessary refetches
+    gcTime: 10 * 60 * 1000, // 10 minutes - keep in cache longer
+    refetchInterval: false, // Disable polling - use realtime subscriptions instead
     refetchIntervalInBackground: false,
-  })
-
-  console.log('[useFeedPosts Query State]', {
-    isLoading: query.isLoading,
-    isFetching: query.isFetching,
-    isError: query.isError,
-    hasError: !!query.error,
-    errorMessage: query.error?.message,
-    dataPages: query.data?.pages.length ?? 0,
-    totalPosts: query.data?.pages.flat().length ?? 0
+    refetchOnWindowFocus: false, // Prevent refetch on tab switch
+    retry: 1, // Only retry once on failure
   })
 
   // Realtime subscriptions for live updates
