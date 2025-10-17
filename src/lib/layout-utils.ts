@@ -6,7 +6,9 @@ export function getContentOffsets(showAdPanel: boolean) {
   
   return {
     notificationOffset: stickyElementsHeight,
-    feedPaddingClass: showAdPanel ? 'pt-24 md:pt-36' : 'pt-12',
+    feedPaddingClass: showAdPanel ? 'pt-24 md:pt-36' : 'pt-0',
+    // When AdPanel OFF: Row 2 is sticky, content only accounts for toggle
+    // When AdPanel ON: Content accounts for header + toggle + AdPanel
     contentMarginClass: showAdPanel ? '-mt-24 md:-mt-36' : '-mt-12',
   };
 }
