@@ -381,12 +381,6 @@ const Index = () => {
     }
   }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, handleCreatorSelect, hasAnyVisible, visibleNotifications, offsets.notificationOffset, discoverContainerStyle, profile?.account_type]);
 
-  // Redirect non-logged in users to auth page
-  if (!user) {
-    navigate("/auth");
-    return null;
-  }
-
   // Main iOS interface for signed in users
   return (
     <div className="min-h-screen bg-background relative">
