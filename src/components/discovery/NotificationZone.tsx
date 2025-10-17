@@ -3,13 +3,13 @@ import { ReactNode } from 'react'
 interface NotificationZoneProps {
   children?: ReactNode
   hasVisibleNotifications: boolean
-  stickyOffset?: number // Total height of sticky elements above (48px header + 96px AdPanel)
+  stickyOffset?: number // Dynamic: 48px (header) or 144px (header + AdPanel)
 }
 
 export function NotificationZone({ 
   children, 
   hasVisibleNotifications,
-  stickyOffset = 144 
+  stickyOffset = 48  // Default to header-only (safe fallback)
 }: NotificationZoneProps) {
   if (import.meta.env.DEV) {
     console.log('[NotificationZone] Rendering:', {

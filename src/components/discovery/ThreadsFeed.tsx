@@ -3,6 +3,8 @@ import { PostCard } from './PostCard'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { supabase } from '@/integrations/supabase/client'
 import { creatorPresenceService } from '@/services/creator-presence.service'
+import { FEATURES } from '@/config/features'
+import { getContentOffsets } from '@/lib/layout-utils'
 
 type FeedPost = {
   id: string
@@ -355,9 +357,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
     )
   }
 
+  const offsets = getContentOffsets(FEATURES.SHOW_AD_PANEL);
+
   return (
     <div 
-      className={`w-full pb-0 ${hasNotificationZone ? '' : 'pt-24 md:pt-36'}`}
+      className={`w-full pb-0 ${hasNotificationZone ? '' : offsets.feedPaddingClass}`}
       style={hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {}}
     >
       <div className="divide-y divide-border">

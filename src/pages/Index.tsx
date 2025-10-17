@@ -14,6 +14,8 @@ import { useTab } from "@/app/providers/tab-provider";
 import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
+import { FEATURES } from '@/config/features';
+import { getContentOffsets } from '@/lib/layout-utils';
 
 // Memoized components to prevent cascading re-renders
 const MemoizedCreatorDashboard = memo(CreatorDashboard);
@@ -110,6 +112,10 @@ const Index = () => {
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
   const [queueUpdateTrigger, setQueueUpdateTrigger] = useState(0);
+
+  // Calculate dynamic offsets based on AdPanel visibility
+  const showAdPanel = FEATURES.SHOW_AD_PANEL;
+  const offsets = getContentOffsets(showAdPanel);
 
   // Listen for real-time queue updates from useQueueManager
   useEffect(() => {
@@ -279,7 +285,7 @@ const Index = () => {
                     hasAnyVisible, 
                     notificationCount: visibleNotifications.length 
                   })}
-                  <NotificationZone stickyOffset={144} hasVisibleNotifications={hasAnyVisible}>
+                  <NotificationZone stickyOffset={offsets.notificationOffset} hasVisibleNotifications={hasAnyVisible}>
                     {visibleNotifications.map((notification) => (
                       <div key={notification.id}>
                         {notification.component}
@@ -466,8 +472,8 @@ const Index = () => {
           </div>
         )}
 
-        {/* Ad Panel - Only show in discover mode, not in browse or match */}
-        {activeTab === "discover" && discoveryMode === 'discover' && (
+        {/* Ad Panel - Only show in discover mode when feature enabled */}
+        {showAdPanel && activeTab === "discover" && discoveryMode === 'discover' && (
           <div className="sticky top-[calc(var(--debug-safe-top)+48px+48px)] z-40">
             <AdPanel />
           </div>
@@ -478,7 +484,7 @@ const Index = () => {
         <div className={cn(
           "relative z-10 bg-white",
           activeTab === "discover" && discoveryMode === 'discover' 
-            ? "-mt-24 md:-mt-36" 
+            ? offsets.contentMarginClass
             : "-mt-[48px]"
         )}>
           {renderTabContent}
