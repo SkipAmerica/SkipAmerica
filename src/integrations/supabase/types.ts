@@ -2799,6 +2799,10 @@ export type Database = {
       }
     }
     Functions: {
+      account_has_visible_content: {
+        Args: { _social_account_id: string }
+        Returns: boolean
+      }
       calculate_onboarding_progress: {
         Args: { p_creator_id: string }
         Returns: number
