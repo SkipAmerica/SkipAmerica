@@ -5,6 +5,7 @@ import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { LiveStoreProvider } from '@/stores/live-store'
 import { AuthProvider } from './auth-provider'
+import { SessionSyncMount } from './SessionSyncMount'
 import { SearchProvider } from './search-provider'
 import { DiscoveryProvider } from './discovery-provider'
 import { MediaProvider } from '@/modules/almighty/providers/MediaProvider'
@@ -36,6 +37,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <SessionSyncMount />
         <MediaProvider>
           <LiveStoreProvider>
             <TabProvider>

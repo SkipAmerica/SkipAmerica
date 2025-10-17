@@ -586,29 +586,17 @@ const Index = () => {
             <IOSActionSheetItem
               onClick={async () => {
                 setShowMenu(false);
-                
-                console.log('[Index] Starting sign out sequence')
-                
-                // Set flag to prevent Auth page redirect logic
-                sessionStorage.setItem('signing_out', 'true')
-                
-                // Reset local state first
                 setActiveTab("discover");
                 resetToInitialState();
                 
-                // Sign out and wait for completion
                 const { error } = await signOut();
                 
                 if (error) {
-                  console.error('[Index] Sign out error:', error)
-                  sessionStorage.removeItem('signing_out')
                   toast.error('Sign out failed. Please try again.')
                   return
                 }
                 
-                console.log('[Index] Sign out complete, navigating to auth')
-                
-                // Use window.location for hard navigation to avoid router state issues
+                // Hard navigation for immediate effect
                 window.location.href = '/auth'
               }}
               icon={LogOut}
