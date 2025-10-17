@@ -154,6 +154,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
           metadata={post.metadata}
           title={post.title}
           fullWidth={true}
+          aspectRatio={post.aspect_ratio || undefined}
         />
       )}
 

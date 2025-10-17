@@ -16,6 +16,16 @@ interface PostCardMediaProps {
   className?: string
 }
 
+const parseAspectRatio = (aspectRatio: string | undefined): string | undefined => {
+  if (!aspectRatio) return undefined
+  
+  const parts = aspectRatio.split(/[:/]/).map(Number)
+  if (parts.length === 2 && !parts.some(isNaN)) {
+    return `${parts[0]} / ${parts[1]}`
+  }
+  return undefined
+}
+
 export function PostCardMedia({
   contentType,
   mediaUrl,
@@ -26,13 +36,20 @@ export function PostCardMedia({
   metadata,
   title,
   fullWidth = false,
+  aspectRatio,
   className = '',
 }: PostCardMediaProps) {
+  const aspectRatioStyle = parseAspectRatio(aspectRatio)
+  
   const containerClasses = cn(
     'overflow-hidden w-full',
     fullWidth ? 'rounded-none' : 'rounded-lg max-w-full',
     className
   )
+
+  const containerStyle = aspectRatioStyle 
+    ? { aspectRatio: aspectRatioStyle, width: '100%' } 
+    : { width: '100%' }
 
   const imageClasses = fullWidth
     ? 'block w-full object-cover'
@@ -44,7 +61,7 @@ export function PostCardMedia({
 
   if (contentType === 'image' && mediaUrl) {
     return (
-      <div className={containerClasses}>
+      <div className={containerClasses} style={containerStyle}>
         <img
           src={mediaUrl}
           alt={title || 'Post image'}
@@ -83,13 +100,19 @@ export function PostCardMedia({
 
     if (provider === 'mux' && playbackId) {
       return (
-        <div className={containerClasses}>
+        <div className={containerClasses} style={containerStyle}>
           <MuxPlayer
             streamType="on-demand"
             playbackId={playbackId}
             muted
             playsInline
-            style={{ width: '100%', borderRadius: fullWidth ? 0 : 8, overflow: 'hidden' }}
+            style={{ 
+              width: '100%', 
+              height: '100%',
+              aspectRatio: aspectRatioStyle || 'auto',
+              borderRadius: fullWidth ? 0 : 8, 
+              overflow: 'hidden' 
+            }}
             className={fullWidth ? '' : 'rounded-lg'}
           />
         </div>
@@ -98,7 +121,7 @@ export function PostCardMedia({
 
     if (mediaUrl) {
       return (
-        <div className={containerClasses}>
+        <div className={containerClasses} style={containerStyle}>
           <video
             src={mediaUrl}
             poster={thumbnailUrl}
@@ -106,6 +129,7 @@ export function PostCardMedia({
             muted
             playsInline
             className={videoClasses}
+            style={{ objectFit: 'cover' }}
           />
         </div>
       )
