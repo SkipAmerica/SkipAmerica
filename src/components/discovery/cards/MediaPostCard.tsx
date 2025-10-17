@@ -123,6 +123,25 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         onFollowToggle={handleFollowToggle}
       />
 
+      {/* Follow/Unfollow Button - Overlays Media */}
+      {!isOwnPost && (
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            handleFollowToggle()
+          }}
+          className={cn(
+            "absolute top-3 right-3 z-10 px-4 py-1.5 rounded-lg text-sm font-medium border-2 border-white transition-all duration-200",
+            isFollowing 
+              ? "bg-gray-400/30 text-black hover:bg-gray-500/40" 
+              : "bg-transparent text-white hover:bg-white/10"
+          )}
+        >
+          {isFollowing ? 'Unfollow' : 'Follow'}
+        </button>
+      )}
+
       {/* Row 2: Media - Full Width */}
       {(post.media_url || post.playback_id || (post.content_type === 'video' && post.media_status === 'processing')) && (
         <PostCardMedia
