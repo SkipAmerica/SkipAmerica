@@ -176,7 +176,16 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
         if (!row?.id) return
         setPosts(prev => prev.map(p => 
           p.id === row.id 
-            ? { ...p, like_count: row.like_count, comment_count: row.comment_count, view_count: row.view_count } 
+            ? { 
+                ...p, 
+                like_count: row.like_count, 
+                comment_count: row.comment_count, 
+                view_count: row.view_count,
+                media_status: row.media_status,
+                provider: row.provider,
+                playback_id: row.playback_id,
+                media_url: row.media_url
+              } 
             : p
         ))
       })
@@ -258,6 +267,7 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
             thumbnail_url: post.thumbnail_url,
             provider: post.provider,
             playback_id: post.playback_id,
+            media_status: post.media_status,
             view_count: post.view_count,
             like_count: post.like_count,
             comment_count: post.comment_count,
