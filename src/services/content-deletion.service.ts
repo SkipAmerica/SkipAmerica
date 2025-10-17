@@ -85,16 +85,26 @@ export class ContentDeletionService {
     playbackId?: string | null
   ): Promise<void> {
     if (provider === 'supabase') {
-      // Extract paths from URLs
+      // Extract paths from URLs - expects: users/{user_id}/{filename}
       const paths = files
         .map(url => {
-          const match = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/)
-          return match ? match[1] : null
+          const match = url.match(/\/storage\/v1\/object\/public\/posts-media\/(.+)$/)
+          if (!match) return null
+          
+          const path = match[1]
+          // Validate path format: users/{uuid}/{filename}
+          if (!path.startsWith('users/')) {
+            console.warn('[ContentDeletion] Invalid path format (expected users/{user_id}/{filename}):', path)
+            // Still attempt deletion for legacy paths
+            return path
+          }
+          return path
         })
         .filter(Boolean) as string[]
 
       if (paths.length > 0) {
-        await supabase.storage.from('posts-media').remove(paths)
+        const { error } = await supabase.storage.from('posts-media').remove(paths)
+        if (error) console.error('[ContentDeletion] Storage cleanup failed:', error)
       }
     } else if (provider === 'mux' && playbackId) {
       // Call Mux deletion edge function

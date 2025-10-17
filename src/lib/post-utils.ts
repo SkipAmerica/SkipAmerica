@@ -44,18 +44,22 @@ export async function ensureSkipNativeAccount(userId: string): Promise<string> {
 
 /**
  * Uploads an image to Supabase or a video to Mux via Edge Function.
- * - Images → Supabase Storage (public or signed URLs)
+ * - Images → Supabase Storage (public or signed URLs, path: users/{user_id}/{uuid}.{ext})
  * - Videos → Call mux-create-upload to get upload URL, then PUT file; returns playback_id
  */
-export async function uploadPostMedia(file: File, opts?: { pathPrefix?: string }): Promise<MediaUploadResult> {
+export async function uploadPostMedia(file: File): Promise<MediaUploadResult> {
   if (!file) throw new Error('No file provided')
 
   const isImage = file.type.startsWith('image/')
   const isVideo = file.type.startsWith('video/')
 
   if (isImage) {
+    // Get authenticated user (required by RLS policy)
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) throw new Error('Not authenticated')
+
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const key = `${opts?.pathPrefix || 'posts'}/${crypto.randomUUID()}.${ext}`
+    const key = `users/${user.id}/${crypto.randomUUID()}.${ext}` // Matches RLS policy: users/{user_id}/{filename}
 
     const { data, error } = await supabase.storage.from('posts-media').upload(key, file, {
       cacheControl: '3600',
