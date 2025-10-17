@@ -28,7 +28,7 @@ export const IOSHeaderTopRow = React.memo(function IOSHeaderTopRow({
   const navigate = useNavigate();
 
   return (
-    <div className="z-30 sticky top-0 w-full bg-white border-b border-border px-4">
+    <div className="z-30 sticky top-0 w-full bg-white px-4">
       <div className="flex items-center justify-between h-[56px]">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-cyan-500">
