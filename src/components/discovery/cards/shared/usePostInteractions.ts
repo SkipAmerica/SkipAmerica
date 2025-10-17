@@ -67,6 +67,13 @@ export function usePostInteractions({ postId, creatorId, initialLikeCount }: Use
     setShowDeleteDialog(false)
   }, [deleteContent, postId])
 
+  const handleConnect = useCallback(() => {
+    if (RUNTIME.DEBUG_LOGS) {
+      console.log('[Connect] Creator:', creatorId)
+    }
+    // TODO: Implement connection flow (DM/appointment/etc)
+  }, [creatorId])
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     startX.current = e.touches[0].clientX
     isDragging.current = true
@@ -98,6 +105,7 @@ export function usePostInteractions({ postId, creatorId, initialLikeCount }: Use
     handleLike,
     isFollowing,
     handleFollowToggle,
+    handleConnect,
     showDeleteDialog,
     setShowDeleteDialog,
     handleDelete,

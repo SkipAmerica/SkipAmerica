@@ -7,6 +7,7 @@ import { PostCardMedia } from './shared/PostCardMedia'
 import { ExpandableCaption } from './shared/ExpandableCaption'
 import { DeleteContentDialog } from '@/components/shared/DeleteContentDialog'
 import { usePostInteractions } from './shared/usePostInteractions'
+import { FollowConnectButtons } from './shared/FollowConnectButtons'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/app/providers/auth-provider'
 
@@ -67,6 +68,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
     handleLike,
     isFollowing,
     handleFollowToggle,
+    handleConnect,
     showDeleteDialog,
     setShowDeleteDialog,
     handleDelete,
@@ -123,24 +125,15 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         onFollowToggle={handleFollowToggle}
       />
 
-      {/* Follow/Unfollow Button - Overlays Media */}
-      {!isOwnPost && (
-        <button
-          onClick={(e) => {
-            e.preventDefault()
-            e.stopPropagation()
-            handleFollowToggle()
-          }}
-          className={cn(
-            "absolute top-[72px] right-3 z-20 px-3.5 py-1 rounded text-xs font-medium border-2 border-white transition-all duration-200 backdrop-blur-sm",
-            isFollowing 
-              ? "bg-gray-600/50 text-white hover:bg-gray-600/70" 
-              : "bg-black/30 text-white hover:bg-black/50"
-          )}
-        >
-          {isFollowing ? 'Unfollow' : 'Follow'}
-        </button>
-      )}
+      {/* Follow + Connect Buttons - Overlay on Media */}
+      <FollowConnectButtons
+        isFollowing={isFollowing}
+        onFollowToggle={handleFollowToggle}
+        onConnect={handleConnect}
+        isOwnPost={isOwnPost}
+        variant="overlay"
+        className="absolute top-[72px] right-3 z-20"
+      />
 
       {/* Row 2: Media - Full Width */}
       {(post.media_url || post.playback_id || (post.content_type === 'video' && post.media_status === 'processing')) && (
