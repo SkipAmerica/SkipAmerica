@@ -12,7 +12,6 @@ const HomePage = lazy(() => import('@/pages/Index'))
 const AuthPage = lazy(() => import('@/pages/Auth'))
 const OAuthCallbackPage = lazy(() => import('@/pages/OAuthCallback'))
 const ProfilePage = lazy(() => import('@/pages/Profile'))
-const FeedPage = lazy(() => import('@/pages/Feed'))
 const LobbyPage = lazy(() => import('@/pages/Lobby'))
 const CallPage = lazy(() => import('@/pages/Call'))
 const JoinQueuePage = lazy(() => import('@/pages/JoinQueue'))
@@ -152,14 +151,6 @@ export function AppRouter() {
           <RouteWrapper>
             <AuthGuard>
               <ProfilePage />
-            </AuthGuard>
-          </RouteWrapper>
-        } />
-        
-        <Route path="/feed" element={
-          <RouteWrapper>
-            <AuthGuard>
-              <FeedPage />
             </AuthGuard>
           </RouteWrapper>
         } />

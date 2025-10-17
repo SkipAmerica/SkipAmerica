@@ -16,7 +16,13 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
   const { user, loading: authLoading, session } = useAuth()
   const { posts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeedPosts()
   
-  const parentRef = useRef<HTMLDivElement>(null)
+  // Use the page's scroll container instead of creating our own
+  const parentRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const scrollContainer = document.querySelector('[data-scroll-container]') as HTMLElement
+    parentRef.current = scrollContainer
+  }, [])
 
   // Phase 1: Virtual scrolling with dynamic measurement
   const rowVirtualizer = useVirtualizer({
@@ -131,23 +137,13 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
 
   return (
     <Profiler id="ThreadsFeed" onRender={onRender}>
-      <div 
-        ref={parentRef}
-        className={`w-full pb-0 ${hasNotificationZone ? '' : offsets.feedPaddingClass}`}
+      <div
         style={{
-          ...(hasNotificationZone ? { paddingTop: 'var(--feed-top-spacing)' } : {}),
-          height: '100%', // Phase 6: Let parent control height
-          overflowY: 'auto',
-          contain: 'strict',
+          height: `${rowVirtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
         }}
       >
-        <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
-        >
           {virtualItems.map((virtualRow) => {
             const post = posts[virtualRow.index]
             if (!post) return null
@@ -210,13 +206,12 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
           })}
         </div>
 
-        {/* Phase 5: Background loading indicator */}
-        {isFetchingNextPage && posts.length > 0 && (
-          <div className="sticky bottom-4 left-1/2 -translate-x-1/2 w-fit bg-background/80 backdrop-blur rounded-full px-4 py-2 shadow-lg">
-            <LoadingSpinner size="sm" />
-          </div>
-        )}
-      </div>
+      {/* Phase 5: Background loading indicator */}
+      {isFetchingNextPage && posts.length > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-fit bg-background/80 backdrop-blur rounded-full px-4 py-2 shadow-lg z-50">
+          <LoadingSpinner size="sm" />
+        </div>
+      )}
     </Profiler>
   )
 }

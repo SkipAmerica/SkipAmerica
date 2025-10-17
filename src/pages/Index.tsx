@@ -259,25 +259,25 @@ const Index = () => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="pb-0 bg-background" style={discoverContainerStyle}>
-              {/* Mode-specific content - content scrolls underneath sticky elements */}
-              {discoveryMode === 'discover' && (
-                <>
-                  <NotificationZone stickyOffset={offsets.notificationOffset} hasVisibleNotifications={hasAnyVisible}>
-                    {visibleNotifications.map((notification) => (
-                      <div key={notification.id}>
-                        {notification.component}
-                      </div>
-                    ))}
-                  </NotificationZone>
-                  <ThreadsFeedVirtualized 
-                    hasNotificationZone={hasAnyVisible}
-                  />
-                </>
-              )}
+          <>
+            {/* Mode-specific content - content scrolls underneath sticky elements */}
+            {discoveryMode === 'discover' && (
+              <>
+                <NotificationZone stickyOffset={offsets.notificationOffset} hasVisibleNotifications={hasAnyVisible}>
+                  {visibleNotifications.map((notification) => (
+                    <div key={notification.id}>
+                      {notification.component}
+                    </div>
+                  ))}
+                </NotificationZone>
+                <ThreadsFeedVirtualized 
+                  hasNotificationZone={hasAnyVisible}
+                />
+              </>
+            )}
 
-              {discoveryMode === 'browse' && (
-               <div className="px-4 pt-2">
+            {discoveryMode === 'browse' && (
+              <div className="px-4 pt-2">
                  <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
                    {browseMode === 'live' ? (
                      <OnlineCreatorsGrid 
@@ -292,11 +292,11 @@ const Index = () => {
                        hideHeader={true}
                      />
                    )}
-                 </Suspense>
-               </div>
-             )}
+                  </Suspense>
+                </div>
+              )}
 
-             {discoveryMode === 'match' && (
+              {discoveryMode === 'match' && (
                <div className="px-4 pt-3 min-h-screen">
                  <Suspense fallback={<div className="flex items-center justify-center py-12"><LoadingSpinner /></div>}>
                    <SwipeableCreatorCards
@@ -308,11 +308,11 @@ const Index = () => {
                      onCreatorShare={handleCreatorShare}
                      onCreatorBookmark={handleCreatorBookmark}
                    />
-                 </Suspense>
-               </div>
-             )}
-           </div>
-        );
+                  </Suspense>
+                </div>
+              )}
+            </>
+         );
 
       case "live":
         return (
