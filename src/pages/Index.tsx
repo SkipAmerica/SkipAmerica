@@ -83,7 +83,6 @@ const mockCreators = [
 ];
 
 const Index = () => {
-  console.log('[Index] render start', { timestamp: performance.now() });
   
   // Extract tab state to context to prevent unnecessary re-renders
   const { activeTab, setActiveTab } = useTab();
@@ -94,11 +93,8 @@ const Index = () => {
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   
-  // Use global search context with lifecycle logging
-  console.log('[Index] before useSearch', { timestamp: performance.now() });
-  const searchCtx = useSearch();
-  console.log('[Index] got searchCtx', { hasCtx: !!searchCtx, timestamp: performance.now() });
-  const { filters, updateQuery, updateSelectedCategory } = searchCtx;
+  // Use global search context
+  const { filters, updateQuery, updateSelectedCategory } = useSearch();
   const [showSearch, setShowSearch] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [activeCall, setActiveCall] = useState<string | null>(null);
@@ -135,21 +131,6 @@ const Index = () => {
     };
   }, []);
   
-  // Diagnostic logging to track re-render causes (dev only) - moved inside conditionals
-  if (import.meta.env.DEV) {
-    useEffect(() => {
-      console.log('[Index] Re-render cause:', {
-        user: user?.id,
-        profileId: profile?.id,
-        activeTab,
-        discoveryMode,
-        browseMode,
-        showSearch,
-        showMenu,
-        timestamp: performance.now()
-      });
-    });
-  }
   
   // Safely access live store values after hooks
   const isLive = live?.isLive || false;
@@ -268,24 +249,22 @@ const Index = () => {
   // Check if current tab should show discovery toggle
   const showDiscoveryToggle = activeTab === "discover";
 
-  // Memoize expensive tab content rendering to prevent unnecessary re-renders
+  // Stable style object to prevent re-renders
+  const discoverContainerStyle = useMemo(() => ({ 
+    overscrollBehavior: 'none' as const,
+    touchAction: 'pan-y' as const,
+    WebkitOverflowScrolling: 'touch' as const
+  }), []);
+
+  // Memoize expensive tab content rendering - only depend on what actually changes
   const renderTabContent = useMemo(() => {
     switch (activeTab) {
       case "discover":
         return (
-          <div className="pb-0 bg-background"
-               style={{ 
-                 overscrollBehavior: 'none',
-                 touchAction: 'pan-y',
-                 WebkitOverflowScrolling: 'touch'
-               }}>
+          <div className="pb-0 bg-background" style={discoverContainerStyle}>
               {/* Mode-specific content - content scrolls underneath sticky elements */}
               {discoveryMode === 'discover' && (
                 <>
-                  {import.meta.env.DEV && console.log('[Index] Rendering NotificationZone:', { 
-                    hasAnyVisible, 
-                    notificationCount: visibleNotifications.length 
-                  })}
                   <NotificationZone stickyOffset={offsets.notificationOffset} hasVisibleNotifications={hasAnyVisible}>
                     {visibleNotifications.map((notification) => (
                       <div key={notification.id}>
@@ -403,7 +382,7 @@ const Index = () => {
       default:
         return null;
     }
-  }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, filters.query, handleCreatorSelect, handleCreatorLike, handleCreatorPass, handleCreatorSuperLike, handleCreatorMessage, handleCreatorShare, handleCreatorBookmark]);
+  }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, handleCreatorSelect, threadsFeedKey, hasAnyVisible, visibleNotifications, offsets.notificationOffset, discoverContainerStyle, profile?.account_type]);
 
   // Redirect non-logged in users to auth page
   if (!user) {

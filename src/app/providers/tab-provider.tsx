@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useMemo, ReactNode } from 'react';
 
 type TabContextValue = {
   activeTab: string;
@@ -10,8 +10,10 @@ const TabContext = createContext<TabContextValue | null>(null);
 export const TabProvider = ({ children }: { children: ReactNode }) => {
   const [activeTab, setActiveTab] = useState('discover');
   
+  const value = useMemo(() => ({ activeTab, setActiveTab }), [activeTab]);
+  
   return (
-    <TabContext.Provider value={{ activeTab, setActiveTab }}>
+    <TabContext.Provider value={value}>
       {children}
     </TabContext.Provider>
   );

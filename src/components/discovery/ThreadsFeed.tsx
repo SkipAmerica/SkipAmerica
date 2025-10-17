@@ -302,7 +302,6 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
       const newPosts = (data as FeedPost[]).filter(p => !loadedIds.current.has(p.id))
       
       if (newPosts.length > 0) {
-        console.log(`[ThreadsFeed:Heartbeat] Query took ${queryTime}ms, found ${newPosts.length} new posts`)
         
         // Hydrate creator data
         const userIds = newPosts.map(p => p.social_accounts.user_id)

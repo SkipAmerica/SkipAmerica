@@ -1,6 +1,8 @@
+import { memo } from 'react'
 import MuxPlayer from '@mux/mux-player-react'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
 
 interface PostCardMediaProps {
   contentType: 'image' | 'video'
@@ -26,7 +28,7 @@ const parseAspectRatio = (aspectRatio: string | undefined): string | undefined =
   return undefined
 }
 
-export function PostCardMedia({
+export const PostCardMedia = memo(function PostCardMedia({
   contentType,
   mediaUrl,
   thumbnailUrl,
@@ -39,6 +41,11 @@ export function PostCardMedia({
   aspectRatio,
   className = '',
 }: PostCardMediaProps) {
+  // Lazy load videos only when in viewport
+  const { ref: intersectionRef, isIntersecting } = useIntersectionObserver<HTMLDivElement>({
+    threshold: 0.1,
+    rootMargin: '200px' // Preload 200px before entering viewport
+  });
   const aspectRatioStyle = parseAspectRatio(aspectRatio)
   
   const containerClasses = cn(
@@ -100,21 +107,30 @@ export function PostCardMedia({
 
     if (provider === 'mux' && playbackId) {
       return (
-        <div className={containerClasses} style={containerStyle}>
-          <MuxPlayer
-            streamType="on-demand"
-            playbackId={playbackId}
-            muted
-            playsInline
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              aspectRatio: aspectRatioStyle || 'auto',
-              borderRadius: fullWidth ? 0 : 8, 
-              overflow: 'hidden' 
-            }}
-            className={fullWidth ? '' : 'rounded-lg'}
-          />
+        <div ref={intersectionRef} className={containerClasses} style={containerStyle}>
+          {isIntersecting ? (
+            <MuxPlayer
+              streamType="on-demand"
+              playbackId={playbackId}
+              muted
+              playsInline
+              style={{ 
+                width: '100%', 
+                height: '100%',
+                aspectRatio: aspectRatioStyle || 'auto',
+                borderRadius: fullWidth ? 0 : 8, 
+                overflow: 'hidden' 
+              }}
+              className={fullWidth ? '' : 'rounded-lg'}
+            />
+          ) : (
+            <div 
+              className={cn('bg-muted flex items-center justify-center', videoClasses)}
+              style={{ minHeight: '300px' }}
+            >
+              <div className="text-muted-foreground text-sm">Loading video...</div>
+            </div>
+          )}
         </div>
       )
     }
@@ -137,4 +153,4 @@ export function PostCardMedia({
   }
 
   return null
-}
+})
