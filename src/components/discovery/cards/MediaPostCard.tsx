@@ -134,7 +134,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
             {post.creator.username && (
               <span className="font-semibold">@{post.creator.username} </span>
             )}
-            {caption && <ExpandableCaption text={caption} maxLength={75} className="inline" />}
+            {caption && <ExpandableCaption text={caption} maxLength={75} inline={true} />}
           </p>
         </div>
       )}
