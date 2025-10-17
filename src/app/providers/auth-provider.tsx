@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (event === 'SIGNED_IN' && session) {
           // Create database session record
           try {
-            const { data: dbSession } = await supabase.rpc('create_user_session', {
+            const { data: dbSession, error: rpcError } = await supabase.rpc('create_user_session', {
               p_user_id: session.user.id,
               p_session_token: session.access_token,
               p_email: session.user.email || '',
@@ -62,16 +62,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
               }
             })
             
-            setSessionToken(session.access_token)
-            setSessionId(dbSession)
-            
-            console.log('[Auth] Database session created:', {
-              userId: session.user.id,
-              email: session.user.email,
-              sessionId: dbSession
-            })
+            if (rpcError) {
+              console.error('[Auth] RPC error creating database session:', rpcError)
+              // Continue without database session - don't block auth flow
+            } else {
+              setSessionToken(session.access_token)
+              setSessionId(dbSession)
+              
+              console.log('[Auth] Database session created:', {
+                userId: session.user.id,
+                email: session.user.email,
+                sessionId: dbSession
+              })
+            }
           } catch (error) {
-            console.error('[Auth] Failed to create database session:', error)
+            console.error('[Auth] Exception creating database session:', error)
+            // Continue without database session - don't block auth flow
           }
         }
         
@@ -170,6 +176,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const signOut = async () => {
+    // Prevent re-entrant calls
+    if (sessionStorage.getItem('signing_out') === 'true') {
+      console.log('[SignOut] Already signing out, skipping')
+      return { error: null }
+    }
+    
+    sessionStorage.setItem('signing_out', 'true')
     const signOutId = `signout_${Date.now()}`
     
     try {
@@ -244,6 +257,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSessionId(null)
       
       return { error }
+    } finally {
+      // Always clear the flag after a delay
+      setTimeout(() => {
+        sessionStorage.removeItem('signing_out')
+      }, 1000)
     }
   }
 

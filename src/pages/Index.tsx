@@ -42,6 +42,7 @@ import { ProfileCompletionBanner } from "@/components/creator/ProfileCompletionB
 import { NotificationZone } from "@/components/discovery/NotificationZone";
 import { useNotificationRegistry } from "@/hooks/useNotificationRegistry";
 import { LoadingSpinner } from "@/shared/ui/loading-spinner";
+import { toast } from "sonner";
 
 import { AdPanel } from "@/components/ads/AdPanel";
 import heroImage from "@/assets/hero-image.jpg";
@@ -588,6 +589,9 @@ const Index = () => {
                 
                 console.log('[Index] Starting sign out sequence')
                 
+                // Set flag to prevent Auth page redirect logic
+                sessionStorage.setItem('signing_out', 'true')
+                
                 // Reset local state first
                 setActiveTab("discover");
                 resetToInitialState();
@@ -597,6 +601,8 @@ const Index = () => {
                 
                 if (error) {
                   console.error('[Index] Sign out error:', error)
+                  sessionStorage.removeItem('signing_out')
+                  toast.error('Sign out failed. Please try again.')
                   return
                 }
                 

@@ -95,11 +95,22 @@ const Auth = () => {
   }, [])
 
   useEffect(() => {
-    // Prevent this effect from running if we just signed out
-    if (!user) {
-      console.log('[Auth] No user, staying on auth page')
+    // Check if we're in the middle of a sign-out
+    const isSigningOut = sessionStorage.getItem('signing_out') === 'true'
+    
+    // Prevent this effect from running if we just signed out or no user
+    if (!user || isSigningOut) {
+      console.log('[Auth] No user or signing out, staying on auth page', { user: !!user, isSigningOut })
       setIsWaitingForOAuth(false)
       setIsInitiatingOAuth(false)
+      
+      // Clear the signing out flag after a delay
+      if (isSigningOut) {
+        setTimeout(() => {
+          sessionStorage.removeItem('signing_out')
+        }, 1000)
+      }
+      
       return
     }
 
@@ -198,7 +209,7 @@ const Auth = () => {
     return () => clearTimeout(timer)
   }, [isInitiatingOAuth])
 
-  const showLoadingOverlay = isInitiatingOAuth || isWaitingForOAuth || !!user
+  const showLoadingOverlay = isInitiatingOAuth || isWaitingForOAuth
 
   // Force dark background on html/body during OAuth to prevent white flash
   useEffect(() => {
