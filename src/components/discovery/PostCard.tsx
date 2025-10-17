@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react'
+import MuxPlayer from '@mux/mux-player-react'
 import { Button } from '@/components/ui/button'
 import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar, MoreVertical, Trash2, AlertCircle } from 'lucide-react'
 import {
@@ -309,12 +310,13 @@ export function PostCard({ post, isLast }: PostCardProps) {
                         </div>
                       </div>
                     ) : post.provider === 'mux' && post.playback_id ? (
-                      <mux-player
-                        stream-type="on-demand"
-                        playback-id={post.playback_id}
+                      <MuxPlayer
+                        streamType="on-demand"
+                        playbackId={post.playback_id}
                         muted
                         playsInline
                         style={{ width: '100%', borderRadius: 8, overflow: 'hidden' }}
+                        className="rounded-lg"
                       />
                     ) : post.media_url ? (
                       <video
