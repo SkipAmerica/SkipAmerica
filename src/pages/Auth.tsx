@@ -95,8 +95,23 @@ const Auth = () => {
   }, [])
 
   useEffect(() => {
+    // Prevent this effect from running if we just signed out
+    if (!user) {
+      console.log('[Auth] No user, staying on auth page')
+      setIsWaitingForOAuth(false)
+      setIsInitiatingOAuth(false)
+      return
+    }
+
+    // Add flag to prevent multiple redirects
+    const isRedirecting = sessionStorage.getItem('auth_redirecting')
+    if (isRedirecting === 'true') {
+      console.log('[Auth] Already redirecting, skipping')
+      return
+    }
+
     const checkUserProfile = async () => {
-      if (!user) return
+      sessionStorage.setItem('auth_redirecting', 'true')
 
       // Don't redirect if we just came from sign-out - allow auth state to settle
       if (window.location.pathname === '/auth' && !document.referrer.includes('/auth')) {
@@ -163,12 +178,12 @@ const Auth = () => {
       } catch (error) {
         console.error('Error checking user profile:', error)
         navigate('/')
+      } finally {
+        sessionStorage.removeItem('auth_redirecting')
       }
     }
 
-    if (user) {
-      checkUserProfile()
-    }
+    checkUserProfile()
   }, [user, navigate])
 
   // Safety timer for OAuth

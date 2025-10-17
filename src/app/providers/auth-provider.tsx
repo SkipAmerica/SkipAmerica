@@ -8,6 +8,8 @@ import { Capacitor } from '@capacitor/core'
 interface AuthContextType {
   user: User | null
   session: Session | null
+  sessionToken: string | null
+  sessionId: string | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signUp: (email: string, password: string, fullName?: string, accountType?: 'fan' | 'creator' | 'agency' | 'industry_resource') => Promise<{ error: any }>
@@ -28,25 +30,106 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [sessionToken, setSessionToken] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.email)
+        console.log('[Auth] State change:', { 
+          event, 
+          email: session?.user?.email,
+          userId: session?.user?.id,
+          timestamp: new Date().toISOString()
+        })
+        
         setSession(session)
         setUser(session?.user ?? null)
+        
+        if (event === 'SIGNED_IN' && session) {
+          // Create database session record
+          try {
+            const { data: dbSession } = await supabase.rpc('create_user_session', {
+              p_user_id: session.user.id,
+              p_session_token: session.access_token,
+              p_email: session.user.email || '',
+              p_device_info: {
+                userAgent: navigator.userAgent,
+                platform: Capacitor.getPlatform(),
+                timestamp: new Date().toISOString()
+              }
+            })
+            
+            setSessionToken(session.access_token)
+            setSessionId(dbSession)
+            
+            console.log('[Auth] Database session created:', {
+              userId: session.user.id,
+              email: session.user.email,
+              sessionId: dbSession
+            })
+          } catch (error) {
+            console.error('[Auth] Failed to create database session:', error)
+          }
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          // End database session
+          if (sessionToken) {
+            try {
+              await supabase.rpc('end_user_session', {
+                p_session_token: sessionToken,
+                p_reason: 'manual_signout'
+              })
+              
+              console.log('[Auth] Database session ended:', {
+                sessionToken: sessionToken.substring(0, 10) + '...',
+                timestamp: new Date().toISOString()
+              })
+            } catch (error) {
+              console.error('[Auth] Failed to end database session:', error)
+            }
+          }
+          
+          setSessionToken(null)
+          setSessionId(null)
+        }
+        
         setLoading(false)
-
-        // Handle auth events - removed popup prompts
       }
     )
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Initial session check
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session)
       setUser(session?.user ?? null)
+      
+      if (session) {
+        // Validate session exists in database
+        const { data: isValid } = await supabase.rpc('validate_user_session', {
+          p_session_token: session.access_token,
+          p_user_id: session.user.id
+        })
+        
+        if (!isValid) {
+          console.warn('[Auth] Session not found in database, creating...')
+          await supabase.rpc('create_user_session', {
+            p_user_id: session.user.id,
+            p_session_token: session.access_token,
+            p_email: session.user.email || '',
+            p_device_info: {
+              userAgent: navigator.userAgent,
+              platform: Capacitor.getPlatform(),
+              timestamp: new Date().toISOString()
+            }
+          })
+        }
+        
+        setSessionToken(session.access_token)
+      }
+      
       setLoading(false)
     })
 
@@ -87,39 +170,79 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   const signOut = async () => {
+    const signOutId = `signout_${Date.now()}`
+    
     try {
-      console.log('[SignOut] Starting sign out process')
-      console.log('[SignOut] Platform:', Capacitor.getPlatform())
-      console.log('[SignOut] Is native:', Capacitor.isNativePlatform())
+      console.log(`[SignOut:${signOutId}] Starting sign out process`)
+      console.log(`[SignOut:${signOutId}] Current user:`, {
+        email: user?.email,
+        userId: user?.id
+      })
       
-      // Clear native Google session on iOS
-      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
-        console.log('[SignOut] Clearing iOS Google session')
+      // STEP 1: End database session FIRST
+      if (sessionToken) {
+        console.log(`[SignOut:${signOutId}] Ending database session`)
         try {
-          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
-          await GoogleAuth.signOut()
-          console.log('[SignOut] Google sign out complete')
-        } catch (error) {
-          console.log('[SignOut] Google sign out skipped:', error)
+          await supabase.rpc('end_user_session', {
+            p_session_token: sessionToken,
+            p_reason: 'manual_signout'
+          })
+          console.log(`[SignOut:${signOutId}] Database session ended successfully`)
+        } catch (dbError) {
+          console.error(`[SignOut:${signOutId}] Database session end failed:`, dbError)
+          // Continue anyway - we still need to sign out
         }
       }
       
-      // Clear any pending OAuth state
-      localStorage.removeItem('pending_account_type')
-      
-      // Sign out from Supabase
-      console.log('[SignOut] Signing out from Supabase')
-      const { error } = await supabase.auth.signOut()
-      
-      if (error) {
-        console.error('[SignOut] Supabase sign out error:', error)
-      } else {
-        console.log('[SignOut] Sign out successful')
+      // STEP 2: Clear native OAuth sessions
+      if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
+        console.log(`[SignOut:${signOutId}] Clearing iOS OAuth sessions`)
+        try {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth')
+          await GoogleAuth.signOut()
+          console.log(`[SignOut:${signOutId}] Google sign out complete`)
+        } catch (error) {
+          console.log(`[SignOut:${signOutId}] Google sign out skipped:`, error)
+        }
       }
       
+      // STEP 3: Clear local storage
+      console.log(`[SignOut:${signOutId}] Clearing local storage`)
+      localStorage.removeItem('pending_account_type')
+      
+      // STEP 4: Clear local state BEFORE Supabase signout
+      setSessionToken(null)
+      setSessionId(null)
+      
+      // STEP 5: Sign out from Supabase (this triggers SIGNED_OUT event)
+      console.log(`[SignOut:${signOutId}] Signing out from Supabase`)
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // Only clear local session
+      })
+      
+      if (error) {
+        console.error(`[SignOut:${signOutId}] Supabase sign out error:`, error)
+        // Force clear local state anyway
+        setUser(null)
+        setSession(null)
+      } else {
+        console.log(`[SignOut:${signOutId}] Sign out successful`)
+      }
+      
+      // STEP 6: Small delay to let auth state settle
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      console.log(`[SignOut:${signOutId}] Complete`)
       return { error }
     } catch (error) {
-      console.error('[SignOut] Caught error:', error)
+      console.error(`[SignOut:${signOutId}] Caught error:`, error)
+      
+      // Force clear state on error
+      setUser(null)
+      setSession(null)
+      setSessionToken(null)
+      setSessionId(null)
+      
       return { error }
     }
   }
@@ -401,6 +524,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const value: AuthContextType = {
     user,
     session,
+    sessionToken,
+    sessionId,
     loading,
     signIn,
     signUp,

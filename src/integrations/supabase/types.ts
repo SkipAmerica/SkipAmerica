@@ -328,6 +328,36 @@ export type Database = {
           },
         ]
       }
+      auth_audit_log: {
+        Row: {
+          email: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          session_token: string | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          email?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          session_token?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          email?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          session_token?: string | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       call_file_shares: {
         Row: {
           call_id: string
@@ -2128,6 +2158,7 @@ export type Database = {
           bio: string | null
           created_at: string
           creator_only_mode: boolean | null
+          email: string | null
           full_name: string | null
           id: string
           independent_verified: boolean | null
@@ -2143,6 +2174,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           creator_only_mode?: boolean | null
+          email?: string | null
           full_name?: string | null
           id: string
           independent_verified?: boolean | null
@@ -2158,6 +2190,7 @@ export type Database = {
           bio?: string | null
           created_at?: string
           creator_only_mode?: boolean | null
+          email?: string | null
           full_name?: string | null
           id?: string
           independent_verified?: boolean | null
@@ -2754,6 +2787,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          email: string
+          end_reason: string | null
+          ended_at: string | null
+          expires_at: string
+          id: string
+          is_active: boolean
+          last_activity_at: string
+          session_token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          email: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          session_token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          email?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          last_activity_at?: string
+          session_token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       virtual_gifts: {
         Row: {
           amount: number
@@ -2823,6 +2898,15 @@ export type Database = {
         Args: { _label?: string }
         Returns: string
       }
+      create_user_session: {
+        Args: {
+          p_device_info?: Json
+          p_email: string
+          p_session_token: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       creator_inbox_counts: {
         Args: { p_creator_id: string }
         Returns: {
@@ -2839,6 +2923,10 @@ export type Database = {
           p_reason?: string
         }
         Returns: Json
+      }
+      end_user_session: {
+        Args: { p_reason?: string; p_session_token: string }
+        Returns: boolean
       }
       ensure_skip_native_social_account: {
         Args: Record<PropertyKey, never> | { p_user_id: string }
@@ -2887,6 +2975,10 @@ export type Database = {
           p_transaction_type: string
         }
         Returns: Json
+      }
+      validate_user_session: {
+        Args: { p_session_token: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

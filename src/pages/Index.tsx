@@ -585,12 +585,25 @@ const Index = () => {
             <IOSActionSheetItem
               onClick={async () => {
                 setShowMenu(false);
+                
+                console.log('[Index] Starting sign out sequence')
+                
                 // Reset local state first
                 setActiveTab("discover");
                 resetToInitialState();
-                // Then sign out and navigate
-                await signOut();
-                navigate("/auth", { replace: true });
+                
+                // Sign out and wait for completion
+                const { error } = await signOut();
+                
+                if (error) {
+                  console.error('[Index] Sign out error:', error)
+                  return
+                }
+                
+                console.log('[Index] Sign out complete, navigating to auth')
+                
+                // Use window.location for hard navigation to avoid router state issues
+                window.location.href = '/auth'
               }}
               icon={LogOut}
               destructive
