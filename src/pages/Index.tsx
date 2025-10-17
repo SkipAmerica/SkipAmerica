@@ -455,7 +455,7 @@ const Index = () => {
         <div className={cn(
           "relative z-10 bg-white",
           activeTab === "discover" && discoveryMode === 'discover' 
-            ? offsets.contentMarginClass
+            ? ""  // No margin - threads flush against DMT
             : "-mt-[48px]"
         )}>
           {renderTabContent}
