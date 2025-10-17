@@ -64,73 +64,56 @@ Deno.serve(async (req) => {
         return new Response('ok', { headers: corsHeaders })
       }
 
-      // Match by mux_upload_id for precise identification
-      const { data: posts, error: selectError } = await supabase
+      // Update post with ready state (idempotent, no status filter)
+      const { data: updated, error: updateError } = await supabase
         .from('creator_content')
-        .select('id, mux_upload_id')
-        .eq('mux_upload_id', uploadId)
-        .eq('media_status', 'processing')
-        .limit(1)
-
-      if (selectError) {
-        console.error('[mux-webhook] Error finding post:', selectError)
-        return new Response('ok', { headers: corsHeaders })
-      }
-
-      const targetPost = posts?.[0]
-      if (targetPost) {
-        console.log('[mux-webhook] Updating post:', {
-          postId: targetPost.id,
-          uploadId: targetPost.mux_upload_id
+        .update({
+          media_status: 'ready',
+          provider: 'mux',
+          playback_id: playbackId,
+          thumbnail_url: poster,
+          duration_sec: duration ? Math.round(duration) : null,
+          aspect_ratio: aspectRatio,
         })
+        .eq('mux_upload_id', uploadId)
+        .select('id')
 
-        const { error: updateError } = await supabase
-          .from('creator_content')
-          .update({
-            playback_id: playbackId,
-            thumbnail_url: poster,
-            provider: 'mux',
-            media_status: 'ready',
-            duration_sec: duration ? Math.round(duration) : null,
-            aspect_ratio: aspectRatio || null,
-          })
-          .eq('id', targetPost.id)
-
-        if (updateError) {
-          console.error('[mux-webhook] Error updating post:', updateError)
-        } else {
-          console.log('[mux-webhook] ✅ Post updated successfully:', targetPost.id)
-        }
+      if (updateError) {
+        console.error('[mux-webhook] Error updating post:', updateError)
+      } else if (updated && updated.length > 0) {
+        console.log('[mux-webhook] ✅ Post updated successfully:', updated[0].id)
       } else {
         console.warn('[mux-webhook] ⚠️ No matching post found for uploadId:', uploadId)
       }
-    } 
+    }
     
     // Handle video.asset.errored - Video processing failed
     else if (type === 'video.asset.errored') {
       const assetId = payload?.data?.id
-      const errorMessage = payload?.data?.errors?.messages?.[0] || 'Unknown error'
+      const errorData = payload?.data?.errors || { messages: ['Unknown error'] }
       
       console.error('[mux-webhook] Asset errored:', { 
         assetId, 
         uploadId, 
-        error: errorMessage 
+        errors: errorData 
       })
 
       if (uploadId) {
-        const { error: updateError } = await supabase
+        const { data: updated, error: updateError } = await supabase
           .from('creator_content')
           .update({
             media_status: 'error',
-            metadata: { error: errorMessage }
+            metadata: { mux_error: errorData, mux_asset_id: assetId }
           })
           .eq('mux_upload_id', uploadId)
-          .eq('media_status', 'processing')
+          .select('id')
 
         if (updateError) {
           console.error('[mux-webhook] Error updating failed post:', updateError)
+        } else if (updated && updated.length > 0) {
+          console.log('[mux-webhook] ✅ Marked post as error:', updated[0].id)
         } else {
-          console.log('[mux-webhook] ✅ Marked post as error:', uploadId)
+          console.warn('[mux-webhook] ⚠️ No matching post found for uploadId:', uploadId)
         }
       }
     }
