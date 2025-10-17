@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar, MoreVertical, Trash2 } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar, MoreVertical, Trash2, AlertCircle } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,10 @@ interface ThreadPost {
   published_at?: string
   created_at: string
   media_status?: string
+  mux_upload_id?: string | null
+  duration_sec?: number | null
+  aspect_ratio?: string | null
+  metadata?: any
   creator: {
     id: string
     full_name: string
@@ -292,6 +296,16 @@ export function PostCard({ post, isLast }: PostCardProps) {
                         <div className="text-center space-y-3">
                           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto" />
                           <p className="text-sm text-muted-foreground">Processing video...</p>
+                        </div>
+                      </div>
+                    ) : post.media_status === 'error' ? (
+                      <div className="relative w-full rounded-lg overflow-hidden bg-destructive/10 flex items-center justify-center min-h-[300px]">
+                        <div className="text-center space-y-3 p-6">
+                          <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+                          <p className="text-sm text-destructive font-medium">Video processing failed</p>
+                          {post.metadata?.error && (
+                            <p className="text-xs text-muted-foreground">{post.metadata.error}</p>
+                          )}
                         </div>
                       </div>
                     ) : post.provider === 'mux' && post.playback_id ? (

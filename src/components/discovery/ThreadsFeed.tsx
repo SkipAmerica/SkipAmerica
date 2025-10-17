@@ -12,7 +12,11 @@ type FeedPost = {
   thumbnail_url: string | null
   provider: 'supabase' | 'mux' | null
   playback_id: string | null
+  mux_upload_id: string | null
   media_status?: string
+  duration_sec?: number | null
+  aspect_ratio?: string | null
+  metadata?: any
   view_count: number
   like_count: number
   comment_count: number
@@ -58,7 +62,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
           thumbnail_url,
           provider,
           playback_id,
+          mux_upload_id,
           media_status,
+          duration_sec,
+          aspect_ratio,
+          metadata,
           view_count,
           like_count,
           comment_count,
@@ -132,7 +140,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
             thumbnail_url,
             provider,
             playback_id,
-          media_status,
+            mux_upload_id,
+            media_status,
+            duration_sec,
+            aspect_ratio,
+            metadata,
             view_count,
             like_count,
             comment_count,
@@ -184,7 +196,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
                 media_status: row.media_status,
                 provider: row.provider,
                 playback_id: row.playback_id,
-                media_url: row.media_url
+                media_url: row.media_url,
+                mux_upload_id: row.mux_upload_id,
+                duration_sec: row.duration_sec,
+                aspect_ratio: row.aspect_ratio,
+                metadata: row.metadata
               } 
             : p
         ))
@@ -267,7 +283,11 @@ export function ThreadsFeed({ hasNotificationZone = false }: ThreadsFeedProps) {
             thumbnail_url: post.thumbnail_url,
             provider: post.provider,
             playback_id: post.playback_id,
+            mux_upload_id: post.mux_upload_id,
             media_status: post.media_status,
+            duration_sec: post.duration_sec,
+            aspect_ratio: post.aspect_ratio,
+            metadata: post.metadata,
             view_count: post.view_count,
             like_count: post.like_count,
             comment_count: post.comment_count,
