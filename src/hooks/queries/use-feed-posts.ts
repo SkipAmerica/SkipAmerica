@@ -1,6 +1,7 @@
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import { useAuth } from '@/app/providers/auth-provider'
 
 export type FeedPost = {
   id: string
@@ -38,6 +39,12 @@ export type FeedPost = {
 const POSTS_PER_PAGE = 20
 
 async function fetchPosts(pageParam: number): Promise<FeedPost[]> {
+  // Phase 2: Verify auth before query
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.access_token) {
+    throw new Error('Not authenticated')
+  }
+  
   const from = pageParam * POSTS_PER_PAGE
   const to = from + POSTS_PER_PAGE - 1
 
@@ -103,6 +110,7 @@ async function fetchPosts(pageParam: number): Promise<FeedPost[]> {
 
 export function useFeedPosts() {
   const queryClient = useQueryClient()
+  const { user, session } = useAuth()
 
   const query = useInfiniteQuery({
     queryKey: ['feed-posts'],
@@ -111,6 +119,8 @@ export function useFeedPosts() {
       return lastPage.length === POSTS_PER_PAGE ? allPages.length : undefined
     },
     initialPageParam: 0,
+    // Phase 2: Only run query when authenticated
+    enabled: !!user && !!session?.access_token,
     staleTime: 30000, // 30 seconds
     refetchInterval: 30000, // Auto-refetch every 30s when tab is visible
     refetchIntervalInBackground: false,

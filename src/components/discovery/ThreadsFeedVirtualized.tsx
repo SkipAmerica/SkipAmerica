@@ -6,12 +6,14 @@ import { useFeedPosts } from '@/hooks/queries/use-feed-posts'
 import { FEATURES } from '@/config/features'
 import { getContentOffsets } from '@/lib/layout-utils'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
+import { useAuth } from '@/app/providers/auth-provider'
 
 interface ThreadsFeedProps {
   hasNotificationZone?: boolean
 }
 
 export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsFeedProps) {
+  const { user, loading: authLoading } = useAuth()
   const { posts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeedPosts()
   
   const parentRef = useRef<HTMLDivElement>(null)
@@ -57,6 +59,24 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     if (import.meta.env.DEV && actualDuration > 16) {
       console.warn(`[ThreadsFeed Performance] ${phase} render took ${actualDuration.toFixed(2)}ms (target: <16ms for 60fps)`)
     }
+  }
+
+  // Phase 4: Wait for auth before attempting to load
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <LoadingSpinner />
+        <p className="text-sm text-muted-foreground ml-2">Authenticating...</p>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <div className="p-4 text-center text-muted-foreground">
+        Please sign in to view posts.
+      </div>
+    )
   }
 
   if (isLoading) {

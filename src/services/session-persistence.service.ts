@@ -16,6 +16,7 @@ class SessionPersistenceService {
   /**
    * Sync session to database
    * Idempotent: Only syncs if token changed
+   * Phase 5: Added retry logic for network resilience
    */
   async syncSession(session: Session | null) {
     // Idempotency: Don't sync same token twice
@@ -29,30 +30,47 @@ class SessionPersistenceService {
     }
 
     this.syncInProgress = true
-    try {
-      const { error } = await supabase.rpc('create_user_session', {
-        p_user_id: session.user.id,
-        p_session_token: session.access_token,
-        p_email: session.user.email || '',
-        p_device_info: {
-          userAgent: navigator.userAgent,
-          platform: Capacitor.getPlatform(),
-          timestamp: new Date().toISOString()
-        }
-      })
+    let retries = 3
+    
+    while (retries > 0) {
+      try {
+        const { error } = await supabase.rpc('create_user_session', {
+          p_user_id: session.user.id,
+          p_session_token: session.access_token,
+          p_email: session.user.email || '',
+          p_device_info: {
+            userAgent: navigator.userAgent,
+            platform: Capacitor.getPlatform(),
+            timestamp: new Date().toISOString()
+          }
+        })
 
-      if (!error) {
-        this.lastSyncedToken = session.access_token
-        console.log('[SessionPersistence] Synced:', session.user.id)
-      } else {
-        console.error('[SessionPersistence] Sync error:', error)
+        if (!error) {
+          this.lastSyncedToken = session.access_token
+          console.log('[SessionPersistence] Synced successfully')
+          break // Success - exit retry loop
+        } else {
+          console.warn(`[SessionPersistence] Sync error (attempt ${4-retries}/3):`, error)
+          retries--
+          if (retries > 0) {
+            // Wait before retry: 500ms, 1000ms, 1500ms
+            await new Promise(resolve => setTimeout(resolve, 500 * (4 - retries)))
+          }
+        }
+      } catch (error) {
+        console.error(`[SessionPersistence] Exception (attempt ${4-retries}/3):`, error)
+        retries--
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, 500 * (4 - retries)))
+        }
       }
-    } catch (error) {
-      console.error('[SessionPersistence] Sync failed:', error)
-      // Non-blocking: Auth works without DB session
-    } finally {
-      this.syncInProgress = false
     }
+    
+    if (retries === 0) {
+      console.error('[SessionPersistence] All retries exhausted - session sync failed')
+    }
+    
+    this.syncInProgress = false
   }
 
   /**
