@@ -33,3 +33,6 @@ verify_jwt = true
 
 [functions.check-username-availability]
 verify_jwt = false
+
+[functions.mux-webhook]
+verify_jwt = false
