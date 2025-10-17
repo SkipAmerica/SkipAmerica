@@ -1,5 +1,5 @@
 // Consolidated search provider
-import React, { createContext, useContext, useState, useEffect } from 'react'
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 
 interface SearchState {
@@ -49,51 +49,37 @@ export function SearchProvider({ children }: SearchProviderProps) {
   const [filters, setFilters] = useState<SearchState>(defaultState)
   const debouncedQuery = useDebounce(filters.query, 300)
 
-  // Lifecycle logging
-  useEffect(() => {
-    console.log('[SearchProvider] mount', { timestamp: performance.now() })
-    return () => console.log('[SearchProvider] unmount', { timestamp: performance.now() })
+  const updateQuery = useCallback((query: string) => {
+    setFilters(prev => ({ ...prev, query }))
   }, [])
 
-  // Query change logging
-  useEffect(() => {
-    console.log('[SearchProvider] query change', { 
-      query: filters.query, 
-      timestamp: performance.now() 
-    })
-  }, [filters.query])
-
-  const updateQuery = (query: string) => {
-    setFilters(prev => ({ ...prev, query }))
-  }
-
-  const updateSelectedCategory = (selectedCategory: string) => {
+  const updateSelectedCategory = useCallback((selectedCategory: string) => {
     setFilters(prev => ({ ...prev, selectedCategory }))
-  }
+  }, [])
 
-  const updateSortBy = (sortBy: SearchState['sortBy']) => {
+  const updateSortBy = useCallback((sortBy: SearchState['sortBy']) => {
     setFilters(prev => ({ ...prev, sortBy }))
-  }
+  }, [])
 
-  const updateFilters = (newFilters: Partial<SearchState['filters']>) => {
+  const updateFilters = useCallback((newFilters: Partial<SearchState['filters']>) => {
     setFilters(prev => ({
       ...prev,
       filters: { ...prev.filters, ...newFilters }
     }))
-  }
+  }, [])
 
-  const resetFilters = () => {
+  const resetFilters = useCallback(() => {
     setFilters(defaultState)
-  }
+  }, [])
 
-  const hasActiveFilters = Boolean(
+  const hasActiveFilters = useMemo(() => Boolean(
     filters.query ||
     filters.selectedCategory !== 'all' ||
     filters.sortBy !== 'relevance' ||
     Object.keys(filters.filters).length > 0
-  )
+  ), [filters.query, filters.selectedCategory, filters.sortBy, filters.filters])
 
-  const value: SearchContextType = {
+  const value: SearchContextType = useMemo(() => ({
     filters,
     debouncedQuery,
     updateQuery,
@@ -102,7 +88,7 @@ export function SearchProvider({ children }: SearchProviderProps) {
     updateFilters,
     resetFilters,
     hasActiveFilters,
-  }
+  }), [filters, debouncedQuery, updateQuery, updateSelectedCategory, updateSortBy, updateFilters, resetFilters, hasActiveFilters])
 
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>
 }

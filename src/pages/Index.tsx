@@ -29,7 +29,7 @@ import { cn } from "@/shared/lib/utils";
 import { InfluentialPeopleSearch } from "@/components/discovery/InfluentialPeopleSearch";
 import DiscoverabilityModal from "@/components/DiscoverabilityModal";
 import { AdBanner } from "@/components/ads/AdBanner";
-import { ThreadsFeed } from "@/components/discovery/ThreadsFeed";
+import { ThreadsFeedVirtualized } from "@/components/discovery/ThreadsFeedVirtualized";
 import { FeatureDemo } from "@/components/demo/FeatureDemo";
 import { CreatorEconomyShowcase } from "@/components/demo/CreatorEconomyShowcase";
 import { DiscoveryModeToggle } from "@/components/discovery/DiscoveryModeToggle";
@@ -89,7 +89,6 @@ const Index = () => {
   
   // Use discovery context instead of local state
   const { discoveryMode, browseMode, setBrowseMode, handleDiscoveryModeChange, resetToInitialState } = useDiscovery();
-  const [threadsFeedKey, setThreadsFeedKey] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<string | null>(null);
   
@@ -190,9 +189,8 @@ const Index = () => {
 
   // Handle discover tab refresh - always works, even when already on discover tab
   const handleDiscoverTabClick = useCallback(() => {
-    // Always refresh content and scroll to top
+    // Always refresh and scroll to top
     resetToInitialState();
-    setThreadsFeedKey(prev => prev + 1);
     
     // Scroll to top
     const scrollContainer = document.querySelector('[data-scroll-container]');
@@ -272,8 +270,7 @@ const Index = () => {
                       </div>
                     ))}
                   </NotificationZone>
-                  <ThreadsFeed 
-                    key={threadsFeedKey}
+                  <ThreadsFeedVirtualized 
                     hasNotificationZone={hasAnyVisible}
                   />
                 </>
@@ -382,7 +379,7 @@ const Index = () => {
       default:
         return null;
     }
-  }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, handleCreatorSelect, threadsFeedKey, hasAnyVisible, visibleNotifications, offsets.notificationOffset, discoverContainerStyle, profile?.account_type]);
+  }, [activeTab, discoveryMode, browseMode, filters.selectedCategory, handleCreatorSelect, hasAnyVisible, visibleNotifications, offsets.notificationOffset, discoverContainerStyle, profile?.account_type]);
 
   // Redirect non-logged in users to auth page
   if (!user) {

@@ -1,8 +1,10 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import MuxPlayer from '@mux/mux-player-react'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
+import { markPerformance, measurePerformance } from '@/lib/performance'
+import { VideoErrorBoundary } from '@/shared/ui/video-error-boundary'
 
 interface PostCardMediaProps {
   contentType: 'image' | 'video'
@@ -41,30 +43,47 @@ export const PostCardMedia = memo(function PostCardMedia({
   aspectRatio,
   className = '',
 }: PostCardMediaProps) {
+  // Performance tracking
+  if (import.meta.env.DEV) {
+    markPerformance(`PostCardMedia-${playbackId || 'image'}-start`)
+  }
+
   // Lazy load videos only when in viewport
   const { ref: intersectionRef, isIntersecting } = useIntersectionObserver<HTMLDivElement>({
     threshold: 0.1,
     rootMargin: '200px' // Preload 200px before entering viewport
   });
-  const aspectRatioStyle = parseAspectRatio(aspectRatio)
+
+  // Memoize parsed aspect ratio
+  const aspectRatioStyle = useMemo(() => parseAspectRatio(aspectRatio), [aspectRatio]);
   
-  const containerClasses = cn(
+  // Memoize container classes and styles to prevent recalculation
+  const containerClasses = useMemo(() => cn(
     'overflow-hidden w-full',
     fullWidth ? 'rounded-none' : 'rounded-lg max-w-full',
     className
+  ), [fullWidth, className])
+
+  const containerStyle = useMemo(() => 
+    aspectRatioStyle 
+      ? { aspectRatio: aspectRatioStyle, width: '100%' } 
+      : { width: '100%' },
+    [aspectRatioStyle]
   )
 
-  const containerStyle = aspectRatioStyle 
-    ? { aspectRatio: aspectRatioStyle, width: '100%' } 
-    : { width: '100%' }
+  const imageClasses = useMemo(() => 
+    fullWidth
+      ? 'block w-full object-cover'
+      : 'block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover',
+    [fullWidth]
+  )
 
-  const imageClasses = fullWidth
-    ? 'block w-full object-cover'
-    : 'block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover'
-
-  const videoClasses = fullWidth
-    ? 'block w-full object-cover'
-    : 'block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover'
+  const videoClasses = useMemo(() => 
+    fullWidth
+      ? 'block w-full object-cover'
+      : 'block w-full max-w-full max-h-64 sm:max-h-72 md:max-h-96 object-cover',
+    [fullWidth]
+  )
 
   if (contentType === 'image' && mediaUrl) {
     return (
@@ -106,32 +125,48 @@ export const PostCardMedia = memo(function PostCardMedia({
     }
 
     if (provider === 'mux' && playbackId) {
+      // Performance mark when player loads
+      if (import.meta.env.DEV && isIntersecting) {
+        markPerformance(`MuxPlayer-${playbackId}-visible`)
+      }
+
       return (
-        <div ref={intersectionRef} className={containerClasses} style={containerStyle}>
-          {isIntersecting ? (
-            <MuxPlayer
-              streamType="on-demand"
-              playbackId={playbackId}
-              muted
-              playsInline
-              style={{ 
-                width: '100%', 
-                height: '100%',
-                aspectRatio: aspectRatioStyle || 'auto',
-                borderRadius: fullWidth ? 0 : 8, 
-                overflow: 'hidden' 
-              }}
-              className={fullWidth ? '' : 'rounded-lg'}
-            />
-          ) : (
-            <div 
-              className={cn('bg-muted flex items-center justify-center', videoClasses)}
-              style={{ minHeight: '300px' }}
-            >
-              <div className="text-muted-foreground text-sm">Loading video...</div>
-            </div>
-          )}
-        </div>
+        <VideoErrorBoundary>
+          <div ref={intersectionRef} className={containerClasses} style={containerStyle}>
+            {isIntersecting ? (
+              <MuxPlayer
+                streamType="on-demand"
+                playbackId={playbackId}
+                muted
+                playsInline
+                style={{ 
+                  width: '100%', 
+                  height: '100%',
+                  aspectRatio: aspectRatioStyle || 'auto',
+                  borderRadius: fullWidth ? 0 : 8, 
+                  overflow: 'hidden' 
+                }}
+                className={fullWidth ? '' : 'rounded-lg'}
+                onLoadedData={() => {
+                  if (import.meta.env.DEV) {
+                    measurePerformance(
+                      `MuxPlayer-${playbackId}-load`,
+                      `MuxPlayer-${playbackId}-visible`,
+                      `PostCardMedia-${playbackId}-start`
+                    )
+                  }
+                }}
+              />
+            ) : (
+              <div 
+                className={cn('bg-muted flex items-center justify-center', videoClasses)}
+                style={{ minHeight: '300px' }}
+              >
+                <div className="text-muted-foreground text-sm">Loading video...</div>
+              </div>
+            )}
+          </div>
+        </VideoErrorBoundary>
       )
     }
 
