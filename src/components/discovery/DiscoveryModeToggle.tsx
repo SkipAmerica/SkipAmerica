@@ -33,7 +33,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('discover')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
+          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
           mode === 'discover' 
             ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
             : "text-muted-foreground font-normal border-b-2 border-transparent"
@@ -48,7 +48,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('browse')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
+          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
           mode === 'browse' 
             ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
             : "text-muted-foreground font-normal border-b-2 border-transparent"
@@ -63,7 +63,7 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
         size="sm"
         onClick={() => handleModeChange('match')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
+          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
           mode === 'match' 
             ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
             : "text-muted-foreground font-normal border-b-2 border-transparent"
