@@ -25,7 +25,7 @@ export function FollowConnectButtons({
           e.stopPropagation()
           onConnect()
         }}
-        className="px-3.5 py-1 rounded text-xs font-medium text-white bg-[#00C2D8] hover:bg-gradient-to-r hover:from-[#00C2D8] hover:to-[#008AA4] transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.1)]"
+        className="px-3.5 py-1 rounded text-xs font-medium text-white bg-[#00C2D8] hover:bg-gradient-to-r hover:from-primary hover:to-primary/80 transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.1)]"
       >
         Connect
       </button>
