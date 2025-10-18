@@ -96,7 +96,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
         onConnect={handleConnect}
-        showConnectButton={true}
+        showConnectButton={!isOwnPost}
       />
 
       {/* Row 2: Media - Full Width */}
