@@ -34,16 +34,24 @@ class SessionPersistenceService {
     
     while (retries > 0) {
       try {
-        const { error } = await supabase.rpc('create_user_session', {
-          p_user_id: session.user.id,
-          p_session_token: session.access_token,
-          p_email: session.user.email || '',
-          p_device_info: {
-            userAgent: navigator.userAgent,
-            platform: Capacitor.getPlatform(),
-            timestamp: new Date().toISOString()
-          }
-        })
+        // Use upsert to handle duplicate session tokens gracefully
+        const { error } = await supabase
+          .from('user_sessions')
+          .upsert({
+            user_id: session.user.id,
+            session_token: session.access_token,
+            email: session.user.email || '',
+            device_info: {
+              userAgent: navigator.userAgent,
+              platform: Capacitor.getPlatform(),
+              timestamp: new Date().toISOString()
+            },
+            expires_at: new Date(session.expires_at! * 1000).toISOString(),
+            is_active: true,
+          }, {
+            onConflict: 'session_token',
+            ignoreDuplicates: false
+          })
 
         if (!error) {
           this.lastSyncedToken = session.access_token
