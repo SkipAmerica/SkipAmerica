@@ -4,13 +4,11 @@ import { PostCardFactory } from './cards/PostCardFactory'
 import { LoadingSpinner } from '@/shared/ui/loading-spinner'
 import { useFeedPosts } from '@/hooks/queries/use-feed-posts'
 import { FEATURES } from '@/config/features'
-import { getContentOffsets, getPullToRefreshOffset } from '@/lib/layout-utils'
+import { getContentOffsets } from '@/lib/layout-utils'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { useAuth } from '@/app/providers/auth-provider'
 import { useScrollContainer } from '@/shared/providers/ScrollContainerProvider'
 import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
-import { PullToRefreshContainer } from '@/components/shared/PullToRefreshContainer'
-import { useQueryClient } from '@tanstack/react-query'
 
 interface ThreadsFeedProps {
   hasNotificationZone?: boolean
@@ -23,26 +21,6 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
   // Use shared scroll container from provider
   const { rootEl } = useScrollContainer()
   const lastTriggeredAt = useRef<number>(0)
-  const queryClient = useQueryClient()
-  
-  // Calculate offset for pull-to-refresh logo positioning
-  const showAdPanel = FEATURES.SHOW_AD_PANEL
-  const revealOffset = getPullToRefreshOffset(showAdPanel, hasNotificationZone)
-  
-  // Handle pull-to-refresh
-  const handleRefresh = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['feed-posts'] })
-    
-    // Haptic feedback on supported devices
-    if ('Capacitor' in window) {
-      try {
-        const { Haptics } = (window as any).Capacitor.Plugins
-        await Haptics?.notification({ type: 'success' })
-      } catch (e) {
-        // Ignore haptic errors
-      }
-    }
-  }
 
   // Guard: Only initialize virtualizer when rootEl is available
   const rowVirtualizer = useVirtualizer({
@@ -161,13 +139,8 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
   const virtualItems = rowVirtualizer.getVirtualItems()
 
   return (
-    <PullToRefreshContainer
-      onRefresh={handleRefresh}
-      scrollElement={rootEl}
-      revealAreaOffset={revealOffset}
-    >
-      <Profiler id="ThreadsFeed" onRender={onRender}>
-        <div
+    <Profiler id="ThreadsFeed" onRender={onRender}>
+      <div
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
           width: '100%',
@@ -250,12 +223,11 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
         </div>
 
       {/* Phase 5: Background loading indicator */}
-        {isFetchingNextPage && posts.length > 0 && (
-          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-fit bg-background/80 backdrop-blur rounded-full px-4 py-2 shadow-lg z-50">
-            <LoadingSpinner size="sm" />
-          </div>
-        )}
-      </Profiler>
-    </PullToRefreshContainer>
+      {isFetchingNextPage && posts.length > 0 && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-fit bg-background/80 backdrop-blur rounded-full px-4 py-2 shadow-lg z-50">
+          <LoadingSpinner size="sm" />
+        </div>
+      )}
+    </Profiler>
   )
 }

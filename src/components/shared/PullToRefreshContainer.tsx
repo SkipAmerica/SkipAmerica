@@ -46,7 +46,7 @@ export function PullToRefreshContainer({
           transition: pullState === 'pulling' 
             ? 'none' // No transition during active pull
             : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring back
-          zIndex: 60,
+          zIndex: 5,
           backgroundColor,
           paddingTop: `${revealAreaOffset}px`, // Push logo below sticky headers
         }}

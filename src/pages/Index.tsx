@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, memo, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, memo, lazy, Suspense, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,9 @@ import { UserMenu } from "@/components/UserMenu";
 import CreatorDashboard from "@/components/CreatorDashboard";
 import FanInterface from "@/components/FanInterface";
 import { FEATURES } from '@/config/features';
-import { getContentOffsets } from '@/lib/layout-utils';
+import { getContentOffsets, getPullToRefreshOffset } from '@/lib/layout-utils';
+import { PullToRefreshContainer } from '@/components/shared/PullToRefreshContainer';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Memoized components to prevent cascading re-renders
 const MemoizedCreatorDashboard = memo(CreatorDashboard);
@@ -109,10 +111,27 @@ const Index = () => {
   const { state: onboardingState } = useOnboardingProgress(user?.id || '');
   const { visibleNotifications, hasAnyVisible } = useNotificationRegistry();
   const [queueUpdateTrigger, setQueueUpdateTrigger] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
 
   // Calculate dynamic offsets based on AdPanel visibility
   const showAdPanel = FEATURES.SHOW_AD_PANEL;
   const offsets = getContentOffsets(showAdPanel);
+  
+  // Pull-to-refresh handler
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['feed-posts'] })
+    
+    // Haptic feedback on supported devices
+    if ('Capacitor' in window) {
+      try {
+        const { Haptics } = (window as any).Capacitor.Plugins
+        await Haptics?.notification({ type: 'success' })
+      } catch (e) {
+        // Ignore haptic errors
+      }
+    }
+  };
 
   // Listen for real-time queue updates from useQueueManager
   useEffect(() => {
@@ -394,6 +413,7 @@ const Index = () => {
       />
       
       <div
+        ref={scrollContainerRef}
         data-scroll-container
         className="relative h-screen overflow-y-auto overflow-x-hidden pb-[var(--ios-tab-bar-height)]"
         style={{ 
@@ -402,67 +422,74 @@ const Index = () => {
           touchAction: 'pan-y'
         }}
       >
-        {/* iOS Navigation Bar - Hide when in advanced tab */}
-        {useMemo(() => 
-          activeTab !== "advanced" && (
-            <IOSInstagramHeader 
-              onMenuClick={() => setShowMenu(true)}
-              onCreatorSelect={(id) => setActiveTab("creator-profile")}
-              hideBottomRow={
-                (activeTab === "following" && profile?.account_type === 'creator') ||
-                activeTab === "creator-profile-management"
-              }
-            />
-          ), [activeTab, profile?.account_type]
-        )}
-
-        {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
-        {activeTab === "discover" && showDiscoveryToggle && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
-            <DiscoveryModeToggle 
-              mode={discoveryMode} 
-              onModeChange={handleDiscoveryModeChange}
-            />
-            
-            {/* Show FreezePane content only for browse mode */}
-            {discoveryMode === 'browse' && (
-              <FreezePane
-                showDiscoveryToggle={false}
-                searchValue={filters.query}
-                onSearchChange={updateQuery}
-                searchPlaceholder="Filter creators..."
-                className="border-t-0"
+        {/* Wrap entire scrollable content in PullToRefreshContainer */}
+        <PullToRefreshContainer
+          onRefresh={handleRefresh}
+          scrollElement={scrollContainerRef.current}
+          revealAreaOffset={getPullToRefreshOffset(showAdPanel, hasAnyVisible)}
+        >
+          {/* iOS Navigation Bar - Hide when in advanced tab */}
+          {useMemo(() => 
+            activeTab !== "advanced" && (
+              <IOSInstagramHeader 
+                onMenuClick={() => setShowMenu(true)}
+                onCreatorSelect={(id) => setActiveTab("creator-profile")}
+                hideBottomRow={
+                  (activeTab === "following" && profile?.account_type === 'creator') ||
+                  activeTab === "creator-profile-management"
+                }
               />
-            )}
-            
-            {/* Show MatchSearchBar flush with toggle for match mode */}
-            {discoveryMode === 'match' && (
-              <MatchSearchBar
-                value={filters.query}
-                onChange={updateQuery}
-                className="border-t-0"
+            ), [activeTab, profile?.account_type]
+          )}
+
+          {/* Sticky Header - Discovery Mode Toggle and Conditional Content */}
+          {activeTab === "discover" && showDiscoveryToggle && (
+            <div className="sticky top-[calc(var(--debug-safe-top)+48px)] z-50 bg-background/95 backdrop-blur-sm border-b border-border/50">
+              <DiscoveryModeToggle 
+                mode={discoveryMode} 
+                onModeChange={handleDiscoveryModeChange}
               />
-            )}
+              
+              {/* Show FreezePane content only for browse mode */}
+              {discoveryMode === 'browse' && (
+                <FreezePane
+                  showDiscoveryToggle={false}
+                  searchValue={filters.query}
+                  onSearchChange={updateQuery}
+                  searchPlaceholder="Filter creators..."
+                  className="border-t-0"
+                />
+              )}
+              
+              {/* Show MatchSearchBar flush with toggle for match mode */}
+              {discoveryMode === 'match' && (
+                <MatchSearchBar
+                  value={filters.query}
+                  onChange={updateQuery}
+                  className="border-t-0"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Ad Panel - Only show in discover mode when feature enabled */}
+          {showAdPanel && activeTab === "discover" && discoveryMode === 'discover' && (
+            <div className="sticky top-[calc(var(--debug-safe-top)+48px+48px)] z-40">
+              <AdPanel />
+            </div>
+          )}
+
+
+          {/* Main Content - Scrolls with header & freeze pane */}
+          <div className={cn(
+            "relative z-10 bg-white",
+            activeTab === "discover" && discoveryMode === 'discover' 
+              ? ""  // No margin - threads flush against DMT
+              : "-mt-[48px]"
+          )}>
+            {renderTabContent}
           </div>
-        )}
-
-        {/* Ad Panel - Only show in discover mode when feature enabled */}
-        {showAdPanel && activeTab === "discover" && discoveryMode === 'discover' && (
-          <div className="sticky top-[calc(var(--debug-safe-top)+48px+48px)] z-40">
-            <AdPanel />
-          </div>
-        )}
-
-
-        {/* Main Content - Scrolls with header & freeze pane */}
-        <div className={cn(
-          "relative z-10 bg-white",
-          activeTab === "discover" && discoveryMode === 'discover' 
-            ? ""  // No margin - threads flush against DMT
-            : "-mt-[48px]"
-        )}>
-          {renderTabContent}
-        </div>
+        </PullToRefreshContainer>
       </div>
 
       {/* Creator Post Prompt - Only show for creators */}
