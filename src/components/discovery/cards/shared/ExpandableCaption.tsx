@@ -101,14 +101,16 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
             text
           )}
         </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="p-0 h-auto text-muted-foreground font-bold hover:bg-transparent inline"
-        >
-          {isExpanded ? 'less' : '...more'}
-        </Button>
+        {!isExpanded && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsExpanded(true)}
+            className="p-0 h-auto text-muted-foreground font-bold hover:bg-transparent inline"
+          >
+            ...more
+          </Button>
+        )}
       </span>
     )
   }
@@ -126,14 +128,14 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
       >
         {text}
       </p>
-      {shouldTruncate && (
+      {shouldTruncate && !isExpanded && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIsExpanded(!isExpanded)}
+          onClick={() => setIsExpanded(true)}
           className="p-0 h-auto text-muted-foreground font-bold hover:bg-transparent mt-1"
         >
-          {isExpanded ? 'less' : '...more'}
+          ...more
         </Button>
       )}
     </div>
