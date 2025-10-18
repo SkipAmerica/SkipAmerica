@@ -46,7 +46,7 @@ export function FollowConnectButtons({
           e.stopPropagation()
           onConnect()
         }}
-        className="px-3.5 py-1 rounded text-xs font-medium border-2 border-skip-cyan bg-transparent text-skip-cyan hover:bg-skip-cyan/10 transition-all duration-200 backdrop-blur-sm"
+        className="px-3.5 py-1 rounded text-xs font-medium border-2 border-skip-cyan bg-black/30 text-white hover:bg-black/50 transition-all duration-200 backdrop-blur-sm"
       >
         Connect
       </button>
