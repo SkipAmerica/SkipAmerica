@@ -40,18 +40,16 @@ export function FollowConnectButtons({
       </button>
 
       {/* Connect Button */}
-      <Button
-        variant="connect"
-        size="sm"
+      <button
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
           onConnect()
         }}
-        className="px-3.5 py-1 h-auto text-xs"
+        className="px-3.5 py-1 rounded text-xs font-medium border-2 border-skip-cyan bg-transparent text-skip-cyan hover:bg-skip-cyan/10 transition-all duration-200 backdrop-blur-sm"
       >
         Connect
-      </Button>
+      </button>
     </div>
   )
 }
