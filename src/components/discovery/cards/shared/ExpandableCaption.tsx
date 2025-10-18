@@ -24,7 +24,7 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
         <span 
           className={cn(
             "inline text-foreground text-sm font-normal leading-relaxed transition-opacity duration-200",
-            !isExpanded && "line-clamp-3"
+            !isExpanded && "line-clamp-2"
           )}
         >
           {usernameLength > 0 ? (
@@ -58,7 +58,7 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
       <p 
         className={cn(
           "text-foreground text-sm font-normal leading-relaxed transition-all duration-300 ease-out overflow-hidden",
-          !isExpanded && "line-clamp-3",
+          !isExpanded && "line-clamp-2",
           className
         )}
       >
