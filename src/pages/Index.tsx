@@ -71,6 +71,7 @@ import { IOSModal } from "@/components/mobile/IOSModal";
 import { IOSListView, IOSListSection, IOSListItem } from "@/components/mobile/IOSListView";
 import { useKeyboardAware } from "@/hooks/use-keyboard-aware";
 import { CreatorPostPrompt } from "@/components/creator/CreatorPostPrompt";
+import { ScrollContainerProvider } from "@/shared/providers/ScrollContainerProvider";
 
 // Mock data - matches OnlineCreatorsGrid
 const mockCreators = [
@@ -383,6 +384,7 @@ const Index = () => {
 
   // Main iOS interface for signed in users
   return (
+    <ScrollContainerProvider>
     <div className="min-h-screen bg-background relative">
       {/* Status Bar Overlay - prevents content from showing above DMT */}
       <div 
@@ -626,6 +628,7 @@ const Index = () => {
         onClose={() => setDiscoverabilityModal(false)}
       />
     </div>
+    </ScrollContainerProvider>
   );
 };
 

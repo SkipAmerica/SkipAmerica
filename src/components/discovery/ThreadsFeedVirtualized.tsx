@@ -7,6 +7,8 @@ import { FEATURES } from '@/config/features'
 import { getContentOffsets } from '@/lib/layout-utils'
 import { ErrorBoundary } from '@/shared/ui/error-boundary'
 import { useAuth } from '@/app/providers/auth-provider'
+import { useScrollContainer } from '@/shared/providers/ScrollContainerProvider'
+import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
 
 interface ThreadsFeedProps {
   hasNotificationZone?: boolean
@@ -16,44 +18,36 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
   const { user, loading: authLoading, session } = useAuth()
   const { posts, isLoading, error, hasNextPage, fetchNextPage, isFetchingNextPage } = useFeedPosts()
   
-  // Use the page's scroll container instead of creating our own
-  const parentRef = useRef<HTMLElement | null>(null)
+  // Use shared scroll container from provider
+  const { rootEl } = useScrollContainer()
+  const lastTriggeredAt = useRef<number>(0)
 
-  useEffect(() => {
-    const scrollContainer = document.querySelector('[data-scroll-container]') as HTMLElement
-    parentRef.current = scrollContainer
-  }, [])
-
-  // Phase 1: Virtual scrolling with dynamic measurement
+  // Guard: Only initialize virtualizer when rootEl is available
   const rowVirtualizer = useVirtualizer({
     count: posts.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => rootEl,
     estimateSize: useCallback(() => 500, []), // Stable estimate callback
     overscan: 3,
     measureElement: (element) => element?.getBoundingClientRect().height ?? 500,
+    enabled: !!rootEl,
   })
 
-  // Phase 1: Infinite scroll trigger - FIXED dependency array
+  // Sentinel-based infinite scroll with debounce
+  const sentinel = useIntersectionObserver<HTMLDivElement>({
+    root: rootEl,
+    threshold: 0,
+    rootMargin: '800px',
+  })
+
   useEffect(() => {
-    const virtualItems = rowVirtualizer.getVirtualItems()
-    const [lastItem] = [...virtualItems].reverse()
-
-    if (!lastItem) return
-
-    if (
-      lastItem.index >= posts.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage()
+    if (sentinel.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      const now = Date.now()
+      if (now - lastTriggeredAt.current > 250) {
+        lastTriggeredAt.current = now
+        fetchNextPage()
+      }
     }
-  }, [
-    hasNextPage,
-    fetchNextPage,
-    posts.length,
-    isFetchingNextPage,
-    // REMOVED: rowVirtualizer.getVirtualItems() - causes infinite loop
-  ])
+  }, [sentinel.isIntersecting, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // Phase 3: Performance monitoring (dev only)
   const onRender: ProfilerOnRenderCallback = useCallback((
@@ -84,8 +78,17 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     }
   }, [authLoading, user?.id, session?.access_token, isLoading, posts.length])
 
-  // Phase 5: Simplified loading states
-  if (authLoading) {
+  // Guard: Show placeholder while waiting for rootEl
+  if (!rootEl) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  // Phase 5: Simplified loading states - only gate when no cached posts
+  if (authLoading && posts.length === 0) {
     return (
       <div className="flex items-center justify-center py-8">
         <LoadingSpinner />
@@ -94,7 +97,7 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
     )
   }
 
-  if (!user) {
+  if (!authLoading && !user) {
     return (
       <div className="p-4 text-center text-muted-foreground">
         Please sign in to view posts.
@@ -204,6 +207,19 @@ export function ThreadsFeedVirtualized({ hasNotificationZone = false }: ThreadsF
               </div>
             )
           })}
+
+          {/* Bottom sentinel for infinite scroll */}
+          <div
+            ref={sentinel.ref}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '1px',
+              transform: `translateY(${rowVirtualizer.getTotalSize()}px)`,
+            }}
+          />
         </div>
 
       {/* Phase 5: Background loading indicator */}

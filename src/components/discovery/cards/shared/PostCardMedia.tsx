@@ -3,6 +3,7 @@ import MuxPlayer from '@mux/mux-player-react'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useIntersectionObserver } from '@/shared/hooks/use-intersection-observer'
+import { useScrollContainer } from '@/shared/providers/ScrollContainerProvider'
 import { markPerformance, measurePerformance } from '@/lib/performance'
 import { VideoErrorBoundary } from '@/shared/ui/video-error-boundary'
 
@@ -48,8 +49,12 @@ export const PostCardMedia = memo(function PostCardMedia({
     markPerformance(`PostCardMedia-${playbackId || 'image'}-start`)
   }
 
-  // Lazy load videos only when in viewport
+  // Use shared scroll container for accurate intersection
+  const { rootEl } = useScrollContainer()
+
+  // Lazy load videos only when in viewport inside the scroll container
   const { ref: intersectionRef, isIntersecting } = useIntersectionObserver<HTMLDivElement>({
+    root: rootEl,
     threshold: 0.1,
     rootMargin: '200px' // Preload 200px before entering viewport
   });

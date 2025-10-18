@@ -33,6 +33,7 @@ export function useIntersectionObserver<T extends Element = Element>(
 
     return () => {
       observer.unobserve(element)
+      observer.disconnect()
     }
   }, [options.threshold, options.rootMargin, options.root])
 
