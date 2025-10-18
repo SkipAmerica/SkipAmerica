@@ -16,17 +16,25 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
   
   const shouldTruncate = text.length > maxLength
 
-  // For inline mode, use inline-block animation with max-height
+  // For inline mode, use CSS Grid animation technique
   if (inline) {
     return (
       <span className={cn("inline", className)}>
         <span 
-          className="inline-block align-top text-foreground text-sm font-normal leading-relaxed transition-all duration-300 ease-out overflow-hidden"
+          className="grid align-top transition-[grid-template-rows] duration-300 ease-out"
           style={{
-            maxHeight: isExpanded ? '500px' : '63px',
+            gridTemplateRows: isExpanded ? '1fr' : '0fr',
           }}
         >
-          {text}
+          <span 
+            className={cn(
+              "overflow-hidden text-foreground text-sm font-normal leading-relaxed",
+              !isExpanded && "line-clamp-3"
+            )}
+            style={{ minHeight: 0 }}
+          >
+            {text}
+          </span>
         </span>
         {shouldTruncate && (
           <Button
