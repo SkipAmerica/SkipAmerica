@@ -31,7 +31,7 @@ export function getPullToRefreshOffset(
   // 2. IOSInstagramHeader (48px)
   // 3. Discovery Mode Toggle (48px)
   // 4. AdPanel (96px, if enabled)
-  // 5. [PULL-TO-REFRESH AREA] ← Only visible during pull
+  // 5. [PULL-TO-REFRESH AREA - 80px] ← Only visible during pull
   // 6. NotificationZone (variable height, if present)
   // 7. ThreadsFeed content
   
@@ -41,8 +41,8 @@ export function getPullToRefreshOffset(
     offset += AD_PANEL_HEIGHT
   }
   
-  // NotificationZone is BELOW the pull-to-refresh area,
-  // so it's not included in the offset calculation
+  // Center the logo within the 80px reveal area
+  offset -= 40 // Half of 80px to vertically center
   
   return offset
 }

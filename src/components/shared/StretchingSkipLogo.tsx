@@ -11,10 +11,10 @@ export function StretchingSkipLogo({
   isRefreshing,
   color = 'rgb(142,142,147)', // iOS dark gray
 }: StretchingSkipLogoProps) {
-  // Logo grows and stretches as user pulls further
-  const scaleY = 1 + (stretchFactor * 0.6) // 1.0 → 1.6
-  const scaleX = 1 + (stretchFactor * 0.3) // 1.0 → 1.3
-  const fontSize = 48 + (stretchFactor * 48) // 48px → 96px
+  // Logo grows and stretches as user pulls further (adjusted for 80px pull)
+  const scaleY = 1 + (stretchFactor * 0.8) // 1.0 → 1.8
+  const scaleX = 1 + (stretchFactor * 0.4) // 1.0 → 1.4
+  const fontSize = 36 + (stretchFactor * 36) // 36px → 72px
   const opacity = 0.3 + (stretchFactor * 0.7) // 0.3 → 1.0
 
   // Velocity adds slight rotation for dynamism

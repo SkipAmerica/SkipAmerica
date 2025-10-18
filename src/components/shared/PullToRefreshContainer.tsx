@@ -22,8 +22,8 @@ export function PullToRefreshContainer({
   backgroundColor = 'rgb(242,242,247)', // iOS gray
   logoColor = 'rgb(142,142,147)', // iOS dark gray
   enabled = true,
-  pullThreshold = 80,
-  pullMax = 200,
+  pullThreshold = 60,
+  pullMax = 80,
 }: PullToRefreshContainerProps) {
   const { pullDistance, pullVelocity, pullState, stretchFactor, containerRef } = usePullToRefresh({
     onRefresh,
@@ -46,7 +46,7 @@ export function PullToRefreshContainer({
           transition: pullState === 'pulling' 
             ? 'none' // No transition during active pull
             : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring back
-          zIndex: 5,
+          zIndex: 60,
           backgroundColor,
           paddingTop: `${revealAreaOffset}px`, // Push logo below sticky headers
         }}
@@ -62,7 +62,15 @@ export function PullToRefreshContainer({
       </div>
 
       {/* Actual Content */}
-      <div className="relative z-10">
+      <div 
+        className="relative z-10"
+        style={{
+          transform: `translateY(${pullDistance}px)`,
+          transition: pullState === 'pulling' 
+            ? 'none' 
+            : 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        }}
+      >
         {children}
       </div>
 
