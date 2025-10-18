@@ -449,6 +449,25 @@ body.pq-scroll {
   display: none;
 }
 
+/* Pull-to-Refresh Depth Effects */
+.pull-refresh-reveal {
+  background: linear-gradient(
+    180deg,
+    rgba(242, 242, 247, 0.95) 0%,
+    rgba(242, 242, 247, 1) 20%,
+    rgba(242, 242, 247, 1) 80%,
+    rgba(242, 242, 247, 0.98) 100%
+  );
+  
+  box-shadow:
+    /* Inner top shadow - appears "behind" sticky headers */
+    inset 0 12px 20px -8px rgba(0, 0, 0, 0.08),
+    /* Inner bottom shadow - creates depth */
+    inset 0 -8px 16px rgba(0, 0, 0, 0.1),
+    /* Outer shadow - separation from content */
+    0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
 /* iOS Horizontal Scroll helper */
 .ios-horizontal-scroll {
   overflow-x: auto;

@@ -251,6 +251,7 @@ const Index = () => {
   // Stable style object to prevent re-renders
   const discoverContainerStyle = useMemo(() => ({ 
     overscrollBehavior: 'none' as const,
+    overscrollBehaviorY: 'contain' as const,
     touchAction: 'pan-y' as const,
     WebkitOverflowScrolling: 'touch' as const
   }), []);

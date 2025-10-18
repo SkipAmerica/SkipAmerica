@@ -12,3 +12,37 @@ export function getContentOffsets(showAdPanel: boolean) {
     contentMarginClass: showAdPanel ? '-mt-24 md:-mt-36' : '-mt-12',
   };
 }
+
+/**
+ * Calculate the offset for pull-to-refresh reveal area
+ * This determines how far down the logo should appear to avoid sticky headers
+ */
+export function getPullToRefreshOffset(
+  showAdPanel: boolean,
+  hasNotificationZone: boolean
+): number {
+  const safeAreaTop = parseInt(
+    getComputedStyle(document.documentElement)
+      .getPropertyValue('--debug-safe-top') || '0'
+  )
+  
+  // Vertical stack (top to bottom):
+  // 1. Safe area (e.g., 48px on iPhone 14 Pro)
+  // 2. IOSInstagramHeader (48px)
+  // 3. Discovery Mode Toggle (48px)
+  // 4. AdPanel (96px, if enabled)
+  // 5. [PULL-TO-REFRESH AREA] ← Only visible during pull
+  // 6. NotificationZone (variable height, if present)
+  // 7. ThreadsFeed content
+  
+  let offset = safeAreaTop + HEADER_HEIGHT + HEADER_HEIGHT
+  
+  if (showAdPanel) {
+    offset += AD_PANEL_HEIGHT
+  }
+  
+  // NotificationZone is BELOW the pull-to-refresh area,
+  // so it's not included in the offset calculation
+  
+  return offset
+}
