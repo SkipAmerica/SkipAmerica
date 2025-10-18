@@ -70,7 +70,7 @@ export function PostCardHeader({
         
         {/* Column 2: User Details (flexible, fills space) */}
         <div className="min-w-0 flex-1">
-          {/* Line 1: Name | Industry */}
+          {/* Single Line: Name | Industry */}
           <div className="flex items-center gap-1.5">
             <h3 className="font-semibold text-[0.96rem] truncate">
               {creator.full_name}
@@ -84,13 +84,6 @@ export function PostCardHeader({
               </>
             )}
           </div>
-          
-          {/* Line 2: Title */}
-          {creator.title && (
-            <p className="text-sm font-normal text-gray-500 truncate">
-              {creator.title}
-            </p>
-          )}
         </div>
         
         {/* Column 3: Connect Button (right-justified) */}
