@@ -14,29 +14,26 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
   if (!text) return null
   
   const shouldTruncate = text.length > maxLength
-  const Component = inline ? 'span' : 'div'
+  const displayText = shouldTruncate && !isExpanded 
+    ? text.slice(0, maxLength) 
+    : text
+
+  const Component = inline ? 'span' : 'p'
 
   return (
-    <div className="relative">
-      <Component 
-        className={`text-foreground text-sm font-normal leading-relaxed transition-all duration-300 ease-out ${className}`}
-        style={{
-          maxHeight: isExpanded ? '1000px' : '4.5em',
-          overflow: 'hidden'
-        }}
-      >
-        {text}
-      </Component>
+    <Component className={`text-foreground text-sm font-normal leading-relaxed ${className}`}>
+      {displayText}
+      {shouldTruncate && !isExpanded && '... '}
       {shouldTruncate && (
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-0 h-auto text-primary hover:underline hover:bg-transparent mt-1 transition-opacity duration-200"
+          className="p-0 h-auto text-primary hover:underline hover:bg-transparent inline"
         >
           {isExpanded ? 'less' : 'more'}
         </Button>
       )}
-    </div>
+    </Component>
   )
 }
