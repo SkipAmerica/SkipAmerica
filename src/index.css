@@ -54,15 +54,6 @@ html, body, #root {
     --live-color: 120 84% 55%;
     --live-color-fallback: #22c55e; /* Fallback for live color */
 
-    /* Header Attention System */
-    --skip-cyan: 187 100% 42%; /* #00C7D9 */
-    --ink-900: 218 20% 14%; /* #1F2937 */
-    --ink-700: 217 12% 27%; /* #374151 */
-    --ink-500: 220 9% 46%; /* #6B7280 */
-    --danger-600: 4 90% 58%; /* #E53935 */
-    --amber-600: 36 100% 50%; /* #FF8F00 */
-    --success-700: 122 39% 34%; /* #2E7D32 */
-
     /* Creator Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));

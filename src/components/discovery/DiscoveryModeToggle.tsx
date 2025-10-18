@@ -24,19 +24,17 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
     <div
       style={style}
       className={cn(
-        "flex items-center bg-white overflow-hidden gap-0 w-full px-0 rounded-none border-t border-border h-12",
+        "flex items-center bg-white overflow-hidden gap-0 w-full px-0 rounded-none border-t border-b border-border h-12",
         className
       )}
     >
       <Button
-        variant="ghost"
+        variant={mode === 'discover' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('discover')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
-          mode === 'discover' 
-            ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
-            : "text-muted-foreground font-normal border-b-2 border-transparent"
+          "flex-1 flex items-center justify-center space-x-2 transition-all relative rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'discover' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Search className="h-4 w-4" />
@@ -44,14 +42,12 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       </Button>
       
       <Button
-        variant="ghost"
+        variant={mode === 'browse' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('browse')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
-          mode === 'browse' 
-            ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
-            : "text-muted-foreground font-normal border-b-2 border-transparent"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'browse' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Grid3X3 className="h-4 w-4" />
@@ -59,14 +55,12 @@ export const DiscoveryModeToggle = ({ mode, onModeChange, className, style }: Di
       </Button>
       
       <Button
-        variant="ghost"
+        variant={mode === 'match' ? 'default' : 'ghost'}
         size="sm"
         onClick={() => handleModeChange('match')}
         className={cn(
-          "flex-1 flex items-center justify-center space-x-2 transition-all duration-150 ease-in relative rounded-none px-4 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12 bg-transparent hover:bg-transparent",
-          mode === 'match' 
-            ? "text-[#00C2D8] font-semibold border-b-2 border-[#00C2D8]" 
-            : "text-muted-foreground font-normal border-b-2 border-transparent"
+          "flex-1 flex items-center justify-center space-x-2 transition-all rounded-none px-0 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 h-12",
+          mode === 'match' ? "bg-primary text-primary-foreground" : "hover:bg-background/50"
         )}
       >
         <Handshake className="h-4 w-4" />

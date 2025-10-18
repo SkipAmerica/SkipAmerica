@@ -2,7 +2,6 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Mail, Menu, CalendarDays, Users } from 'lucide-react';
-import { HeaderIcon } from './HeaderIcon';
 
 interface InboxCounts {
   standard_unread: number;
@@ -28,13 +27,9 @@ export const IOSHeaderTopRow = React.memo(function IOSHeaderTopRow({
 }: IOSHeaderTopRowProps) {
   const navigate = useNavigate();
 
-  const totalUnread = inboxCounts.standard_unread + inboxCounts.priority_unread + inboxCounts.requests_unread;
-  const hasPriority = inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0;
-
   return (
-    <div className="z-30 sticky top-0 w-full bg-white">
-      <div className="flex items-center justify-between h-[56px] pr-4 pl-4">
-        {/* Logo */}
+    <div className="z-30 sticky top-0 w-full bg-white px-4">
+      <div className="flex items-center justify-between h-[56px]">
         <div className="flex items-center">
           <h1 className="text-2xl font-bold tracking-tight text-cyan-500">
             <span>Sk</span>
@@ -45,49 +40,51 @@ export const IOSHeaderTopRow = React.memo(function IOSHeaderTopRow({
             <span>p</span>
           </h1>
         </div>
-
-        {/* Action Icons */}
-        <div className="flex items-center gap-[14px]">
-          <HeaderIcon
-            icon={<Users />}
-            tone="queue"
-            count={queueCount}
-            ariaLabel={queueCount > 0 ? `Queue, ${queueCount} waiting` : 'Queue, empty'}
+        <div className="flex items-center space-x-[2px]">
+          <Button 
+            variant="ghost"
+            className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]"
             onClick={onQueueClick}
             disabled={queueCount === 0}
-          />
-
-          <HeaderIcon
-            icon={<CalendarDays />}
-            tone="calendar"
-            count={3}
-            ariaLabel="Calendar, 3 upcoming"
-          />
-
-          {accountType === 'creator' && (
-            <HeaderIcon
-              icon={<Mail />}
-              tone="message"
-              count={totalUnread}
-              priority={hasPriority && totalUnread === 0}
-              ariaLabel={
-                totalUnread > 0
-                  ? `Messages, ${totalUnread} unread`
-                  : hasPriority
-                  ? 'Messages, priority offer'
-                  : 'Messages'
-              }
-              onClick={() => navigate('/inbox')}
-            />
-          )}
-
-          <Button
-            variant="ghost"
-            className="w-10 h-10 p-0 rounded-lg [&_svg]:w-6 [&_svg]:h-6 [&_svg]:text-[--ink-900] hover:bg-muted/50"
-            onClick={onMenuClick}
-            aria-label="Menu"
           >
-            <Menu />
+            <Users size={26} />
+            {queueCount > 0 && (
+              <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                {queueCount}
+              </div>
+            )}
+          </Button>
+          <Button variant="ghost" className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]">
+            <CalendarDays size={26} />
+            <div className="absolute top-1 -right-0.5 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+              3
+            </div>
+          </Button>
+          {accountType === 'creator' && (
+            <Button 
+              variant="ghost"
+              className="ios-touchable h-[56px] w-[36px] p-0 relative [&_svg]:!w-[26px] [&_svg]:!h-[26px]"
+              onClick={() => navigate('/inbox')}
+            >
+              <Mail size={26} />
+              
+              {inboxCounts.standard_unread > 0 && (
+                <span className="absolute top-1 -right-0.5 h-5 w-5 rounded-full bg-red-500 text-xs text-center text-white font-medium flex items-center justify-center">
+                  {inboxCounts.standard_unread}
+                </span>
+              )}
+              
+              {(inboxCounts.priority_unread > 0 || inboxCounts.offers_new > 0) && (
+                <span className="absolute top-4 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-turquoise-extra-light flex items-center justify-center text-white text-[9px] font-bold">$</span>
+              )}
+            </Button>
+          )}
+          <Button 
+            variant="ghost"
+            className="ios-touchable h-[56px] w-[36px] p-0 [&_svg]:!w-[30px] [&_svg]:!h-[30px]"
+            onClick={onMenuClick}
+          >
+            <Menu size={30} />
           </Button>
         </div>
       </div>
