@@ -2,8 +2,6 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 interface FollowConnectButtonsProps {
-  isFollowing: boolean
-  onFollowToggle: () => void
   onConnect: () => void
   isOwnPost: boolean
   variant: 'overlay' | 'inline'
@@ -11,8 +9,6 @@ interface FollowConnectButtonsProps {
 }
 
 export function FollowConnectButtons({
-  isFollowing,
-  onFollowToggle,
   onConnect,
   isOwnPost,
   variant,
@@ -22,24 +18,7 @@ export function FollowConnectButtons({
 
   return (
     <div className={cn('flex gap-2', className)}>
-      {/* Follow Button */}
-      <button
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          onFollowToggle()
-        }}
-        className={cn(
-          'px-3.5 py-1 rounded text-xs font-medium border-2 border-white transition-all duration-200 backdrop-blur-sm',
-          isFollowing 
-            ? 'bg-gray-600/50 text-white hover:bg-gray-600/70' 
-            : 'bg-black/30 text-white hover:bg-black/50'
-        )}
-      >
-        {isFollowing ? 'Unfollow' : 'Follow'}
-      </button>
-
-      {/* Connect Button */}
+      {/* Connect Button Only - Follow is hidden */}
       <button
         onClick={(e) => {
           e.preventDefault()

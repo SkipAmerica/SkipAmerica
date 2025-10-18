@@ -85,7 +85,7 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
       )}
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
-      {/* Row 1: Header */}
+      {/* Row 1: Header with Connect Button */}
       <PostCardHeader
         creator={post.creator}
         timestamp={post.published_at || post.created_at}
@@ -95,12 +95,12 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         showAvatar={true}
         isFollowing={isFollowing}
         onFollowToggle={handleFollowToggle}
+        onConnect={handleConnect}
+        showConnectButton={true}
       />
 
-      {/* Follow + Connect Buttons - Overlay on Media */}
+      {/* Connect Button - Overlay on Media */}
       <FollowConnectButtons
-        isFollowing={isFollowing}
-        onFollowToggle={handleFollowToggle}
         onConnect={handleConnect}
         isOwnPost={isOwnPost}
         variant="overlay"

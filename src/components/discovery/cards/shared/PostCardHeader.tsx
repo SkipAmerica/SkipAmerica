@@ -26,6 +26,8 @@ interface PostCardHeaderProps {
   variant: 'column' | 'row'
   isFollowing?: boolean
   onFollowToggle?: () => void
+  onConnect?: () => void
+  showConnectButton?: boolean
 }
 
 export function PostCardHeader({
@@ -37,6 +39,8 @@ export function PostCardHeader({
   variant,
   isFollowing = false,
   onFollowToggle,
+  onConnect,
+  showConnectButton = false,
 }: PostCardHeaderProps) {
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
@@ -51,40 +55,59 @@ export function PostCardHeader({
 
   if (variant === 'row') {
     return (
-      <div className="flex items-center justify-between gap-3 p-3">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {showAvatar && (
-            <LiveAvatar
-              src={creator.avatar_url}
-              alt={creator.full_name}
-              fallback={creator.full_name?.charAt(0).toUpperCase() || '?'}
-              isLive={creator.isLive}
-              isFollowing={isFollowing}
-              onFollowToggle={onFollowToggle}
-            />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1 flex-wrap">
-              <h3 className="font-semibold text-[0.96rem] truncate">
-                {creator.full_name}
-              </h3>
-              {creator.title && (
-                <>
-                  <span className="text-gray-500 text-sm font-normal">|</span>
-                  <span className="text-sm font-normal text-foreground truncate">
-                    {creator.title}
-                  </span>
-                </>
-              )}
-            </div>
+      <div className="flex items-center gap-3 p-3">
+        {/* Column 1: Profile Picture */}
+        {showAvatar && (
+          <LiveAvatar
+            src={creator.avatar_url}
+            alt={creator.full_name}
+            fallback={creator.full_name?.charAt(0).toUpperCase() || '?'}
+            isLive={creator.isLive}
+            isFollowing={isFollowing}
+            onFollowToggle={onFollowToggle}
+          />
+        )}
+        
+        {/* Column 2: User Details (flexible, fills space) */}
+        <div className="min-w-0 flex-1">
+          {/* Line 1: Name | Industry */}
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-[0.96rem] truncate">
+              {creator.full_name}
+            </h3>
             {creator.industry && (
-              <p className="text-sm font-normal text-gray-500 truncate">
-                {creator.industry}
-              </p>
+              <>
+                <span className="text-gray-500 text-sm font-normal">|</span>
+                <span className="text-sm font-normal text-foreground truncate">
+                  {creator.industry}
+                </span>
+              </>
             )}
           </div>
+          
+          {/* Line 2: Title */}
+          {creator.title && (
+            <p className="text-sm font-normal text-gray-500 truncate">
+              {creator.title}
+            </p>
+          )}
         </div>
         
+        {/* Column 3: Connect Button (right-justified) */}
+        {!isOwnPost && showConnectButton && onConnect && (
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onConnect()
+            }}
+            className="px-3.5 py-1.5 rounded text-xs font-medium text-white bg-[#00C2D8] hover:bg-gradient-to-r hover:from-[#00C2D8] hover:to-[#008AA4] transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.1)] flex-shrink-0"
+          >
+            Connect
+          </button>
+        )}
+        
+        {/* Delete Menu (only for own posts) */}
         {isOwnPost && onDelete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
