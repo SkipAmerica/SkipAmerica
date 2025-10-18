@@ -7,9 +7,10 @@ interface ExpandableCaptionProps {
   maxLength?: number
   className?: string
   inline?: boolean
+  usernameLength?: number
 }
 
-export function ExpandableCaption({ text, maxLength = 75, className = '', inline = false }: ExpandableCaptionProps) {
+export function ExpandableCaption({ text, maxLength = 75, className = '', inline = false, usernameLength = 0 }: ExpandableCaptionProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   
   if (!text) return null
@@ -33,7 +34,16 @@ export function ExpandableCaption({ text, maxLength = 75, className = '', inline
             )}
             style={{ minHeight: 0 }}
           >
-            {text}
+            {usernameLength > 0 ? (
+              <>
+                <span className="font-semibold">
+                  {text.substring(0, usernameLength)}
+                </span>
+                {text.substring(usernameLength)}
+              </>
+            ) : (
+              text
+            )}
           </span>
         </span>
         {shouldTruncate && (

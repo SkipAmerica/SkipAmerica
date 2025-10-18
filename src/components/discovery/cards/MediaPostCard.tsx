@@ -119,10 +119,12 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
       {(post.creator.username || caption) && (
         <div className="px-4 py-3">
           <p className="text-sm text-foreground leading-relaxed">
-            {post.creator.username && (
-              <span className="font-semibold">@{post.creator.username} </span>
-            )}
-            {caption && <ExpandableCaption text={caption} maxLength={75} inline={true} />}
+            <ExpandableCaption 
+              text={`@${post.creator.username || ''} ${caption}`.trim()}
+              maxLength={75}
+              inline={true}
+              usernameLength={post.creator.username ? post.creator.username.length + 2 : 0}
+            />
             <span className="text-xs italic text-gray-400 ml-1">
               {formatTime(post.published_at || post.created_at)}
             </span>
