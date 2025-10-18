@@ -22,8 +22,8 @@ export function PullToRefreshContainer({
   backgroundColor = 'rgb(242,242,247)', // iOS gray
   logoColor = 'rgb(142,142,147)', // iOS dark gray
   enabled = true,
-  pullThreshold = 60,
-  pullMax = 80,
+  pullThreshold = 30,
+  pullMax = 40,
 }: PullToRefreshContainerProps) {
   const { pullDistance, pullVelocity, pullState, stretchFactor, containerRef } = usePullToRefresh({
     onRefresh,
@@ -51,7 +51,7 @@ export function PullToRefreshContainer({
           paddingTop: `${revealAreaOffset}px`, // Push logo below sticky headers
         }}
       >
-        <div className="flex items-end justify-center h-full pb-8">
+        <div className="flex items-center justify-center h-full">
           <StretchingSkipLogo
             stretchFactor={stretchFactor}
             velocity={pullVelocity}
