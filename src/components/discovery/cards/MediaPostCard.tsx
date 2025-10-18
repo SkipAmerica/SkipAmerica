@@ -1,6 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { ChevronLeft } from 'lucide-react'
-import { CreatorHistoryCarousel } from '../CreatorHistoryCarousel'
 import { PostCardHeader } from './shared/PostCardHeader'
 import { PostCardActions } from './shared/PostCardActions'
 import { PostCardMedia } from './shared/PostCardMedia'
@@ -73,44 +70,19 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
     setShowDeleteDialog,
     handleDelete,
     deleting,
-    cardRef,
-    swipeHandlers,
-    showHistory,
-    setShowHistory,
   } = usePostInteractions({
     postId: post.id,
     creatorId: post.creator.id,
     initialLikeCount: post.like_count,
   })
 
-  if (showHistory) {
-    return (
-      <div className="min-h-screen">
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowHistory(false)}
-            className="gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to feed
-          </Button>
-        </div>
-        <CreatorHistoryCarousel creatorId={post.creator.id} />
-      </div>
-    )
-  }
-
   const caption = post.title || post.description || ''
 
   return (
     <div
-      ref={cardRef}
       className={cn(
         "bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-inter relative overflow-hidden"
       )}
-      {...swipeHandlers}
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
       {/* Row 1: Header */}

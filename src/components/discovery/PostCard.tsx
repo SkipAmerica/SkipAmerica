@@ -1,14 +1,13 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import MuxPlayer from '@mux/mux-player-react'
 import { Button } from '@/components/ui/button'
-import { Heart, MessageCircle, Repeat2, Share, ChevronLeft, Video, Calendar, MoreVertical, Trash2, AlertCircle } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Share, Video, Calendar, MoreVertical, Trash2, AlertCircle } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { CreatorHistoryCarousel } from './CreatorHistoryCarousel'
 import { LiveAvatar } from './LiveAvatar'
 import { LiveActionButton } from './LiveActionButton'
 import { DeleteContentDialog } from '@/components/shared/DeleteContentDialog'
@@ -57,15 +56,10 @@ interface PostCardProps {
 
 export function PostCard({ post, isLast }: PostCardProps) {
   const { user } = useAuth()
-  const [showHistory, setShowHistory] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(post.like_count)
   const [isFollowing, setIsFollowing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const cardRef = useRef<HTMLDivElement>(null)
-  const startX = useRef<number>(0)
-  const currentX = useRef<number>(0)
-  const isDragging = useRef<boolean>(false)
   
   const isOwnPost = user?.id === post.creator.id
   
@@ -77,33 +71,6 @@ export function PostCard({ post, isLast }: PostCardProps) {
       )
     }
   })
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX
-    isDragging.current = true
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current) return
-    currentX.current = e.touches[0].clientX
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isDragging.current) return
-    
-    const deltaX = currentX.current - startX.current
-    const threshold = 100 // minimum swipe distance
-    
-    if (deltaX > threshold) {
-      // Right swipe - show creator history
-      setShowHistory(true)
-    } else if (deltaX < -threshold && showHistory) {
-      // Left swipe - hide creator history
-      setShowHistory(false)
-    }
-    
-    isDragging.current = false
-  }, [showHistory])
 
   const handleLike = useCallback(async () => {
     if (!user) {
@@ -174,34 +141,11 @@ export function PostCard({ post, isLast }: PostCardProps) {
     return `${Math.floor(diffInHours / 168)}w`
   }
 
-  if (showHistory) {
-    return (
-      <div className="min-h-screen">
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-sm border-b border-border px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowHistory(false)}
-            className="gap-2"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back to feed
-          </Button>
-        </div>
-        <CreatorHistoryCarousel creatorId={post.creator.id} />
-      </div>
-    )
-  }
-
   return (
     <div
-      ref={cardRef}
       className={cn(
         "bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 font-inter relative overflow-hidden"
       )}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       style={{ WebkitFontSmoothing: 'antialiased' }}
     >
       <div className="flex relative z-10">

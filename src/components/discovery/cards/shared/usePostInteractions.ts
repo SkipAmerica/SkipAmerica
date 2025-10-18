@@ -17,12 +17,6 @@ export function usePostInteractions({ postId, creatorId, initialLikeCount }: Use
   const [likeCount, setLikeCount] = useState(initialLikeCount)
   const [isFollowing, setIsFollowing] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
-  
-  const cardRef = useRef<HTMLDivElement>(null)
-  const startX = useRef<number>(0)
-  const currentX = useRef<number>(0)
-  const isDragging = useRef<boolean>(false)
 
   const { deleteContent, loading: deleting } = useContentDeletion({
     onSuccess: (contentId) => {
@@ -74,31 +68,6 @@ export function usePostInteractions({ postId, creatorId, initialLikeCount }: Use
     // TODO: Implement connection flow (DM/appointment/etc)
   }, [creatorId])
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    startX.current = e.touches[0].clientX
-    isDragging.current = true
-  }, [])
-
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isDragging.current) return
-    currentX.current = e.touches[0].clientX
-  }, [])
-
-  const handleTouchEnd = useCallback(() => {
-    if (!isDragging.current) return
-    
-    const deltaX = currentX.current - startX.current
-    const threshold = 100
-    
-    if (deltaX > threshold) {
-      setShowHistory(true)
-    } else if (deltaX < -threshold && showHistory) {
-      setShowHistory(false)
-    }
-    
-    isDragging.current = false
-  }, [showHistory])
-
   return {
     isLiked,
     likeCount,
@@ -110,13 +79,5 @@ export function usePostInteractions({ postId, creatorId, initialLikeCount }: Use
     setShowDeleteDialog,
     handleDelete,
     deleting,
-    cardRef,
-    swipeHandlers: {
-      onTouchStart: handleTouchStart,
-      onTouchMove: handleTouchMove,
-      onTouchEnd: handleTouchEnd,
-    },
-    showHistory,
-    setShowHistory,
   }
 }
