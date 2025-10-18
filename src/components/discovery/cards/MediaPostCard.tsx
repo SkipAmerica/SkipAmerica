@@ -99,14 +99,6 @@ export function MediaPostCard({ post, isLast }: MediaPostCardProps) {
         showConnectButton={true}
       />
 
-      {/* Connect Button - Overlay on Media */}
-      <FollowConnectButtons
-        onConnect={handleConnect}
-        isOwnPost={isOwnPost}
-        variant="overlay"
-        className="absolute top-[72px] right-3 z-20"
-      />
-
       {/* Row 2: Media - Full Width */}
       {(post.media_url || post.playback_id || (post.content_type === 'video' && post.media_status === 'processing')) && (
         <PostCardMedia

@@ -94,7 +94,7 @@ export function PostCardHeader({
         </div>
         
         {/* Column 3: Connect Button (right-justified) */}
-        {!isOwnPost && showConnectButton && onConnect && (
+        {showConnectButton && onConnect && (
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -107,8 +107,8 @@ export function PostCardHeader({
           </button>
         )}
         
-        {/* Delete Menu (only for own posts) */}
-        {isOwnPost && onDelete && (
+        {/* Column 4: Delete Menu (only for own posts) */}
+        {onDelete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
