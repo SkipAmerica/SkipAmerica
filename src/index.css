@@ -241,6 +241,22 @@ body.pq-scroll {
   --ios-ease-out: cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
+/* Online Creator Ring Pulse Animation */
+@keyframes ring-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05);
+  }
+}
+
+.ring-pulse {
+  animation: ring-pulse 2s ease-in-out infinite;
+}
+
 /* iOS Base Styles */
 .ios-app {
   -webkit-user-select: none;

@@ -136,10 +136,10 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
     Array.from({ length: count }).map((_, i) => (
       <div key={`story-skel-${i}`} className="flex-shrink-0">
         <div className="p-0.5 rounded-full bg-gradient-to-r from-primary via-primary/80 to-accent/80">
-          <Skeleton className="h-16 w-16 rounded-full ring-2 ring-background" />
+          <Skeleton className="h-[68px] w-[68px] rounded-full ring-2 ring-background" />
         </div>
-        <div className="text-xs text-center mt-1 w-16 truncate">
-          <Skeleton className="h-3 w-12 mx-auto rounded-full" />
+        <div className="text-xs text-center mt-1 w-[68px] truncate">
+          <Skeleton className="h-3 w-14 mx-auto rounded-full" />
         </div>
       </div>
     ))
@@ -162,8 +162,8 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               }}
             >
               <div className="relative p-[3px]">
-                {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
-                <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
+                {/* Story indicator ring with Skip Cyan 4pt stroke + pulse for online creators */}
+                <Avatar className="h-[68px] w-[68px] ring-[4px] ring-turquoise ring-pulse">
                   <AvatarImage src={creator.avatar} alt={creator.name} />
                   <AvatarFallback className="text-sm font-medium">
                     {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -179,7 +179,7 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               </div>
               
               {/* Creator name - truncated for mobile */}
-              <div className="text-xs text-center mt-1 w-16 truncate">
+              <div className="text-xs text-center mt-1 w-[68px] truncate">
                 {creator.name.split(' ')[0]}
               </div>
             </div>
