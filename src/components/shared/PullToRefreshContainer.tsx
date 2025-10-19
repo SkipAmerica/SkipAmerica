@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ReactNode, useEffect } from 'react'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { StretchingSkipLogo } from './StretchingSkipLogo'
 
@@ -12,6 +12,13 @@ interface PullToRefreshContainerProps {
   enabled?: boolean
   pullThreshold?: number
   pullMax?: number
+  visualOnly?: boolean // Make top reveal area invisible (white, no logo)
+  onPullStateChange?: (state: {
+    pullDistance: number
+    pullVelocity: number
+    pullState: 'idle' | 'pulling' | 'releasing' | 'refreshing'
+    stretchFactor: number
+  }) => void
 }
 
 export function PullToRefreshContainer({
@@ -23,7 +30,9 @@ export function PullToRefreshContainer({
   logoColor = 'rgb(142,142,147)', // iOS dark gray
   enabled = true,
   pullThreshold = 30,
-  pullMax = 40,
+  pullMax = 60,
+  visualOnly = false,
+  onPullStateChange,
 }: PullToRefreshContainerProps) {
   const { pullDistance, pullVelocity, pullState, stretchFactor, containerRef } = usePullToRefresh({
     onRefresh,
@@ -33,6 +42,16 @@ export function PullToRefreshContainer({
     pullMax,
   })
 
+  // Notify parent of pull state changes for external visual indicators
+  useEffect(() => {
+    onPullStateChange?.({
+      pullDistance,
+      pullVelocity,
+      pullState,
+      stretchFactor,
+    })
+  }, [pullDistance, pullVelocity, pullState, stretchFactor, onPullStateChange])
+
   return (
     <div ref={containerRef} className="relative">
       {/* Reveal Area - Positioned above viewport, slides down during pull */}
@@ -41,14 +60,14 @@ export function PullToRefreshContainer({
         style={{
           top: `-${pullMax}px`, // Hidden above viewport
           height: `${pullMax}px`,
-          transform: `translateY(${pullDistance}px)`, // Slides down 0-40px
+          transform: `translateY(${pullDistance}px)`, // Slides down 0-60px
           opacity: pullDistance > 0 ? 1 : 0, // Only visible when pulling
           transition: pullState === 'pulling' 
             ? 'none' // No transition during active pull
             : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring back
           zIndex: 5,
-          backgroundColor,
-          backgroundImage: `
+          backgroundColor: visualOnly ? 'white' : backgroundColor,
+          backgroundImage: visualOnly ? 'none' : `
             radial-gradient(circle, rgba(142, 142, 147, 0.08) 1px, transparent 1px),
             radial-gradient(circle, rgba(142, 142, 147, 0.05) 1px, transparent 1px)
           `,
@@ -56,14 +75,16 @@ export function PullToRefreshContainer({
           backgroundPosition: '0 0, 10px 10px',
         }}
       >
-        <div className="flex items-center justify-center h-full">
-          <StretchingSkipLogo
-            stretchFactor={stretchFactor}
-            velocity={pullVelocity}
-            isRefreshing={pullState === 'refreshing'}
-            color={logoColor}
-          />
-        </div>
+        {!visualOnly && (
+          <div className="flex items-center justify-center h-full">
+            <StretchingSkipLogo
+              stretchFactor={stretchFactor}
+              velocity={pullVelocity}
+              isRefreshing={pullState === 'refreshing'}
+              color={logoColor}
+            />
+          </div>
+        )}
       </div>
 
       {/* Actual Content */}

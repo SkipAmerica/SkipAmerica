@@ -17,6 +17,7 @@ import FanInterface from "@/components/FanInterface";
 import { FEATURES } from '@/config/features';
 import { getContentOffsets, getPullToRefreshOffset } from '@/lib/layout-utils';
 import { PullToRefreshContainer } from '@/components/shared/PullToRefreshContainer';
+import { VisualRefreshIndicator } from '@/components/shared/VisualRefreshIndicator';
 import { useQueryClient } from '@tanstack/react-query';
 
 // Memoized components to prevent cascading re-renders
@@ -113,6 +114,14 @@ const Index = () => {
   const [queueUpdateTrigger, setQueueUpdateTrigger] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  
+  // Pull-to-refresh state for visual indicator
+  const [pullState, setPullState] = useState({
+    pullDistance: 0,
+    pullVelocity: 0,
+    pullState: 'idle' as 'idle' | 'pulling' | 'releasing' | 'refreshing',
+    stretchFactor: 0,
+  });
 
   // Calculate dynamic offsets based on AdPanel visibility
   const showAdPanel = FEATURES.SHOW_AD_PANEL;
@@ -426,6 +435,8 @@ const Index = () => {
         <PullToRefreshContainer
           onRefresh={handleRefresh}
           scrollElement={scrollContainerRef.current}
+          visualOnly={true}
+          onPullStateChange={setPullState}
         >
           {/* iOS Navigation Bar - Hide when in advanced tab */}
           {useMemo(() => 
@@ -448,6 +459,16 @@ const Index = () => {
                 mode={discoveryMode} 
                 onModeChange={handleDiscoveryModeChange}
               />
+              
+              {/* VISUAL REFRESH INDICATOR - Only show in discover mode */}
+              {discoveryMode === 'discover' && (
+                <VisualRefreshIndicator
+                  pullDistance={pullState.pullDistance}
+                  pullVelocity={pullState.pullVelocity}
+                  pullState={pullState.pullState}
+                  stretchFactor={pullState.stretchFactor}
+                />
+              )}
               
               {/* Show FreezePane content only for browse mode */}
               {discoveryMode === 'browse' && (
