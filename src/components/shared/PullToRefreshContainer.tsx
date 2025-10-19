@@ -67,12 +67,15 @@ export function PullToRefreshContainer({
             : 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring back
           zIndex: 5,
           backgroundColor: visualOnly ? 'white' : backgroundColor,
-          backgroundImage: visualOnly ? 'none' : `
-            radial-gradient(circle, rgba(142, 142, 147, 0.08) 1px, transparent 1px),
-            radial-gradient(circle, rgba(142, 142, 147, 0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '12px 12px, 20px 20px',
-          backgroundPosition: '0 0, 10px 10px',
+          // Only apply background styling when NOT visual only
+          ...(visualOnly ? {} : {
+            backgroundImage: `
+              radial-gradient(circle, rgba(142, 142, 147, 0.08) 1px, transparent 1px),
+              radial-gradient(circle, rgba(142, 142, 147, 0.05) 1px, transparent 1px)
+            `,
+            backgroundSize: '12px 12px, 20px 20px',
+            backgroundPosition: '0 0, 10px 10px',
+          }),
         }}
       >
         {!visualOnly && (
