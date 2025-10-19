@@ -14,7 +14,7 @@ export function StretchingSkipLogo({
   // Logo grows and stretches as user pulls further (adjusted for 40px pull)
   const scaleY = 1 + (stretchFactor * 0.3) // 1.0 → 1.3
   const scaleX = 1 + (stretchFactor * 0.2) // 1.0 → 1.2
-  const fontSize = 18 + (stretchFactor * 14) // 18px → 32px
+  const fontSize = 9 + (stretchFactor * 7) // 9px → 16px (50% smaller)
   const opacity = 0.5 + (stretchFactor * 0.5) // 0.5 → 1.0
 
   // Velocity adds slight rotation for dynamism
