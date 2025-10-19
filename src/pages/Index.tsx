@@ -426,7 +426,6 @@ const Index = () => {
         <PullToRefreshContainer
           onRefresh={handleRefresh}
           scrollElement={scrollContainerRef.current}
-          revealAreaOffset={getPullToRefreshOffset(showAdPanel, hasAnyVisible)}
         >
           {/* iOS Navigation Bar - Hide when in advanced tab */}
           {useMemo(() => 
