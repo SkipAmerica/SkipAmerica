@@ -119,7 +119,7 @@ const Index = () => {
   const offsets = getContentOffsets(showAdPanel);
   
   // Pull-to-refresh handler
-  const handleRefresh = async () => {
+  const handleRefresh = useCallback(async () => {
     await queryClient.invalidateQueries({ queryKey: ['feed-posts'] })
     
     // Haptic feedback on supported devices
@@ -131,7 +131,7 @@ const Index = () => {
         // Ignore haptic errors
       }
     }
-  };
+  }, [queryClient]);
 
   // Listen for real-time queue updates from useQueueManager
   useEffect(() => {

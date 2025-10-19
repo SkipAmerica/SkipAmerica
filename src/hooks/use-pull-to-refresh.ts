@@ -131,12 +131,20 @@ export function usePullToRefresh({
   useEffect(() => {
     if (!enabled || !scrollElement) return
     
+    if (import.meta.env.DEV) {
+      console.log('[PTR] Attaching event listeners')
+    }
+    
     scrollElement.addEventListener('touchstart', handleTouchStart, { passive: true })
     scrollElement.addEventListener('touchmove', handleTouchMove, { passive: false })
     scrollElement.addEventListener('touchend', handleTouchEnd, { passive: true })
     scrollElement.addEventListener('touchcancel', handleTouchEnd, { passive: true })
     
     return () => {
+      if (import.meta.env.DEV) {
+        console.log('[PTR] Cleaning up event listeners')
+      }
+      
       scrollElement.removeEventListener('touchstart', handleTouchStart)
       scrollElement.removeEventListener('touchmove', handleTouchMove)
       scrollElement.removeEventListener('touchend', handleTouchEnd)
