@@ -30,7 +30,7 @@ export function PullToRefreshContainer({
   logoColor = 'rgb(142,142,147)', // iOS dark gray
   enabled = true,
   pullThreshold = 30,
-  pullMax = 60,
+  pullMax = 25,
   visualOnly = false,
   onPullStateChange,
 }: PullToRefreshContainerProps) {

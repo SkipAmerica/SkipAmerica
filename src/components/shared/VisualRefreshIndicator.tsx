@@ -25,7 +25,7 @@ export function VisualRefreshIndicator({
     <div
       className="overflow-hidden pointer-events-none"
       style={{
-        height: `${Math.min(pullDistance, 30)}px`, // Grows from 0 to 30px
+        height: `${Math.min(pullDistance, 40)}px`, // Grows from 0 to 40px
         opacity: pullDistance > 0 ? 1 : 0,
         transition: pullState === 'pulling' 
           ? 'none' // No transition during active pull
@@ -37,6 +37,7 @@ export function VisualRefreshIndicator({
         `,
         backgroundSize: '12px 12px, 20px 20px',
         backgroundPosition: '0 0, 10px 10px',
+        boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08)', // Drop shadow effect
       }}
     >
       <div className="flex items-center justify-center h-full">
