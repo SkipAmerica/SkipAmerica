@@ -25,8 +25,8 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
 
       {isLive ? (
         <>
-          {/* Cyan stroke #2 for live creators - outside white stroke */}
-          <div className="absolute -inset-[3px] rounded-full border-[3px] border-[#00C2D8] pointer-events-none" />
+          {/* Turquoise stroke #2 for live creators - outside white stroke */}
+          <div className="absolute -inset-[3px] rounded-full border-[3px] pointer-events-none" style={{ borderColor: 'hsl(var(--turquoise))' }} />
           {/* Pulsing cyan ring #3 for live creators - outermost */}
           <div 
             className="absolute -inset-[3px] rounded-full border-[3px] border-[#00C2D8] animate-pulse-cyan pointer-events-none"
@@ -34,7 +34,7 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
         </>
       ) : (
         <>
-          {/* Cyan stroke #2 for offline creators - outside white stroke */}
+          {/* Turquoise stroke #2 for offline creators - outside white stroke */}
           <div className="absolute -inset-[3px] rounded-full border-[3px] pointer-events-none" style={{ borderColor: 'hsl(var(--avatar-offline-stroke))' }} />
         </>
       )}

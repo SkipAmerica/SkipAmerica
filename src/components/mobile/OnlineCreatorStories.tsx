@@ -175,8 +175,8 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
                   {/* White stroke #1 - OUTER stroke of the profile pic (overlays image edge) */}
                   <div className="absolute inset-0 rounded-full ring-[3px] ring-white pointer-events-none" />
                   
-                  {/* Cyan stroke #2 - Outside the white stroke */}
-                  <div className="absolute -inset-[3px] rounded-full ring-[3px] ring-[#00C2D8] pointer-events-none" />
+                  {/* Turquoise stroke #2 - Outside the white stroke */}
+                  <div className="absolute -inset-[3px] rounded-full ring-[3px] ring-turquoise pointer-events-none" />
                   
                   {/* Pulsing cyan ring #3 - Only for online creators, outside everything */}
                   {creator.isOnline && (
