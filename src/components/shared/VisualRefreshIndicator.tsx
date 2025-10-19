@@ -25,7 +25,7 @@ export function VisualRefreshIndicator({
     <div
       className="overflow-hidden pointer-events-none"
       style={{
-        height: `${Math.min(pullDistance, 60)}px`, // Grows from 0 to 60px
+        height: `${Math.min(pullDistance, 30)}px`, // Grows from 0 to 30px
         opacity: pullDistance > 0 ? 1 : 0,
         transition: pullState === 'pulling' 
           ? 'none' // No transition during active pull
