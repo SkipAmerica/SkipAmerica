@@ -19,13 +19,24 @@ export function LiveAvatar({ src, alt, fallback, isLive, className, isFollowing 
         <AvatarImage src={src} alt={alt} />
         <AvatarFallback>{fallback}</AvatarFallback>
       </Avatar>
+      
+      {/* White stroke always present as outer stroke of avatar */}
+      <div className="absolute inset-0 rounded-full border-[3px] border-white pointer-events-none" />
+
       {isLive ? (
         <>
-          <div className="absolute -inset-0.5 rounded-full border-2 border-green-500" />
-          <div className="absolute -inset-0.5 rounded-full border-2 border-green-500 animate-ping" />
+          {/* Cyan stroke #2 for live creators - outside white stroke */}
+          <div className="absolute -inset-[3px] rounded-full border-[3px] border-[#00C2D8] pointer-events-none" />
+          {/* Pulsing cyan ring #3 for live creators - outermost */}
+          <div 
+            className="absolute -inset-[3px] rounded-full border-[3px] border-[#00C2D8] animate-pulse-cyan pointer-events-none"
+          />
         </>
       ) : (
-        <div className="absolute -inset-0.5 rounded-full border-2" style={{ borderColor: 'hsl(var(--avatar-offline-stroke))' }} />
+        <>
+          {/* Cyan stroke #2 for offline creators - outside white stroke */}
+          <div className="absolute -inset-[3px] rounded-full border-[3px] pointer-events-none" style={{ borderColor: 'hsl(var(--avatar-offline-stroke))' }} />
+        </>
       )}
       {onFollowToggle && (
         <button

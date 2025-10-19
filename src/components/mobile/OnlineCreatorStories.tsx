@@ -162,20 +162,29 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
               }}
             >
               <div className="relative p-[3px]">
-                {/* Story indicator ring with Skip Cyan 3pt stroke for online creators */}
-                <Avatar className="h-16 w-16 ring-[3px] ring-turquoise">
-                  <AvatarImage src={creator.avatar} alt={creator.name} />
-                  <AvatarFallback className="text-sm font-medium">
-                    {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                
-                {/* Online indicator */}
-                {creator.isOnline && (
-                  <div className="absolute bottom-[2.5px] right-[2.5px] h-4 w-4 rounded-full bg-[hsl(var(--online))] border-2 border-background flex items-center justify-center">
-                    <div className="h-2 w-2 rounded-full bg-[hsl(var(--background))] animate-pulse" />
-                  </div>
-                )}
+                {/* Outer container for all rings - increased from 64px to 67.2px (5% increase) */}
+                <div className="relative h-[67.2px] w-[67.2px]">
+                  {/* Avatar - increased from 64px to 67.2px */}
+                  <Avatar className="h-[67.2px] w-[67.2px] absolute inset-0">
+                    <AvatarImage src={creator.avatar} alt={creator.name} />
+                    <AvatarFallback className="text-sm font-medium">
+                      {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  {/* White stroke #1 - OUTER stroke of the profile pic (overlays image edge) */}
+                  <div className="absolute inset-0 rounded-full ring-[3px] ring-white pointer-events-none" />
+                  
+                  {/* Cyan stroke #2 - Outside the white stroke */}
+                  <div className="absolute -inset-[3px] rounded-full ring-[3px] ring-[#00C2D8] pointer-events-none" />
+                  
+                  {/* Pulsing cyan ring #3 - Only for online creators, outside everything */}
+                  {creator.isOnline && (
+                    <div 
+                      className="absolute -inset-[3px] rounded-full ring-[3px] ring-[#00C2D8] animate-pulse-cyan pointer-events-none"
+                    />
+                  )}
+                </div>
               </div>
               
               {/* Creator name - truncated for mobile */}

@@ -519,6 +519,22 @@ body.pq-scroll {
   top: var(--debug-safe-top);
 }
 
+/* Cyan pulse animation for online creators */
+@keyframes pulse-cyan {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.15);
+  }
+}
+
+.animate-pulse-cyan {
+  animation: pulse-cyan 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Live Control Bar Animations */
 @keyframes slide-up-from-bottom {
   from {
