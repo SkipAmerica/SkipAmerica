@@ -161,11 +161,11 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
                 }
               }}
             >
-              <div className="relative p-[3px]">
-                {/* Outer container for all rings - increased from 64px to 67.2px (5% increase) */}
-                <div className="relative h-[67.2px] w-[67.2px]">
-                  {/* Avatar - increased from 64px to 67.2px */}
-                  <Avatar className="h-[67.2px] w-[67.2px] absolute inset-0">
+              <div className="relative p-[9px]">
+                {/* Outer container for all rings - increased by 30% to 87px */}
+                <div className="relative h-[87px] w-[87px]">
+                  {/* Avatar - increased by 30% to 87px */}
+                  <Avatar className="h-[87px] w-[87px] absolute inset-0">
                     <AvatarImage src={creator.avatar} alt={creator.name} />
                     <AvatarFallback className="text-sm font-medium">
                       {creator.name.split(' ').map(n => n[0]).join('').toUpperCase()}
@@ -178,17 +178,17 @@ export function OnlineCreatorStories({ onCreatorSelect, className }: OnlineCreat
                   {/* Turquoise stroke #2 - Outside the white stroke */}
                   <div className="absolute -inset-[3px] rounded-full ring-[3px] ring-turquoise pointer-events-none" />
                   
-                  {/* Pulsing cyan ring #3 - Only for online creators, outside everything */}
+                  {/* Cyan ring #3 - Only for online creators, no pulse */}
                   {creator.isOnline && (
                     <div 
-                      className="absolute -inset-[3px] rounded-full ring-[3px] ring-[#00C2D8] animate-pulse-cyan pointer-events-none"
+                      className="absolute -inset-[3px] rounded-full ring-[3px] ring-[#00C2D8] pointer-events-none"
                     />
                   )}
                 </div>
               </div>
               
               {/* Creator name - truncated for mobile */}
-              <div className="text-xs text-center mt-1 w-16 truncate">
+              <div className="text-xs text-center mt-1 w-20 truncate">
                 {creator.name.split(' ')[0]}
               </div>
             </div>
